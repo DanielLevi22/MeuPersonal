@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +19,12 @@ export default function DashboardScreen() {
     fetchProfile();
   }, [user]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [user])
+  );
+
   const fetchProfile = async () => {
     if (!user?.id) return;
     
@@ -27,7 +34,7 @@ export default function DashboardScreen() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       setProfile(profileData);
 

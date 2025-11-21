@@ -1,3 +1,4 @@
+import { ExerciseConfigModal, Exercise } from '@/components/ExerciseConfigModal';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
@@ -13,6 +14,9 @@ export default function CreateWorkoutScreen() {
   const [description, setDescription] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
+  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
   const { user } = useAuthStore();
   const { fetchWorkouts, selectedExercises: storeExercises, clearSelectedExercises } = useWorkoutStore();
   const router = useRouter();
@@ -54,6 +58,7 @@ export default function CreateWorkoutScreen() {
           exercise_id: exercise.id,
           sets: exercise.sets,
           reps: exercise.reps.toString(),
+          weight: exercise.weight,
           rest_time: exercise.rest_seconds,
           order: index,
         }));
@@ -86,6 +91,32 @@ export default function CreateWorkoutScreen() {
     // Update store as well
     const { setSelectedExercises: setStoreExercises } = useWorkoutStore.getState();
     setStoreExercises(newExercises);
+  };
+
+  const editExercise = (index: number) => {
+    const exercise = selectedExercises[index];
+    setCurrentExercise({
+      id: exercise.id,
+      name: exercise.name,
+      muscle_group: exercise.muscle_group,
+      video_url: exercise.video_url || null,
+    });
+    setEditingExerciseIndex(index);
+    setShowEditModal(true);
+  };
+
+  const handleSaveExercise = (updatedExercise: SelectedExercise) => {
+    if (editingExerciseIndex !== null) {
+      const updated = [...selectedExercises];
+      updated[editingExerciseIndex] = updatedExercise;
+      setSelectedExercises(updated);
+      // Update store as well
+      const { setSelectedExercises: setStoreExercises } = useWorkoutStore.getState();
+      setStoreExercises(updated);
+    }
+    setShowEditModal(false);
+    setEditingExerciseIndex(null);
+    setCurrentExercise(null);
   };
 
   return (
@@ -224,7 +255,11 @@ export default function CreateWorkoutScreen() {
                           {index + 1}
                         </Text>
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <TouchableOpacity 
+                        style={{ flex: 1 }}
+                        onPress={() => editExercise(index)}
+                        activeOpacity={0.7}
+                      >
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
                           {exercise.name}
                         </Text>
@@ -239,8 +274,11 @@ export default function CreateWorkoutScreen() {
                             {exercise.muscle_group}
                           </Text>
                         </View>
-                      </View>
-                      <TouchableOpacity onPress={() => removeExercise(index)}>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => removeExercise(index)}
+                        onPressIn={(e) => e.stopPropagation()}
+                      >
                         <Ionicons name="close-circle" size={24} color="#FF3B3B" />
                       </TouchableOpacity>
                     </View>
@@ -258,6 +296,12 @@ export default function CreateWorkoutScreen() {
                         <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Descanso</Text>
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{exercise.rest_seconds}s</Text>
                       </View>
+                      {exercise.weight ? (
+                        <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
+                          <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Carga</Text>
+                          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{exercise.weight}kg</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 ))}
@@ -342,6 +386,21 @@ export default function CreateWorkoutScreen() {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {/* Exercise Edit Modal */}
+      {currentExercise && (
+        <ExerciseConfigModal
+          visible={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingExerciseIndex(null);
+            setCurrentExercise(null);
+          }}
+          exercise={currentExercise}
+          initialData={editingExerciseIndex !== null ? selectedExercises[editingExerciseIndex] : undefined}
+          onSave={handleSaveExercise}
+        />
+      )}
     </View>
   );
 }

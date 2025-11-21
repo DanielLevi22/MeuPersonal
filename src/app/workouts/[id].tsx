@@ -1,3 +1,5 @@
+import { ExerciseConfigModal, Exercise, SelectedExercise } from '@/components/ExerciseConfigModal';
+import { VideoPlayer } from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,9 +15,11 @@ interface WorkoutItem {
     id: string;
     name: string;
     muscle_group: string;
+    video_url?: string;
   };
   sets: number;
-  reps: number;
+  reps: number | string;
+  weight?: string;
   rest_time: number;
   order: number;
 }
@@ -31,6 +35,8 @@ export default function WorkoutDetailScreen() {
   const [showStudentPicker, setShowStudentPicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<WorkoutItem | null>(null);
 
   // Fetch workout details
   const fetchWorkoutDetails = async () => {
@@ -39,8 +45,14 @@ export default function WorkoutDetailScreen() {
         .from('workouts')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
       if (workoutError) throw workoutError;
+      
+      if (!workoutData) {
+        setLoading(false);
+        return;
+      }
+      
       setWorkout(workoutData);
 
       const { data: itemsData, error: itemsError } = await supabase
@@ -49,12 +61,14 @@ export default function WorkoutDetailScreen() {
           id,
           sets,
           reps,
+          weight,
           rest_time,
           "order",
           exercise:exercises (
             id,
             name,
-            muscle_group
+            muscle_group,
+            video_url
           )
         `)
         .eq('workout_id', id)
@@ -143,6 +157,43 @@ export default function WorkoutDetailScreen() {
       fetchWorkoutDetails();
     } catch (e: any) {
       Alert.alert('Erro ao deletar exercício', e.message);
+    }
+  };
+
+  const handleEditExercise = (item: WorkoutItem) => {
+    setEditingItem(item);
+    setShowEditModal(true);
+  };
+
+  const handleSaveExercise = async (updatedExercise: SelectedExercise) => {
+    if (!editingItem) return;
+    
+    try {
+      const { error } = await supabase
+        .from('workout_items')
+        .update({
+          sets: updatedExercise.sets,
+          reps: updatedExercise.reps.toString(),
+          weight: updatedExercise.weight,
+          rest_time: updatedExercise.rest_seconds,
+        })
+        .eq('id', editingItem.id);
+      
+      if (error) throw error;
+      
+      // Update video URL if changed
+      if (updatedExercise.video_url !== editingItem.exercise.video_url) {
+        await supabase
+          .from('exercises')
+          .update({ video_url: updatedExercise.video_url || null })
+          .eq('id', editingItem.exercise.id);
+      }
+      
+      fetchWorkoutDetails();
+      setShowEditModal(false);
+      setEditingItem(null);
+    } catch (e: any) {
+      Alert.alert('Erro', 'Não foi possível salvar as alterações.');
     }
   };
 
@@ -254,17 +305,33 @@ export default function WorkoutDetailScreen() {
                       <View style={{ backgroundColor: '#FF6B35', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                         <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>{index + 1}</Text>
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <TouchableOpacity 
+                        style={{ flex: 1 }}
+                        onPress={() => handleEditExercise(item)}
+                        activeOpacity={0.7}
+                      >
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.exercise.name}</Text>
-                        <View style={{ backgroundColor: 'rgba(0, 217, 255, 0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' }}>
-                          <Text style={{ color: '#00D9FF', fontSize: 11, fontWeight: '600' }}>{item.exercise.muscle_group}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                          <View style={{ backgroundColor: 'rgba(0, 217, 255, 0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                            <Text style={{ color: '#00D9FF', fontSize: 11, fontWeight: '600' }}>{item.exercise.muscle_group}</Text>
+                          </View>
                         </View>
-                      </View>
-                      <TouchableOpacity onPress={() => handleDeleteExercise(item.id)}>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => handleDeleteExercise(item.id)}
+                        onPressIn={(e) => e.stopPropagation()}
+                      >
                         <Ionicons name="trash" size={24} color="#FF3B3B" />
                       </TouchableOpacity>
                     </View>
-                    <View style={{ flexDirection: 'row', marginTop: 8, gap: 12 }}>
+
+                    {item.exercise.video_url && (
+                      <View style={{ marginTop: 12, marginBottom: 12 }}>
+                        <VideoPlayer videoUrl={item.exercise.video_url} height={200} />
+                      </View>
+                    )}
+
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
                       <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
                         <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Séries</Text>
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.sets}</Text>
@@ -277,6 +344,12 @@ export default function WorkoutDetailScreen() {
                         <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Descanso</Text>
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.rest_time}s</Text>
                       </View>
+                      {item.weight ? (
+                        <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
+                          <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Carga</Text>
+                          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.weight}kg</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 ))}
@@ -301,6 +374,34 @@ export default function WorkoutDetailScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Exercise Edit Modal */}
+      {editingItem && (
+        <ExerciseConfigModal
+          visible={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingItem(null);
+          }}
+          exercise={{
+            id: editingItem.exercise.id,
+            name: editingItem.exercise.name,
+            muscle_group: editingItem.exercise.muscle_group,
+            video_url: editingItem.exercise.video_url || null,
+          }}
+          initialData={{
+            id: editingItem.exercise.id,
+            name: editingItem.exercise.name,
+            muscle_group: editingItem.exercise.muscle_group,
+            sets: editingItem.sets,
+            reps: typeof editingItem.reps === 'string' ? parseInt(editingItem.reps) : editingItem.reps,
+            weight: editingItem.weight || '',
+            rest_seconds: editingItem.rest_time,
+            video_url: editingItem.exercise.video_url,
+          }}
+          onSave={handleSaveExercise}
+        />
+      )}
     </View>
   );
 }

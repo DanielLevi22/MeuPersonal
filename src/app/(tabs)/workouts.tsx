@@ -2,8 +2,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect } from 'react';
 import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +17,14 @@ export default function WorkoutsScreen() {
       fetchWorkouts(user.id);
     }
   }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        fetchWorkouts(user.id);
+      }
+    }, [user])
+  );
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 

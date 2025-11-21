@@ -32,7 +32,9 @@ export interface SelectedExercise {
   muscle_group: string;
   sets: number;
   reps: number;
+  weight: string;
   rest_seconds: number;
+  video_url?: string;
 }
 
 interface WorkoutState {
@@ -42,6 +44,7 @@ interface WorkoutState {
   isLoading: boolean;
   fetchWorkouts: (personalId: string) => Promise<void>;
   fetchExercises: () => Promise<void>;
+  createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
   createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
@@ -80,6 +83,22 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       set({ exercises: data });
     } catch (error) {
       console.error('Error fetching exercises:', error);
+    }
+  },
+
+  createExercise: async (exercise) => {
+    try {
+      const { error } = await supabase
+        .from('exercises')
+        .insert(exercise);
+
+      if (error) throw error;
+      
+      // Refresh exercises list
+      await get().fetchExercises();
+    } catch (error) {
+      console.error('Error creating exercise:', error);
+      throw error;
     }
   },
   createWorkout: async (workout) => {

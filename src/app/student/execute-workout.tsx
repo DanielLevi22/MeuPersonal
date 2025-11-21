@@ -1,17 +1,19 @@
 import { Button } from '@/components/ui/Button';
+import { VideoPlayer } from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ExerciseProgress {
   id: string;
   setsCompleted: number;
   totalSets: number;
+  weight?: string;
 }
 
 export default function ExecuteWorkoutScreen() {
@@ -67,6 +69,7 @@ export default function ExecuteWorkoutScreen() {
           id: item.id,
           setsCompleted: 0,
           totalSets: item.sets || 0,
+          weight: item.weight || '',
         };
       });
       setProgress(initialProgress);
@@ -120,6 +123,7 @@ export default function ExecuteWorkoutScreen() {
             session_id: sessionId,
             workout_item_id: exerciseId,
             sets_completed: prog.setsCompleted,
+            actual_weight: prog.weight,
           });
       }
 
@@ -248,16 +252,32 @@ export default function ExecuteWorkoutScreen() {
                         <Text className="text-muted text-sm ml-1">{item.reps} reps</Text>
                       </View>
                     )}
-                    {item.weight && (
-                      <View className="flex-row items-center">
-                        <Ionicons name="barbell" size={16} color="#8B92A8" />
-                        <Text className="text-muted text-sm ml-1">{item.weight} kg</Text>
-                      </View>
-                    )}
+                    <View className="flex-row items-center bg-background/50 px-2 py-1 rounded-lg border border-border">
+                      <Ionicons name="barbell" size={16} color="#8B92A8" />
+                      <TextInput
+                        className="text-white text-sm ml-2 w-16 p-0"
+                        placeholder="Carga"
+                        placeholderTextColor="#5A6178"
+                        keyboardType="numeric"
+                        value={itemProgress?.weight}
+                        onChangeText={(text: string) => {
+                          setProgress(prev => ({
+                            ...prev,
+                            [item.id]: { ...prev[item.id], weight: text }
+                          }));
+                        }}
+                      />
+                      <Text className="text-muted text-xs ml-1">kg</Text>
+                    </View>
                     {item.rest_time && (
                       <View className="flex-row items-center">
                         <Ionicons name="timer-outline" size={16} color="#8B92A8" />
                         <Text className="text-muted text-sm ml-1">{item.rest_time}s</Text>
+                      </View>
+                    )}
+                    {item.exercise?.video_url && (
+                      <View className="w-full mt-2">
+                        <VideoPlayer videoUrl={item.exercise.video_url} height={200} />
                       </View>
                     )}
                   </View>
