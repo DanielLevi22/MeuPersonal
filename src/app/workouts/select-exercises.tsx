@@ -1,117 +1,79 @@
-import { ExerciseConfigModal } from '@/components/ExerciseConfigModal';
-import { supabase } from '@/lib/supabase';
-import { useWorkoutStore } from '@/store/workoutStore';
+import { Exercise, ExerciseConfigModal } from '@/components/ExerciseConfigModal';
+import { useCreateExercise } from '@/hooks/useExerciseMutations';
+import { useExercises } from '@/hooks/useExercises';
+import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { SelectedExercise } from '@/store/workoutStore';
-
 export default function SelectExercisesScreen() {
-  const { exercises, isLoading, fetchExercises, createExercise } = useWorkoutStore();
+  const { data: exercisesData = [], isLoading } = useExercises();
+  const createExerciseMutation = useCreateExercise();
+  
+  // Filtrar exercícios inválidos - remover "Adicionar Exercício" e outros inválidos
+  const exercises = useMemo(() => {
+    return exercisesData.filter(
+      (ex) => ex.name && 
+      ex.name.trim() !== '' &&
+      !ex.name.toLowerCase().includes('adicionar exercício') &&
+      !ex.name.toLowerCase().includes('adicionar exercicios')
+    );
+  }, [exercisesData]);
+
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [currentExercise, setCurrentExercise] = useState<any>(null);
+  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [sets, setSets] = useState('3');
-  const [reps, setReps] = useState('12');
-  const [weight, setWeight] = useState('');
-  const [restSeconds, setRestSeconds] = useState('60');
-  const [videoUrl, setVideoUrl] = useState('');
-
+  
   // New Exercise creation state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newExerciseName, setNewExerciseName] = useState('');
   const [newExerciseMuscle, setNewExerciseMuscle] = useState('');
   const [newExerciseVideo, setNewExerciseVideo] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
 
   const router = useRouter();
 
-  useEffect(() => {
-    fetchExercises();
-  }, []);
-
-  const openConfigForNew = (exercise: any) => {
+  const openConfigForNew = useCallback((exercise: Exercise) => {
     setCurrentExercise(exercise);
-    setSets('3');
-    setReps('12');
-    setWeight('');
-    setRestSeconds('60');
-    setVideoUrl(exercise.video_url || '');
     setEditingIndex(null);
     setShowConfigModal(true);
-  };
+  }, []);
 
-  const editSelectedExercise = (exercise: any) => {
+  const editSelectedExercise = useCallback((exercise: Exercise) => {
     const index = selectedExercises.findIndex((ex) => ex.id === exercise.id);
     if (index !== -1) {
       setCurrentExercise(exercise);
       setEditingIndex(index);
-      setSets(String(selectedExercises[index].sets));
-      setReps(String(selectedExercises[index].reps));
-      setWeight(selectedExercises[index].weight);
-      setRestSeconds(String(selectedExercises[index].rest_seconds));
-      // Use the original exercise's video URL for preview
-      setVideoUrl(exercise.video_url || '');
       setShowConfigModal(true);
     }
-  };
+  }, [selectedExercises]);
 
-  const toggleSelection = (exercise: any) => {
+  const toggleSelection = useCallback((exercise: Exercise) => {
     if (selected.includes(exercise.id)) {
       editSelectedExercise(exercise);
     } else {
       openConfigForNew(exercise);
     }
-  };
+  }, [selected, editSelectedExercise, openConfigForNew]);
 
-  const handleSaveExercise = () => {
-    if (!currentExercise) return;
-    const setsNum = parseInt(sets) || 3;
-    const repsNum = parseInt(reps) || 12;
-    const restNum = parseInt(restSeconds) || 60;
-    if (setsNum < 1 || repsNum < 1 || restNum < 0) {
-      Alert.alert('Erro', 'Por favor, insira valores válidos.');
-      return;
-    }
-    const newExercise: SelectedExercise = {
-      id: currentExercise.id,
-      name: currentExercise.name,
-      muscle_group: currentExercise.muscle_group,
-      sets: setsNum,
-      reps: repsNum,
-      weight: weight,
-      rest_seconds: restNum,
-      video_url: videoUrl.trim() || undefined,
-    };
-    // Update video URL if changed
-    if (videoUrl.trim() !== (currentExercise.video_url || '')) {
-      supabase
-        .from('exercises')
-        .update({ video_url: videoUrl.trim() || null })
-        .eq('id', currentExercise.id)
-        .then(({ error }) => {
-          if (!error) fetchExercises();
-        });
-    }
+  const handleSaveExercise = useCallback((updatedExercise: SelectedExercise) => {
     if (editingIndex !== null) {
       const updated = [...selectedExercises];
-      updated[editingIndex] = newExercise;
+      updated[editingIndex] = updatedExercise;
       setSelectedExercises(updated);
     } else {
-      setSelected([...selected, currentExercise.id]);
-      setSelectedExercises([...selectedExercises, newExercise]);
+      setSelected([...selected, updatedExercise.id]);
+      setSelectedExercises([...selectedExercises, updatedExercise]);
     }
     setShowConfigModal(false);
     setCurrentExercise(null);
     setEditingIndex(null);
-  };
+  }, [editingIndex, selected, selectedExercises]);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (selectedExercises.length === 0) {
       Alert.alert('Atenção', 'Selecione pelo menos um exercício.');
       return;
@@ -119,9 +81,44 @@ export default function SelectExercisesScreen() {
     const { setSelectedExercises } = useWorkoutStore.getState();
     setSelectedExercises(selectedExercises);
     router.back();
-  };
+  }, [selectedExercises, router]);
 
-  const renderItem = ({ item }: { item: any }) => {
+  const handleCreateExercise = useCallback(async () => {
+    if (!newExerciseName.trim() || !newExerciseMuscle.trim()) {
+      Alert.alert('Erro', 'Preencha o nome e o grupo muscular.');
+      return;
+    }
+    
+    try {
+      await createExerciseMutation.mutateAsync({
+        name: newExerciseName,
+        muscle_group: newExerciseMuscle,
+        video_url: newExerciseVideo.trim() || undefined,
+      });
+      setNewExerciseName('');
+      setNewExerciseMuscle('');
+      setNewExerciseVideo('');
+      setShowCreateModal(false);
+      Alert.alert('Sucesso', 'Exercício criado com sucesso!');
+    } catch (error) {
+      // Error já é tratado no hook
+    }
+  }, [newExerciseName, newExerciseMuscle, newExerciseVideo, createExerciseMutation]);
+
+  const handleCloseCreateModal = useCallback(() => {
+    setShowCreateModal(false);
+    setNewExerciseName('');
+    setNewExerciseMuscle('');
+    setNewExerciseVideo('');
+  }, []);
+
+  const handleCloseConfigModal = useCallback(() => {
+    setShowConfigModal(false);
+    setEditingIndex(null);
+    setCurrentExercise(null);
+  }, []);
+
+  const renderItem = useCallback(({ item }: { item: Exercise }) => {
     const isSelected = selected.includes(item.id);
     return (
       <TouchableOpacity
@@ -141,53 +138,125 @@ export default function SelectExercisesScreen() {
       >
         <View style={{ flex: 1 }}>
           <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }}>{item.name}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ backgroundColor: 'rgba(0, 217, 255, 0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-              <Text style={{ color: '#00D9FF', fontSize: 12, fontWeight: '600' }}>{item.muscle_group}</Text>
+          {item.muscle_group && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <View style={{ 
+                backgroundColor: 'rgba(0, 217, 255, 0.15)', 
+                paddingHorizontal: 10, 
+                paddingVertical: 4, 
+                borderRadius: 8 
+              }}>
+                <Text style={{ color: '#00D9FF', fontSize: 12, fontWeight: '600' }}>{item.muscle_group}</Text>
+              </View>
             </View>
-          </View>
+          )}
         </View>
         {isSelected && (
-          <TouchableOpacity onPress={() => editSelectedExercise(item)}>
+          <TouchableOpacity onPress={() => editSelectedExercise(item)} style={{ marginLeft: 12 }}>
             <Ionicons name="pencil" size={20} color="#FFF" />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
     );
-  };
+  }, [selected, toggleSelection, editSelectedExercise]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
         {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#141B2D', padding: 10, borderRadius: 12, marginRight: 16 }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          alignItems: 'center', 
+          paddingHorizontal: 24, 
+          paddingTop: 16, 
+          paddingBottom: 24,
+          backgroundColor: '#0A0E1A'
+        }}>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={{ 
+              backgroundColor: '#141B2D', 
+              padding: 10, 
+              borderRadius: 12, 
+              marginRight: 16 
+            }}
+          >
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 28, fontWeight: '800', color: '#FFFFFF' }}>Selecionar Exercícios</Text>
-            <Text style={{ fontSize: 14, color: '#8B92A8', marginTop: 2 }}>{selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}</Text>
+            <Text style={{ fontSize: 14, color: '#8B92A8', marginTop: 2 }}>
+              {selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}
+            </Text>
           </View>
-          <TouchableOpacity onPress={() => setShowCreateModal(true)} style={{ marginLeft: 'auto', backgroundColor: 'rgba(255, 107, 53, 0.15)', padding: 10, borderRadius: 12 }}>
+          <TouchableOpacity 
+            onPress={() => setShowCreateModal(true)} 
+            style={{ 
+              backgroundColor: 'rgba(255, 107, 53, 0.15)', 
+              padding: 10, 
+              borderRadius: 12 
+            }}
+          >
             <Ionicons name="add" size={24} color="#FF6B35" />
           </TouchableOpacity>
         </View>
+
         {/* Content */}
         {isLoading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ 
+            flex: 1, 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            backgroundColor: '#0A0E1A' 
+          }}>
             <ActivityIndicator size="large" color="#FF6B35" />
             <Text style={{ color: '#8B92A8', marginTop: 16, fontSize: 15 }}>Carregando exercícios...</Text>
           </View>
         ) : (
-          <FlatList data={exercises} renderItem={renderItem} keyExtractor={(item) => item.id} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false} />
+          <FlatList 
+            data={exercises} 
+            renderItem={renderItem} 
+            keyExtractor={(item) => item.id} 
+            contentContainerStyle={{ 
+              paddingHorizontal: 24, 
+              paddingBottom: 100, 
+              backgroundColor: '#0A0E1A' 
+            }}
+            style={{ flex: 1, backgroundColor: '#0A0E1A' }}
+            showsVerticalScrollIndicator={false} 
+          />
         )}
+
         {/* Bottom Button */}
         {selected.length > 0 && (
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 32, backgroundColor: '#0A0E1A', borderTopWidth: 2, borderTopColor: '#1E2A42' }}>
+          <View style={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            padding: 24, 
+            paddingBottom: 32, 
+            backgroundColor: '#0A0E1A', 
+            borderTopWidth: 2, 
+            borderTopColor: '#1E2A42' 
+          }}>
             <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
-              <LinearGradient colors={['#00FF88', '#00CC6E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 16, paddingVertical: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+              <LinearGradient 
+                colors={['#00FF88', '#00CC6E']} 
+                start={{ x: 0, y: 0 }} 
+                end={{ x: 1, y: 1 }} 
+                style={{ 
+                  borderRadius: 16, 
+                  paddingVertical: 18, 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  flexDirection: 'row' 
+                }}
+              >
                 <Ionicons name="checkmark-circle" size={22} color="#0A0E1A" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#0A0E1A', fontSize: 18, fontWeight: '700' }}>Adicionar {selected.length} {selected.length === 1 ? 'Exercício' : 'Exercícios'}</Text>
+                <Text style={{ color: '#0A0E1A', fontSize: 18, fontWeight: '700' }}>
+                  Adicionar {selected.length} {selected.length === 1 ? 'Exercício' : 'Exercícios'}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -197,72 +266,123 @@ export default function SelectExercisesScreen() {
         {showCreateModal && (
           <>
             <TouchableOpacity 
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)' }}
-              activeOpacity={1}
-              onPress={() => {
-                setShowCreateModal(false);
-                setNewExerciseName('');
-                setNewExerciseMuscle('');
-                setNewExerciseVideo('');
+              style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                backgroundColor: 'rgba(0, 0, 0, 0.8)' 
               }}
+              activeOpacity={1}
+              onPress={handleCloseCreateModal}
             />
-            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#141B2D', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, borderTopWidth: 2, borderTopColor: '#1E2A42', maxHeight: '80%' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Criar Novo Exercício</Text>
-              <TouchableOpacity onPress={() => {
-                setShowCreateModal(false);
-                setNewExerciseName('');
-                setNewExerciseMuscle('');
-                setNewExerciseVideo('');
-              }}>
-                <Ionicons name="close" size={28} color="#8B92A8" />
+            <View style={{ 
+              position: 'absolute', 
+              bottom: 0, 
+              left: 0, 
+              right: 0, 
+              backgroundColor: '#141B2D', 
+              borderTopLeftRadius: 24, 
+              borderTopRightRadius: 24, 
+              padding: 24, 
+              paddingBottom: 40, 
+              borderTopWidth: 2, 
+              borderTopColor: '#1E2A42', 
+              maxHeight: '80%' 
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Criar Novo Exercício</Text>
+                <TouchableOpacity onPress={handleCloseCreateModal}>
+                  <Ionicons name="close" size={28} color="#8B92A8" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Nome do Exercício</Text>
+                <TextInput 
+                  value={newExerciseName} 
+                  onChangeText={setNewExerciseName} 
+                  placeholder="Ex: Supino Reto" 
+                  placeholderTextColor="#5A6178" 
+                  style={{ 
+                    backgroundColor: '#0A0E1A', 
+                    borderWidth: 2, 
+                    borderColor: '#1E2A42', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    color: '#FFFFFF', 
+                    fontSize: 16 
+                  }}
+                />
+              </View>
+              
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Grupo Muscular</Text>
+                <TextInput 
+                  value={newExerciseMuscle} 
+                  onChangeText={setNewExerciseMuscle} 
+                  placeholder="Ex: Peitoral" 
+                  placeholderTextColor="#5A6178" 
+                  style={{ 
+                    backgroundColor: '#0A0E1A', 
+                    borderWidth: 2, 
+                    borderColor: '#1E2A42', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    color: '#FFFFFF', 
+                    fontSize: 16 
+                  }}
+                />
+              </View>
+              
+              <View style={{ marginBottom: 24 }}>
+                <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Link do Vídeo (YouTube)</Text>
+                <TextInput 
+                  value={newExerciseVideo} 
+                  onChangeText={setNewExerciseVideo} 
+                  placeholder="https://youtube.com/..." 
+                  placeholderTextColor="#5A6178" 
+                  autoCapitalize="none" 
+                  style={{ 
+                    backgroundColor: '#0A0E1A', 
+                    borderWidth: 2, 
+                    borderColor: '#1E2A42', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    color: '#FFFFFF', 
+                    fontSize: 16 
+                  }}
+                />
+              </View>
+              
+              <TouchableOpacity 
+                onPress={handleCreateExercise} 
+                disabled={createExerciseMutation.isPending} 
+                activeOpacity={0.8} 
+                style={{ 
+                  backgroundColor: '#FF6B35', 
+                  padding: 12, 
+                  borderRadius: 8, 
+                  alignItems: 'center',
+                  opacity: createExerciseMutation.isPending ? 0.5 : 1
+                }}
+              >
+                {createExerciseMutation.isPending ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>Salvar Exercício</Text>
+                )}
               </TouchableOpacity>
-            </View>
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Nome do Exercício</Text>
-              <TextInput value={newExerciseName} onChangeText={setNewExerciseName} placeholder="Ex: Supino Reto" placeholderTextColor="#5A6178" style={{ backgroundColor: '#0A0E1A', borderWidth: 2, borderColor: '#1E2A42', borderRadius: 12, padding: 16, color: '#FFFFFF', fontSize: 16 }} />
-            </View>
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Grupo Muscular</Text>
-              <TextInput value={newExerciseMuscle} onChangeText={setNewExerciseMuscle} placeholder="Ex: Peitoral" placeholderTextColor="#5A6178" style={{ backgroundColor: '#0A0E1A', borderWidth: 2, borderColor: '#1E2A42', borderRadius: 12, padding: 16, color: '#FFFFFF', fontSize: 16 }} />
-            </View>
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Link do Vídeo (YouTube)</Text>
-              <TextInput value={newExerciseVideo} onChangeText={setNewExerciseVideo} placeholder="https://youtube.com/..." placeholderTextColor="#5A6178" autoCapitalize="none" style={{ backgroundColor: '#0A0E1A', borderWidth: 2, borderColor: '#1E2A42', borderRadius: 12, padding: 16, color: '#FFFFFF', fontSize: 16 }} />
-            </View>
-            <TouchableOpacity onPress={async () => {
-              if (!newExerciseName.trim() || !newExerciseMuscle.trim()) {
-                Alert.alert('Erro', 'Preencha o nome e o grupo muscular.');
-                return;
-              }
-              setIsCreating(true);
-              try {
-                await createExercise({ name: newExerciseName, muscle_group: newExerciseMuscle, video_url: newExerciseVideo.trim() || undefined });
-                setNewExerciseName('');
-                setNewExerciseMuscle('');
-                setNewExerciseVideo('');
-                setShowCreateModal(false);
-                Alert.alert('Sucesso', 'Exercício criado com sucesso!');
-              } catch (error) {
-                Alert.alert('Erro', 'Não foi possível criar o exercício.');
-              } finally {
-                setIsCreating(false);
-              }
-            }} disabled={isCreating} activeOpacity={0.8} style={{ backgroundColor: '#FF6B35', padding: 12, borderRadius: 8, alignItems: 'center' }}>
-              {isCreating ? <ActivityIndicator color="#FFF" /> : <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>Salvar Exercício</Text>}
-            </TouchableOpacity>
             </View>
           </>
         )}
+
         {/* Exercise Config Modal */}
         <ExerciseConfigModal
           visible={showConfigModal}
-          onClose={() => {
-            setShowConfigModal(false);
-            setEditingIndex(null);
-            setCurrentExercise(null);
-          }}
-          exercise={currentExercise || { id: '', name: '', muscle_group: '' }}
+          onClose={handleCloseConfigModal}
+          exercise={currentExercise || { id: '', name: '', muscle_group: '', video_url: null }}
           initialData={editingIndex !== null ? selectedExercises[editingIndex] : undefined}
           onSave={handleSaveExercise}
         />

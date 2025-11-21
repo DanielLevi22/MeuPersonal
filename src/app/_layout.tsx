@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,6 +8,7 @@ import 'react-native-reanimated';
 import '../global.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 
@@ -76,12 +78,14 @@ function RootLayoutNav() {
   }, [session, segments, isLoading]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="onboarding/role-selection" />
-      </Stack>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="onboarding/role-selection" />
+        </Stack>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
