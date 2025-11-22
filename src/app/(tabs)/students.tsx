@@ -34,12 +34,14 @@ export default function StudentsScreen() {
           text: isInvite ? 'Cancelar Convite' : 'Remover', 
           style: 'destructive',
           onPress: async () => {
-            if (user?.id) {
+            if (user?.id && item?.id) {
               if (isInvite) {
                 await cancelInvite(item.id);
               } else {
                 await removeStudent(user.id, item.id);
               }
+            } else {
+              Alert.alert('Erro', 'ID do aluno não encontrado.');
             }
           }
         }

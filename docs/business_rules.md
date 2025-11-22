@@ -76,6 +76,7 @@ O **MeuPersonal** é uma plataforma SaaS mobile que conecta Personal Trainers ao
 ### 5.2. Prescrição
 - O treino pode ser recorrente (ex: Toda Segunda-feira) ou pontual.
 - O Personal pode duplicar treinos de um aluno para outro.
+> **Nota**: Vários alunos podem compartilhar o mesmo treino; para isso, usamos uma tabela de relacionamento many‑to‑many `workout_assignments`.
 
 ### 5.3. Execução (Lado do Aluno)
 - O aluno deve marcar cada exercício como feito ou o treino inteiro como concluído.
