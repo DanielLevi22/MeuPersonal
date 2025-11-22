@@ -177,9 +177,32 @@ export default function LoginScreen() {
             <View style={{ flex: 1, height: 1, backgroundColor: '#1E2A42' }} />
           </View>
 
+          {/* Student Login Button */}
+          <View style={{ marginBottom: 32 }}>
+            <TouchableOpacity 
+              onPress={() => router.push('/(auth)/student-login' as any)}
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                borderWidth: 1,
+                borderColor: 'rgba(0, 217, 255, 0.3)',
+                borderRadius: 16,
+                paddingVertical: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row'
+              }}
+            >
+              <Ionicons name="school-outline" size={20} color="#00D9FF" style={{ marginRight: 8 }} />
+              <Text style={{ color: '#00D9FF', fontSize: 16, fontWeight: '600' }}>
+                Sou Aluno (Entrar com Código)
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Register Link */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: '#8B92A8', fontSize: 15 }}>Não tem uma conta? </Text>
+            <Text style={{ color: '#8B92A8', fontSize: 15 }}>Personal Trainer? </Text>
             <Link href={'/(auth)/register' as any} asChild>
               <TouchableOpacity>
                 <Text style={{ color: '#FF6B35', fontSize: 15, fontWeight: '700' }}>

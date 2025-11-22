@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { Alert } from 'react-native';
 import { create } from 'zustand';
 
 interface Student {
@@ -6,16 +7,29 @@ interface Student {
   full_name: string;
   email: string;
   avatar_url: string | null;
-  status: 'active' | 'pending' | 'inactive';
+  status: 'active' | 'pending' | 'inactive' | 'invited';
+  is_invite?: boolean;
 }
 
 interface StudentState {
   students: Student[];
   isLoading: boolean;
   fetchStudents: (personalId: string) => Promise<void>;
-  generateInviteCode: (userId: string) => Promise<string | null>;
+  generateInviteCode: (userId: string, force?: boolean) => Promise<string | null>;
+  createStudentInvite: (data: StudentInviteData) => Promise<{ success: boolean; code?: string; error?: string }>;
+  cancelInvite: (inviteId: string) => Promise<void>;
   linkStudent: (studentId: string, inviteCode: string) => Promise<{ success: boolean; error?: string }>;
   removeStudent: (personalId: string, studentId: string) => Promise<void>;
+}
+
+export interface StudentInviteData {
+  personal_id: string;
+  name: string;
+  phone?: string;
+  weight?: string;
+  height?: string;
+  notes?: string;
+  initial_assessment?: any;
 }
 
 export const useStudentStore = create<StudentState>((set, get) => ({
@@ -24,7 +38,8 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   fetchStudents: async (personalId) => {
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase
+      // 1. Fetch linked students
+      const { data: linkedData, error: linkedError } = await supabase
         .from('students_personals')
         .select(`
           status,
@@ -37,31 +52,94 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         `)
         .eq('personal_id', personalId);
 
-      if (error) throw error;
+      if (linkedError) throw linkedError;
 
-      const formattedStudents = data.map((item: any) => ({
+      const formattedLinkedStudents = linkedData.map((item: any) => ({
         ...item.student,
         status: item.status,
       }));
 
-      set({ students: formattedStudents });
+      // 2. Fetch pending invites
+      const { data: invitesData, error: invitesError } = await supabase
+        .from('student_invites')
+        .select('id, name, invite_code, created_at')
+        .eq('personal_id', personalId);
+
+      if (invitesError) throw invitesError;
+
+      const formattedInvites = invitesData.map((invite: any) => ({
+        id: invite.id,
+        full_name: invite.name,
+        email: `Código: ${invite.invite_code}`,
+        avatar_url: null,
+        status: 'invited', // New status for invites not yet accepted
+        is_invite: true
+      }));
+
+      // 3. Merge lists
+      set({ students: [...formattedInvites, ...formattedLinkedStudents] });
     } catch (error) {
       console.error('Error fetching students:', error);
     } finally {
       set({ isLoading: false });
     }
   },
-  generateInviteCode: async (userId) => {
+  createStudentInvite: async (data: StudentInviteData) => {
     try {
-      // First check if user already has a code
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('invite_code')
-        .eq('id', userId)
-        .single();
+      // Generate a unique code
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      const { error } = await supabase
+        .from('student_invites')
+        .insert({
+          personal_id: data.personal_id,
+          invite_code: code,
+          name: data.name,
+          phone: data.phone,
+          weight: data.weight ? parseFloat(data.weight) : null,
+          height: data.height ? parseFloat(data.height) : null,
+          notes: data.notes,
+          initial_assessment: data.initial_assessment
+        });
 
-      if (profile?.invite_code) {
-        return profile.invite_code;
+      if (error) throw error;
+      return { success: true, code };
+    } catch (error: any) {
+      console.error('Error creating student invite:', error);
+      return { success: false, error: error.message };
+    }
+  },
+  cancelInvite: async (inviteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('student_invites')
+        .delete()
+        .eq('id', inviteId);
+
+      if (error) throw error;
+
+      // Update local state
+      set((state) => ({
+        students: state.students.filter((s) => s.id !== inviteId)
+      }));
+    } catch (error) {
+      console.error('Error canceling invite:', error);
+      Alert.alert('Erro', 'Não foi possível cancelar o convite.');
+    }
+  },
+  generateInviteCode: async (userId, force = false) => {
+    try {
+      // If not forced, check if user already has a code
+      if (!force) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('invite_code')
+          .eq('id', userId)
+          .single();
+
+        if (profile?.invite_code) {
+          return profile.invite_code;
+        }
       }
 
       // Generate new code

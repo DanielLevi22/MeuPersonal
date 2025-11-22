@@ -61,9 +61,10 @@ export default function RegisterScreen() {
               fontWeight: '800', 
               color: '#FFFFFF',
               marginBottom: 8,
-              letterSpacing: -1
+              letterSpacing: -1,
+              textAlign: 'center'
             }}>
-              Comece Agora
+              Cadastro de Personal
             </Text>
             
             <Text style={{ 
@@ -72,7 +73,7 @@ export default function RegisterScreen() {
               textAlign: 'center',
               lineHeight: 24
             }}>
-              Crie sua conta e alcance seus objetivos 🚀
+              Crie sua conta profissional e gerencie seus alunos 🚀
             </Text>
           </View>
 

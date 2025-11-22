@@ -8,7 +8,7 @@ import { Alert, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function StudentsScreen() {
-  const { students, isLoading, fetchStudents, removeStudent } = useStudentStore();
+  const { students, isLoading, fetchStudents, removeStudent, cancelInvite } = useStudentStore();
   const { user } = useAuthStore();
   const router = useRouter();
 
@@ -18,18 +18,28 @@ export default function StudentsScreen() {
     }
   }, [user]);
 
-  const handleRemove = (studentId: string, studentName: string) => {
+  const handleRemove = (item: any) => {
+    const isInvite = item.status === 'invited';
+    const title = isInvite ? 'Cancelar Convite' : 'Remover Aluno';
+    const message = isInvite 
+      ? `Tem certeza que deseja cancelar o convite para ${item.full_name}?`
+      : `Tem certeza que deseja remover ${item.full_name}? Ele perderá o acesso aos treinos.`;
+
     Alert.alert(
-      'Remover Aluno',
-      `Tem certeza que deseja remover ${studentName}? Ele perderá o acesso aos treinos.`,
+      title,
+      message,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Voltar', style: 'cancel' },
         { 
-          text: 'Remover', 
+          text: isInvite ? 'Cancelar Convite' : 'Remover', 
           style: 'destructive',
           onPress: async () => {
             if (user?.id) {
-              await removeStudent(user.id, studentId);
+              if (isInvite) {
+                await cancelInvite(item.id);
+              } else {
+                await removeStudent(user.id, item.id);
+              }
             }
           }
         }
@@ -45,7 +55,7 @@ export default function StudentsScreen() {
         padding: 16,
         marginBottom: 12,
         borderWidth: 2,
-        borderColor: '#1E2A42',
+        borderColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.3)' : '#1E2A42',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between'
@@ -57,12 +67,16 @@ export default function StudentsScreen() {
           height: 56,
           width: 56,
           borderRadius: 28,
-          backgroundColor: 'rgba(0, 217, 255, 0.15)',
+          backgroundColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.15)' : 'rgba(0, 217, 255, 0.15)',
           alignItems: 'center',
           justifyContent: 'center',
           marginRight: 16
         }}>
-          <Ionicons name="person" size={28} color="#00D9FF" />
+          <Ionicons 
+            name={item.status === 'invited' ? "mail-outline" : "person"} 
+            size={28} 
+            color={item.status === 'invited' ? "#FFB800" : "#00D9FF"} 
+          />
         </View>
 
         {/* Info */}
@@ -79,24 +93,32 @@ export default function StudentsScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         {/* Status Badge */}
         <View style={{
-          backgroundColor: item.status === 'active' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255, 184, 0, 0.15)',
+          backgroundColor: item.status === 'active' 
+            ? 'rgba(0, 255, 136, 0.15)' 
+            : item.status === 'invited'
+              ? 'rgba(255, 184, 0, 0.15)'
+              : 'rgba(255, 255, 255, 0.1)',
           paddingHorizontal: 10,
           paddingVertical: 6,
           borderRadius: 12,
           marginRight: 12
         }}>
           <Text style={{
-            color: item.status === 'active' ? '#00FF88' : '#FFB800',
+            color: item.status === 'active' 
+              ? '#00FF88' 
+              : item.status === 'invited'
+                ? '#FFB800'
+                : '#8B92A8',
             fontSize: 12,
             fontWeight: '700'
           }}>
-            {item.status === 'active' ? 'Ativo' : 'Pendente'}
+            {item.status === 'active' ? 'Ativo' : item.status === 'invited' ? 'Convite' : 'Pendente'}
           </Text>
         </View>
 
         {/* Remove Button */}
         <TouchableOpacity 
-          onPress={() => handleRemove(item.id, item.full_name)}
+          onPress={() => handleRemove(item)}
           style={{ padding: 8 }}
         >
           <Ionicons name="trash-outline" size={20} color="#FF4444" />
@@ -126,10 +148,10 @@ export default function StudentsScreen() {
             </Text>
           </View>
           
-          <Link href={'/students/invite' as any} asChild>
+          <Link href={'/students/create' as any} asChild>
             <TouchableOpacity activeOpacity={0.8}>
               <LinearGradient
-                colors={['#FF6B35', '#E85A2A']}
+                colors={['#00FF88', '#00CC6E']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
@@ -140,7 +162,7 @@ export default function StudentsScreen() {
                   justifyContent: 'center'
                 }}
               >
-                <Ionicons name="add" size={28} color="white" />
+                <Ionicons name="add" size={28} color="#0A0E1A" />
               </LinearGradient>
             </TouchableOpacity>
           </Link>
@@ -161,13 +183,13 @@ export default function StudentsScreen() {
               Nenhum aluno ainda
             </Text>
             <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
-              Comece convidando seu primeiro aluno
+              Comece cadastrando seu primeiro aluno
             </Text>
             
-            <Link href={'/students/invite' as any} asChild>
+            <Link href={'/students/create' as any} asChild>
               <TouchableOpacity activeOpacity={0.8}>
                 <LinearGradient
-                  colors={['#FF6B35', '#E85A2A']}
+                  colors={['#00FF88', '#00CC6E']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
@@ -176,8 +198,8 @@ export default function StudentsScreen() {
                     paddingHorizontal: 32
                   }}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
-                    Convidar Aluno
+                  <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>
+                    Novo Aluno
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -193,7 +215,7 @@ export default function StudentsScreen() {
               <RefreshControl 
                 refreshing={isLoading} 
                 onRefresh={() => user?.id && fetchStudents(user.id)} 
-                tintColor="#FF6B35" 
+                tintColor="#00FF88" 
               />
             }
             showsVerticalScrollIndicator={false}

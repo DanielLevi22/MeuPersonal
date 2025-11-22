@@ -13,6 +13,7 @@
 ## Fase 2: Core do Personal (Semanas 3-4)
 - [x] CRUD de Alunos (Adicionar, Listar, Remover).
 - [x] Sistema de Convites (Gerar Link/Código).
+- [ ] Refatoração Auth Aluno: Login exclusivo via Código de Convite.
 - [ ] Criação de Treinos (Interface de montagem).
 - [ ] Banco de Exercícios (Seed inicial + Cadastro manual).
 

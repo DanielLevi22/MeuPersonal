@@ -13,9 +13,9 @@ export default function InviteStudentScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
 
-  const handleGenerateCode = async () => {
+  const handleGenerateCode = async (force = false) => {
     if (!user?.id) return;
-    const code = await generateInviteCode(user.id);
+    const code = await generateInviteCode(user.id, force);
     setInviteCode(code);
   };
 
@@ -158,7 +158,7 @@ export default function InviteStudentScreen() {
 
                 {/* Generate New Button */}
                 <TouchableOpacity 
-                  onPress={handleGenerateCode}
+                  onPress={() => handleGenerateCode(true)}
                   activeOpacity={0.8}
                   style={{
                     width: '100%',
@@ -177,7 +177,7 @@ export default function InviteStudentScreen() {
               </View>
             ) : (
               <TouchableOpacity 
-                onPress={handleGenerateCode}
+                onPress={() => handleGenerateCode(false)}
                 activeOpacity={0.8}
                 style={{ width: '100%' }}
               >

@@ -29,14 +29,26 @@ O **MeuPersonal** é uma plataforma SaaS mobile que conecta Personal Trainers ao
 
 ## 3. Regras de Cadastro e Autenticação
 
-### 3.1. Cadastro
-- **Login Único**: O sistema deve permitir login via E-mail/Senha ou Social (Google/Apple).
-- **Seleção de Perfil**: No primeiro acesso, o usuário DEVE escolher se é "Personal" ou "Aluno".
-    - *Regra*: Essa escolha é imutável para o mesmo email (ou requer contato com suporte).
-- **Vínculo de Aluno**:
-    - Um aluno só entra no sistema se convidado por um Personal? 
-    - *Decisão*: O aluno pode se cadastrar, mas ficará com uma tela "Sem Personal" até aceitar um convite ou inserir um código de personal.
-    - *Fluxo Principal*: Personal envia link -> Aluno clica -> Baixa App -> Cria conta -> Já aparece vinculado.
+### 3.1. Cadastro e Autenticação
+- **Personal Trainer**:
+    - Login via E-mail/Senha ou Social.
+    - Deve realizar cadastro completo.
+- **Aluno**:
+    - **Pré-Cadastro pelo Personal**: O Personal cadastra o aluno previamente (Nome, Peso, Altura, Dobras, etc.) e gera um **Código de Convite** único para aquele aluno.
+    - **Acesso Simplificado**: O aluno baixa o app e entra com o Código de Convite.
+    - **Herança de Dados**: Ao entrar, o aluno já visualiza seus dados (anamnese/medidas) cadastrados pelo Personal.
+    - *Fluxo*: Personal cadastra Aluno + Dados -> Gera Código -> Envia para Aluno -> Aluno entra com Código -> Perfil é criado com os dados pré-existentes.
+
+### 3.2. Avaliação Física e Anamnese
+- **Medidas Antropométricas** (Obrigatório para evolução):
+    - Peso (kg), Altura (cm).
+    - Circunferências: Pescoço, Ombro, Peito, Braço (dir/esq, relaxado/contraído), Antebraço, Cintura, Abdômen, Quadril, Coxa (proximal/distal), Panturrilha.
+- **Dobras Cutâneas**:
+    - Protocolo de 7 dobras (Jackson & Pollock) ou 3 dobras.
+- **Composição Corporal** (Calculado):
+    - % Gordura, Massa Magra (kg), Massa Gorda (kg).
+    - IMC, TMB (Basal), Gasto Energético Total (TDEE).
+- **Periodicidade**: Primeira avaliação no cadastro, depois a cada 4-6 semanas.
 
 ## 4. Regras de Assinatura (Monetização)
 
