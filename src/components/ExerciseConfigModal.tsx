@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface Exercise {
   id: string;
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercise, initialData, onSave }) => {
+  const insets = useSafeAreaInsets();
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
@@ -107,7 +109,7 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             padding: 24,
-            paddingBottom: 40,
+            paddingBottom: Math.max(insets.bottom, 24) + 16,
             maxHeight: '90%'
           }}
         >
