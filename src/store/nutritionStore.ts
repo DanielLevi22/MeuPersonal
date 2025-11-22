@@ -186,33 +186,6 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (error) throw error;
       
       set({ currentDietPlan: data });
-    } catch (error) {
-      console.error('Error creating diet plan:', error);
-      throw error;
-    }
-  },
-
-  // Update diet plan
-  updateDietPlan: async (id, updates) => {
-    try {
-      const { data, error } = await supabase
-        .from('diet_plans')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      set({ currentDietPlan: data });
-    } catch (error) {
-      console.error('Error updating diet plan:', error);
-      throw error;
-    }
-  },
-
-  // Fetch meals for a diet plan
-  fetchMeals: async (dietPlanId: string) => {
     try {
       const { data, error } = await supabase
         .from('diet_meals')

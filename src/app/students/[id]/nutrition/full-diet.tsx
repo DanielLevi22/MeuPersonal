@@ -1,24 +1,5 @@
 import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
 import { MealCard } from '@/components/nutrition/MealCard';
-import { MealTimeModal } from '@/components/nutrition/MealTimeModal';
-import { Food, useNutritionStore } from '@/store/nutritionStore';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const DAYS_OF_WEEK = [
-  { value: 0, label: 'Domingo' },
   { value: 1, label: 'Segunda' },
   { value: 2, label: 'Terça' },
   { value: 3, label: 'Quarta' },
@@ -48,6 +29,7 @@ export default function FullDietScreen() {
     fetchMeals,
     fetchMealItems,
     addMeal,
+    updateMeal,
     addFoodToMeal,
     removeFoodFromMeal,
     isLoading,
@@ -56,12 +38,6 @@ export default function FullDietScreen() {
   const [selectedDay, setSelectedDay] = useState(1); // Segunda-feira por padrão
   const [showFoodSearch, setShowFoodSearch] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
-  const [showMealTimeModal, setShowMealTimeModal] = useState(false);
-  const [pendingMeal, setPendingMeal] = useState<{
-    type: string;
-    order: number;
-    label: string;
-  } | null>(null);
 
   useEffect(() => {
     loadDietData();
@@ -88,30 +64,29 @@ export default function FullDietScreen() {
     });
   }, [meals]);
 
-  const handleAddMeal = (mealType: string, order: number, label: string) => {
+  const handleAddMeal = async (mealType: string, order: number) => {
     if (!currentDietPlan) {
       Alert.alert('Erro', 'Nenhum plano de dieta ativo encontrado.');
       return;
     }
 
-    setPendingMeal({ type: mealType, order, label });
-    setShowMealTimeModal(true);
-  };
-
-  const handleMealTimeConfirm = async (mealTime?: string) => {
-    if (!currentDietPlan || !pendingMeal) return;
-
     try {
       await addMeal({
         diet_plan_id: currentDietPlan.id,
         day_of_week: selectedDay,
-        meal_type: pendingMeal.type,
-        meal_order: pendingMeal.order,
-        meal_time: mealTime,
+        meal_type: mealType,
+        meal_order: order,
       });
-      setPendingMeal(null);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar a refeição.');
+    }
+  };
+
+  const handleUpdateMealTime = async (mealId: string, mealTime: string) => {
+    try {
+      await updateMeal(mealId, { meal_time: mealTime });
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar o horário.');
     }
   };
 
@@ -296,6 +271,7 @@ export default function FullDietScreen() {
                   items={mealItems[meal.id] || []}
                   onAddFood={() => handleAddFoodToMeal(meal.id)}
                   onRemoveFood={handleRemoveFood}
+                  onUpdateMealTime={handleUpdateMealTime}
                   isEditable={true}
                 />
               );
@@ -306,7 +282,7 @@ export default function FullDietScreen() {
               <TouchableOpacity
                 key={mealType.type}
                 style={styles.addMealButton}
-                onPress={() => handleAddMeal(mealType.type, mealType.order, mealType.label)}
+                onPress={() => handleAddMeal(mealType.type, mealType.order)}
               >
                 <Ionicons name="add-circle-outline" size={24} color="#00FF88" />
                 <Text style={styles.addMealText}>
@@ -325,17 +301,6 @@ export default function FullDietScreen() {
             setSelectedMealId(null);
           }}
           onSelectFood={handleSelectFood}
-        />
-
-        {/* Meal Time Modal */}
-        <MealTimeModal
-          visible={showMealTimeModal}
-          mealLabel={pendingMeal?.label || ''}
-          onClose={() => {
-            setShowMealTimeModal(false);
-            setPendingMeal(null);
-          }}
-          onConfirm={handleMealTimeConfirm}
         />
       </SafeAreaView>
     </View>

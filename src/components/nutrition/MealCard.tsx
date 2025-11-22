@@ -1,5 +1,20 @@
 import { DietMeal, DietMealItem } from '@/store/nutritionStore';
 import { calculateFoodMacros } from '@/utils/nutrition';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import {
+    Alert,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { TimePickerModal } from './TimePickerModal';
+
+interface MealCardProps {
+  meal: DietMeal;
+  items: DietMealItem[];
+  onAddFood: () => void;
   onRemoveFood: (itemId: string) => void;
   onUpdateMealTime: (mealId: string, mealTime: string) => void;
   isEditable?: boolean;
