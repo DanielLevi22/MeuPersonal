@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -28,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CreateDietPlanScreen() {
   const router = useRouter();
+  const { preselectedStudentId } = useLocalSearchParams();
   const { user } = useAuthStore();
   const { students, fetchStudents } = useStudentStore();
   const { createDietPlan } = useNutritionStore();
@@ -54,6 +55,16 @@ export default function CreateDietPlanScreen() {
       fetchStudents(user.id);
     }
   }, [user]);
+
+  // Pre-select student if param exists
+  useEffect(() => {
+    if (preselectedStudentId && students.length > 0 && !selectedStudent) {
+      const preselected = students.find(s => s.id === preselectedStudentId);
+      if (preselected) {
+        setSelectedStudent(preselected);
+      }
+    }
+  }, [preselectedStudentId, students]);
 
   useEffect(() => {
     if (selectedStudent) {
@@ -170,35 +181,55 @@ export default function CreateDietPlanScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Student Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Selecionar Aluno</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.studentsScroll}
-            >
-              {activeStudents.map((student) => (
-                <TouchableOpacity
-                  key={student.id}
-                  style={[
-                    styles.studentCard,
-                    selectedStudent?.id === student.id && styles.studentCardSelected,
-                  ]}
-                  onPress={() => setSelectedStudent(student)}
-                >
-                  <View style={styles.studentAvatar}>
-                    <Ionicons name="person" size={24} color="#00D9FF" />
-                  </View>
-                  <Text style={styles.studentName} numberOfLines={1}>
-                    {student.full_name}
+          {!preselectedStudentId ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Selecionar Aluno</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.studentsScroll}
+              >
+                {activeStudents.map((student) => (
+                  <TouchableOpacity
+                    key={student.id}
+                    style={[
+                      styles.studentCard,
+                      selectedStudent?.id === student.id && styles.studentCardSelected,
+                    ]}
+                    onPress={() => setSelectedStudent(student)}
+                  >
+                    <View style={styles.studentAvatar}>
+                      <Ionicons name="person" size={24} color="#00D9FF" />
+                    </View>
+                    <Text style={styles.studentName} numberOfLines={1}>
+                      {student.full_name}
+                    </Text>
+                    {selectedStudent?.id === student.id && (
+                      <Ionicons name="checkmark-circle" size={20} color="#00FF88" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          ) : selectedStudent ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Aluno Selecionado</Text>
+              <View style={[styles.studentCard, styles.studentCardSelected, { width: '100%', flexDirection: 'row', paddingHorizontal: 24 }]}>
+                <View style={[styles.studentAvatar, { marginRight: 16, marginBottom: 0 }]}>
+                  <Ionicons name="person" size={24} color="#00D9FF" />
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                  <Text style={[styles.studentName, { fontSize: 18, marginBottom: 4 }]}>
+                    {selectedStudent.full_name}
                   </Text>
-                  {selectedStudent?.id === student.id && (
-                    <Ionicons name="checkmark-circle" size={20} color="#00FF88" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+                  <Text style={{ color: '#8B92A8', fontSize: 14 }}>
+                    {selectedStudent.email}
+                  </Text>
+                </View>
+                <Ionicons name="lock-closed" size={20} color="#5A6178" />
+              </View>
+            </View>
+          ) : null}
 
           {selectedStudent && (
             <>

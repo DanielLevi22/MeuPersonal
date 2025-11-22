@@ -90,7 +90,13 @@ export default function NutritionDashboard() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.push(`/(tabs)/students/${studentId}` as any);
+              }
+            }}
             style={styles.backButton}
           >
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />

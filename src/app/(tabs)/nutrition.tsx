@@ -30,31 +30,47 @@ export default function NutritionScreen() {
   const [studentsWithPlans, setStudentsWithPlans] = useState<StudentWithPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [plans, setPlans] = useState<any[]>([]);
+
   useEffect(() => {
     if (user?.id) {
-      loadData();
+      fetchStudents(user.id);
+      fetchPlans();
     }
   }, [user]);
 
-  const loadData = async () => {
+  const fetchPlans = async () => {
     if (!user?.id) return;
-    
-    setLoading(true);
-    await fetchStudents(user.id);
-    
-    // Fetch active diet plans for all students
-    const { data: plans } = await supabase
+    const { data } = await supabase
       .from('diet_plans')
       .select('*')
       .eq('personal_id', user.id)
-      .eq('status', 'active'); // Changed from is_active to status
+      .eq('status', 'active');
+    
+    if (data) {
+      setPlans(data);
+    }
+  };
 
+  useEffect(() => {
+    if (students.length > 0 || plans.length > 0) {
+      processStudents();
+    } else {
+      // If we have no students and no plans, but loading is done, we should show empty state
+      // But we don't know if loading is done here easily without tracking it better.
+      // For now, let's just try to process.
+      setStudentsWithPlans([]);
+      setLoading(false);
+    }
+  }, [students, plans]);
+
+  const processStudents = () => {
     // Map students with their plans
     const studentsData: StudentWithPlan[] = students
       .filter(s => s.status === 'active')
       .map(student => ({
         ...student,
-        activePlan: plans?.find(p => p.student_id === student.id)
+        activePlan: plans.find(p => p.student_id === student.id)
       }));
 
     setStudentsWithPlans(studentsData);
