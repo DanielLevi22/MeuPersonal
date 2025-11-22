@@ -26,6 +26,8 @@ interface StudentState {
   linkStudent: (studentId: string, inviteCode: string) => Promise<{ success: boolean; error?: string }>;
   removeStudent: (personalId: string, studentId: string) => Promise<void>;
   updateStudent: (studentId: string, data: Partial<StudentInviteData>) => Promise<{ success: boolean; error?: string }>;
+  history: any[];
+  fetchStudentHistory: (studentId: string) => Promise<void>;
 }
 
 export interface StudentInviteData {
@@ -62,6 +64,7 @@ export interface StudentInviteData {
 
 export const useStudentStore = create<StudentState>((set, get) => ({
   students: [],
+  history: [],
   isLoading: false,
   fetchStudents: async (personalId) => {
     set({ isLoading: true });
@@ -381,19 +384,6 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       if (profileError) throw profileError;
 
       // 2. Update or Insert Physical Assessment
-      // We'll insert a new one to keep history, or update the latest? 
-      // User asked to "edit", usually implies updating current state. 
-      // But for assessments, history is good. 
-      // However, to keep it simple and match "edit profile" feel, let's update the LATEST assessment if it exists and is recent, 
-      // OR just insert a new one?
-      // Let's INSERT a new one to preserve history, effectively "updating" the current state.
-      // BUT, if we just want to edit the "current" values, maybe we should check if one exists for today?
-      // Let's keep it simple: Insert new assessment with the updated values.
-      
-      // Actually, if we are editing "static" fields like weight/height in a "profile" context, 
-      // users might expect it to just update. But in a fitness app, weight changes.
-      // Let's insert a new record for the assessment data.
-      
       const { data: session } = await supabase.auth.getSession();
       const personalId = session.session?.user.id;
 
@@ -454,6 +444,25 @@ export const useStudentStore = create<StudentState>((set, get) => ({
     } catch (error: any) {
       console.error('Error updating student:', error);
       return { success: false, error: error.message };
+    }
+  },
+  fetchStudentHistory: async (studentId: string) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('physical_assessments')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      set({ history: data || [] });
+    } catch (error) {
+      console.error('Error fetching student history:', error);
+      set({ history: [] });
+    } finally {
+      set({ isLoading: false });
     }
   }
 }));

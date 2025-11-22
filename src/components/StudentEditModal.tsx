@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -156,9 +157,18 @@ export function StudentEditModal({ visible, onClose, onSave, student }: StudentE
         <View style={{ backgroundColor: '#141B2D', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '90%' }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#1E2A42' }}>
             <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>Editar Aluno</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#8B92A8" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              {student?.id && (
+                <Link href={`/students/${student.id}/history` as any} asChild>
+                  <TouchableOpacity onPress={onClose}>
+                    <Ionicons name="time-outline" size={24} color="#00D9FF" />
+                  </TouchableOpacity>
+                </Link>
+              )}
+              <TouchableOpacity onPress={onClose}>
+                <Ionicons name="close" size={24} color="#8B92A8" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Tabs */}
