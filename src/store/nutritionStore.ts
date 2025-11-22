@@ -72,7 +72,9 @@ interface NutritionStore {
   
   // Diet Plans
   currentDietPlan: DietPlan | null;
+  dietPlanHistory: DietPlan[];
   fetchDietPlan: (studentId: string) => Promise<void>;
+  fetchDietPlanHistory: (studentId: string) => Promise<void>;
   createDietPlan: (plan: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>) => Promise<void>;
   finishDietPlan: (planId: string) => Promise<void>;
   checkPlanExpiration: (studentId: string) => Promise<void>;
@@ -121,6 +123,7 @@ export interface DailyLog {
 export const useNutritionStore = create<NutritionStore>((set, get) => ({
   foods: [],
   currentDietPlan: null,
+  dietPlanHistory: [],
   meals: [],
   mealItems: {},
   isLoading: false,
@@ -404,6 +407,26 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
   },
 
+  // Fetch diet plan history
+  fetchDietPlanHistory: async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_plans')
+        .select('*')
+        .eq('student_id', studentId)
+        .neq('status', 'active')
+        .order('end_date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      set({ dietPlanHistory: data || [] });
+    } catch (error) {
+      console.error('Error fetching diet plan history:', error);
+      set({ dietPlanHistory: [] });
+    }
+  },
+
   // Create new diet plan
   createDietPlan: async (plan) => {
     try {
@@ -459,7 +482,8 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (error) throw error;
       
       set((state) => ({
-        currentDietPlan: state.currentDietPlan?.id === planId ? data : state.currentDietPlan
+        currentDietPlan: state.currentDietPlan?.id === planId ? null : state.currentDietPlan,
+        dietPlanHistory: [data, ...state.dietPlanHistory]
       }));
     } catch (error) {
       console.error('Error finishing diet plan:', error);

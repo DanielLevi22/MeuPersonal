@@ -19,7 +19,9 @@ export default function NutritionDashboard() {
   const router = useRouter();
   const {
     currentDietPlan,
+    dietPlanHistory,
     fetchDietPlan,
+    fetchDietPlanHistory,
     finishDietPlan,
     checkPlanExpiration,
     isLoading,
@@ -28,6 +30,7 @@ export default function NutritionDashboard() {
   useEffect(() => {
     if (studentId && typeof studentId === 'string') {
       fetchDietPlan(studentId);
+      fetchDietPlanHistory(studentId);
       checkPlanExpiration(studentId);
     }
   }, [studentId]);
@@ -78,7 +81,7 @@ export default function NutritionDashboard() {
   };
 
   const handleOpenPlan = (planId: string) => {
-    router.push(`/students/${studentId}/nutrition/full-diet` as any);
+    router.push(`/(tabs)/students/${studentId}/nutrition/full-diet` as any);
   };
 
   return (
@@ -215,12 +218,45 @@ export default function NutritionDashboard() {
             </TouchableOpacity>
           ) : null}
 
-          {/* History Section (Placeholder for now) */}
+
+          {/* History Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Histórico</Text>
-            <Text style={styles.historyPlaceholder}>
-              Planos anteriores aparecerão aqui quando arquivados.
-            </Text>
+            
+            {dietPlanHistory.length > 0 ? (
+              dietPlanHistory.map((plan) => (
+                <TouchableOpacity
+                  key={plan.id}
+                  style={styles.historyCard}
+                  onPress={() => handleOpenPlan(plan.id)}
+                  disabled={true} // For now, maybe we want to view details later
+                >
+                  <View style={styles.historyHeader}>
+                    <View>
+                      <Text style={styles.historyName}>{plan.name}</Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(plan.start_date).toLocaleDateString('pt-BR')} - {plan.end_date ? new Date(plan.end_date).toLocaleDateString('pt-BR') : '...'}
+                      </Text>
+                    </View>
+                    <View style={[
+                      styles.statusBadge, 
+                      { 
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: '#5A6178'
+                      }
+                    ]}>
+                      <Text style={[styles.statusText, { color: '#8B92A8' }]}>
+                        {plan.status === 'completed' ? 'CONCLUÍDO' : 'FINALIZADO'}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.historyPlaceholder}>
+                Nenhum plano arquivado.
+              </Text>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -404,5 +440,38 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 16,
+  },
+  historyCard: {
+    backgroundColor: '#141B2D',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#1E2A42',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#8B92A8',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
