@@ -67,3 +67,10 @@ export const workoutSessionItems = pgTable('workout_session_items', {
   actualReps: text('actual_reps'),
   notes: text('notes'),
 });
+
+export const workoutAssignments = pgTable('workout_assignments', {
+  id: uuid('id').defaultRandom().primaryKey().notNull(),
+  workoutId: uuid('workout_id').references(() => workouts.id).notNull(),
+  studentId: uuid('student_id').references(() => profiles.id).notNull(),
+  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+});

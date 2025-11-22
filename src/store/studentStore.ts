@@ -47,17 +47,25 @@ export const useStudentStore = create<StudentState>((set, get) => ({
             id,
             full_name,
             email,
-            avatar_url
+            avatar_url,
+            invite_code
           )
         `)
         .eq('personal_id', personalId);
 
-      if (linkedError) throw linkedError;
+      console.log('🔍 Linked Data:', JSON.stringify(linkedData, null, 2));
+      if (linkedError) console.error('❌ Linked Error:', linkedError);
 
-      const formattedLinkedStudents = linkedData.map((item: any) => ({
-        ...item.student,
-        status: item.status,
-      }));
+      const formattedLinkedStudents = (linkedData || []).map((item: any) => {
+        if (!item.student) {
+           console.warn('⚠️ Found link but no student profile:', item);
+           return null;
+        }
+        return {
+          ...item.student,
+          status: item.status,
+        };
+      }).filter(Boolean);
 
       // 2. Fetch pending invites
       const { data: invitesData, error: invitesError } = await supabase
@@ -77,7 +85,58 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       }));
 
       // 3. Merge lists
-      set({ students: [...formattedInvites, ...formattedLinkedStudents] });
+      // 3. Merge lists and deduplicate
+      // 3. Merge lists and deduplicate
+      // Get all invite codes from linked students
+      const linkedInviteCodes = new Set(
+        formattedLinkedStudents
+          .map((s: any) => s.invite_code)
+          .filter(Boolean)
+      );
+
+      // Also get emails to match against generated invite emails
+      const linkedEmails = new Set(
+        formattedLinkedStudents
+          .map((s: any) => s.email?.toLowerCase())
+          .filter(Boolean)
+      );
+
+      // Also get normalized names for matching
+      const linkedNames = new Set(
+        formattedLinkedStudents
+          .map((s: any) => s.full_name?.trim().toLowerCase())
+          .filter(Boolean)
+      );
+
+      // Filter out invites that have already been used
+      const uniqueInvites = formattedInvites.filter((invite: any) => {
+        // Check by invite code
+        if (linkedInviteCodes.has(invite.invite_code)) return false;
+        
+        // Check by generated email
+        const generatedEmail = `aluno${invite.invite_code.toLowerCase()}@test.com`;
+        if (linkedEmails.has(generatedEmail)) return false;
+
+        // Check by name (heuristic for when code/email link is missing)
+        if (invite.full_name && linkedNames.has(invite.full_name.trim().toLowerCase())) {
+          return false;
+        }
+
+        return true;
+      });
+
+      const allStudents = [...uniqueInvites, ...formattedLinkedStudents];
+      
+      // Deduplicate by ID to ensure uniqueness and prevent UI warnings
+      // This handles cases where multiple links might exist for the same student
+      const uniqueStudentsMap = new Map();
+      allStudents.forEach(student => {
+        if (student.id && !uniqueStudentsMap.has(student.id)) {
+          uniqueStudentsMap.set(student.id, student);
+        }
+      });
+      
+      set({ students: Array.from(uniqueStudentsMap.values()) });
     } catch (error) {
       console.error('Error fetching students:', error);
     } finally {
@@ -202,6 +261,36 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   },
   removeStudent: async (personalId, studentId) => {
     try {
+      // 1. Delete assignments
+      const { error: assignError } = await supabase
+        .from('workout_assignments')
+        .delete()
+        .eq('student_id', studentId);
+      
+      if (assignError) console.error('Error deleting assignments:', assignError);
+
+      // 2. Delete sessions (history)
+      const { error: sessionError } = await supabase
+        .from('workout_sessions')
+        .delete()
+        .eq('student_id', studentId);
+
+      if (sessionError) console.error('Error deleting sessions:', sessionError);
+
+      // 3. Delete physical assessments (if table exists)
+      // We wrap in try/catch or just ignore error if table doesn't exist/has different name
+      try {
+        const { error: assessmentError } = await supabase
+          .from('physical_assessments')
+          .delete()
+          .eq('student_id', studentId);
+          
+        if (assessmentError) console.error('Error deleting assessments:', assessmentError);
+      } catch (e) {
+        // Ignore if table doesn't exist
+      }
+
+      // 4. Finally delete the link
       const { error } = await supabase
         .from('students_personals')
         .delete()
@@ -215,6 +304,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       set({ students: currentStudents.filter(s => s.id !== studentId) });
     } catch (error) {
       console.error('Error removing student:', error);
+      Alert.alert('Erro', 'Não foi possível remover o aluno. Tente novamente.');
     }
   }
 }));

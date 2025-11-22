@@ -1,6 +1,8 @@
-import { ExerciseConfigModal, Exercise } from '@/components/ExerciseConfigModal';
+import { Exercise, ExerciseConfigModal } from '@/components/ExerciseConfigModal';
+import { StudentMultiSelect } from '@/components/StudentMultiSelect';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useStudentStore } from '@/store/studentStore';
 import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function CreateWorkoutScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [loading, setLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -19,6 +22,7 @@ export default function CreateWorkoutScreen() {
   const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
   const { user } = useAuthStore();
   const { fetchWorkouts, selectedExercises: storeExercises, clearSelectedExercises } = useWorkoutStore();
+  const { students, fetchStudents } = useStudentStore();
   const router = useRouter();
 
   // Sync with store when returning from select exercises screen
@@ -27,6 +31,13 @@ export default function CreateWorkoutScreen() {
       setSelectedExercises(storeExercises);
     }
   }, [storeExercises]);
+
+  // Fetch students on mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchStudents(user.id);
+    }
+  }, [user]);
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -68,6 +79,20 @@ export default function CreateWorkoutScreen() {
           .insert(workoutItems);
 
         if (itemsError) throw itemsError;
+      }
+
+      // Create workout assignments
+      if (selectedStudentIds.length > 0) {
+        const assignments = selectedStudentIds.map(studentId => ({
+          workout_id: workout.id,
+          student_id: studentId,
+        }));
+
+        const { error: assignmentError } = await supabase
+          .from('workout_assignments')
+          .insert(assignments);
+
+        if (assignmentError) throw assignmentError;
       }
 
       Alert.alert('Sucesso! 🎉', 'Treino criado com sucesso!');
@@ -155,6 +180,23 @@ export default function CreateWorkoutScreen() {
           style={{ flex: 1, paddingHorizontal: 24 }}
           showsVerticalScrollIndicator={false}
         >
+          {/* Student Selection */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ 
+              color: '#FFFFFF', 
+              fontSize: 14, 
+              fontWeight: '600',
+              marginBottom: 8
+            }}>
+              Atribuir a Alunos (Opcional)
+            </Text>
+            <StudentMultiSelect
+              students={students.filter(s => !s.is_invite)}
+              selectedIds={selectedStudentIds}
+              onSelectionChange={setSelectedStudentIds}
+            />
+          </View>
+
           {/* Title Input */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ 

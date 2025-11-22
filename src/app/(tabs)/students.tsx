@@ -22,8 +22,8 @@ export default function StudentsScreen() {
     const isInvite = item.status === 'invited';
     const title = isInvite ? 'Cancelar Convite' : 'Remover Aluno';
     const message = isInvite 
-      ? `Tem certeza que deseja cancelar o convite para ${item.full_name}?`
-      : `Tem certeza que deseja remover ${item.full_name}? Ele perderá o acesso aos treinos.`;
+      ? `Tem certeza que deseja cancelar o convite para ${item.full_name || 'este aluno'}?`
+      : `Tem certeza que deseja remover ${item.full_name || 'este aluno'}? Ele perderá o acesso aos treinos.`;
 
     Alert.alert(
       title,
@@ -211,7 +211,7 @@ export default function StudentsScreen() {
           <FlatList
             data={students}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => item.id || `student-${index}`}
             contentContainerStyle={{ paddingHorizontal: 24 }}
             refreshControl={
               <RefreshControl 

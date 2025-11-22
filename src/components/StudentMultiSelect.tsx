@@ -19,7 +19,7 @@ export function StudentMultiSelect({ students, selectedIds, onSelectionChange }:
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredStudents = students.filter(student =>
-    student.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+    (student.full_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const toggleStudent = (id: string) => {
@@ -65,7 +65,7 @@ export function StudentMultiSelect({ students, selectedIds, onSelectionChange }:
                   {selectedIds.length} {selectedIds.length === 1 ? 'aluno selecionado' : 'alunos selecionados'}
                 </Text>
                 <Text style={{ color: '#8B92A8', fontSize: 12 }} numberOfLines={1}>
-                  {selectedStudents.map(s => s.full_name).join(', ')}
+                  {selectedStudents.map(s => s.full_name || 'Sem nome').join(', ')}
                 </Text>
               </View>
             )}
@@ -213,7 +213,7 @@ export function StudentMultiSelect({ students, selectedIds, onSelectionChange }:
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginBottom: 2 }}>
-                          {student.full_name}
+                          {student.full_name || 'Sem nome'}
                         </Text>
                         <Text style={{ color: '#8B92A8', fontSize: 13 }}>
                           {student.email}
