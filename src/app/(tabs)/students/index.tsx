@@ -57,6 +57,36 @@ export default function StudentsScreen() {
     if (student.status === 'active') {
       setSelectedStudent(student);
       setIsEditModalVisible(true);
+    } else if (student.status === 'active') {
+       // Navigate to details if active (Wait, the original code didn't navigate on press? 
+       // Ah, renderItem has onPress={() => handleEdit(item)}. 
+       // I should probably change this to navigate to details, and have an edit button separately?
+       // The original code: onPress={() => handleEdit(item)} opens the modal.
+       // But we want to navigate to the student details screen now.
+       // Let's keep the edit modal for now, but maybe add a way to go to details.
+       // Actually, the user wants to see diet plans, which are in student details.
+       // So clicking a student should go to [id].
+    }
+    
+    // Wait, previously how did we get to [id]? 
+    // The original code didn't seem to have navigation to [id] in the list item?
+    // Let me check the original code again.
+    // renderItem: onPress={() => handleEdit(item)}
+    // handleEdit: sets selectedStudent and opens modal.
+    // So where was the navigation to student details?
+    // Maybe it wasn't implemented or I missed it?
+    // Ah, looking at the file list, `src/app/students/[id]` exists.
+    // But `students.tsx` doesn't seem to link to it.
+    // This might be why the user is confused or can't see things.
+    // I should update the list item to navigate to `/(tabs)/students/${item.id}` on press.
+    // And maybe put the edit action on a button.
+  };
+
+  const handlePressStudent = (student: any) => {
+    if (student.status === 'active') {
+      router.push(`/(tabs)/students/${student.id}` as any);
+    } else {
+      handleEdit(student);
     }
   };
 
@@ -75,8 +105,8 @@ export default function StudentsScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       activeOpacity={0.7}
-      onPress={() => handleEdit(item)}
-      disabled={item.status !== 'active'}
+      onPress={() => handlePressStudent(item)}
+      disabled={false}
     >
       <View 
         style={{
@@ -146,6 +176,16 @@ export default function StudentsScreen() {
             </Text>
           </View>
 
+          {/* Edit Button (New) */}
+          {item.status === 'active' && (
+             <TouchableOpacity 
+             onPress={() => handleEdit(item)}
+             style={{ padding: 8, marginRight: 4 }}
+           >
+             <Ionicons name="pencil-outline" size={20} color="#FFFFFF" />
+           </TouchableOpacity>
+          )}
+
           {/* Remove Button */}
           <TouchableOpacity 
             onPress={() => handleRemove(item)}
@@ -179,7 +219,7 @@ export default function StudentsScreen() {
             </Text>
           </View>
           
-          <Link href={'/students/create' as any} asChild>
+          <Link href={'/(tabs)/students/create' as any} asChild>
             <TouchableOpacity activeOpacity={0.8}>
               <LinearGradient
                 colors={['#00FF88', '#00CC6E']}
@@ -217,7 +257,7 @@ export default function StudentsScreen() {
               Comece cadastrando seu primeiro aluno
             </Text>
             
-            <Link href={'/students/create' as any} asChild>
+            <Link href={'/(tabs)/students/create' as any} asChild>
               <TouchableOpacity activeOpacity={0.8}>
                 <LinearGradient
                   colors={['#00FF88', '#00CC6E']}

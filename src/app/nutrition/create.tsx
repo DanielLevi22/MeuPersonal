@@ -2,25 +2,25 @@ import { useAuthStore } from '@/store/authStore';
 import { useNutritionStore } from '@/store/nutritionStore';
 import { useStudentStore } from '@/store/studentStore';
 import {
-    ActivityLevel,
-    Goal,
-    calculateMacrosFromCalories,
-    calculateTDEE,
-    calculateTMB,
-    calculateTargetCalories,
+  ActivityLevel,
+  Goal,
+  calculateMacrosFromCalories,
+  calculateTDEE,
+  calculateTMB,
+  calculateTargetCalories,
 } from '@/utils/nutrition';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -117,7 +117,7 @@ export default function CreateDietPlanScreen() {
       Alert.alert('Sucesso', 'Plano de dieta criado!', [
         {
           text: 'OK',
-          onPress: () => router.push(`/students/${selectedStudent.id}/nutrition/full-diet` as any),
+          onPress: () => router.push(`/(tabs)/students/${selectedStudent.id}/nutrition` as any),
         },
       ]);
     } catch (error) {
