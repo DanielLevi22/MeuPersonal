@@ -66,7 +66,14 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, isEditable = tr
             size={20}
             color="#FFFFFF"
           />
-          <Text style={styles.mealName}>{mealLabel}</Text>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.mealName}>{mealLabel}</Text>
+            {meal.meal_time && (
+              <Text style={styles.mealTime}>
+                <Ionicons name="time-outline" size={12} color="#8B92A8" /> {meal.meal_time}
+              </Text>
+            )}
+          </View>
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.calories}>{totalMacros.calories.toFixed(0)} kcal</Text>
@@ -158,11 +165,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  headerTextContainer: {
+    marginLeft: 8,
+    flex: 1,
+  },
   mealName: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginLeft: 8,
+  },
+  mealTime: {
+    fontSize: 12,
+    color: '#8B92A8',
+    marginTop: 2,
   },
   headerRight: {
     alignItems: 'flex-end',

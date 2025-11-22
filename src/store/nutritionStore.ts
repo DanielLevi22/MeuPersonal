@@ -50,6 +50,7 @@ export interface DietMeal {
   meal_order: number;
   name?: string;
   target_calories?: number;
+  meal_time?: string; // Format: "HH:MM" (e.g., "08:00", "12:30")
 }
 
 export interface DietMealItem {
