@@ -88,6 +88,12 @@ interface NutritionStore {
   updateMealItem: (itemId: string, updates: Partial<DietMealItem>) => Promise<void>;
   removeFoodFromMeal: (itemId: string) => Promise<void>;
   
+  // Day Operations
+  copiedDay: { meals: DietMeal[]; items: Record<string, DietMealItem[]> } | null;
+  copyDay: (dayOfWeek: number) => Promise<void>;
+  pasteDay: (targetDay: number) => Promise<void>;
+  clearDay: (dayOfWeek: number) => Promise<void>;
+  
   // Loading states
   isLoading: boolean;
 }
@@ -98,6 +104,127 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   meals: [],
   mealItems: {},
   isLoading: false,
+  copiedDay: null,
+
+  // ... (existing actions)
+
+  // Copy Day
+  copyDay: async (dayOfWeek: number) => {
+    const { meals, mealItems } = get();
+    const dayMeals = meals.filter(m => m.day_of_week === dayOfWeek);
+    
+    // Ensure we have items for these meals
+    const dayItems: Record<string, DietMealItem[]> = {};
+    for (const meal of dayMeals) {
+      if (mealItems[meal.id]) {
+        dayItems[meal.id] = mealItems[meal.id];
+      }
+    }
+
+    set({ copiedDay: { meals: dayMeals, items: dayItems } });
+  },
+
+  // Paste Day
+  pasteDay: async (targetDay: number) => {
+    const { copiedDay, currentDietPlan, clearDay } = get();
+    if (!copiedDay || !currentDietPlan) return;
+
+    set({ isLoading: true });
+    try {
+      // 1. Clear target day first
+      await clearDay(targetDay);
+
+      // 2. Re-create meals and items
+      for (const sourceMeal of copiedDay.meals) {
+        // Create meal
+        const { data: newMeal, error: mealError } = await supabase
+          .from('diet_meals')
+          .insert({
+            diet_plan_id: currentDietPlan.id,
+            day_of_week: targetDay,
+            meal_type: sourceMeal.meal_type,
+            meal_order: sourceMeal.meal_order,
+            name: sourceMeal.name,
+            target_calories: sourceMeal.target_calories,
+            meal_time: sourceMeal.meal_time
+          })
+          .select()
+          .single();
+
+        if (mealError) throw mealError;
+
+        // Create items for this meal
+        const sourceItems = copiedDay.items[sourceMeal.id] || [];
+        if (sourceItems.length > 0) {
+          const itemsToInsert = sourceItems.map(item => ({
+            diet_meal_id: newMeal.id,
+            food_id: item.food_id,
+            quantity: item.quantity,
+            unit: item.unit,
+            order_index: item.order_index
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('diet_meal_items')
+            .insert(itemsToInsert);
+
+          if (itemsError) throw itemsError;
+        }
+      }
+
+      // Refresh meals
+      await get().fetchMeals(currentDietPlan.id);
+      
+      // Refresh items for the new meals (optional, but good for consistency)
+      // We can just let the UI fetch them when needed or fetch all now.
+      // For simplicity, we'll let the UI fetch or just rely on fetchMeals for the structure.
+      // Actually, fetchMeals updates 'meals', but 'mealItems' might be empty for the new meals.
+      // Let's fetch items for the newly created meals to be safe.
+      const { data: newMeals } = await supabase
+        .from('diet_meals')
+        .select('id')
+        .eq('diet_plan_id', currentDietPlan.id)
+        .eq('day_of_week', targetDay);
+        
+      if (newMeals) {
+        for (const meal of newMeals) {
+          await get().fetchMealItems(meal.id);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error pasting day:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Clear Day
+  clearDay: async (dayOfWeek: number) => {
+    const { currentDietPlan } = get();
+    if (!currentDietPlan) return;
+
+    try {
+      // Delete all meals for this day (Cascade should handle items)
+      const { error } = await supabase
+        .from('diet_meals')
+        .delete()
+        .eq('diet_plan_id', currentDietPlan.id)
+        .eq('day_of_week', dayOfWeek);
+
+      if (error) throw error;
+
+      // Update local state
+      set(state => ({
+        meals: state.meals.filter(m => m.day_of_week !== dayOfWeek),
+        // We could clean up mealItems but it's not strictly necessary and complex to filter by day here
+      }));
+    } catch (error) {
+      console.error('Error clearing day:', error);
+      throw error;
+    }
+  },
 
   // Search foods with full-text search
   searchFoods: async (query: string) => {

@@ -1,3 +1,4 @@
+import { DayOptionsModal } from '@/components/nutrition/DayOptionsModal';
 import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
 import { MealCard } from '@/components/nutrition/MealCard';
 import { Food, useNutritionStore } from '@/store/nutritionStore';
@@ -51,11 +52,16 @@ export default function FullDietScreen() {
     addFoodToMeal,
     updateMealItem,
     removeFoodFromMeal,
+    copyDay,
+    pasteDay,
+    clearDay,
+    copiedDay,
     isLoading,
   } = useNutritionStore();
 
   const [selectedDay, setSelectedDay] = useState(1); // Segunda-feira por padrão
   const [showFoodSearch, setShowFoodSearch] = useState(false);
+  const [showDayOptions, setShowDayOptions] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -156,6 +162,58 @@ export default function FullDietScreen() {
     );
   };
 
+  // Day Operations
+  const handleCopyDay = async () => {
+    await copyDay(selectedDay);
+    setShowDayOptions(false);
+    Alert.alert('Sucesso', 'Dia copiado! Agora você pode colar em outro dia.');
+  };
+
+  const handlePasteDay = () => {
+    Alert.alert(
+      'Colar Dia',
+      'Isso substituirá todas as refeições deste dia. Deseja continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Colar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await pasteDay(selectedDay);
+              setShowDayOptions(false);
+              Alert.alert('Sucesso', 'Refeições coladas com sucesso!');
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível colar as refeições.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearDay = () => {
+    Alert.alert(
+      'Limpar Dia',
+      'Tem certeza que deseja remover todas as refeições deste dia?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Limpar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearDay(selectedDay);
+              setShowDayOptions(false);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível limpar o dia.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Filter meals for selected day
   const dayMeals = meals.filter((meal) => meal.day_of_week === selectedDay);
 
@@ -223,6 +281,12 @@ export default function FullDietScreen() {
             <Text style={styles.headerTitle}>Dieta Completa</Text>
             <Text style={styles.headerSubtitle}>{currentDietPlan.name}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.optionsButton}
+            onPress={() => setShowDayOptions(true)}
+          >
+            <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
 
         {/* Day Selector */}
@@ -331,6 +395,17 @@ export default function FullDietScreen() {
           }}
           onSelectFood={handleSelectFood}
         />
+
+        {/* Day Options Modal */}
+        <DayOptionsModal
+          visible={showDayOptions}
+          onClose={() => setShowDayOptions(false)}
+          onCopy={handleCopyDay}
+          onPaste={handlePasteDay}
+          onClear={handleClearDay}
+          canPaste={!!copiedDay}
+          dayName={DAYS_OF_WEEK.find(d => d.value === selectedDay)?.label || ''}
+        />
       </SafeAreaView>
     </View>
   );
@@ -400,6 +475,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     marginRight: 16,
+  },
+  optionsButton: {
+    backgroundColor: '#141B2D',
+    padding: 10,
+    borderRadius: 12,
+    marginLeft: 16,
   },
   headerContent: {
     flex: 1,
