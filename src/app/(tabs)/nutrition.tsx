@@ -1,11 +1,118 @@
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
+import { useStudentStore } from '@/store/studentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+interface StudentWithPlan {
+  id: string;
+  full_name: string;
+  email: string;
+  status: string;
+  activePlan?: {
+    id: string;
+    name: string;
+    target_calories: number;
+    target_protein: number;
+    target_carbs: number;
+    target_fat: number;
+  };
+}
 
 export default function NutritionScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
+  const { students, fetchStudents } = useStudentStore();
+  const [studentsWithPlans, setStudentsWithPlans] = useState<StudentWithPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    await fetchStudents(user.id);
+    
+    // Fetch active diet plans for all students
+    const { data: plans } = await supabase
+      .from('diet_plans')
+      .select('*')
+      .eq('personal_id', user.id)
+      .eq('status', 'active'); // Changed from is_active to status
+
+    // Map students with their plans
+    const studentsData: StudentWithPlan[] = students
+      .filter(s => s.status === 'active')
+      .map(student => ({
+        ...student,
+        activePlan: plans?.find(p => p.student_id === student.id)
+      }));
+
+    setStudentsWithPlans(studentsData);
+    setLoading(false);
+  };
+
+  const renderStudentItem = ({ item }: { item: StudentWithPlan }) => (
+    <TouchableOpacity
+      onPress={() => router.push(`/(tabs)/students/${item.id}/nutrition` as any)}
+      activeOpacity={0.7}
+      style={styles.studentCard}
+    >
+      <View style={styles.studentHeader}>
+        <View style={styles.studentAvatar}>
+          <Ionicons name="person" size={24} color="#00D9FF" />
+        </View>
+        <View style={styles.studentInfo}>
+          <Text style={styles.studentName}>{item.full_name}</Text>
+          {item.activePlan ? (
+            <Text style={styles.planName}>{item.activePlan.name}</Text>
+          ) : (
+            <Text style={styles.noPlan}>Sem plano ativo</Text>
+          )}
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+      </View>
+
+      {item.activePlan && (
+        <View style={styles.macrosPreview}>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroValue}>{item.activePlan.target_calories}</Text>
+            <Text style={styles.macroLabel}>kcal</Text>
+          </View>
+          <View style={styles.macroDivider} />
+          <View style={styles.macroItem}>
+            <Text style={[styles.macroValue, { color: '#00FF88' }]}>
+              {item.activePlan.target_protein}g
+            </Text>
+            <Text style={styles.macroLabel}>Prot</Text>
+          </View>
+          <View style={styles.macroDivider} />
+          <View style={styles.macroItem}>
+            <Text style={[styles.macroValue, { color: '#00D9FF' }]}>
+              {item.activePlan.target_carbs}g
+            </Text>
+            <Text style={styles.macroLabel}>Carb</Text>
+          </View>
+          <View style={styles.macroDivider} />
+          <View style={styles.macroItem}>
+            <Text style={[styles.macroValue, { color: '#FFDE59' }]}>
+              {item.activePlan.target_fat}g
+            </Text>
+            <Text style={styles.macroLabel}>Gord</Text>
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -14,7 +121,9 @@ export default function NutritionScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Nutrição</Text>
-            <Text style={styles.headerSubtitle}>Gerencie planos de dieta</Text>
+            <Text style={styles.headerSubtitle}>
+              {studentsWithPlans.length} {studentsWithPlans.length === 1 ? 'aluno' : 'alunos'}
+            </Text>
           </View>
           
           <Link href={'/nutrition/create' as any} asChild>
@@ -32,79 +141,27 @@ export default function NutritionScreen() {
         </View>
 
         {/* Content */}
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Quick Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ações Rápidas</Text>
-            
-            <Link href={'/nutrition/create' as any} asChild>
-              <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
-                <View style={styles.actionIcon}>
-                  <Ionicons name="add-circle" size={32} color="#00FF88" />
-                </View>
-                <View style={styles.actionContent}>
-                  <Text style={styles.actionTitle}>Novo Plano de Dieta</Text>
-                  <Text style={styles.actionDescription}>
-                    Crie um plano personalizado com cálculo automático de macros
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#5A6178" />
-              </TouchableOpacity>
-            </Link>
-
-            <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
-              <View style={styles.actionIcon}>
-                <Ionicons name="restaurant" size={32} color="#7f5aff" />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>Banco de Alimentos</Text>
-                <Text style={styles.actionDescription}>
-                  Gerencie alimentos customizados
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#5A6178" />
-            </TouchableOpacity>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF6B35" />
           </View>
-
-          {/* Info Cards */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recursos</Text>
-            
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="calculator" size={24} color="#00D9FF" />
-                <Text style={styles.infoTitle}>Cálculo Automático</Text>
-              </View>
-              <Text style={styles.infoText}>
-                TMB e TDEE calculados automaticamente usando a fórmula Mifflin-St Jeor
-              </Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="nutrition" size={24} color="#00FF88" />
-                <Text style={styles.infoTitle}>Distribuição de Macros</Text>
-              </View>
-              <Text style={styles.infoText}>
-                Proteína, carboidratos e gordura ajustados por objetivo (cutting, bulking, manutenção)
-              </Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="fast-food" size={24} color="#ffde59" />
-                <Text style={styles.infoTitle}>Banco de Alimentos</Text>
-              </View>
-              <Text style={styles.infoText}>
-                ~100 alimentos brasileiros comuns + possibilidade de adicionar alimentos customizados
-              </Text>
-            </View>
+        ) : studentsWithPlans.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={80} color="#5A6178" />
+            <Text style={styles.emptyTitle}>Nenhum aluno ativo</Text>
+            <Text style={styles.emptyText}>
+              Adicione alunos para criar planos de dieta
+            </Text>
           </View>
-        </ScrollView>
+        ) : (
+          <FlatList
+            data={studentsWithPlans}
+            renderItem={renderStudentItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </SafeAreaView>
     </View>
   );
@@ -143,70 +200,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  contentContainer: {
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: '#8B92A8',
+    textAlign: 'center',
+  },
+  listContent: {
     paddingHorizontal: 24,
     paddingBottom: 24,
   },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 16,
-  },
-  actionCard: {
+  studentCard: {
     backgroundColor: '#141B2D',
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionIcon: {
-    marginRight: 16,
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  actionDescription: {
-    fontSize: 13,
-    color: '#8B92A8',
-  },
-  infoCard: {
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: '#1E2A42',
   },
-  infoHeader: {
+  studentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  infoTitle: {
-    fontSize: 15,
+  studentAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 217, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  studentInfo: {
+    flex: 1,
+  },
+  studentName: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginLeft: 12,
+    marginBottom: 2,
   },
-  infoText: {
+  planName: {
+    fontSize: 13,
+    color: '#00FF88',
+  },
+  noPlan: {
     fontSize: 13,
     color: '#8B92A8',
-    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  macrosPreview: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    padding: 12,
+    borderRadius: 12,
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  macroLabel: {
+    fontSize: 11,
+    color: '#8B92A8',
+  },
+  macroDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 });

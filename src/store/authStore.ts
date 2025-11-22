@@ -7,6 +7,7 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   setSession: (session: Session | null) => void;
+  signOut: () => Promise<void>;
   signInWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
 }
 

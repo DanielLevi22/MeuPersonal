@@ -32,13 +32,14 @@ export interface DietPlan {
   name: string;
   description?: string;
   start_date: string;
-  end_date?: string;
+  end_date: string; // Now required
   target_calories: number;
   target_protein: number;
   target_carbs: number;
   target_fat: number;
   version: number;
   is_active: boolean;
+  status: 'active' | 'completed' | 'finished' | 'draft';
   notes?: string;
 }
 
@@ -72,7 +73,9 @@ interface NutritionStore {
   // Diet Plans
   currentDietPlan: DietPlan | null;
   fetchDietPlan: (studentId: string) => Promise<void>;
-  createDietPlan: (plan: Omit<DietPlan, 'id' | 'version' | 'is_active'>) => Promise<void>;
+  createDietPlan: (plan: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>) => Promise<void>;
+  finishDietPlan: (planId: string) => Promise<void>;
+  checkPlanExpiration: (studentId: string) => Promise<void>;
   updateDietPlan: (id: string, updates: Partial<DietPlan>) => Promise<void>;
   
   // Meals
@@ -376,35 +379,45 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
   },
 
-  // Fetch diet plan for student
+  // Fetch diet plan for a student
   fetchDietPlan: async (studentId: string) => {
     try {
-      set({ isLoading: true });
-      
       const { data, error } = await supabase
         .from('diet_plans')
         .select('*')
         .eq('student_id', studentId)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      if (error) {
+        if (error.code === 'PGRST116') {
+          set({ currentDietPlan: null });
+          return;
+        }
+        throw error;
+      }
       
-      set({ currentDietPlan: data, isLoading: false });
+      set({ currentDietPlan: data });
     } catch (error) {
       console.error('Error fetching diet plan:', error);
-      set({ isLoading: false });
+      set({ currentDietPlan: null });
     }
   },
 
   // Create new diet plan
   createDietPlan: async (plan) => {
     try {
-      // Deactivate existing plans
-      await supabase
+      // Check if there's already an active plan
+      const { data: existingActive } = await supabase
         .from('diet_plans')
-        .update({ is_active: false })
-        .eq('student_id', plan.student_id);
+        .select('id')
+        .eq('student_id', plan.student_id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingActive) {
+        throw new Error('Já existe um plano ativo para este aluno. Finalize o plano atual antes de criar um novo.');
+      }
 
       // Create new plan
       const { data, error } = await supabase
@@ -412,7 +425,8 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         .insert({
           ...plan,
           version: 1,
-          is_active: true
+          is_active: true,
+          status: 'active'
         })
         .select()
         .single();
@@ -423,6 +437,65 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     } catch (error) {
       console.error('Error creating diet plan:', error);
       throw error;
+    }
+  },
+
+  // Finish diet plan manually
+  finishDietPlan: async (planId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('diet_plans')
+        .update({ 
+          status: 'finished',
+          is_active: false,
+          end_date: today
+        })
+        .eq('id', planId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      set((state) => ({
+        currentDietPlan: state.currentDietPlan?.id === planId ? data : state.currentDietPlan
+      }));
+    } catch (error) {
+      console.error('Error finishing diet plan:', error);
+      throw error;
+    }
+  },
+
+  // Check and update expired plans
+  checkPlanExpiration: async (studentId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: expiredPlans, error } = await supabase
+        .from('diet_plans')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .lt('end_date', today);
+
+      if (error) throw error;
+
+      if (expiredPlans && expiredPlans.length > 0) {
+        const { error: updateError } = await supabase
+          .from('diet_plans')
+          .update({ 
+            status: 'completed',
+            is_active: false
+          })
+          .in('id', expiredPlans.map(p => p.id));
+
+        if (updateError) throw updateError;
+
+        await get().fetchDietPlan(studentId);
+      }
+    } catch (error) {
+      console.error('Error checking plan expiration:', error);
     }
   },
 

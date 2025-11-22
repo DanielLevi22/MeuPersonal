@@ -5,11 +5,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,18 +20,50 @@ export default function NutritionDashboard() {
   const {
     currentDietPlan,
     fetchDietPlan,
+    finishDietPlan,
+    checkPlanExpiration,
     isLoading,
-    // We might need a new action to fetch ALL plans, not just active
-    // For now, let's assume fetchDietPlan gets the active one.
-    // We'll need to implement fetchAllDietPlans in the store later if needed.
-    // But for now, let's show the active one and a button to create.
   } = useNutritionStore();
 
   useEffect(() => {
     if (studentId && typeof studentId === 'string') {
       fetchDietPlan(studentId);
+      checkPlanExpiration(studentId);
     }
   }, [studentId]);
+
+  const calculateDaysRemaining = () => {
+    if (!currentDietPlan?.end_date) return null;
+    const today = new Date();
+    const endDate = new Date(currentDietPlan.end_date);
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const handleFinishPlan = () => {
+    if (!currentDietPlan) return;
+    
+    Alert.alert(
+      'Finalizar Plano',
+      'Tem certeza que deseja finalizar este plano antes do prazo?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Finalizar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await finishDietPlan(currentDietPlan.id);
+              Alert.alert('Sucesso', 'Plano finalizado!');
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível finalizar o plano');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleCreateNew = () => {
     // Navigate to create screen
@@ -88,9 +121,23 @@ export default function NutritionDashboard() {
                       <Text style={styles.planDate}>
                         Início: {new Date(currentDietPlan.start_date).toLocaleDateString('pt-BR')}
                       </Text>
+                      {currentDietPlan.end_date && (
+                        <Text style={styles.planDate}>
+                          Término: {new Date(currentDietPlan.end_date).toLocaleDateString('pt-BR')}
+                          {calculateDaysRemaining() !== null && (
+                            <Text style={{ color: calculateDaysRemaining()! > 7 ? '#00FF88' : '#FFB800' }}>
+                              {' '}({calculateDaysRemaining()} dias restantes)
+                            </Text>
+                          )}
+                        </Text>
+                      )}
                     </View>
                     <View style={styles.activeBadge}>
-                      <Text style={styles.activeText}>ATIVO</Text>
+                      <Text style={styles.activeText}>
+                        {currentDietPlan.status === 'active' ? 'ATIVO' : 
+                         currentDietPlan.status === 'completed' ? 'CONCLUÍDO' :
+                         currentDietPlan.status === 'finished' ? 'FINALIZADO' : 'RASCUNHO'}
+                      </Text>
                     </View>
                   </View>
 
@@ -137,21 +184,36 @@ export default function NutritionDashboard() {
           </View>
 
           {/* Actions */}
-          <TouchableOpacity 
-            onPress={handleCreateNew}
-            activeOpacity={0.8}
-            style={styles.createButton}
-          >
-            <LinearGradient
-              colors={['#FF6B35', '#E85A2A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.createButtonGradient}
+          {currentDietPlan && currentDietPlan.status === 'active' && (
+            <TouchableOpacity 
+              onPress={handleFinishPlan}
+              activeOpacity={0.8}
+              style={styles.finishButton}
             >
-              <Ionicons name="add-circle" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.createButtonText}>Criar Novo Plano</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <View style={styles.finishButtonContent}>
+                <Ionicons name="checkmark-done" size={24} color="#FFB800" style={{ marginRight: 8 }} />
+                <Text style={styles.finishButtonText}>Finalizar Plano</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {!currentDietPlan || currentDietPlan.status !== 'active' ? (
+            <TouchableOpacity 
+              onPress={handleCreateNew}
+              activeOpacity={0.8}
+              style={styles.createButton}
+            >
+              <LinearGradient
+                colors={['#FF6B35', '#E85A2A']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.createButtonGradient}
+              >
+                <Ionicons name="add-circle" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.createButtonText}>Criar Novo Plano</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : null}
 
           {/* History Section (Placeholder for now) */}
           <View style={styles.section}>
@@ -316,6 +378,24 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  finishButton: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#141B2D',
+    borderWidth: 2,
+    borderColor: '#FFB800',
+  },
+  finishButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  finishButtonText: {
+    color: '#FFB800',
     fontSize: 16,
     fontWeight: '700',
   },

@@ -10,11 +10,13 @@ import {
   calculateTargetCalories,
 } from '@/utils/nutrition';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -34,13 +36,19 @@ export default function CreateDietPlanScreen() {
   const [dietName, setDietName] = useState('');
   const [goal, setGoal] = useState<Goal>('maintenance');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
-  
+  // Date states
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   // Calculated values
   const [tmb, setTmb] = useState(0);
   const [tdee, setTdee] = useState(0);
   const [targetCalories, setTargetCalories] = useState(0);
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
 
+
+  
   useEffect(() => {
     if (user?.id) {
       fetchStudents(user.id);
@@ -102,12 +110,13 @@ export default function CreateDietPlanScreen() {
     }
 
     try {
-      await createDietPlan({
+       await createDietPlan({
         student_id: selectedStudent.id,
         personal_id: user!.id,
         name: dietName,
         description: `Plano ${goal} - ${activityLevel}`,
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: startDate.toISOString().split('T')[0],  // <-- MUDAR de new Date()
+        end_date: endDate.toISOString().split('T')[0],      // <-- ADICIONAR
         target_calories: macros.calories,
         target_protein: macros.protein,
         target_carbs: macros.carbs,
@@ -204,7 +213,72 @@ export default function CreateDietPlanScreen() {
                   onChangeText={setDietName}
                 />
               </View>
-
+               {/* Start Date */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Data de Início</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => {
+                    console.log('📅 BOTÃO CLICADO! showStartPicker antes:', showStartPicker);
+                    setShowStartPicker(true);
+                    console.log('📅 setShowStartPicker(true) chamado');
+                  }}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#00D9FF" />
+                  <Text style={styles.dateButtonText}>
+                    {startDate.toLocaleDateString('pt-BR')}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#8B92A8" />
+                </TouchableOpacity>
+               
+                
+                {showStartPicker && (
+                  <DateTimePicker
+                    value={startDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, selectedDate) => {
+                      console.log('📅 onChange chamado! event.type:', event.type);
+                      setShowStartPicker(false);
+                      if (selectedDate && event.type === 'set') {
+                        setStartDate(selectedDate);
+                        console.log('📅 Data atualizada para:', selectedDate);
+                      }
+                    }}
+                  />
+                )}
+              </View>
+ {/* End Date */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Data de Término</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setShowEndPicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#00D9FF" />
+                  <Text style={styles.dateButtonText}>
+                    {endDate.toLocaleDateString('pt-BR')}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#8B92A8" />
+                </TouchableOpacity>
+                <Text style={styles.helperText}>
+                  Duração: {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} dias
+                </Text>
+                {showEndPicker && (
+                  <DateTimePicker
+                    value={endDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    minimumDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)}
+                    onChange={(event, selectedDate) => {
+                      setShowEndPicker(false);
+                      if (selectedDate && event.type === 'set') {
+                        setEndDate(selectedDate);
+                      }
+                    }}
+                  />
+                )}
+              </View>
               {/* Goal Selection */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Objetivo</Text>
@@ -488,5 +562,27 @@ const styles = StyleSheet.create({
     color: '#0A0E1A',
     fontSize: 16,
     fontWeight: '700',
+  },
+   dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#141B2D',
+    borderWidth: 2,
+    borderColor: '#1E2A42',
+    borderRadius: 12,
+    padding: 16,
+  },
+  dateButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#8B92A8',
+    marginTop: 4,
   },
 });
