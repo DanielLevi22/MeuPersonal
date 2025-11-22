@@ -30,15 +30,16 @@
 - [x] Feedback pós-treino.
 - [x] Histórico de Treinos.
 
-## Fase 4: Dietas e Nutrição (Semana 7) 🔜
+## Fase 4: Dietas e Nutrição (Semana 7) 🔄
 
-### Fundação
-- [ ] Criar schema do banco de dados (foods, diet_plans, diet_meals, etc.)
-- [ ] Importar banco de alimentos TBCA (3500+ alimentos brasileiros)
-- [ ] Implementar cálculo TMB/TDEE (Fórmula Mifflin-St Jeor)
-- [ ] Criar tela de navegação para módulo de nutrição
+### Fundação ✅
+- [x] Criar schema do banco de dados (foods, diet_plans, diet_meals, etc.)
+- [x] Importar banco de alimentos (~100 alimentos brasileiros comuns)
+- [x] Implementar cálculo TMB/TDEE (Fórmula Mifflin-St Jeor)
+- [x] Criar nutritionStore com Zustand
+- [x] Aplicar migrations no Supabase
 
-### Editor de Dieta (Personal)
+### Editor de Dieta (Personal) 🔄
 - [ ] Tela "Dieta Completa" com estrutura semanal
 - [ ] Sistema de busca e adição de alimentos
 - [ ] Cálculo automático de macros por refeição/dia
@@ -47,24 +48,29 @@
 - [ ] Funcionalidade "Copiar dia" e "Copiar semana"
 - [ ] Distribuição automática de macros
 
-### Visualização do Aluno
+### Visualização do Aluno 🔜
 - [ ] Aba "Hoje" com macros em tempo real
 - [ ] Cards de refeições expansíveis
 - [ ] Check-in de refeições (marcar como consumido)
 - [ ] Sistema de substituições inteligentes (±10% macros)
 - [ ] Botão "Não comi isso" com alternativas
 
-### Progresso e Analytics
+### Progresso e Analytics 🔜
 - [ ] Aba "Progresso" com gráficos (peso, % gordura, medidas)
 - [ ] Upload e comparação de fotos (antes/depois)
 - [ ] Tabela de circunferências com evolução
 - [ ] Histórico de versões de dieta
 - [ ] Notificações automáticas (desvio > 10% por 3+ dias)
 
-### Extras
+### Extras 🔜
 - [ ] Exportação de dieta em PDF
 - [ ] Check-in semanal obrigatório
 - [ ] Foto do prato (preparação para IA futura)
+
+**Decisões Tomadas**:
+- ✅ Banco de alimentos: Começar com 100 comuns + permitir cadastro customizado
+- ✅ Fórmula TMB: Mifflin-St Jeor (mais precisa)
+- ✅ Distribuição de macros: Baseada em peso corporal e objetivo
 
 Ver [nutrition-spec.md](./nutrition-spec.md) para especificação técnica completa.
 

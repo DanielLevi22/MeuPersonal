@@ -301,8 +301,266 @@ Log de exercícios completados
 - [x] Adição de exercícios
 - [x] Edição de treino
 - [x] Atribuição a múltiplos alunos
+**Banco de Dados**:
+- `workout_sessions` - Sessões de treino
+- `workout_exercise_logs` - Log de exercícios completados
+
+---
+
+### 5. ⏱️ Timer de Descanso Inteligente
+
+**Status**: ✅ Completo
+
+**Descrição**: Timer automático com feedback visual e sensorial para controlar descanso entre séries.
+
+**Funcionalidades**:
+- ✅ Início automático ao completar série
+- ✅ Contagem regressiva visual (MM:SS)
+- ✅ Indicador circular de progresso
+- ✅ Vibração ao terminar
+- ✅ Notificação sonora (quando alarm.mp3 adicionado)
+- ✅ Controles Start/Pause/Reset
+- ✅ Bloqueio de próxima série durante descanso
+- ✅ Progressão sequencial obrigatória
+
+**Componente**:
+- `src/components/RestTimer.tsx`
+
+**Dependências**:
+- `expo-haptics` - Vibração
+- `expo-av` - Som
+- `react-native-svg` - Círculo de progresso
+
+---
+
+### 6. 🎨 Sistema de Feedback Visual
+
+**Status**: ✅ Completo
+
+**Descrição**: Interface intuitiva com badges e estados visuais claros.
+
+**Estados de Série**:
+1. **Bloqueada** (cinza, desabilitada)
+   - Aguardando séries anteriores
+2. **Próxima** (laranja, badge "PRÓXIMA")
+   - Série atual a ser executada
+3. **Concluída** (verde, badge "CONCLUÍDA", 60% opacidade)
+   - Série finalizada e travada
+
+**Características**:
+- ✅ Badges informativos
+- ✅ Opacidade reduzida em itens concluídos
+- ✅ Cores semânticas (verde = sucesso, laranja = ação)
+- ✅ Checkboxes visuais
+- ✅ Bordas coloridas por estado
+
+---
+
+### 7. 🔐 Controle de Acesso Baseado em Função
+
+**Status**: ✅ Completo
+
+**Descrição**: Experiências completamente separadas para personal trainers e alunos.
+
+**Personal Trainer**:
+- ✅ Criar e editar treinos
+- ✅ Atribuir treinos a alunos
+- ✅ Gerenciar alunos
+- ✅ Visualizar histórico de avaliações
+
+**Aluno**:
+- ✅ Visualizar apenas treinos atribuídos
+- ✅ Executar treinos com timer
+- ✅ Rastrear progresso
+- ✅ **Sem** acesso a criação/edição
+
+**Implementação**:
+- Detecção automática de role
+- Navegação condicional
+- Botões ocultos por role
+- Mensagens personalizadas por role
+
+**Arquivos**:
+- `src/app/(tabs)/workouts.tsx` - Navegação condicional
+
+---
+
+## 🗄️ Banco de Dados
+
+### Tabelas Principais
+
+#### `profiles`
+Perfis de usuários (personal trainers e alunos)
+```sql
+- id (UUID, PK)
+- email (TEXT)
+- full_name (TEXT)
+- role (TEXT) - 'personal' | 'student'
+- phone (TEXT)
+- weight (NUMERIC)
+- height (NUMERIC)
+- notes (TEXT)
+- invite_code (TEXT)
+```
+
+#### `workouts`
+Treinos criados por personal trainers
+```sql
+- id (UUID, PK)
+- title (TEXT)
+- description (TEXT)
+- personal_id (UUID, FK → profiles)
+- created_at (TIMESTAMPTZ)
+```
+
+#### `workout_items`
+Exercícios configurados em cada treino
+```sql
+- id (UUID, PK)
+- workout_id (UUID, FK → workouts)
+- exercise_id (UUID, FK → exercises)
+- sets (INTEGER)
+- reps (TEXT)
+- weight (TEXT)
+- rest_time (INTEGER) - em segundos
+- order (INTEGER)
+```
+
+#### `workout_assignments`
+Atribuição de treinos a alunos (many-to-many)
+```sql
+- id (UUID, PK)
+- workout_id (UUID, FK → workouts)
+- student_id (UUID, FK → profiles)
+- assigned_at (TIMESTAMPTZ)
+- assigned_by (UUID, FK → profiles)
+```
+
+#### `workout_sessions`
+Sessões de execução de treino
+```sql
+- id (UUID, PK)
+- workout_id (UUID, FK → workouts)
+- student_id (UUID, FK → profiles)
+- started_at (TIMESTAMPTZ)
+- completed_at (TIMESTAMPTZ)
+```
+
+#### `workout_exercise_logs`
+Log de exercícios completados
+```sql
+- id (UUID, PK)
+- workout_session_id (UUID, FK → workout_sessions)
+- exercise_id (UUID, FK → exercises)
+- workout_item_id (UUID, FK → workout_items)
+- sets_completed (INTEGER)
+- completed (BOOLEAN)
+- completed_at (TIMESTAMPTZ)
+```
+
+### Políticas RLS Aplicadas
+
+**Workouts**:
+- Personal trainers podem gerenciar seus próprios treinos
+- Alunos podem visualizar treinos atribuídos a eles
+
+**Workout Items**:
+- Personal trainers podem gerenciar itens de seus treinos
+- Alunos podem visualizar itens de treinos atribuídos
+
+**Workout Assignments**:
+- Personal trainers podem atribuir seus treinos
+- Alunos podem visualizar suas próprias atribuições
+
+**Workout Exercise Logs**:
+- Alunos podem criar/atualizar seus próprios logs
+- Personal trainers podem visualizar logs de seus alunos
+
+---
+
+## 🧪 Testes Realizados
+
+### Fluxo do Aluno
+- [x] Login com código de convite
+- [x] Visualização de treinos atribuídos
+- [x] Execução de treino com timer
+- [x] Marcação sequencial de séries
+- [x] Bloqueio durante descanso
+- [x] Vibração ao fim do timer
+- [x] Atualização de progresso
+- [x] Finalização de treino
+
+### Fluxo do Personal
+- [x] Criação de treino
+- [x] Adição de exercícios
+- [x] Edição de treino
+- [x] Atribuição a múltiplos alunos
 - [x] Remoção de alunos
 - [x] Exclusão de treino
+
+---
+
+## 🍎 Nutrition Module (Phase 4 - In Progress)
+
+### 8. Sistema de Nutrição e Dietas
+
+**Status**: 🔄 Em Desenvolvimento
+
+**Descrição**: Sistema completo de gerenciamento nutricional que permite personal trainers criarem planos de dieta personalizados e alunos rastrearem consumo diário.
+
+**Funcionalidades Implementadas**:
+- ✅ Banco de dados de alimentos (~100 alimentos brasileiros)
+- ✅ Cadastro de alimentos customizados por personal
+- ✅ Cálculo TMB/TDEE (Fórmula Mifflin-St Jeor)
+- ✅ Distribuição automática de macros por objetivo
+- ✅ Store de gerenciamento de estado (nutritionStore)
+- 🔄 Editor de dieta para personal (em desenvolvimento)
+- 🔄 Visualização de dieta para aluno (em desenvolvimento)
+- 🔄 Tracking de macros em tempo real (em desenvolvimento)
+
+**Arquivos**:
+- `drizzle/migration-nutrition-schema.sql` - Schema completo
+- `drizzle/seed-foods.sql` - Banco de alimentos
+- `src/store/nutritionStore.ts` - State management
+- `src/utils/nutrition.ts` - Cálculos nutricionais
+
+**Banco de Dados**:
+- `foods` - Banco de alimentos com macros
+- `diet_plans` - Planos de dieta dos alunos
+- `diet_meals` - Refeições por dia da semana
+- `diet_meal_items` - Alimentos em cada refeição
+- `diet_logs` - Registro diário do aluno
+- `nutrition_progress` - Peso, medidas e fotos
+
+**Decisões de Design**:
+1. **Banco de Alimentos**: Começar com ~100 alimentos comuns + permitir cadastro customizado
+2. **Cálculo de Macros**: Usar Mifflin-St Jeor (mais preciso que Harris-Benedict)
+3. **Distribuição de Macros**:
+   - Cutting: 2.2g/kg proteína, 0.8g/kg gordura, resto carbs
+   - Bulking: 2.0g/kg proteína, 1.0g/kg gordura, resto carbs
+   - Maintenance: 1.8g/kg proteína, 0.9g/kg gordura, resto carbs
+4. **Substituições Inteligentes**: Tolerância de ±10% nos macros
+
+---
+
+## 🗄️ Database Migrations Applied
+- [x] `migration-workout-assignments.sql` - Workout assignment system
+- [x] `migration-workout-exercise-logs.sql` - Exercise completion tracking
+- [x] `migration-fix-workout-rls-clean.sql` - Workout RLS policies
+- [x] `migration-fix-workout-items-rls.sql` - Workout items RLS policies
+- [x] `migration-nutrition-schema.sql` - Nutrition module (6 tables)
+- [x] `seed-foods.sql` - Brazilian food database
+
+---
+
+## 🎯 Key Features Delivered
+- ✅ Complete student management system
+- ✅ Workout creation and assignment
+- ✅ Student workout execution with timer
+- ✅ Progress tracking and history
+- ✅ Role-based access control
+- ✅ Intuitive UX with visual feedback
+- 🔄 Nutrition management (in progress)
 
 ---
 
@@ -320,22 +578,30 @@ npx expo install expo-haptics expo-av react-native-svg
 
 ## 🚀 Próximos Passos (Roadmap)
 
+### Nutrition Module (Current)
+- [ ] Editor de dieta para personal
+- [ ] Visualização de dieta para aluno
+- [ ] Tracking de macros em tempo real
+- [ ] Gráficos de progresso nutricional
+- [ ] Upload de fotos de progresso
+
 ### Curto Prazo
-- [ ] Adicionar arquivo de som alarm.mp3
-- [ ] Histórico de treinos completados
-- [ ] Estatísticas de progresso
+- [ ] Templates de dieta prontos
+- [ ] Sistema de substituições inteligentes
+- [ ] Notificações de desvio nutricional
+- [ ] Exportação de dieta em PDF
 
 ### Médio Prazo
-- [ ] Templates de treino
-- [ ] Notas e feedback em exercícios
-- [ ] Gráficos de evolução
-- [ ] Calendário de treinos
+- [ ] Histórico de versões de dieta
+- [ ] Check-in semanal obrigatório
+- [ ] Analytics de aderência
+- [ ] Integração com fotos de refeições
 
 ### Longo Prazo
-- [ ] Notificações push para treinos atribuídos
-- [ ] Chat entre personal e aluno
-- [ ] Planos de treino periódicos
+- [ ] IA para análise de fotos de refeições
+- [ ] Sugestões automáticas de ajustes
 - [ ] Integração com wearables
+- [ ] Planos de refeições automatizados
 
 ---
 
