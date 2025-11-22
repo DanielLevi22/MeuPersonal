@@ -127,6 +127,22 @@ export default function TabLayout() {
         }}
       />
       
+      {/* Personal Trainer only - Nutrition */}
+      <Tabs.Screen
+        name="nutrition"
+        options={{
+          title: 'Nutrição',
+          tabBarButton: isStudent ? () => null : undefined,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'restaurant' : 'restaurant-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      
       <Tabs.Screen
         name="workouts"
         options={{
