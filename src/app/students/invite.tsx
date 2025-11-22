@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/store/authStore';
 import { useStudentStore } from '@/store/studentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,10 +10,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function InviteStudentScreen() {
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const { generateInviteCode } = useStudentStore();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   const handleGenerateCode = async () => {
-    const code = await generateInviteCode();
+    if (!user?.id) return;
+    const code = await generateInviteCode(user.id);
     setInviteCode(code);
   };
 

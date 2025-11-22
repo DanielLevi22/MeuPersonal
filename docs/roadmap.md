@@ -4,15 +4,15 @@
 **Previsão de Lançamento**: 28/02/2026
 
 ## Fase 1: Fundação e Autenticação (Semanas 1-2)
-- [ ] Configuração do Ambiente (Expo, Supabase, Drizzle).
-- [ ] Implementação do Design System básico (Cores, Tipografia, Componentes Base).
-- [ ] Autenticação (Login, Cadastro, Recuperação de Senha).
-- [ ] Onboarding: Escolha de Perfil (Personal vs Aluno).
-- [ ] Tela Home (Dashboard vazio).
+- [x] Configuração do Ambiente (Expo, Supabase, Drizzle).
+- [x] Implementação do Design System básico (Cores, Tipografia, Componentes Base).
+- [x] Autenticação (Login, Cadastro, Recuperação de Senha).
+- [x] Onboarding: Escolha de Perfil (Personal vs Aluno).
+- [x] Tela Home (Dashboard vazio).
 
 ## Fase 2: Core do Personal (Semanas 3-4)
-- [ ] CRUD de Alunos (Adicionar, Listar, Remover).
-- [ ] Sistema de Convites (Gerar Link/Código).
+- [x] CRUD de Alunos (Adicionar, Listar, Remover).
+- [x] Sistema de Convites (Gerar Link/Código).
 - [ ] Criação de Treinos (Interface de montagem).
 - [ ] Banco de Exercícios (Seed inicial + Cadastro manual).
 

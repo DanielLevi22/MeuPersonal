@@ -12,6 +12,7 @@ export default function DashboardScreen() {
   const { user } = useAuthStore();
   const [profile, setProfile] = useState<any>(null);
   const [workouts, setWorkouts] = useState<any[]>([]);
+  const [hasPersonal, setHasPersonal] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -39,6 +40,16 @@ export default function DashboardScreen() {
       setProfile(profileData);
 
       if (profileData?.role === 'student') {
+        // Check if student has a personal
+        const { data: personalLink } = await supabase
+          .from('students_personals')
+          .select('id')
+          .eq('student_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        setHasPersonal(!!personalLink);
+
         const { data: workoutData } = await supabase
           .from('workouts')
           .select('*')
@@ -129,21 +140,48 @@ export default function DashboardScreen() {
             </View>
 
             {workouts.length === 0 ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 80 }}>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
                 <View style={{ 
                   backgroundColor: '#141B2D', 
                   padding: 32, 
                   borderRadius: 50,
                   marginBottom: 24
                 }}>
-                  <Ionicons name="barbell-outline" size={80} color="#5A6178" />
+                  <Ionicons name={hasPersonal ? "barbell-outline" : "person-add-outline"} size={80} color="#5A6178" />
                 </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8 }}>
-                  Nenhum treino ainda
+                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
+                  {hasPersonal ? 'Nenhum treino ainda' : 'Sem Personal Trainer'}
                 </Text>
-                <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15 }}>
-                  Aguarde seu personal criar treinos personalizados para você
+                <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
+                  {hasPersonal 
+                    ? 'Aguarde seu personal criar treinos personalizados para você' 
+                    : 'Vincule-se a um personal para receber seus treinos personalizados'}
                 </Text>
+
+                {!hasPersonal && (
+                  <TouchableOpacity 
+                    onPress={() => router.push('/student/join-personal' as any)}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={['#FF6B35', '#E85A2A']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        borderRadius: 16,
+                        paddingVertical: 16,
+                        paddingHorizontal: 32,
+                        flexDirection: 'row',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Ionicons name="link" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
+                        Vincular Personal
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               <FlatList
