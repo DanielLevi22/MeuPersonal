@@ -1,3 +1,246 @@
+import { supabase } from '@/lib/supabase';
+import { Food } from '@/store/nutritionStore';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+
+interface FoodSearchModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelectFood: (food: Food) => void;
+}
+
+const ITEMS_PER_PAGE = 10;
+
+export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchModalProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [foods, setFoods] = useState<Food[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+
+  // Load initial foods when modal opens
+  useEffect(() => {
+    if (visible) {
+      loadInitialFoods();
+    } else {
+      // Reset when modal closes
+      setSearchQuery('');
+      setFoods([]);
+      setPage(0);
+      setHasMore(true);
+    }
+  }, [visible]);
+
+  const loadInitialFoods = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('foods')
+        .select('*')
+        .order('name', { ascending: true })
+        .range(0, ITEMS_PER_PAGE - 1);
+
+      if (error) throw error;
+      
+      setFoods(data || []);
+      setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
+      setPage(1);
+    } catch (error) {
+      console.error('Error loading initial foods:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.length < 2) {
+      // Reset to initial foods
+      loadInitialFoods();
+      return;
+    }
+
+    setIsLoading(true);
+    setPage(0);
+    
+    try {
+      const { data, error } = await supabase
+        .from('foods')
+        .select('*')
+        .or(`name.ilike.%${query}%`)
+        .order('name', { ascending: true })
+        .range(0, ITEMS_PER_PAGE - 1);
+
+      if (error) throw error;
+      
+      setFoods(data || []);
+      setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
+      setPage(1);
+    } catch (error) {
+      console.error('Error searching foods:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (!hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    
+    try {
+      const start = page * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE - 1;
+
+      let query = supabase
+        .from('foods')
+        .select('*')
+        .order('name', { ascending: true });
+
+      // Apply search filter if exists
+      if (searchQuery.length >= 2) {
+        query = query.or(`name.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query.range(start, end);
+
+      if (error) throw error;
+      
+      setFoods(prev => [...prev, ...(data || [])]);
+      setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
+      setPage(prev => prev + 1);
+    } catch (error) {
+      console.error('Error loading more foods:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleSelectFood = (food: Food) => {
+    onSelectFood(food);
+    setSearchQuery('');
+    onClose();
+  };
+
+  const renderFoodItem = ({ item }: { item: Food }) => (
+    <TouchableOpacity
+      style={styles.foodItem}
+      onPress={() => handleSelectFood(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.foodInfo}>
+        <Text style={styles.foodName}>{item.name}</Text>
+        <Text style={styles.foodCategory}>{item.category}</Text>
+      </View>
+      <View style={styles.macrosPreview}>
+        <Text style={styles.macroText}>
+          {item.calories}kcal | {item.protein}p | {item.carbs}c | {item.fat}g
+        </Text>
+        <Text style={styles.servingText}>
+          por {item.serving_size}{item.serving_unit}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderFooter = () => {
+    if (!hasMore) return null;
+
+    if (isLoadingMore) {
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color="#00FF88" />
+          <Text style={styles.footerText}>Carregando mais...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
+        <Text style={styles.loadMoreText}>Carregar mais alimentos</Text>
+        <Ionicons name="chevron-down" size={16} color="#00FF88" />
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Buscar Alimento</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Input */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#8B92A8" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Digite o nome do alimento..."
+              placeholderTextColor="#5A6178"
+              value={searchQuery}
+              onChangeText={handleSearch}
+              autoFocus
+            />
+          </View>
+
+          {/* Results Count */}
+          {foods.length > 0 && !isLoading && (
+            <View style={styles.resultsCount}>
+              <Text style={styles.resultsCountText}>
+                {foods.length} alimento{foods.length !== 1 ? 's' : ''} encontrado{foods.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
+
+          {/* Results */}
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FF6B35" />
+              <Text style={styles.loadingText}>Buscando...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={foods}
+              renderItem={renderFoodItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContainer}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={renderFooter}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="search-outline" size={48} color="#5A6178" />
+                  <Text style={styles.emptyText}>
+                    {searchQuery.length < 2
+                      ? 'Digite para buscar alimentos'
+                      : 'Nenhum alimento encontrado'}
+                  </Text>
+                </View>
+              }
+            />
+          )}
         </View>
       </View>
     </Modal>
