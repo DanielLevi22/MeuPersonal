@@ -1,25 +1,34 @@
 import { supabase } from '@/lib/supabase';
 import { Food } from '@/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface FoodSearchModalProps {
   visible: boolean;
   onClose: () => void;
-  onSelectFood: (food: Food) => void;
+  onSelectFood: (food: Food, quantity?: number) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
+
+type MacroType = 'protein' | 'carbs' | 'fat' | 'calories';
+
+interface MacroTargets {
+  protein?: string;
+  carbs?: string;
+  fat?: string;
+  calories?: string;
+}
 
 export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +37,10 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  
+  // Reverse Calculator State
+  const [targets, setTargets] = useState<MacroTargets>({});
+  const [activeMacros, setActiveMacros] = useState<MacroType[]>([]);
 
   // Load initial foods when modal opens
   useEffect(() => {
@@ -39,6 +52,8 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
       setFoods([]);
       setPage(0);
       setHasMore(true);
+      setTargets({});
+      setActiveMacros([]);
     }
   }, [visible]);
 
@@ -128,32 +143,157 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
     }
   };
 
+  const toggleMacro = (macro: MacroType) => {
+    setActiveMacros(prev => {
+      if (prev.includes(macro)) {
+        const newMacros = prev.filter(m => m !== macro);
+        const newTargets = { ...targets };
+        delete newTargets[macro];
+        setTargets(newTargets);
+        return newMacros;
+      } else {
+        return [...prev, macro];
+      }
+    });
+  };
+
+  const updateTarget = (macro: MacroType, value: string) => {
+    setTargets(prev => ({ ...prev, [macro]: value }));
+  };
+
+  // Calculate match quality and required quantity
+  const calculateMatch = (food: Food) => {
+    if (activeMacros.length === 0) return null;
+
+    const quantities: number[] = [];
+    let validTargets = 0;
+
+    for (const macro of activeMacros) {
+      const targetVal = parseFloat(targets[macro] || '0');
+      if (targetVal > 0) {
+        const foodVal = food[macro];
+        if (foodVal > 0) {
+          // Q = (Target / FoodVal) * ServingSize
+          quantities.push((targetVal / foodVal) * food.serving_size);
+          validTargets++;
+        } else {
+          // Food doesn't have this macro but target requires it -> Impossible match (Infinity)
+          quantities.push(Infinity);
+          validTargets++;
+        }
+      }
+    }
+
+    if (validTargets === 0) return null;
+
+    // If any quantity is Infinity, it's a bad match (missing a required macro)
+    if (quantities.some(q => q === Infinity)) {
+      return { quantity: 0, score: 0, isMatch: false };
+    }
+
+    // Calculate average quantity needed
+    const avgQuantity = quantities.reduce((a, b) => a + b, 0) / quantities.length;
+
+    // Calculate variance (how far apart are the required quantities?)
+    // Lower variance = Better match (the food naturally has the right ratio)
+    const variance = quantities.reduce((acc, q) => acc + Math.pow(q - avgQuantity, 2), 0) / quantities.length;
+    
+    // Score: Inverse of variance (normalized somewhat). 
+    // Perfect match (variance 0) -> Score 100.
+    // We use a simple heuristic: Score = 100 / (1 + variance/1000)
+    const score = 100 / (1 + variance / 1000);
+
+    return {
+      quantity: avgQuantity,
+      score,
+      isMatch: true
+    };
+  };
+
+  // Sort foods based on match score if targets are active
+  const sortedFoods = useMemo(() => {
+    if (activeMacros.length === 0) return foods;
+
+    return [...foods].sort((a, b) => {
+      const matchA = calculateMatch(a);
+      const matchB = calculateMatch(b);
+
+      const scoreA = matchA?.isMatch ? matchA.score : -1;
+      const scoreB = matchB?.isMatch ? matchB.score : -1;
+
+      return scoreB - scoreA; // Descending score
+    });
+  }, [foods, targets, activeMacros]);
+
   const handleSelectFood = (food: Food) => {
-    onSelectFood(food);
+    const match = calculateMatch(food);
+    onSelectFood(food, match?.isMatch ? match.quantity : undefined);
     setSearchQuery('');
     onClose();
   };
 
-  const renderFoodItem = ({ item }: { item: Food }) => (
-    <TouchableOpacity
-      style={styles.foodItem}
-      onPress={() => handleSelectFood(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.foodInfo}>
-        <Text style={styles.foodName}>{item.name}</Text>
-        <Text style={styles.foodCategory}>{item.category}</Text>
-      </View>
-      <View style={styles.macrosPreview}>
-        <Text style={styles.macroText}>
-          {item.calories}kcal | {item.protein}p | {item.carbs}c | {item.fat}g
-        </Text>
-        <Text style={styles.servingText}>
-          por {item.serving_size}{item.serving_unit}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderFoodItem = ({ item }: { item: Food }) => {
+    const match = calculateMatch(item);
+    
+    return (
+      <TouchableOpacity
+        style={styles.foodItem}
+        onPress={() => handleSelectFood(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.foodInfo}>
+          <Text style={styles.foodName}>{item.name}</Text>
+          <Text style={styles.foodCategory}>{item.category}</Text>
+        </View>
+        
+        {match?.isMatch ? (
+          <View style={styles.calculatedPreview}>
+            <View style={styles.matchHeader}>
+              <Text style={styles.calculatedQuantity}>
+                {Math.round(match.quantity)}{item.serving_unit}
+              </Text>
+              {activeMacros.length > 1 && (
+                <View style={[
+                  styles.matchBadge,
+                  { backgroundColor: match.score > 80 ? 'rgba(0, 255, 136, 0.2)' : match.score > 40 ? 'rgba(255, 222, 89, 0.2)' : 'rgba(255, 107, 53, 0.2)' }
+                ]}>
+                  <Text style={[
+                    styles.matchBadgeText,
+                    { color: match.score > 80 ? '#00FF88' : match.score > 40 ? '#ffde59' : '#FF6B35' }
+                  ]}>
+                    {match.score > 80 ? 'Combinação Perfeita' : match.score > 40 ? 'Boa Combinação' : 'Baixa Combinação'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.calculatedLabel}>
+              para atingir metas
+            </Text>
+            <View style={styles.targetComparison}>
+               {activeMacros.map(macro => {
+                 const val = (item[macro] * match.quantity) / item.serving_size;
+                 const target = parseFloat(targets[macro] || '0');
+                 return (
+                   <Text key={macro} style={styles.comparisonText}>
+                     {macro === 'calories' ? 'Kcal' : macro.charAt(0).toUpperCase() + macro.slice(1, 3)}: {Math.round(val)}/{Math.round(target)}
+                   </Text>
+                 );
+               })}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.macrosPreview}>
+            <Text style={styles.macroText}>
+              {item.calories}kcal | {item.protein}p | {item.carbs}c | {item.fat}g
+            </Text>
+            <Text style={styles.servingText}>
+              por {item.serving_size}{item.serving_unit}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const renderFooter = () => {
     if (!hasMore) return null;
@@ -205,6 +345,46 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
             />
           </View>
 
+          {/* Reverse Calculator */}
+          <View style={styles.calculatorContainer}>
+            <Text style={styles.calculatorTitle}>Calculadora Reversa (Multimeta)</Text>
+            <View style={styles.macroGrid}>
+              {(['protein', 'carbs', 'fat', 'calories'] as const).map((macro) => (
+                <View key={macro} style={styles.macroInputGroup}>
+                  <TouchableOpacity
+                    style={[
+                      styles.macroButton,
+                      activeMacros.includes(macro) && styles.macroButtonActive,
+                    ]}
+                    onPress={() => toggleMacro(macro)}
+                  >
+                    <Text
+                      style={[
+                        styles.macroButtonText,
+                        activeMacros.includes(macro) && styles.macroButtonTextActive,
+                      ]}
+                    >
+                      {macro === 'protein' ? 'Prot' : macro === 'carbs' ? 'Carb' : macro === 'fat' ? 'Gord' : 'Kcal'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  {activeMacros.includes(macro) && (
+                    <View style={styles.targetInputWrapper}>
+                       <TextInput
+                        style={styles.targetInput}
+                        placeholder="0"
+                        placeholderTextColor="#5A6178"
+                        keyboardType="numeric"
+                        value={targets[macro] || ''}
+                        onChangeText={(val) => updateTarget(macro, val)}
+                      />
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
+
           {/* Results Count */}
           {foods.length > 0 && !isLoading && (
             <View style={styles.resultsCount}>
@@ -222,7 +402,7 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
             </View>
           ) : (
             <FlatList
-              data={foods}
+              data={sortedFoods}
               renderItem={renderFoodItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.listContainer}
@@ -257,7 +437,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0E1A',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: '80%',
+    height: '85%',
     paddingTop: 20,
   },
   header: {
@@ -281,7 +461,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#141B2D',
     borderRadius: 12,
     marginHorizontal: 24,
-    marginBottom: 20,
+    marginBottom: 16,
     paddingHorizontal: 16,
     borderWidth: 2,
     borderColor: '#1E2A42',
@@ -294,6 +474,64 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     paddingVertical: 14,
+  },
+  calculatorContainer: {
+    marginHorizontal: 24,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#141B2D',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1E2A42',
+  },
+  calculatorTitle: {
+    fontSize: 12,
+    color: '#8B92A8',
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  macroGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  macroInputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0A0E1A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#1E2A42',
+    overflow: 'hidden',
+  },
+  macroButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#0A0E1A',
+    borderRightWidth: 1,
+    borderRightColor: '#1E2A42',
+  },
+  macroButtonActive: {
+    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+  },
+  macroButtonText: {
+    fontSize: 12,
+    color: '#8B92A8',
+    fontWeight: '600',
+  },
+  macroButtonTextActive: {
+    color: '#00FF88',
+  },
+  targetInputWrapper: {
+    width: 60,
+    paddingHorizontal: 8,
+  },
+  targetInput: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    paddingVertical: 8,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   listContainer: {
     paddingHorizontal: 24,
@@ -325,6 +563,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  calculatedPreview: {
+    backgroundColor: 'rgba(0, 255, 136, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  matchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  matchBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  matchBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  targetComparison: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  comparisonText: {
+    fontSize: 11,
+    color: '#8B92A8',
+  },
   macroText: {
     fontSize: 12,
     color: '#00FF88',
@@ -333,6 +602,15 @@ const styles = StyleSheet.create({
   servingText: {
     fontSize: 11,
     color: '#5A6178',
+  },
+  calculatedQuantity: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#00FF88',
+  },
+  calculatedLabel: {
+    fontSize: 11,
+    color: '#8B92A8',
   },
   loadingContainer: {
     flex: 1,

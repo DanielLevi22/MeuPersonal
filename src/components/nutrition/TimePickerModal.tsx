@@ -70,6 +70,7 @@ export function TimePickerModal({ visible, onClose, onSelectTime }: TimePickerMo
                         styles.timeText,
                         selectedHour === hour && styles.selectedText,
                       ]}
+                      numberOfLines={1}
                     >
                       {hour}
                     </Text>
@@ -102,6 +103,7 @@ export function TimePickerModal({ visible, onClose, onSelectTime }: TimePickerMo
                         styles.timeText,
                         selectedMinute === minute && styles.selectedText,
                       ]}
+                      numberOfLines={1}
                     >
                       {minute}
                     </Text>
@@ -182,11 +184,12 @@ const styles = StyleSheet.create({
   },
   timeItem: {
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     borderRadius: 12,
     marginVertical: 4,
-    width: 80,
+    width: 100,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   selectedItem: {
     backgroundColor: '#141B2D',

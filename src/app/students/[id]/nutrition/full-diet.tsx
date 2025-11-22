@@ -114,12 +114,13 @@ export default function FullDietScreen() {
     setShowFoodSearch(true);
   };
 
-  const handleSelectFood = async (food: Food) => {
+  const handleSelectFood = async (food: Food, quantity?: number) => {
     if (!selectedMealId) return;
 
     try {
-      // Por padrão, adiciona 100g do alimento
-      await addFoodToMeal(selectedMealId, food.id, 100, 'g');
+      // Use calculated quantity or default to 100g
+      const finalQuantity = quantity || 100;
+      await addFoodToMeal(selectedMealId, food.id, finalQuantity, 'g');
       setSelectedMealId(null);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar o alimento.');
