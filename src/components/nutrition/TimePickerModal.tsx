@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import {
     Modal,
     ScrollView,
@@ -14,24 +15,17 @@ interface TimePickerModalProps {
   onSelectTime: (time: string) => void;
 }
 
-// Generate time options from 00:00 to 23:30 in 30min intervals
-const generateTimeOptions = () => {
-  const times: string[] = [];
-  for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
-      const h = hour.toString().padStart(2, '0');
-      const m = minute.toString().padStart(2, '0');
-      times.push(`${h}:${m}`);
-    }
-  }
-  return times;
-};
-
-const TIME_OPTIONS = generateTimeOptions();
+// Generate hours 00-23
+const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+// Generate minutes 00-59
+const MINUTES = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
 export function TimePickerModal({ visible, onClose, onSelectTime }: TimePickerModalProps) {
-  const handleSelectTime = (time: string) => {
-    onSelectTime(time);
+  const [selectedHour, setSelectedHour] = useState('08');
+  const [selectedMinute, setSelectedMinute] = useState('00');
+
+  const handleConfirm = () => {
+    onSelectTime(`${selectedHour}:${selectedMinute}`);
     onClose();
   };
 
@@ -52,25 +46,81 @@ export function TimePickerModal({ visible, onClose, onSelectTime }: TimePickerMo
             </TouchableOpacity>
           </View>
 
-          {/* Time Options */}
-          <ScrollView
-            style={styles.timeList}
-            contentContainerStyle={styles.timeListContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {TIME_OPTIONS.map((time) => (
-              <TouchableOpacity
-                key={time}
-                style={styles.timeOption}
-                onPress={() => handleSelectTime(time)}
-                activeOpacity={0.7}
+          {/* Picker Columns */}
+          <View style={styles.pickerContainer}>
+            {/* Hours */}
+            <View style={styles.column}>
+              <Text style={styles.columnLabel}>Horas</Text>
+              <ScrollView
+                style={styles.scrollList}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
               >
-                <Ionicons name="time-outline" size={20} color="#00FF88" />
-                <Text style={styles.timeText}>{time}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#5A6178" />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                {HOURS.map((hour) => (
+                  <TouchableOpacity
+                    key={hour}
+                    style={[
+                      styles.timeItem,
+                      selectedHour === hour && styles.selectedItem,
+                    ]}
+                    onPress={() => setSelectedHour(hour)}
+                  >
+                    <Text
+                      style={[
+                        styles.timeText,
+                        selectedHour === hour && styles.selectedText,
+                      ]}
+                    >
+                      {hour}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <Text style={styles.separator}>:</Text>
+
+            {/* Minutes */}
+            <View style={styles.column}>
+              <Text style={styles.columnLabel}>Minutos</Text>
+              <ScrollView
+                style={styles.scrollList}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {MINUTES.map((minute) => (
+                  <TouchableOpacity
+                    key={minute}
+                    style={[
+                      styles.timeItem,
+                      selectedMinute === minute && styles.selectedItem,
+                    ]}
+                    onPress={() => setSelectedMinute(minute)}
+                  >
+                    <Text
+                      style={[
+                        styles.timeText,
+                        selectedMinute === minute && styles.selectedText,
+                      ]}
+                    >
+                      {minute}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+
+          {/* Confirm Button */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleConfirm}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.confirmButtonText}>Confirmar Horário</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -87,7 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0E1A',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: '70%',
+    height: '60%',
     paddingTop: 20,
   },
   header: {
@@ -98,35 +148,82 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   closeButton: {
     padding: 8,
   },
-  timeList: {
-    flex: 1,
-  },
-  timeListContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  timeOption: {
+  pickerContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#141B2D',
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  column: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+  },
+  columnLabel: {
+    color: '#8B92A8',
+    fontSize: 12,
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  scrollList: {
+    width: '100%',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingVertical: 60, // Add padding to center items
+  },
+  timeItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    gap: 12,
+    marginVertical: 4,
+    width: 80,
+    alignItems: 'center',
+  },
+  selectedItem: {
+    backgroundColor: '#141B2D',
+    borderWidth: 1,
+    borderColor: '#00FF88',
   },
   timeText: {
-    flex: 1,
-    fontSize: 18,
+    fontSize: 24,
+    color: '#5A6178',
     fontWeight: '600',
+  },
+  selectedText: {
+    color: '#00FF88',
+    fontWeight: '800',
+    fontSize: 28,
+  },
+  separator: {
+    fontSize: 40,
     color: '#FFFFFF',
+    fontWeight: '800',
+    marginHorizontal: 10,
+    marginBottom: 20,
+  },
+  footer: {
+    padding: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#1E2A42',
+  },
+  confirmButton: {
+    backgroundColor: '#00FF88',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#0A0E1A',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

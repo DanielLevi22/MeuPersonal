@@ -3,12 +3,13 @@ import { calculateFoodMacros } from '@/utils/nutrition';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-    Alert,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { EditFoodModal } from './EditFoodModal';
 import { TimePickerModal } from './TimePickerModal';
 
 interface MealCardProps {
@@ -17,6 +18,7 @@ interface MealCardProps {
   onAddFood: () => void;
   onRemoveFood: (itemId: string) => void;
   onUpdateMealTime: (mealId: string, mealTime: string) => void;
+  onUpdateFood: (itemId: string, quantity: number) => void;
   isEditable?: boolean;
 }
 
@@ -29,9 +31,10 @@ const MEAL_TYPE_LABELS: Record<string, string> = {
   evening_snack: 'Ceia',
 };
 
-export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTime, isEditable = true }: MealCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTime, onUpdateFood, isEditable = true }: MealCardProps) {
+  const [isExpanded, setIsExpanded] = useState(!meal.meal_time);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [editingItem, setEditingItem] = useState<DietMealItem | null>(null);
 
   // Calculate total macros for this meal
   const totalMacros = items.reduce(
@@ -70,6 +73,10 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
     onUpdateMealTime(meal.id, time);
   };
 
+  const handleUpdateFoodQuantity = (itemId: string, quantity: number) => {
+    onUpdateFood(itemId, quantity);
+  };
+
   const mealLabel = meal.name || MEAL_TYPE_LABELS[meal.meal_type] || meal.meal_type;
 
   return (
@@ -88,9 +95,13 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
           />
           <View style={styles.headerTextContainer}>
             <Text style={styles.mealName}>{mealLabel}</Text>
-            {meal.meal_time && (
+            {meal.meal_time ? (
               <Text style={styles.mealTime}>
                 <Ionicons name="time-outline" size={12} color="#8B92A8" /> {meal.meal_time}
+              </Text>
+            ) : (
+              <Text style={[styles.mealTime, { color: '#FF6B35' }]}>
+                <Ionicons name="alert-circle-outline" size={12} color="#FF6B35" /> Definir Horário
               </Text>
             )}
           </View>
@@ -145,14 +156,23 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
           {/* Food Items */}
           {items.map((item, index) => (
             <View key={item.id} style={styles.foodItem}>
-              <View style={styles.foodInfo}>
+              <TouchableOpacity 
+                style={styles.foodInfo}
+                onPress={() => isEditable && setEditingItem(item)}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.foodName}>
                   {item.food?.name || 'Alimento desconhecido'}
                 </Text>
-                <Text style={styles.foodQuantity}>
-                  {item.quantity}{item.unit}
-                </Text>
-              </View>
+                <View style={styles.foodQuantityContainer}>
+                  <Text style={styles.foodQuantity}>
+                    {item.quantity}{item.unit}
+                  </Text>
+                  {isEditable && (
+                    <Ionicons name="pencil" size={12} color="#8B92A8" style={{ marginLeft: 4 }} />
+                  )}
+                </View>
+              </TouchableOpacity>
               {isEditable && (
                 <TouchableOpacity
                   onPress={() => onRemoveFood(item.id)}
@@ -183,6 +203,14 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
         onSelectTime={handleSelectTime}
+      />
+
+      {/* Edit Food Modal */}
+      <EditFoodModal
+        visible={!!editingItem}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={handleUpdateFoodQuantity}
       />
     </View>
   );
@@ -274,6 +302,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     marginBottom: 2,
+  },
+  foodQuantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   foodQuantity: {
     fontSize: 12,

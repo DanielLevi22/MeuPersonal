@@ -1,5 +1,23 @@
 import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
 import { MealCard } from '@/components/nutrition/MealCard';
+import { Food, useNutritionStore } from '@/store/nutritionStore';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Domingo' },
   { value: 1, label: 'Segunda' },
   { value: 2, label: 'Terça' },
   { value: 3, label: 'Quarta' },
@@ -31,6 +49,7 @@ export default function FullDietScreen() {
     addMeal,
     updateMeal,
     addFoodToMeal,
+    updateMealItem,
     removeFoodFromMeal,
     isLoading,
   } = useNutritionStore();
@@ -104,6 +123,14 @@ export default function FullDietScreen() {
       setSelectedMealId(null);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar o alimento.');
+    }
+  };
+
+  const handleUpdateFood = async (itemId: string, quantity: number) => {
+    try {
+      await updateMealItem(itemId, { quantity });
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar o alimento.');
     }
   };
 
@@ -272,6 +299,7 @@ export default function FullDietScreen() {
                   onAddFood={() => handleAddFoodToMeal(meal.id)}
                   onRemoveFood={handleRemoveFood}
                   onUpdateMealTime={handleUpdateMealTime}
+                  onUpdateFood={handleUpdateFood}
                   isEditable={true}
                 />
               );

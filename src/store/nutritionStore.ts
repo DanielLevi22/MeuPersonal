@@ -85,6 +85,7 @@ interface NutritionStore {
   mealItems: Record<string, DietMealItem[]>; // Keyed by meal_id
   fetchMealItems: (mealId: string) => Promise<void>;
   addFoodToMeal: (mealId: string, foodId: string, quantity: number, unit: string) => Promise<void>;
+  updateMealItem: (itemId: string, updates: Partial<DietMealItem>) => Promise<void>;
   removeFoodFromMeal: (itemId: string) => Promise<void>;
   
   // Loading states
@@ -186,6 +187,33 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (error) throw error;
       
       set({ currentDietPlan: data });
+    } catch (error) {
+      console.error('Error creating diet plan:', error);
+      throw error;
+    }
+  },
+
+  // Update diet plan
+  updateDietPlan: async (id, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_plans')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      set({ currentDietPlan: data });
+    } catch (error) {
+      console.error('Error updating diet plan:', error);
+      throw error;
+    }
+  },
+
+  // Fetch meals for a diet plan
+  fetchMeals: async (dietPlanId: string) => {
     try {
       const { data, error } = await supabase
         .from('diet_meals')
@@ -199,6 +227,29 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       set({ meals: data || [] });
     } catch (error) {
       console.error('Error fetching meals:', error);
+    }
+  },
+
+  // Update meal
+  updateMeal: async (id, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_meals')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      set((state) => ({
+        meals: state.meals.map((meal) => 
+          meal.id === id ? { ...meal, ...data } : meal
+        )
+      }));
+    } catch (error) {
+      console.error('Error updating meal:', error);
+      throw error;
     }
   },
 
@@ -278,6 +329,41 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       }));
     } catch (error) {
       console.error('Error adding food to meal:', error);
+      throw error;
+    }
+  },
+
+  // Update meal item
+  updateMealItem: async (itemId, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_meal_items')
+        .update(updates)
+        .eq('id', itemId)
+        .select(`
+          *,
+          food:foods (*)
+        `)
+        .single();
+
+      if (error) throw error;
+      
+      // Update local state
+      set((state) => {
+        const newMealItems = { ...state.mealItems };
+        // Find which meal this item belongs to
+        const mealId = data.diet_meal_id;
+        
+        if (newMealItems[mealId]) {
+          newMealItems[mealId] = newMealItems[mealId].map(item => 
+            item.id === itemId ? data : item
+          );
+        }
+        
+        return { mealItems: newMealItems };
+      });
+    } catch (error) {
+      console.error('Error updating meal item:', error);
       throw error;
     }
   },
