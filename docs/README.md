@@ -7,6 +7,20 @@ Bem-vindo à documentação do projeto MeuPersonal. Este diretório contém toda
 ### 🏗️ Arquitetura e Design
 - **[architecture.md](./architecture.md)** - Arquitetura do projeto, stack tecnológica, estrutura de pastas e fluxo de dados
 
+### 🎯 Funcionalidades
+- **[features.md](./features.md)** - Documentação completa de todas as funcionalidades implementadas
+  - Gerenciamento de alunos
+  - Criação e atribuição de treinos
+  - Execução de treino com timer
+  - Sistema de feedback visual
+  - Controle de acesso por função
+- **[nutrition-spec.md](./nutrition-spec.md)** - **PRÓXIMO** - Especificação completa do módulo de nutrição
+  - Sistema de dietas personalizadas
+  - Banco de 3500+ alimentos brasileiros
+  - Tracking de macros em tempo real
+  - Substituições inteligentes
+  - Progresso nutricional com fotos
+
 ### 📋 Regras de Negócio
 - **[business_rules.md](./business_rules.md)** - Regras de negócio, atores do sistema, permissões e fluxos
 
@@ -26,7 +40,7 @@ Bem-vindo à documentação do projeto MeuPersonal. Este diretório contém toda
 - **[tanstack_query_evaluation.md](./tanstack_query_evaluation.md)** - Avaliação e recomendação sobre implementação do TanStack Query
 
 ### 🗺️ Roadmap
-- **[roadmap.md](./roadmap.md)** - Roadmap de desenvolvimento e fases do projeto
+- **[roadmap.md](./roadmap.md)** - Roadmap de desenvolvimento e fases do projeto (atualizado com progresso)
 
 ---
 
@@ -75,5 +89,6 @@ Bem-vindo à documentação do projeto MeuPersonal. Este diretório contém toda
 
 ---
 
-**Última atualização**: 2025-01-XX
+**Última atualização**: 2025-01-22
 
+**Status do Projeto**: Fase 3 Concluída ✅ - Ver [features.md](./features.md) e [roadmap.md](./roadmap.md)
