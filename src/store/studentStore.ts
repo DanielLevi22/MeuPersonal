@@ -9,6 +9,11 @@ interface Student {
   avatar_url: string | null;
   status: 'active' | 'pending' | 'inactive' | 'invited';
   is_invite?: boolean;
+  phone?: string;
+  weight?: string;
+  height?: string;
+  notes?: string;
+  assessment?: any;
 }
 
 interface StudentState {
@@ -20,6 +25,7 @@ interface StudentState {
   cancelInvite: (inviteId: string) => Promise<void>;
   linkStudent: (studentId: string, inviteCode: string) => Promise<{ success: boolean; error?: string }>;
   removeStudent: (personalId: string, studentId: string) => Promise<void>;
+  updateStudent: (studentId: string, data: Partial<StudentInviteData>) => Promise<{ success: boolean; error?: string }>;
 }
 
 export interface StudentInviteData {
@@ -30,6 +36,28 @@ export interface StudentInviteData {
   height?: string;
   notes?: string;
   initial_assessment?: any;
+  // Extended fields for editing
+  neck?: string;
+  shoulder?: string;
+  chest?: string;
+  arm_right_relaxed?: string;
+  arm_left_relaxed?: string;
+  arm_right_contracted?: string;
+  arm_left_contracted?: string;
+  forearm?: string;
+  waist?: string;
+  abdomen?: string;
+  hips?: string;
+  thigh_proximal?: string;
+  thigh_distal?: string;
+  calf?: string;
+  skinfold_chest?: string;
+  skinfold_abdominal?: string;
+  skinfold_thigh?: string;
+  skinfold_triceps?: string;
+  skinfold_suprailiac?: string;
+  skinfold_subscapular?: string;
+  skinfold_midaxillary?: string;
 }
 
 export const useStudentStore = create<StudentState>((set, get) => ({
@@ -48,7 +76,8 @@ export const useStudentStore = create<StudentState>((set, get) => ({
             full_name,
             email,
             avatar_url,
-            invite_code
+            invite_code,
+            phone
           )
         `)
         .eq('personal_id', personalId);
@@ -56,14 +85,45 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       console.log('🔍 Linked Data:', JSON.stringify(linkedData, null, 2));
       if (linkedError) console.error('❌ Linked Error:', linkedError);
 
+      // Fetch latest assessment for each student to get weight/height/etc
+      let assessmentsMap = new Map();
+      try {
+        const { data: assessmentsData, error: assessmentsError } = await supabase
+          .from('physical_assessments')
+          .select('*')
+          .eq('personal_id', personalId)
+          .order('created_at', { ascending: false });
+
+        if (assessmentsError) throw assessmentsError;
+
+        if (assessmentsData) {
+          assessmentsData.forEach((assessment: any) => {
+            if (!assessmentsMap.has(assessment.student_id)) {
+              assessmentsMap.set(assessment.student_id, assessment);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch assessments:', err);
+        // Continue without assessments
+      }
+
       const formattedLinkedStudents = (linkedData || []).map((item: any) => {
         if (!item.student) {
            console.warn('⚠️ Found link but no student profile:', item);
            return null;
         }
+        
+        const assessment = assessmentsMap.get(item.student.id) || {};
+        
         return {
           ...item.student,
           status: item.status,
+          // Merge assessment data
+          weight: assessment.weight,
+          height: assessment.height,
+          notes: assessment.notes, // Assessment notes might override or complement? Let's use assessment notes as the primary "notes" for now if available
+          assessment: assessment // Keep full assessment object
         };
       }).filter(Boolean);
 
@@ -305,6 +365,95 @@ export const useStudentStore = create<StudentState>((set, get) => ({
     } catch (error) {
       console.error('Error removing student:', error);
       Alert.alert('Erro', 'Não foi possível remover o aluno. Tente novamente.');
+    }
+  },
+  updateStudent: async (studentId, data) => {
+    try {
+      // 1. Update Profile (Basic Info)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: data.name,
+          phone: data.phone,
+        })
+        .eq('id', studentId);
+
+      if (profileError) throw profileError;
+
+      // 2. Update or Insert Physical Assessment
+      // We'll insert a new one to keep history, or update the latest? 
+      // User asked to "edit", usually implies updating current state. 
+      // But for assessments, history is good. 
+      // However, to keep it simple and match "edit profile" feel, let's update the LATEST assessment if it exists and is recent, 
+      // OR just insert a new one?
+      // Let's INSERT a new one to preserve history, effectively "updating" the current state.
+      // BUT, if we just want to edit the "current" values, maybe we should check if one exists for today?
+      // Let's keep it simple: Insert new assessment with the updated values.
+      
+      // Actually, if we are editing "static" fields like weight/height in a "profile" context, 
+      // users might expect it to just update. But in a fitness app, weight changes.
+      // Let's insert a new record for the assessment data.
+      
+      const { data: session } = await supabase.auth.getSession();
+      const personalId = session.session?.user.id;
+
+      if (personalId) {
+        const { error: assessmentError } = await supabase
+          .from('physical_assessments')
+          .insert({
+            student_id: studentId,
+            personal_id: personalId,
+            weight: data.weight ? parseFloat(data.weight) : null,
+            height: data.height ? parseFloat(data.height) : null,
+            notes: data.notes,
+            // Add other fields
+            neck: data.neck ? parseFloat(data.neck) : null,
+            shoulder: data.shoulder ? parseFloat(data.shoulder) : null,
+            chest: data.chest ? parseFloat(data.chest) : null,
+            arm_right_relaxed: data.arm_right_relaxed ? parseFloat(data.arm_right_relaxed) : null,
+            arm_left_relaxed: data.arm_left_relaxed ? parseFloat(data.arm_left_relaxed) : null,
+            arm_right_contracted: data.arm_right_contracted ? parseFloat(data.arm_right_contracted) : null,
+            arm_left_contracted: data.arm_left_contracted ? parseFloat(data.arm_left_contracted) : null,
+            forearm: data.forearm ? parseFloat(data.forearm) : null,
+            waist: data.waist ? parseFloat(data.waist) : null,
+            abdomen: data.abdomen ? parseFloat(data.abdomen) : null,
+            hips: data.hips ? parseFloat(data.hips) : null,
+            thigh_proximal: data.thigh_proximal ? parseFloat(data.thigh_proximal) : null,
+            thigh_distal: data.thigh_distal ? parseFloat(data.thigh_distal) : null,
+            calf: data.calf ? parseFloat(data.calf) : null,
+            skinfold_chest: data.skinfold_chest ? parseFloat(data.skinfold_chest) : null,
+            skinfold_abdominal: data.skinfold_abdominal ? parseFloat(data.skinfold_abdominal) : null,
+            skinfold_thigh: data.skinfold_thigh ? parseFloat(data.skinfold_thigh) : null,
+            skinfold_triceps: data.skinfold_triceps ? parseFloat(data.skinfold_triceps) : null,
+            skinfold_suprailiac: data.skinfold_suprailiac ? parseFloat(data.skinfold_suprailiac) : null,
+            skinfold_subscapular: data.skinfold_subscapular ? parseFloat(data.skinfold_subscapular) : null,
+            skinfold_midaxillary: data.skinfold_midaxillary ? parseFloat(data.skinfold_midaxillary) : null,
+          });
+          
+         if (assessmentError) console.error('Error updating assessment:', assessmentError);
+      }
+
+      // Update local state
+      set((state) => ({
+        students: state.students.map((s) => 
+          s.id === studentId 
+            ? { 
+                ...s, 
+                full_name: data.name || s.full_name,
+                phone: data.phone, // Update phone
+                weight: data.weight, // Update displayed weight
+                height: data.height, // Update displayed height
+                notes: data.notes,
+                assessment: { ...s.assessment, ...data } // Update assessment cache
+              } 
+            : s
+        )
+      }));
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating student:', error);
+      return { success: false, error: error.message };
     }
   }
 }));

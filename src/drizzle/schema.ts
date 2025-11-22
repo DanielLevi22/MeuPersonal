@@ -7,6 +7,8 @@ export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey().notNull(), // References auth.users.id
   email: text('email').notNull(),
   fullName: text('full_name'),
+  phone: text('phone'),
+  inviteCode: text('invite_code'),
   role: userRoles('role').default('student'),
   avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -17,6 +19,37 @@ export const studentsPersonals = pgTable('students_personals', {
   personalId: uuid('personal_id').references(() => profiles.id).notNull(),
   studentId: uuid('student_id').references(() => profiles.id).notNull(),
   status: inviteStatus('status').default('pending').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const physicalAssessments = pgTable('physical_assessments', {
+  id: uuid('id').defaultRandom().primaryKey().notNull(),
+  studentId: uuid('student_id').references(() => profiles.id).notNull(),
+  personalId: uuid('personal_id').references(() => profiles.id).notNull(),
+  weight: text('weight'), // Changed to text to match other numeric fields in schema if needed, but migration said numeric. Let's stick to numeric/decimal in DB but text in TS often easier for inputs. Actually migration used numeric. Drizzle 'decimal' or 'numeric' maps to string in JS usually to preserve precision. Let's use 'numeric'.
+  height: text('height'),
+  neck: text('neck'),
+  shoulder: text('shoulder'),
+  chest: text('chest'),
+  armRightRelaxed: text('arm_right_relaxed'),
+  armLeftRelaxed: text('arm_left_relaxed'),
+  armRightContracted: text('arm_right_contracted'),
+  armLeftContracted: text('arm_left_contracted'),
+  forearm: text('forearm'),
+  waist: text('waist'),
+  abdomen: text('abdomen'),
+  hips: text('hips'),
+  thighProximal: text('thigh_proximal'),
+  thighDistal: text('thigh_distal'),
+  calf: text('calf'),
+  skinfoldChest: text('skinfold_chest'),
+  skinfoldAbdominal: text('skinfold_abdominal'),
+  skinfoldThigh: text('skinfold_thigh'),
+  skinfoldTriceps: text('skinfold_triceps'),
+  skinfoldSuprailiac: text('skinfold_suprailiac'),
+  skinfoldSubscapular: text('skinfold_subscapular'),
+  skinfoldMidaxillary: text('skinfold_midaxillary'),
+  notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

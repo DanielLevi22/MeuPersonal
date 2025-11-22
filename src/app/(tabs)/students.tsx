@@ -1,16 +1,20 @@
+import { StudentEditModal } from '@/components/StudentEditModal';
 import { useAuthStore } from '@/store/authStore';
 import { useStudentStore } from '@/store/studentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function StudentsScreen() {
-  const { students, isLoading, fetchStudents, removeStudent, cancelInvite } = useStudentStore();
+  const { students, isLoading, fetchStudents, removeStudent, cancelInvite, updateStudent } = useStudentStore();
   const { user } = useAuthStore();
   const router = useRouter();
+  
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -49,84 +53,109 @@ export default function StudentsScreen() {
     );
   };
 
+  const handleEdit = (student: any) => {
+    if (student.status === 'active') {
+      setSelectedStudent(student);
+      setIsEditModalVisible(true);
+    }
+  };
+
+  const handleSaveEdit = async (data: any) => {
+    if (selectedStudent) {
+      const result = await updateStudent(selectedStudent.id, data);
+      if (result.success) {
+        setIsEditModalVisible(false);
+        setSelectedStudent(null);
+      } else {
+        Alert.alert('Erro', result.error || 'Falha ao atualizar aluno');
+      }
+    }
+  };
+
   const renderItem = ({ item }: { item: any }) => (
-    <View 
-      style={{
-        backgroundColor: '#141B2D',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 2,
-        borderColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.3)' : '#1E2A42',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}
+    <TouchableOpacity 
+      activeOpacity={0.7}
+      onPress={() => handleEdit(item)}
+      disabled={item.status !== 'active'}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-        {/* Avatar */}
-        <View style={{
-          height: 56,
-          width: 56,
-          borderRadius: 28,
-          backgroundColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.15)' : 'rgba(0, 217, 255, 0.15)',
+      <View 
+        style={{
+          backgroundColor: '#141B2D',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 12,
+          borderWidth: 2,
+          borderColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.3)' : '#1E2A42',
+          flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: 16
-        }}>
-          <Ionicons 
-            name={item.status === 'invited' ? "mail-outline" : "person"} 
-            size={28} 
-            color={item.status === 'invited' ? "#FFB800" : "#00D9FF"} 
-          />
-        </View>
-
-        {/* Info */}
-        <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }} numberOfLines={1}>
-            {item.full_name || 'Aluno sem nome'}
-          </Text>
-          <Text style={{ color: '#8B92A8', fontSize: 14 }} numberOfLines={1}>
-            {item.email}
-          </Text>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {/* Status Badge */}
-        <View style={{
-          backgroundColor: item.status === 'active' 
-            ? 'rgba(0, 255, 136, 0.15)' 
-            : item.status === 'invited'
-              ? 'rgba(255, 184, 0, 0.15)'
-              : 'rgba(255, 255, 255, 0.1)',
-          paddingHorizontal: 10,
-          paddingVertical: 6,
-          borderRadius: 12,
-          marginRight: 12
-        }}>
-          <Text style={{
-            color: item.status === 'active' 
-              ? '#00FF88' 
-              : item.status === 'invited'
-                ? '#FFB800'
-                : '#8B92A8',
-            fontSize: 12,
-            fontWeight: '700'
+          justifyContent: 'space-between'
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          {/* Avatar */}
+          <View style={{
+            height: 56,
+            width: 56,
+            borderRadius: 28,
+            backgroundColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.15)' : 'rgba(0, 217, 255, 0.15)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 16
           }}>
-            {item.status === 'active' ? 'Ativo' : item.status === 'invited' ? 'Convite' : 'Pendente'}
-          </Text>
+            <Ionicons 
+              name={item.status === 'invited' ? "mail-outline" : "person"} 
+              size={28} 
+              color={item.status === 'invited' ? "#FFB800" : "#00D9FF"} 
+            />
+          </View>
+
+          {/* Info */}
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }} numberOfLines={1}>
+              {item.full_name || 'Aluno sem nome'}
+            </Text>
+            <Text style={{ color: '#8B92A8', fontSize: 14 }} numberOfLines={1}>
+              {item.status === 'invited' ? item.email : `Código: ${item.invite_code || 'N/A'}`}
+            </Text>
+          </View>
         </View>
 
-        {/* Remove Button */}
-        <TouchableOpacity 
-          onPress={() => handleRemove(item)}
-          style={{ padding: 8 }}
-        >
-          <Ionicons name="trash-outline" size={20} color="#FF4444" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {/* Status Badge */}
+          <View style={{
+            backgroundColor: item.status === 'active' 
+              ? 'rgba(0, 255, 136, 0.15)' 
+              : item.status === 'invited'
+                ? 'rgba(255, 184, 0, 0.15)'
+                : 'rgba(255, 255, 255, 0.1)',
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 12,
+            marginRight: 12
+          }}>
+            <Text style={{
+              color: item.status === 'active' 
+                ? '#00FF88' 
+                : item.status === 'invited'
+                  ? '#FFB800'
+                  : '#8B92A8',
+              fontSize: 12,
+              fontWeight: '700'
+            }}>
+              {item.status === 'active' ? 'Ativo' : item.status === 'invited' ? 'Convite' : 'Pendente'}
+            </Text>
+          </View>
+
+          {/* Remove Button */}
+          <TouchableOpacity 
+            onPress={() => handleRemove(item)}
+            style={{ padding: 8 }}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF4444" />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -223,6 +252,13 @@ export default function StudentsScreen() {
             showsVerticalScrollIndicator={false}
           />
         )}
+
+        <StudentEditModal
+          visible={isEditModalVisible}
+          onClose={() => setIsEditModalVisible(false)}
+          onSave={handleSaveEdit}
+          student={selectedStudent}
+        />
       </SafeAreaView>
     </View>
   );
