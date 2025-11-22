@@ -94,8 +94,25 @@ interface NutritionStore {
   pasteDay: (targetDay: number) => Promise<void>;
   clearDay: (dayOfWeek: number) => Promise<void>;
   
+  // Daily Logs
+  dailyLogs: Record<string, DailyLog>; // Keyed by meal_id
+  fetchDailyLogs: (studentId: string, date: string) => Promise<void>;
+  toggleMealCompletion: (mealId: string, date: string, isCompleted: boolean) => Promise<void>;
+
   // Loading states
   isLoading: boolean;
+}
+
+export interface DailyLog {
+  id: string;
+  student_id: string;
+  diet_plan_id?: string;
+  diet_meal_id?: string;
+  logged_date: string;
+  completed: boolean;
+  actual_items?: any;
+  notes?: string;
+  photo_url?: string;
 }
 
 export const useNutritionStore = create<NutritionStore>((set, get) => ({
@@ -105,8 +122,97 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   mealItems: {},
   isLoading: false,
   copiedDay: null,
+  dailyLogs: {},
 
   // ... (existing actions)
+
+  // Fetch daily logs
+  fetchDailyLogs: async (studentId: string, date: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_logs')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('logged_date', date);
+
+      if (error) throw error;
+
+      // Convert array to record keyed by diet_meal_id
+      const logsRecord: Record<string, DailyLog> = {};
+      data?.forEach((log) => {
+        if (log.diet_meal_id) {
+          logsRecord[log.diet_meal_id] = log;
+        }
+      });
+
+      set({ dailyLogs: logsRecord });
+    } catch (error) {
+      console.error('Error fetching daily logs:', error);
+    }
+  },
+
+  // Toggle meal completion
+  toggleMealCompletion: async (mealId: string, date: string, isCompleted: boolean) => {
+    const { currentDietPlan, dailyLogs } = get();
+    if (!currentDietPlan) return;
+
+    try {
+      // Optimistic update
+      const existingLog = dailyLogs[mealId];
+      const optimisticLog = {
+        ...existingLog,
+        diet_meal_id: mealId,
+        logged_date: date,
+        completed: isCompleted,
+        student_id: currentDietPlan.student_id,
+      } as DailyLog;
+
+      set((state) => ({
+        dailyLogs: {
+          ...state.dailyLogs,
+          [mealId]: optimisticLog
+        }
+      }));
+
+      // Check if log exists
+      if (existingLog?.id) {
+        // Update
+        const { error } = await supabase
+          .from('diet_logs')
+          .update({ completed: isCompleted })
+          .eq('id', existingLog.id);
+
+        if (error) throw error;
+      } else {
+        // Insert
+        const { data, error } = await supabase
+          .from('diet_logs')
+          .insert({
+            student_id: currentDietPlan.student_id,
+            diet_plan_id: currentDietPlan.id,
+            diet_meal_id: mealId,
+            logged_date: date,
+            completed: isCompleted
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Update with real ID
+        set((state) => ({
+          dailyLogs: {
+            ...state.dailyLogs,
+            [mealId]: data
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error toggling meal completion:', error);
+      // Revert on error (could be improved)
+      get().fetchDailyLogs(currentDietPlan.student_id, date);
+    }
+  },
 
   // Copy Day
   copyDay: async (dayOfWeek: number) => {

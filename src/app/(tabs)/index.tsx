@@ -1,3 +1,4 @@
+import { DailyNutrition } from '@/components/nutrition/DailyNutrition';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -129,72 +130,78 @@ export default function DashboardScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
         <SafeAreaView style={{ flex: 1 }}>
-          <View style={{ padding: 24 }}>
-            <View style={{ marginBottom: 32 }}>
-              <Text style={{ fontSize: 36, fontWeight: '800', color: '#FFFFFF', marginBottom: 8 }}>
-                Seus Treinos 💪
-              </Text>
-              <Text style={{ fontSize: 16, color: '#8B92A8' }}>
-                Vamos treinar hoje?
-              </Text>
-            </View>
+          <FlatList
+            data={workouts}
+            renderItem={renderWorkoutItem}
+            keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={fetchProfile} tintColor="#FF6B35" />
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: 24 }}
+            ListHeaderComponent={
+              <View style={{ marginBottom: 24 }}>
+                {/* Nutrition Section */}
+                <DailyNutrition />
 
-            {workouts.length === 0 ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
-                <View style={{ 
-                  backgroundColor: '#141B2D', 
-                  padding: 32, 
-                  borderRadius: 50,
-                  marginBottom: 24
-                }}>
-                  <Ionicons name={hasPersonal ? "barbell-outline" : "person-add-outline"} size={80} color="#5A6178" />
+                {/* Workouts Section Header */}
+                <View style={{ marginTop: 8, marginBottom: 16 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 }}>
+                    Seus Treinos 💪
+                  </Text>
+                  <Text style={{ fontSize: 16, color: '#8B92A8' }}>
+                    Vamos treinar hoje?
+                  </Text>
                 </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
-                  {hasPersonal ? 'Nenhum treino ainda' : 'Sem Personal Trainer'}
-                </Text>
-                <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
-                  {hasPersonal 
-                    ? 'Aguarde seu personal criar treinos personalizados para você' 
-                    : 'Vincule-se a um personal para receber seus treinos personalizados'}
-                </Text>
 
-                {!hasPersonal && (
-                  <TouchableOpacity 
-                    onPress={() => router.push('/student/join-personal' as any)}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={['#FF6B35', '#E85A2A']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{
-                        borderRadius: 16,
-                        paddingVertical: 16,
-                        paddingHorizontal: 32,
-                        flexDirection: 'row',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Ionicons name="link" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                      <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
-                        Vincular Personal
-                      </Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                {workouts.length === 0 && (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+                    <View style={{ 
+                      backgroundColor: '#141B2D', 
+                      padding: 32, 
+                      borderRadius: 50,
+                      marginBottom: 24
+                    }}>
+                      <Ionicons name={hasPersonal ? "barbell-outline" : "person-add-outline"} size={80} color="#5A6178" />
+                    </View>
+                    <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
+                      {hasPersonal ? 'Nenhum treino ainda' : 'Sem Personal Trainer'}
+                    </Text>
+                    <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
+                      {hasPersonal 
+                        ? 'Aguarde seu personal criar treinos personalizados para você' 
+                        : 'Vincule-se a um personal para receber seus treinos personalizados'}
+                    </Text>
+
+                    {!hasPersonal && (
+                      <TouchableOpacity 
+                        onPress={() => router.push('/student/join-personal' as any)}
+                        activeOpacity={0.8}
+                      >
+                        <LinearGradient
+                          colors={['#FF6B35', '#E85A2A']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={{
+                            borderRadius: 16,
+                            paddingVertical: 16,
+                            paddingHorizontal: 32,
+                            flexDirection: 'row',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <Ionicons name="link" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
+                            Vincular Personal
+                          </Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
-            ) : (
-              <FlatList
-                data={workouts}
-                renderItem={renderWorkoutItem}
-                keyExtractor={(item) => item.id}
-                refreshControl={
-                  <RefreshControl refreshing={loading} onRefresh={fetchProfile} tintColor="#FF6B35" />
-                }
-                showsVerticalScrollIndicator={false}
-              />
-            )}
-          </View>
+            }
+          />
         </SafeAreaView>
       </View>
     );
