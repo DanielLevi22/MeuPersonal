@@ -1,12 +1,13 @@
-import { ExerciseConfigModal, Exercise, SelectedExercise } from '@/components/ExerciseConfigModal';
+import { ExerciseConfigModal } from '@/components/ExerciseConfigModal';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface WorkoutItem {
@@ -31,19 +32,27 @@ export default function WorkoutDetailScreen() {
 
   const [workout, setWorkout] = useState<any>(null);
   const [workoutItems, setWorkoutItems] = useState<WorkoutItem[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [showStudentPicker, setShowStudentPicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkoutItem | null>(null);
+  const [showWorkoutEditModal, setShowWorkoutEditModal] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   // Fetch workout details
   const fetchWorkoutDetails = async () => {
     try {
       const { data: workoutData, error: workoutError } = await supabase
         .from('workouts')
-        .select('*')
+        .select(`
+          *,
+          student:profiles!student_id (
+            id,
+            full_name,
+            email
+          )
+        `)
         .eq('id', id)
         .maybeSingle();
       if (workoutError) throw workoutError;
@@ -87,40 +96,58 @@ export default function WorkoutDetailScreen() {
     }
   };
 
-  // Fetch students for assignment
-  const fetchStudents = async () => {
-    if (!user?.id) return;
-    try {
-      const { data, error } = await supabase
-        .from('students_personals')
-        .select(`
-          status,
-          student:profiles!student_id (
-            id,
-            full_name,
-            email
-          )
-        `);
-      if (error) throw error;
-      setStudents(data);
-    } catch (e: any) {
-      console.error(e);
-    }
-  };
+  // ... (fetchWorkoutDetails remains)
 
   // Initial load
   useEffect(() => {
     if (id) {
       fetchWorkoutDetails();
-      fetchStudents();
     }
   }, [id]);
 
-  // Refresh when returning from select-exercises screen
+  const { selectedExercises, clearSelectedExercises } = useWorkoutStore();
+
+  // Refresh when returning
   useFocusEffect(
     useCallback(() => {
-      if (id) fetchWorkoutDetails();
-    }, [id])
+      const handleNewExercises = async () => {
+        if (selectedExercises.length > 0) {
+          try {
+            setLoading(true);
+            
+            // Get current max order
+            const currentMaxOrder = workoutItems.length > 0 
+              ? Math.max(...workoutItems.map(i => i.order)) 
+              : -1;
+
+            const newItems = selectedExercises.map((ex, index) => ({
+              workout_id: id,
+              exercise_id: ex.id,
+              sets: ex.sets,
+              reps: ex.reps.toString(),
+              weight: ex.weight,
+              rest_time: ex.rest_seconds,
+              order: currentMaxOrder + 1 + index
+            }));
+
+            const { error } = await supabase
+              .from('workout_items')
+              .insert(newItems);
+
+            if (error) throw error;
+
+            clearSelectedExercises();
+            Alert.alert('Sucesso', 'Novos exercícios adicionados!');
+          } catch (e: any) {
+            Alert.alert('Erro', 'Falha ao adicionar exercícios: ' + e.message);
+          }
+        }
+        
+        if (id) fetchWorkoutDetails();
+      };
+
+      handleNewExercises();
+    }, [id, selectedExercises])
   );
 
   const handleDeleteWorkout = () => {
@@ -197,17 +224,34 @@ export default function WorkoutDetailScreen() {
     }
   };
 
-  const handleAssignToStudent = async (studentId: string) => {
-    if (!user?.id) return;
+  const handleEditWorkout = () => {
+    setEditTitle(workout.title);
+    setEditDescription(workout.description || '');
+    setShowWorkoutEditModal(true);
+  };
+
+  const handleSaveWorkout = async () => {
+    if (!editTitle.trim()) {
+      Alert.alert('Erro', 'O título não pode estar vazio.');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('workouts')
-        .update({ student_id: studentId })
+        .update({
+          title: editTitle,
+          description: editDescription || null
+        })
         .eq('id', id);
+
       if (error) throw error;
+
+      setShowWorkoutEditModal(false);
       fetchWorkoutDetails();
+      Alert.alert('Sucesso', 'Treino atualizado!');
     } catch (e: any) {
-      Alert.alert('Erro ao atribuir aluno', e.message);
+      Alert.alert('Erro', 'Não foi possível salvar: ' + e.message);
     }
   };
 
@@ -250,6 +294,9 @@ export default function WorkoutDetailScreen() {
           <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF', flex: 1 }} numberOfLines={1}>
             {workout.title}
           </Text>
+          <TouchableOpacity onPress={handleEditWorkout} style={{ backgroundColor: 'rgba(0, 217, 255, 0.15)', padding: 10, borderRadius: 12, marginRight: 8 }}>
+            <Ionicons name="pencil" size={24} color="#00D9FF" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleDeleteWorkout} disabled={deleting} style={{ backgroundColor: 'rgba(255, 59, 59, 0.15)', padding: 10, borderRadius: 12, marginRight: 8 }}>
             <Ionicons name="trash-outline" size={24} color="#FF3B3B" />
           </TouchableOpacity>
@@ -263,32 +310,38 @@ export default function WorkoutDetailScreen() {
             </View>
           )}
 
-          {/* Assigned status */}
-          {workout.student_id && (
-            <View style={{ backgroundColor: 'rgba(0, 255, 136, 0.1)', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 2, borderColor: 'rgba(0, 255, 136, 0.3)', flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
-              <Text style={{ color: '#00FF88', marginLeft: 12, fontSize: 15, fontWeight: '700' }}>Atribuído a um aluno</Text>
+          {/* Manage Students Button */}
+          <TouchableOpacity 
+            onPress={() => router.push(`/workouts/${id}/assignments`)}
+            activeOpacity={0.8}
+            style={{ 
+              backgroundColor: '#141B2D', 
+              padding: 16, 
+              borderRadius: 16, 
+              marginBottom: 24, 
+              borderWidth: 1, 
+              borderColor: '#1E2A42',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                backgroundColor: 'rgba(0, 217, 255, 0.1)', 
+                padding: 10, 
+                borderRadius: 10,
+                marginRight: 12
+              }}>
+                <Ionicons name="people" size={24} color="#00D9FF" />
+              </View>
+              <View>
+                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Gerenciar Alunos</Text>
+                <Text style={{ color: '#8B92A8', fontSize: 13 }}>Atribuir ou remover alunos</Text>
+              </View>
             </View>
-          )}
-
-          {/* Assign to student */}
-          {!workout.student_id && students.length > 0 && (
-            <View style={{ marginBottom: 16 }}>
-              <TouchableOpacity onPress={() => setShowStudentPicker(!showStudentPicker)} activeOpacity={0.8} style={{ backgroundColor: 'rgba(0, 217, 255, 0.1)', borderWidth: 2, borderColor: '#00D9FF', borderRadius: 16, paddingVertical: 14, alignItems: 'center' }}>
-                <Text style={{ color: '#00D9FF', fontSize: 16, fontWeight: '700' }}>Atribuir a Aluno</Text>
-              </TouchableOpacity>
-              {showStudentPicker && (
-                <View style={{ marginTop: 12 }}>
-                  {students.map((student) => (
-                    <TouchableOpacity key={student.id} onPress={() => handleAssignToStudent(student.id)} activeOpacity={0.8} style={{ backgroundColor: '#141B2D', padding: 16, borderRadius: 16, marginBottom: 8, borderWidth: 2, borderColor: '#1E2A42' }}>
-                      <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 4 }}>{student.full_name || 'Sem nome'}</Text>
-                      <Text style={{ color: '#8B92A8', fontSize: 14 }}>{student.email}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
+            <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+          </TouchableOpacity>
 
           {/* Exercises Section */}
           <View>
@@ -374,6 +427,99 @@ export default function WorkoutDetailScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Workout Edit Modal */}
+      {showWorkoutEditModal && (
+        <>
+          <TouchableOpacity 
+            style={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              backgroundColor: 'rgba(0, 0, 0, 0.8)' 
+            }}
+            activeOpacity={1}
+            onPress={() => setShowWorkoutEditModal(false)}
+          />
+          <View style={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            backgroundColor: '#141B2D', 
+            borderTopLeftRadius: 24, 
+            borderTopRightRadius: 24, 
+            padding: 24,
+            borderTopWidth: 2, 
+            borderTopColor: '#1E2A42',
+            maxHeight: '70%' 
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Editar Treino</Text>
+              <TouchableOpacity onPress={() => setShowWorkoutEditModal(false)}>
+                <Ionicons name="close" size={28} color="#8B92A8" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Título</Text>
+              <TextInput 
+                value={editTitle} 
+                onChangeText={setEditTitle} 
+                placeholder="Nome do treino" 
+                placeholderTextColor="#5A6178" 
+                style={{ 
+                  backgroundColor: '#0A0E1A', 
+                  borderWidth: 2, 
+                  borderColor: '#1E2A42', 
+                  borderRadius: 12, 
+                  padding: 16, 
+                  color: '#FFFFFF', 
+                  fontSize: 16 
+                }}
+              />
+            </View>
+            
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Descrição</Text>
+              <TextInput 
+                value={editDescription} 
+                onChangeText={setEditDescription} 
+                placeholder="Descrição do treino (opcional)" 
+                placeholderTextColor="#5A6178"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                style={{ 
+                  backgroundColor: '#0A0E1A', 
+                  borderWidth: 2, 
+                  borderColor: '#1E2A42', 
+                  borderRadius: 12, 
+                  padding: 16, 
+                  color: '#FFFFFF', 
+                  fontSize: 16,
+                  minHeight: 100
+                }}
+              />
+            </View>
+            
+            <TouchableOpacity 
+              onPress={handleSaveWorkout}
+              activeOpacity={0.8} 
+              style={{ 
+                backgroundColor: '#00D9FF', 
+                padding: 16, 
+                borderRadius: 12, 
+                alignItems: 'center'
+              }}
+            >
+              <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>Salvar Alterações</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {/* Exercise Edit Modal */}
       {editingItem && (

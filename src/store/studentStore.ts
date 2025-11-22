@@ -177,8 +177,10 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         if (linkedInviteCodes.has(invite.invite_code)) return false;
         
         // Check by generated email
-        const generatedEmail = `aluno${invite.invite_code.toLowerCase()}@test.com`;
-        if (linkedEmails.has(generatedEmail)) return false;
+        if (invite.invite_code) {
+          const generatedEmail = `aluno${invite.invite_code.toLowerCase()}@test.com`;
+          if (linkedEmails.has(generatedEmail)) return false;
+        }
 
         // Check by name (heuristic for when code/email link is missing)
         if (invite.full_name && linkedNames.has(invite.full_name.trim().toLowerCase())) {
