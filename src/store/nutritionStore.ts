@@ -40,6 +40,7 @@ export interface DietPlan {
   version: number;
   is_active: boolean;
   status: 'active' | 'completed' | 'finished' | 'draft';
+  plan_type: 'unique' | 'cyclic';
   notes?: string;
 }
 
@@ -449,7 +450,8 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           ...plan,
           version: 1,
           is_active: true,
-          status: 'active'
+          status: 'active',
+          plan_type: plan.plan_type || 'cyclic'
         })
         .select()
         .single();

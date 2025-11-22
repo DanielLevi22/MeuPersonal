@@ -35,6 +35,7 @@ export default function CreateDietPlanScreen() {
 
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [dietName, setDietName] = useState('');
+  const [planType, setPlanType] = useState<'unique' | 'cyclic'>('cyclic');
   const [goal, setGoal] = useState<Goal>('maintenance');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   // Date states
@@ -126,8 +127,9 @@ export default function CreateDietPlanScreen() {
         personal_id: user!.id,
         name: dietName,
         description: `Plano ${goal} - ${activityLevel}`,
-        start_date: startDate.toISOString().split('T')[0],  // <-- MUDAR de new Date()
-        end_date: endDate.toISOString().split('T')[0],      // <-- ADICIONAR
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        plan_type: planType,
         target_calories: macros.calories,
         target_protein: macros.protein,
         target_carbs: macros.carbs,
@@ -244,6 +246,47 @@ export default function CreateDietPlanScreen() {
                   onChangeText={setDietName}
                 />
               </View>
+
+              {/* Plan Type Selection */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tipo de Dieta</Text>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.optionCard,
+                      { flex: 1, marginBottom: 0 },
+                      planType === 'unique' && styles.optionCardSelected
+                    ]}
+                    onPress={() => setPlanType('unique')}
+                  >
+                    <View style={styles.optionContent}>
+                      <Text style={styles.optionLabel}>Dieta Única</Text>
+                      <Text style={styles.optionDescription}>Mesma dieta todos os dias</Text>
+                    </View>
+                    {planType === 'unique' && (
+                      <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.optionCard,
+                      { flex: 1, marginBottom: 0 },
+                      planType === 'cyclic' && styles.optionCardSelected
+                    ]}
+                    onPress={() => setPlanType('cyclic')}
+                  >
+                    <View style={styles.optionContent}>
+                      <Text style={styles.optionLabel}>Dieta Cíclica</Text>
+                      <Text style={styles.optionDescription}>Dietas diferentes por dia</Text>
+                    </View>
+                    {planType === 'cyclic' && (
+                      <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
                {/* Start Date */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Data de Início</Text>

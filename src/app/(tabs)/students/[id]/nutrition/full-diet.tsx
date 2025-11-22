@@ -7,13 +7,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -63,6 +63,15 @@ export default function FullDietScreen() {
   const [showFoodSearch, setShowFoodSearch] = useState(false);
   const [showDayOptions, setShowDayOptions] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
+
+  // Set default day based on plan type
+  useEffect(() => {
+    if (currentDietPlan?.plan_type === 'unique') {
+      setSelectedDay(-1); // -1 represents "All Days" / "Unique"
+    } else {
+      setSelectedDay(1);
+    }
+  }, [currentDietPlan]);
 
   useEffect(() => {
     loadDietData();
@@ -289,33 +298,40 @@ export default function FullDietScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Day Selector */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.daySelector}
-          contentContainerStyle={styles.daySelectorContent}
-        >
-          {DAYS_OF_WEEK.map((day) => (
-            <TouchableOpacity
-              key={day.value}
-              style={[
-                styles.dayButton,
-                selectedDay === day.value && styles.dayButtonActive,
-              ]}
-              onPress={() => setSelectedDay(day.value)}
-            >
-              <Text
+        {/* Day Selector (Only for Cyclic Plans) */}
+        {currentDietPlan.plan_type !== 'unique' ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.daySelector}
+            contentContainerStyle={styles.daySelectorContent}
+          >
+            {DAYS_OF_WEEK.map((day) => (
+              <TouchableOpacity
+                key={day.value}
                 style={[
-                  styles.dayButtonText,
-                  selectedDay === day.value && styles.dayButtonTextActive,
+                  styles.dayButton,
+                  selectedDay === day.value && styles.dayButtonActive,
                 ]}
+                onPress={() => setSelectedDay(day.value)}
               >
-                {day.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text
+                  style={[
+                    styles.dayButtonText,
+                    selectedDay === day.value && styles.dayButtonTextActive,
+                  ]}
+                >
+                  {day.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.uniquePlanHeader}>
+            <Ionicons name="repeat" size={20} color="#00FF88" />
+            <Text style={styles.uniquePlanText}>Dieta Padrão (Todos os dias)</Text>
+          </View>
+        )}
 
         {/* Day Totals */}
         <View style={styles.dayTotals}>
@@ -580,4 +596,24 @@ const styles = StyleSheet.create({
     color: '#00FF88',
     marginLeft: 8,
   },
+  uniquePlanHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+    marginHorizontal: 24,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00FF88',
+    gap: 8,
+  },
+  uniquePlanText: {
+    color: '#00FF88',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
+
+
