@@ -81,22 +81,58 @@ export default function FullDietScreen() {
     });
   }, [meals]);
 
-  const handleAddMeal = async (mealType: string, order: number) => {
+  const handleAddMeal = async (mealType: string, order: number, label: string) => {
     if (!currentDietPlan) {
       Alert.alert('Erro', 'Nenhum plano de dieta ativo encontrado.');
       return;
     }
 
-    try {
-      await addMeal({
-        diet_plan_id: currentDietPlan.id,
-        day_of_week: selectedDay,
-        meal_type: mealType,
-        meal_order: order,
-      });
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível adicionar a refeição.');
-    }
+    // Prompt for meal time
+    Alert.prompt(
+      `Horário - ${label}`,
+      'Digite o horário sugerido para esta refeição (ex: 08:00, 12:30)',
+      [
+        {
+          text: 'Pular',
+          style: 'cancel',
+          onPress: async () => {
+            // Add meal without time
+            try {
+              await addMeal({
+                diet_plan_id: currentDietPlan.id,
+                day_of_week: selectedDay,
+                meal_type: mealType,
+                meal_order: order,
+              });
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível adicionar a refeição.');
+            }
+          },
+        },
+        {
+          text: 'Adicionar',
+          onPress: async (mealTime) => {
+            // Validate time format (HH:MM)
+            const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            
+            try {
+              await addMeal({
+                diet_plan_id: currentDietPlan.id,
+                day_of_week: selectedDay,
+                meal_type: mealType,
+                meal_order: order,
+                meal_time: mealTime && timeRegex.test(mealTime) ? mealTime : undefined,
+              });
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível adicionar a refeição.');
+            }
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'default'
+    );
   };
 
   const handleAddFoodToMeal = (mealId: string) => {
@@ -290,7 +326,7 @@ export default function FullDietScreen() {
               <TouchableOpacity
                 key={mealType.type}
                 style={styles.addMealButton}
-                onPress={() => handleAddMeal(mealType.type, mealType.order)}
+                onPress={() => handleAddMeal(mealType.type, mealType.order, mealType.label)}
               >
                 <Ionicons name="add-circle-outline" size={24} color="#00FF88" />
                 <Text style={styles.addMealText}>
