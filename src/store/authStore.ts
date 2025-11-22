@@ -63,7 +63,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       // 4. Update Profile with Invite Data
-      const { error: updateError } = await supabase
+      // Wait a bit for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+      
+      console.log('📋 Existing profile:', existingProfile);
+      
+      const { data: updatedProfile, error: updateError } = await supabase
         .from('profiles')
         .update({ 
           role: 'student',
@@ -74,10 +86,14 @@ export const useAuthStore = create<AuthState>((set) => ({
           notes: invite.notes,
           invite_code: cleanCode
         })
-        .eq('id', authData.user.id);
+        .eq('id', authData.user.id)
+        .select()
+        .single();
 
       if (updateError) {
-        console.error('Profile update error:', updateError);
+        console.error('❌ Profile update error:', updateError);
+      } else {
+        console.log('✅ Profile updated successfully:', updatedProfile);
       }
 
       // 5. Link student to personal

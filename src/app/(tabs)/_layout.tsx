@@ -1,8 +1,82 @@
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 export default function TabLayout() {
+  const { user } = useAuthStore();
+  const [userRole, setUserRole] = useState<'personal' | 'student' | null>(null);
+
+  useEffect(() => {
+    async function fetchUserRole() {
+      if (!user?.id) return;
+      
+      // Try direct query first
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      console.log('🔍 Query result:', { data, error, userId: user.id });
+      
+      if (data?.role) {
+        console.log('✅ User Role:', data.role);
+        setUserRole(data.role as 'personal' | 'student');
+      } else {
+        // Fallback: check if user is in students_personals table
+        const { data: studentLink } = await supabase
+          .from('students_personals')
+          .select('student_id')
+          .eq('student_id', user.id)
+          .single();
+        
+        if (studentLink) {
+          console.log('✅ User is student (from students_personals)');
+          setUserRole('student');
+        } else {
+          console.log('✅ User is personal (default)');
+          setUserRole('personal');
+        }
+      }
+    }
+    
+    fetchUserRole();
+
+    // Subscribe to profile changes
+    if (user?.id) {
+      const channel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('🔄 Profile updated:', payload.new);
+            const newRole = (payload.new as any).role;
+            if (newRole) {
+              setUserRole(newRole as 'personal' | 'student');
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
+
+  const isStudent = userRole === 'student';
+  
+  console.log('🎯 Tab Layout - Role:', userRole, 'Is Student:', isStudent);
+
   return (
     <Tabs
       screenOptions={{
@@ -15,7 +89,7 @@ export default function TabLayout() {
           paddingBottom: Platform.OS === 'ios' ? 25 : 10,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#FF6B35',
+        tabBarActiveTintColor: '#00D9FF',
         tabBarInactiveTintColor: '#5A6178',
         tabBarLabelStyle: {
           fontSize: 11,
@@ -36,10 +110,13 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      {/* Personal Trainer only */}
       <Tabs.Screen
         name="students"
         options={{
           title: 'Alunos',
+          tabBarButton: isStudent ? () => null : undefined,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'people' : 'people-outline'} 
@@ -49,6 +126,7 @@ export default function TabLayout() {
           ),
         }}
       />
+      
       <Tabs.Screen
         name="workouts"
         options={{
@@ -62,6 +140,7 @@ export default function TabLayout() {
           ),
         }}
       />
+      
       <Tabs.Screen
         name="profile"
         options={{
@@ -73,6 +152,14 @@ export default function TabLayout() {
               color={color} 
             />
           ),
+        }}
+      />
+      
+      {/* Hide unused tabs */}
+      <Tabs.Screen
+        name="two"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
