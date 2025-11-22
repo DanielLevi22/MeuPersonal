@@ -1,118 +1,3 @@
-import { Food, useNutritionStore } from '@/store/nutritionStore';
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-
-interface FoodSearchModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSelectFood: (food: Food) => void;
-}
-
-export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchModalProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const { foods, searchFoods } = useNutritionStore();
-
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 2) return;
-
-    setIsSearching(true);
-    await searchFoods(query);
-    setIsSearching(false);
-  };
-
-  const handleSelectFood = (food: Food) => {
-    onSelectFood(food);
-    setSearchQuery('');
-    onClose();
-  };
-
-  const renderFoodItem = ({ item }: { item: Food }) => (
-    <TouchableOpacity
-      style={styles.foodItem}
-      onPress={() => handleSelectFood(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.foodInfo}>
-        <Text style={styles.foodName}>{item.name}</Text>
-        <Text style={styles.foodCategory}>{item.category}</Text>
-      </View>
-      <View style={styles.macrosPreview}>
-        <Text style={styles.macroText}>
-          {item.calories}kcal | {item.protein}p | {item.carbs}c | {item.fat}g
-        </Text>
-        <Text style={styles.servingText}>
-          por {item.serving_size}{item.serving_unit}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Buscar Alimento</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Input */}
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#8B92A8" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Digite o nome do alimento..."
-              placeholderTextColor="#5A6178"
-              value={searchQuery}
-              onChangeText={handleSearch}
-              autoFocus
-            />
-          </View>
-
-          {/* Results */}
-          {isSearching ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FF6B35" />
-              <Text style={styles.loadingText}>Buscando...</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={foods}
-              renderItem={renderFoodItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContainer}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="search-outline" size={48} color="#5A6178" />
-                  <Text style={styles.emptyText}>
-                    {searchQuery.length < 2
-                      ? 'Digite pelo menos 2 caracteres'
-                      : 'Nenhum alimento encontrado'}
-                  </Text>
-                </View>
-              }
-            />
-          )}
         </View>
       </View>
     </Modal>
@@ -227,5 +112,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 16,
     textAlign: 'center',
+  },
+  resultsCount: {
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    backgroundColor: '#141B2D',
+    marginHorizontal: 24,
+    marginBottom: 12,
+    borderRadius: 8,
+  },
+  resultsCountText: {
+    fontSize: 12,
+    color: '#8B92A8',
+    textAlign: 'center',
+  },
+  footerLoader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  footerText: {
+    color: '#8B92A8',
+    fontSize: 13,
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 6,
+  },
+  loadMoreText: {
+    color: '#00FF88',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
