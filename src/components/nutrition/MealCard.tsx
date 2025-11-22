@@ -1,19 +1,7 @@
 import { DietMeal, DietMealItem } from '@/store/nutritionStore';
 import { calculateFoodMacros } from '@/utils/nutrition';
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-
-interface MealCardProps {
-  meal: DietMeal;
-  items: DietMealItem[];
-  onAddFood: () => void;
   onRemoveFood: (itemId: string) => void;
+  onUpdateMealTime: (mealId: string, mealTime: string) => void;
   isEditable?: boolean;
 }
 
@@ -26,8 +14,9 @@ const MEAL_TYPE_LABELS: Record<string, string> = {
   evening_snack: 'Ceia',
 };
 
-export function MealCard({ meal, items, onAddFood, onRemoveFood, isEditable = true }: MealCardProps) {
+export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTime, isEditable = true }: MealCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Calculate total macros for this meal
   const totalMacros = items.reduce(
@@ -49,6 +38,22 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, isEditable = tr
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
+
+  const handleAddFood = () => {
+    if (!meal.meal_time) {
+      Alert.alert(
+        'Horário Necessário',
+        'Por favor, defina o horário da refeição antes de adicionar alimentos.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    onAddFood();
+  };
+
+  const handleSelectTime = (time: string) => {
+    onUpdateMealTime(meal.id, time);
+  };
 
   const mealLabel = meal.name || MEAL_TYPE_LABELS[meal.meal_type] || meal.meal_type;
 
@@ -84,6 +89,22 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, isEditable = tr
       {/* Expanded Content */}
       {isExpanded && (
         <View style={styles.content}>
+          {/* Time Selector */}
+          {isEditable && (
+            <TouchableOpacity
+              style={styles.timeSelector}
+              onPress={() => setShowTimePicker(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="time" size={20} color="#00FF88" />
+              <Text style={styles.timeSelectorLabel}>
+                {meal.meal_time ? `Horário: ${meal.meal_time}` : 'Definir Horário'}
+              </Text>
+              {!meal.meal_time && <Text style={styles.requiredBadge}>OBRIGATÓRIO</Text>}
+              <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+            </TouchableOpacity>
+          )}
+
           {/* Macros Summary */}
           <View style={styles.macrosSummary}>
             <View style={styles.macroItem}>
@@ -132,7 +153,7 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, isEditable = tr
           {isEditable && (
             <TouchableOpacity
               style={styles.addButton}
-              onPress={onAddFood}
+              onPress={handleAddFood}
               activeOpacity={0.7}
             >
               <Ionicons name="add-circle-outline" size={20} color="#00FF88" />
@@ -141,6 +162,13 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, isEditable = tr
           )}
         </View>
       )}
+
+      {/* Time Picker Modal */}
+      <TimePickerModal
+        visible={showTimePicker}
+        onClose={() => setShowTimePicker(false)}
+        onSelectTime={handleSelectTime}
+      />
     </View>
   );
 }
@@ -251,5 +279,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#00FF88',
     marginLeft: 8,
+  },
+  timeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0A0E1A',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#1E2A42',
+    gap: 10,
+  },
+  timeSelectorLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  requiredBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FF6B35',
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
 });

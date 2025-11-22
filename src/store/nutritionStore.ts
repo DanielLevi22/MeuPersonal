@@ -79,6 +79,7 @@ interface NutritionStore {
   meals: DietMeal[];
   fetchMeals: (dietPlanId: string) => Promise<void>;
   addMeal: (meal: Omit<DietMeal, 'id'>) => Promise<void>;
+  updateMeal: (id: string, updates: Partial<DietMeal>) => Promise<void>;
   
   // Meal Items
   mealItems: Record<string, DietMealItem[]>; // Keyed by meal_id

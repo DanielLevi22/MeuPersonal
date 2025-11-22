@@ -1,5 +1,6 @@
 import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
 import { MealCard } from '@/components/nutrition/MealCard';
+import { MealTimeModal } from '@/components/nutrition/MealTimeModal';
 import { Food, useNutritionStore } from '@/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
