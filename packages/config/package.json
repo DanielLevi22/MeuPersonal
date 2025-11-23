@@ -1,0 +1,9 @@
+{
+  "name": "@meupersonal/config",
+  "version": "0.0.0",
+  "main": "./index.js",
+  "files": [
+    "tailwind.config.js",
+    "tsconfig"
+  ]
+}
