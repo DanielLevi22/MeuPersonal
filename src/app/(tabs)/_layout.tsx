@@ -111,6 +111,34 @@ export default function TabLayout() {
         }}
       />
       
+      <Tabs.Screen
+        name="workouts"
+        options={{
+          title: 'Treinos',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'barbell' : 'barbell-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'person' : 'person-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      
       {/* Personal Trainer only */}
       <Tabs.Screen
         name="students"
@@ -142,35 +170,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      
-      <Tabs.Screen
-        name="workouts"
-        options={{
-          title: 'Treinos',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'barbell' : 'barbell-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'person' : 'person-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      
+
       {/* Hide unused tabs */}
       <Tabs.Screen
         name="two"

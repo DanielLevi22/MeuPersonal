@@ -43,9 +43,11 @@ export default function TodayScreen() {
     if (!studentId || typeof studentId !== 'string') return;
     if (!user?.id) return;
 
+    console.log('🔍 [TODAY] Loading data for student:', studentId);
     setLoading(true);
     try {
       await fetchDietPlan(studentId);
+      console.log('✅ [TODAY] Diet plan fetched');
     } finally {
       setLoading(false);
     }
@@ -53,12 +55,14 @@ export default function TodayScreen() {
 
   useEffect(() => {
     if (currentDietPlan) {
+      console.log('📋 [TODAY] Current diet plan:', currentDietPlan);
       fetchMeals(currentDietPlan.id);
       fetchDailyLogs(currentDietPlan.student_id, todayString);
     }
   }, [currentDietPlan]);
 
   useEffect(() => {
+    console.log('🍽️ [TODAY] Meals loaded:', meals.length);
     // Fetch items for all meals
     meals.forEach((meal) => {
       if (!mealItems[meal.id]) {
@@ -75,12 +79,17 @@ export default function TodayScreen() {
   // Filter meals for today
   const todayMeals = meals
     .filter((meal) => {
+      // For unique plans, show all meals (day_of_week should be -1)
       if (currentDietPlan?.plan_type === 'unique') {
-        return meal.day_of_week === -1 || meal.day_of_week === dayOfWeek;
+        return true;
       }
+      // For cyclic plans, show only today's meals
       return meal.day_of_week === dayOfWeek;
     })
     .sort((a, b) => a.meal_order - b.meal_order);
+
+  console.log('📅 [TODAY] Day of week:', dayOfWeek, 'Plan type:', currentDietPlan?.plan_type);
+  console.log('🎯 [TODAY] Filtered meals for today:', todayMeals.length);
 
   if (loading) {
     return (

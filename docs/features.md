@@ -500,11 +500,11 @@ Log de exercícios completados
 
 ---
 
-## 🍎 Nutrition Module (Phase 4 - In Progress)
+## 🍎 Nutrition Module
 
 ### 8. Sistema de Nutrição e Dietas
 
-**Status**: 🔄 Em Desenvolvimento
+**Status**: ✅ Completo (Core Features)
 
 **Descrição**: Sistema completo de gerenciamento nutricional que permite personal trainers criarem planos de dieta personalizados e alunos rastrearem consumo diário.
 
@@ -513,33 +513,49 @@ Log de exercícios completados
 - ✅ Cadastro de alimentos customizados por personal
 - ✅ Cálculo TMB/TDEE (Fórmula Mifflin-St Jeor)
 - ✅ Distribuição automática de macros por objetivo
-- ✅ Store de gerenciamento de estado (nutritionStore)
-- 🔄 Editor de dieta para personal (em desenvolvimento)
-- 🔄 Visualização de dieta para aluno (em desenvolvimento)
-- 🔄 Tracking de macros em tempo real (em desenvolvimento)
+- ✅ **Tipos de Plano**: Dieta Única ou Dieta Cíclica
+- ✅ **Importação de Planos**: Copiar planos entre alunos
+- ✅ **Histórico de Planos**: Arquivamento automático
+- ✅ **Editor de Dieta**: Interface completa para personal
+  - Adicionar refeições por dia da semana
+  - Buscar e adicionar alimentos
+  - Copiar/colar dias
+  - Definir horários de refeições
+- ✅ **Visualização para Aluno**: Tela "Hoje" com:
+  - Lista de refeições do dia
+  - Checkbox para marcar como concluída
+  - Detalhes de alimentos e quantidades
+- ✅ **Rastreamento**: Sistema de logs diários
+- ⚠️ **Notificações**: Infraestrutura pronta (integração pendente)
 
-**Arquivos**:
+**Arquivos Principais**:
+- `src/store/nutritionStore.ts` - State management completo
+- `src/app/nutrition/create.tsx` - Criação de planos
+- `src/app/(tabs)/students/[id]/nutrition/full-diet.tsx` - Editor de dieta
+- `src/app/(tabs)/students/[id]/nutrition/today.tsx` - Visualização do aluno
+- `src/services/notificationService.ts` - Serviço de notificações
 - `drizzle/migration-nutrition-schema.sql` - Schema completo
 - `drizzle/seed-foods.sql` - Banco de alimentos
-- `src/store/nutritionStore.ts` - State management
-- `src/utils/nutrition.ts` - Cálculos nutricionais
 
 **Banco de Dados**:
 - `foods` - Banco de alimentos com macros
-- `diet_plans` - Planos de dieta dos alunos
+- `diet_plans` - Planos de dieta dos alunos (com `plan_type`)
 - `diet_meals` - Refeições por dia da semana
 - `diet_meal_items` - Alimentos em cada refeição
 - `diet_logs` - Registro diário do aluno
-- `nutrition_progress` - Peso, medidas e fotos
 
 **Decisões de Design**:
-1. **Banco de Alimentos**: Começar com ~100 alimentos comuns + permitir cadastro customizado
-2. **Cálculo de Macros**: Usar Mifflin-St Jeor (mais preciso que Harris-Benedict)
+1. **Banco de Alimentos**: ~100 alimentos comuns + cadastro customizado
+2. **Cálculo de Macros**: Mifflin-St Jeor (mais preciso)
 3. **Distribuição de Macros**:
    - Cutting: 2.2g/kg proteína, 0.8g/kg gordura, resto carbs
    - Bulking: 2.0g/kg proteína, 1.0g/kg gordura, resto carbs
    - Maintenance: 1.8g/kg proteína, 0.9g/kg gordura, resto carbs
-4. **Substituições Inteligentes**: Tolerância de ±10% nos macros
+4. **Tipos de Plano**:
+   - **Única**: Mesma dieta todos os dias (day_of_week = -1)
+   - **Cíclica**: Dietas diferentes por dia (day_of_week = 0-6)
+
+**Documentação Adicional**: Ver `docs/nutrition-updates.md` para detalhes completos
 
 ---
 
@@ -550,6 +566,7 @@ Log de exercícios completados
 - [x] `migration-fix-workout-items-rls.sql` - Workout items RLS policies
 - [x] `migration-nutrition-schema.sql` - Nutrition module (6 tables)
 - [x] `seed-foods.sql` - Brazilian food database
+- [x] `migration-add-plan-type.sql` - Diet plan types (unique/cyclic)
 
 ---
 
@@ -567,12 +584,13 @@ Log de exercícios completados
 ## 📦 Dependências Instaladas
 
 ```bash
-npx expo install expo-haptics expo-av react-native-svg
+npx expo install expo-haptics expo-av react-native-svg expo-notifications
 ```
 
 - **expo-haptics**: Feedback tátil (vibração)
 - **expo-av**: Reprodução de áudio (alarme do timer)
 - **react-native-svg**: Gráficos vetoriais (círculo de progresso)
+- **expo-notifications**: Sistema de notificações para lembretes de refeições
 
 ---
 
