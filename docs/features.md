@@ -27,18 +27,6 @@ Documentação completa de todas as funcionalidades implementadas no aplicativo 
 - `src/app/(tabs)/students.tsx`
 
 **Banco de Dados**:
-- `profiles` - Perfis de usuários
-- `physical_assessments` - Histórico de avaliações
-- `students_personals` - Vínculo aluno-personal
-
----
-
-### 2. 🏋️ Criação e Gerenciamento de Treinos
-
-**Status**: ✅ Completo
-
-**Descrição**: Sistema para personal trainers criarem, editarem e gerenciarem treinos personalizados.
-
 **Funcionalidades**:
 - ✅ Criar treinos com título e descrição
 - ✅ Selecionar e configurar exercícios

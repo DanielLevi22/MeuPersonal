@@ -3,29 +3,32 @@
 ## 1. Visão Geral
 O **MeuPersonal** é uma plataforma SaaS mobile que conecta Personal Trainers aos seus alunos, permitindo a gestão de treinos, dietas e acompanhamento de progresso.
 
-## 2. Atores do Sistema
+## 2. Atores do Sistema e Permissões (CASL)
 
-### 2.1. Personal Trainer (Admin do seu ecossistema)
-- **Perfil**: Usuário pagante (assinante).
-- **Permissões**:
-    - Criar e editar perfil profissional.
-    - Convidar alunos (ilimitado).
-    - Criar, editar e excluir treinos.
-    - Criar, editar e excluir dietas.
-    - Visualizar progresso e check-ins dos alunos.
-    - Gerenciar sua assinatura (upgrade/downgrade/cancelamento).
+O sistema utiliza controle de acesso granular. Ver detalhes técnicos em `docs/access_control.md`.
 
-### 2.2. Aluno
-- **Perfil**: Usuário gratuito (convidado).
+### 2.1. Personal Trainer (`role: personal`)
+- **Perfil**: Profissional de Educação Física.
 - **Permissões**:
-    - Visualizar treinos e dietas atribuídos.
-    - Realizar check-in de treinos (marcar como concluído).
-    - Registrar feedback/observações no treino.
-    - Visualizar histórico de treinos realizados.
-    - Editar perfil básico (foto, peso, altura).
-- **Restrições**:
-    - Não pode criar treinos para si mesmo.
-    - Não pode ver alunos de outros personais.
+    - ✅ **Gerenciar**: Alunos, Treinos, Exercícios.
+    - ✅ **Visualizar**: Dietas (leitura), Analytics, Perfil.
+    - ✅ **Editar**: Seu próprio perfil.
+    - ❌ **Restrição**: Não pode criar/editar dietas (apenas nutricionista).
+
+### 2.2. Nutricionista (`role: nutritionist`)
+- **Perfil**: Profissional de Nutrição.
+- **Permissões**:
+    - ✅ **Gerenciar**: Alunos, Dietas.
+    - ✅ **Visualizar**: Treinos (leitura), Analytics, Perfil.
+    - ✅ **Editar**: Seu próprio perfil.
+    - ❌ **Restrição**: Não pode criar/editar treinos (apenas personal).
+
+### 2.3. Aluno (`role: student`)
+- **Perfil**: Usuário final (cliente).
+- **Permissões**:
+    - ✅ **Visualizar**: Treinos, Dietas, Exercícios, Perfil.
+    - ✅ **Editar**: Seu próprio perfil (foto, peso, altura).
+    - ❌ **Restrição**: Não pode criar/excluir nenhum recurso principal.
 
 ## 3. Regras de Cadastro e Autenticação
 
