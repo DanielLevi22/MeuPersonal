@@ -35,6 +35,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "root": "src/app"
+      },
+      "eas": {
+        "projectId": "cfcc0b23-987d-4039-9679-dab9739f6552"
+      }
+    },
+    "owner": "daniellevi98"
   }
 }
