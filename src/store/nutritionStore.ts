@@ -76,7 +76,7 @@ interface NutritionStore {
   dietPlanHistory: DietPlan[];
   fetchDietPlan: (studentId: string) => Promise<void>;
   fetchDietPlanHistory: (studentId: string) => Promise<void>;
-  createDietPlan: (plan: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>) => Promise<void>;
+  createDietPlan: (plan: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>, sourcePlanId?: string) => Promise<void>;
   finishDietPlan: (planId: string) => Promise<void>;
   checkPlanExpiration: (studentId: string) => Promise<void>;
   updateDietPlan: (id: string, updates: Partial<DietPlan>) => Promise<void>;
@@ -429,7 +429,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   },
 
   // Create new diet plan
-  createDietPlan: async (plan) => {
+  createDietPlan: async (plan, sourcePlanId) => {
     try {
       // Check if there's already an active plan
       const { data: existingActive } = await supabase
@@ -444,7 +444,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       }
 
       // Create new plan
-      const { data, error } = await supabase
+      const { data: newPlan, error } = await supabase
         .from('diet_plans')
         .insert({
           ...plan,
@@ -457,8 +457,65 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         .single();
 
       if (error) throw error;
+
+      // If sourcePlanId is provided, clone meals and items
+      if (sourcePlanId) {
+        // 1. Fetch source meals
+        const { data: sourceMeals, error: mealsError } = await supabase
+          .from('diet_meals')
+          .select('*')
+          .eq('diet_plan_id', sourcePlanId);
+
+        if (mealsError) throw mealsError;
+
+        if (sourceMeals && sourceMeals.length > 0) {
+          for (const sourceMeal of sourceMeals) {
+            // 2. Create new meal
+            const { data: newMeal, error: newMealError } = await supabase
+              .from('diet_meals')
+              .insert({
+                diet_plan_id: newPlan.id,
+                day_of_week: sourceMeal.day_of_week,
+                meal_type: sourceMeal.meal_type,
+                meal_order: sourceMeal.meal_order,
+                name: sourceMeal.name,
+                target_calories: sourceMeal.target_calories,
+                meal_time: sourceMeal.meal_time
+              })
+              .select()
+              .single();
+
+            if (newMealError) throw newMealError;
+
+            // 3. Fetch source items for this meal
+            const { data: sourceItems, error: itemsError } = await supabase
+              .from('diet_meal_items')
+              .select('*')
+              .eq('diet_meal_id', sourceMeal.id);
+
+            if (itemsError) throw itemsError;
+
+            if (sourceItems && sourceItems.length > 0) {
+              // 4. Create new items
+              const itemsToInsert = sourceItems.map(item => ({
+                diet_meal_id: newMeal.id,
+                food_id: item.food_id,
+                quantity: item.quantity,
+                unit: item.unit,
+                order_index: item.order_index
+              }));
+
+              const { error: insertItemsError } = await supabase
+                .from('diet_meal_items')
+                .insert(itemsToInsert);
+
+              if (insertItemsError) throw insertItemsError;
+            }
+          }
+        }
+      }
       
-      set({ currentDietPlan: data });
+      set({ currentDietPlan: newPlan });
     } catch (error) {
       console.error('Error creating diet plan:', error);
       throw error;

@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useNutritionStore } from '@/store/nutritionStore';
 import { useStudentStore } from '@/store/studentStore';
@@ -34,6 +35,10 @@ export default function CreateDietPlanScreen() {
   const { createDietPlan } = useNutritionStore();
 
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [sourceStudent, setSourceStudent] = useState<any>(null);
+  const [sourcePlanId, setSourcePlanId] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  
   const [dietName, setDietName] = useState('');
   const [planType, setPlanType] = useState<'unique' | 'cyclic'>('cyclic');
   const [goal, setGoal] = useState<Goal>('maintenance');
@@ -134,7 +139,7 @@ export default function CreateDietPlanScreen() {
         target_protein: macros.protein,
         target_carbs: macros.carbs,
         target_fat: macros.fat,
-      });
+      }, sourcePlanId || undefined);
 
       Alert.alert('Sucesso', 'Plano de dieta criado!', [
         {
@@ -148,6 +153,34 @@ export default function CreateDietPlanScreen() {
   };
 
   const activeStudents = students.filter((s) => s.status === 'active');
+
+  const handleSelectSourceStudent = async (student: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_plans')
+        .select('*')
+        .eq('student_id', student.id)
+        .eq('status', 'active')
+        .single();
+
+      if (error || !data) {
+        Alert.alert('Aviso', 'Este aluno não possui um plano de dieta ativo para importar.');
+        return;
+      }
+
+      setSourceStudent(student);
+      setSourcePlanId(data.id);
+      setShowImportModal(false);
+      
+      // Optional: Pre-fill data from source plan
+      // setDietName(data.name + ' (Cópia)');
+      // setPlanType(data.plan_type);
+      
+      Alert.alert('Sucesso', `Plano de ${student.full_name} selecionado para importação.`);
+    } catch (error) {
+      Alert.alert('Erro', 'Erro ao buscar plano do aluno.');
+    }
+  };
 
   const GOALS: { value: Goal; label: string; description: string }[] = [
     { value: 'cutting', label: 'Cutting', description: 'Perda de peso (-20% calorias)' },
@@ -232,6 +265,69 @@ export default function CreateDietPlanScreen() {
               </View>
             </View>
           ) : null}
+
+          {/* Import Option */}
+          {selectedStudent && !sourcePlanId && (
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.importButton}
+                onPress={() => setShowImportModal(true)}
+              >
+                <Ionicons name="download-outline" size={20} color="#00D9FF" />
+                <Text style={styles.importButtonText}>Importar de outro aluno</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Selected Source Student Display */}
+          {sourceStudent && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Importando de</Text>
+              <View style={styles.sourceStudentCard}>
+                <View style={styles.sourceStudentInfo}>
+                  <Ionicons name="person-circle-outline" size={24} color="#00D9FF" />
+                  <Text style={styles.sourceStudentName}>{sourceStudent.full_name}</Text>
+                </View>
+                <TouchableOpacity onPress={() => {
+                  setSourceStudent(null);
+                  setSourcePlanId(null);
+                }}>
+                  <Ionicons name="close-circle" size={24} color="#FF4444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Import Modal */}
+          {showImportModal && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Selecione um Aluno</Text>
+                  <TouchableOpacity onPress={() => setShowImportModal(false)}>
+                    <Ionicons name="close" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalScroll}>
+                  {activeStudents
+                    .filter(s => s.id !== selectedStudent?.id) // Don't show current student
+                    .map((student) => (
+                    <TouchableOpacity
+                      key={student.id}
+                      style={styles.modalStudentItem}
+                      onPress={() => handleSelectSourceStudent(student)}
+                    >
+                      <View style={styles.studentAvatarSmall}>
+                        <Ionicons name="person" size={16} color="#00D9FF" />
+                      </View>
+                      <Text style={styles.modalStudentName}>{student.full_name}</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
 
           {selectedStudent && (
             <>
@@ -658,5 +754,101 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8B92A8',
     marginTop: 4,
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 217, 255, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 217, 255, 0.3)',
+    borderStyle: 'dashed',
+  },
+  importButtonText: {
+    color: '#00D9FF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  sourceStudentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#141B2D',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00D9FF',
+  },
+  sourceStudentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sourceStudentName: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: '#141B2D',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: 400,
+    borderWidth: 1,
+    borderColor: '#1E2A42',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E2A42',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modalScroll: {
+    padding: 16,
+  },
+  modalStudentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#0A0E1A',
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  studentAvatarSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 217, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  modalStudentName: {
+    flex: 1,
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
 });
