@@ -12,6 +12,11 @@
         ".next/**",
         "!.next/cache/**",
         "dist/**"
+      ],
+      "env": [
+        "EXPO_PUBLIC_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+        "URL_DO_BANCO_DE_DADOS_PÚBLICO_EXPO"
       ]
     },
     "dev": {
