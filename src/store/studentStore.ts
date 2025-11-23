@@ -28,6 +28,7 @@ interface StudentState {
   updateStudent: (studentId: string, data: Partial<StudentInviteData>) => Promise<{ success: boolean; error?: string }>;
   history: any[];
   fetchStudentHistory: (studentId: string) => Promise<void>;
+  reset: () => void; // Clear all state on logout
 }
 
 export interface StudentInviteData {
@@ -466,5 +467,14 @@ export const useStudentStore = create<StudentState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+  
+  // Reset all state on logout
+  reset: () => {
+    set({
+      students: [],
+      history: [],
+      isLoading: false
+    });
   }
 }));

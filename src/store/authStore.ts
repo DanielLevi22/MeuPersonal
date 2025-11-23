@@ -19,6 +19,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ session: null, user: null });
+    
+    // CRITICAL: Clear all stores to prevent data leakage between users
+    // Import stores dynamically to avoid circular dependencies
+    const { useStudentStore } = await import('./studentStore');
+    const { useNutritionStore } = await import('./nutritionStore');
+    const { useWorkoutStore } = await import('./workoutStore');
+    
+    useStudentStore.getState().reset();
+    useNutritionStore.getState().reset();
+    useWorkoutStore.getState().reset();
+    
+    console.log('✅ All stores cleared on logout');
   },
   signInWithCode: async (code: string) => {
     try {

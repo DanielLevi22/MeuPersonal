@@ -107,6 +107,9 @@ interface NutritionStore {
 
   // Loading states
   isLoading: boolean;
+  
+  // Reset
+  reset: () => void; // Clear all state on logout
 }
 
 export interface DailyLog {
@@ -779,5 +782,19 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       console.error('Error removing food from meal:', error);
       throw error;
     }
+  },
+  
+  // Reset all state on logout
+  reset: () => {
+    set({
+      foods: [],
+      currentDietPlan: null,
+      dietPlanHistory: [],
+      meals: [],
+      mealItems: {},
+      copiedDay: null,
+      dailyLogs: {},
+      isLoading: false
+    });
   }
 }));

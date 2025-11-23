@@ -48,6 +48,7 @@ interface WorkoutState {
   createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
+  reset: () => void; // Clear all state on logout
 }
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
@@ -110,5 +111,15 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   },
   clearSelectedExercises: () => {
     set({ selectedExercises: [] });
+  },
+  
+  // Reset all state on logout
+  reset: () => {
+    set({
+      workouts: [],
+      exercises: [],
+      selectedExercises: [],
+      isLoading: false
+    });
   }
 }));
