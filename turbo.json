@@ -16,8 +16,9 @@
       "env": [
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        "SUPABASE_SERVICE_ROLE",
-        "SUPABASE_JWT_SECRET"
+        "EXPO_PUBLIC_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+        "EXPO_PUBLIC_DATABASE_URL"
       ]
     },
     "dev": {
