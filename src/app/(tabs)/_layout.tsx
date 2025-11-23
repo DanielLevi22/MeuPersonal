@@ -4,10 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const { user } = useAuthStore();
   const [userRole, setUserRole] = useState<'personal' | 'student' | null>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     async function fetchUserRole() {
@@ -85,8 +87,8 @@ export default function TabLayout() {
           backgroundColor: '#0A0E1A',
           borderTopWidth: 1,
           borderTopColor: '#1E2A42',
-          height: Platform.OS === 'ios' ? 85 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+          height: Platform.OS === 'ios' ? 85 : 65 + insets.bottom,
+          paddingBottom: Platform.OS === 'ios' ? 25 : 10 + insets.bottom,
           paddingTop: 8,
         },
         tabBarActiveTintColor: '#00D9FF',

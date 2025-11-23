@@ -10,11 +10,13 @@ import '../global.css';
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
+import { registerBackgroundFetchAsync } from '@/services/backgroundTask';
+import { requestNotificationPermissions } from '@/services/notificationService';
 import { useAuthStore } from '@/store/authStore';
 
 export {
-    // Catch any errors thrown by the Layout component.
-    ErrorBoundary
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -60,6 +62,12 @@ function RootLayoutNav() {
     supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
+    // Request notification permissions
+    requestNotificationPermissions();
+    
+    // Register background fetch for diet sync
+    registerBackgroundFetchAsync();
   }, []);
 
   // Auth Guard

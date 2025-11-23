@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
+import { cancelPlanNotifications, scheduleMealNotifications } from '@/services/notificationService';
 import { create } from 'zustand';
+import { useAuthStore } from './authStore';
 
 // Types
 export interface Food {
@@ -405,6 +407,55 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       }
       
       set({ currentDietPlan: data });
+
+      // Schedule notifications for this student's diet plan on THEIR device
+      // CRITICAL: Only schedule if the current user is the student (not the professor viewing the plan)
+      const currentUser = useAuthStore.getState().user;
+      
+      // Debounce scheduling: Don't schedule if we just did it in the last 5 seconds
+      const lastScheduled = (get() as any).lastNotificationSchedule || 0;
+      const now = Date.now();
+      
+      if (data?.id && currentUser?.id === studentId && (now - lastScheduled > 5000)) {
+        // Update timestamp immediately to prevent race conditions
+        set({ lastNotificationSchedule: now } as any);
+
+        const { data: mealsWithTimes } = await supabase
+          .from('diet_meals')
+          .select(`
+            id, 
+            name, 
+            meal_time, 
+            day_of_week,
+            diet_meal_items (
+              food:foods (
+                name
+              )
+            )
+          `)
+          .eq('diet_plan_id', data.id)
+          .not('meal_time', 'is', null);
+
+        if (mealsWithTimes && mealsWithTimes.length > 0) {
+          const mealNotifications = mealsWithTimes.map(meal => {
+            // Extract food names safely
+            const foodNames = meal.diet_meal_items
+              ?.map((item: any) => item.food?.name)
+              .filter((name: any) => !!name) || [];
+
+            return {
+              mealId: meal.id,
+              mealName: meal.name || 'Refeição',
+              mealTime: meal.meal_time,
+              dayOfWeek: Number(meal.day_of_week),
+              foodNames
+            };
+          });
+
+          await scheduleMealNotifications(data.id, mealNotifications);
+          console.log(`✅ Scheduled ${mealNotifications.length} notifications for student's diet plan ${data.id}`);
+        }
+      }
     } catch (error) {
       console.error('Error fetching diet plan:', error);
       set({ currentDietPlan: null });
@@ -518,6 +569,9 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         }
       }
       
+      // NOTE: Notifications are NOT scheduled here because this runs on the professor's device.
+      // Notifications will be scheduled on the STUDENT'S device when they fetch their diet plan.
+      
       set({ currentDietPlan: newPlan });
     } catch (error) {
       console.error('Error creating diet plan:', error);
@@ -528,6 +582,10 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   // Finish diet plan manually
   finishDietPlan: async (planId: string) => {
     try {
+      // Cancel all notifications for this plan
+      await cancelPlanNotifications(planId);
+      console.log(`✅ Cancelled notifications for diet plan ${planId}`);
+
       const today = new Date().toISOString().split('T')[0];
       
       const { data, error } = await supabase
@@ -639,6 +697,9 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           meal.id === id ? { ...meal, ...data } : meal
         )
       }));
+
+      // NOTE: Notifications are NOT re-scheduled here because this runs on the professor's device.
+      // The student's device will handle notification scheduling when they fetch their diet plan.
     } catch (error) {
       console.error('Error updating meal:', error);
       throw error;
