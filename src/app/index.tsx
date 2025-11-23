@@ -7,6 +7,6 @@ export default function Index() {
   if (session) {
     return <Redirect href="/(tabs)" />;
   } else {
-    return <Redirect href="/auth/login" />;
+    return <Redirect href="/(auth)/login" />;
   }
 }

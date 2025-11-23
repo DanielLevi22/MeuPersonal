@@ -623,4 +623,22 @@ npx expo install expo-haptics expo-av react-native-svg expo-notifications
 
 ---
 
-**Última atualização**: 2025-01-22
+## 🔧 Recent Fixes (2025-11-22)
+
+### Critical Security Fix
+- **Auth Cache Leak**: Fixed data leakage between user sessions by adding `reset()` functions to all stores (studentStore, nutritionStore, workoutStore)
+- **Impact**: Prevented different users' data from appearing when logging in/out
+
+### Navigation Fixes
+- **Routing Error**: Fixed "This page doesn't exist" error by correcting redirect path from `/auth/login` to `/(auth)/login`
+- **Tab Bar Layout**: Reorganized tabs for students to show proper order: Home | Treinos | Perfil
+
+### Nutrition Module Fixes
+- **Student Meal View**: Fixed meal filtering logic for unique diet plans
+- **RLS Policies**: Created migration to fix Row Level Security permissions for students viewing meals
+- **SQL Migrations**: 
+  - `migration-fix-nutrition-rls.sql` - Separate policies for personals (manage) and students (view)
+
+---
+
+**Última atualização**: 2025-11-22
