@@ -9,9 +9,7 @@
         "^build"
       ],
       "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "dist/**"
+        ".vercel/output/**"
       ],
       "env": [
         "NEXT_PUBLIC_SUPABASE_URL",
