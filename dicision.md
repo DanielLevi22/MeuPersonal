@@ -2,13 +2,15 @@
 
 # TreinoPro - Documento de Decisão de Arquitetura (ADR) e Plano de Projeto
 
-**Data**: 21 de Novembro de 2025
+**Data de Criação**: 21 de Novembro de 2025
+
+**Última Atualização**: 23 de Novembro de 2025
 
 **Autor**: 
 
 **Status**: Aprovado e em execução
 
-**Versão**: 1.0
+**Versão**: 1.1
 
 ## 1. Objetivo do Produto
 
@@ -43,44 +45,37 @@ Criar um aplicativo mobile SaaS onde Personal Trainers cadastram treinos e dieta
 | Notificações | Expo Notifications + FCM | Funciona offline e em background |
 | Monitoramento | Sentry + PostHog (self-hosted grátis) | Erros e analytics |
 
-## 4. Estrutura de Pastas (definitiva)
+## 4. Estrutura de Pastas - Monorepo (atualizado 23/11/2025)
 
-/app
-(tabs)/
-personal/
-index.tsx
-alunos/
-[id]/
-treinos/
-dietas/
-progresso/
-novo-aluno.tsx
-aluno/
-index.tsx
-dieta.tsx
-progresso.tsx
-auth/
-login.tsx
-escolher-perfil.tsx
-/src
-components/
-lib/
-supabase.ts
-drizzle.ts
-stripe.ts
-asaas.ts
-notifications.ts
-hooks/
-schemas/          → Drizzle + Zod
-store/            → Zustand stores
-types/
-utils/
-drizzle/
-migrations/
-assets/
-expo/
-
-text
+```
+meupersonal.app/
+├── apps/
+│   ├── mobile/              # React Native + Expo
+│   │   ├── app/             # Rotas (Expo Router)
+│   │   │   ├── (auth)/
+│   │   │   ├── (tabs)/
+│   │   │   └── _layout.tsx
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── store/       # Zustand stores
+│   │   │   └── utils/
+│   │   └── package.json
+│   └── web/                 # Next.js (futuro)
+├── packages/
+│   ├── config/              # Configurações TypeScript compartilhadas
+│   ├── core/                # Lógica de negócio compartilhada
+│   └── supabase/            # Cliente Supabase + CASL abilities
+│       └── src/
+│           ├── abilities.ts # Controle de acesso (CASL)
+│           ├── client.ts
+│           ├── types.ts
+│           └── index.ts
+├── docs/                    # Documentação do projeto
+├── turbo.json               # Configuração Turborepo
+├── pnpm-workspace.yaml      # Workspace pnpm
+└── package.json
+```
 
 ## 6. Cronograma Detalhado (10 semanas - início imediato)
 
@@ -124,5 +119,67 @@ Candidatos disponíveis (domínio + stores + instagram):
 - MVP com no máximo 8 telas principais ✅
 - Sem Flutter (mesmo sendo ótima opção) → você escolheu RN ❤️
 - Lançamento máximo Abril/2026 ✅
+- **Monorepo com Turborepo** ✅ (23/11/2025)
+- **CASL para controle de acesso** ✅ (23/11/2025)
+
+---
+
+## 10. Decisão: Monorepo com Turborepo (23/11/2025)
+
+**Contexto:** Com o crescimento do projeto e a necessidade de compartilhar código entre mobile e web (futuro), precisávamos de uma estrutura escalável.
+
+**Decisão:** Migrar para arquitetura **Monorepo** usando **Turborepo**.
+
+**Justificativa:**
+- ✅ **Compartilhamento de código**: Tipos, lógica de negócio e cliente Supabase compartilhados entre apps
+- ✅ **Versionamento sincronizado**: Mudanças em packages afetam todos os apps simultaneamente
+- ✅ **Build otimizado**: Turborepo faz cache inteligente de builds
+- ✅ **Manutenção simplificada**: Um único repositório para gerenciar
+- ✅ **Preparação para web**: Facilita adicionar dashboard web no futuro
+
+**Estrutura implementada:**
+- `apps/mobile`: Aplicativo React Native
+- `apps/web`: Dashboard Next.js (futuro)
+- `packages/config`: Configurações TypeScript compartilhadas
+- `packages/core`: Lógica de negócio compartilhada
+- `packages/supabase`: Cliente Supabase + CASL abilities
+
+**Alternativas consideradas:**
+- ❌ Multi-repo: Descartado por duplicação de código e sincronização manual
+- ❌ Nx: Descartado por complexidade excessiva para o tamanho do projeto
+
+**Status:** ✅ Implementado
+
+---
+
+## 11. Decisão: CASL para Controle de Acesso (23/11/2025)
+
+**Contexto:** O sistema possui múltiplos perfis (Personal Trainer, Nutricionista, Aluno) com permissões diferentes. Precisávamos de um sistema robusto e escalável para gerenciar essas permissões.
+
+**Decisão:** Implementar **CASL (Ability)** para controle de acesso baseado em permissões.
+
+**Justificativa:**
+- ✅ **Granularidade**: Controle fino sobre ações (create, read, update, delete) e recursos (Student, Workout, Diet)
+- ✅ **Type-safe**: Totalmente tipado com TypeScript
+- ✅ **Centralizado**: Todas as regras de permissão em um único lugar (`packages/supabase/src/abilities.ts`)
+- ✅ **Testável**: Fácil de testar permissões isoladamente
+- ✅ **Escalável**: Simples adicionar novos roles e permissões
+
+**Roles implementados:**
+- `personal`: Personal Trainer (manage Student/Workout/Exercise, read Diet/Analytics)
+- `nutritionist`: Nutricionista (manage Student/Diet, read Workout/Analytics)
+- `student`: Aluno (read Workout/Diet/Exercise/Profile, update Profile)
+
+**Localização:** `packages/supabase/src/abilities.ts`
+
+**Alternativas consideradas:**
+- ❌ Verificações if/else espalhadas: Descartado por dificultar manutenção
+- ❌ Apenas RLS (Row Level Security): Insuficiente para controle no frontend
+
+**Integração:** CASL trabalha em conjunto com RLS do Supabase para segurança em camadas.
+
+**Status:** ✅ Implementado
+
+---
 
 Este documento será atualizado a cada mudança relevante de arquitetura.

@@ -13,39 +13,95 @@
 | **Pagamentos** | **Stripe** (Cartão) + **Asaas** (PIX/Boleto) | Melhor combinação para SaaS no Brasil. |
 | **Analytics/Logs** | **PostHog** + **Sentry** | Monitoramento de erros e comportamento do usuário. |
 
-## 2. Estrutura do Projeto (File System)
+## 2. Estrutura do Projeto - Monorepo (Turborepo)
 
-A estrutura segue o padrão do Expo Router:
+O projeto utiliza arquitetura **Monorepo** com **Turborepo** para compartilhar código entre aplicações:
 
 ```
-/meupersonal.app
-├── /app                   # Rotas e Telas (Expo Router)
-│   ├── (auth)             # Grupo de rotas de autenticação (sem tab bar)
-│   │   ├── login.tsx
-│   │   └── register.tsx
-│   ├── (tabs)             # Navegação principal (Tab Bar)
-│   │   ├── _layout.tsx
-│   │   ├── index.tsx      # Dashboard (Personal ou Aluno)
-│   │   ├── students.tsx   # Lista de Alunos (Personal)
-│   │   ├── workouts.tsx   # Biblioteca de Treinos
-│   │   └── profile.tsx    # Perfil e Configurações
-│   ├── _layout.tsx        # Layout Raiz (Providers)
-│   └── +not-found.tsx
-├── /src
-│   ├── /components        # Componentes Reutilizáveis (UI Kit)
-│   │   ├── /ui            # Botões, Inputs, Cards (Atomic Design)
-│   │   └── /forms         # Formulários complexos
-│   ├── /lib               # Configurações de serviços externos
-│   │   ├── supabase.ts
-│   │   ├── stripe.ts
-│   │   └── query-client.ts
-│   ├── /store             # Stores do Zustand (authStore, workoutStore)
-│   ├── /hooks             # Custom Hooks
-│   ├── /types             # Definições de Tipos TypeScript
-│   └── /utils             # Funções auxiliares
-├── /drizzle               # Migrations e Schemas do Banco
-├── app.json               # Configuração do Expo
+meupersonal.app/
+├── apps/
+│   ├── mobile/                    # Aplicativo React Native + Expo
+│   │   ├── app/                   # Rotas (Expo Router)
+│   │   │   ├── (auth)/           # Autenticação
+│   │   │   │   ├── login.tsx
+│   │   │   │   └── register.tsx
+│   │   │   ├── (tabs)/           # Navegação principal
+│   │   │   │   ├── index.tsx     # Dashboard
+│   │   │   │   ├── students.tsx  # Alunos
+│   │   │   │   ├── workouts.tsx  # Treinos
+│   │   │   │   └── profile.tsx   # Perfil
+│   │   │   └── _layout.tsx
+│   │   ├── src/
+│   │   │   ├── components/       # Componentes UI
+│   │   │   ├── hooks/            # Custom Hooks
+│   │   │   ├── store/            # Zustand stores
+│   │   │   └── utils/            # Utilitários
+│   │   └── package.json
+│   └── web/                       # Dashboard Web (Next.js - futuro)
+├── packages/
+│   ├── config/                    # Configurações TypeScript compartilhadas
+│   │   └── tsconfig/
+│   │       └── base.json
+│   ├── core/                      # Lógica de negócio compartilhada
+│   │   └── src/
+│   │       └── index.ts
+│   └── supabase/                  # Cliente Supabase + CASL
+│       └── src/
+│           ├── abilities.ts       # Controle de acesso (CASL)
+│           ├── client.ts          # Cliente Supabase
+│           ├── types.ts           # Tipos TypeScript
+│           └── index.ts
+├── docs/                          # Documentação
+├── turbo.json                     # Configuração Turborepo
+├── pnpm-workspace.yaml            # Workspace pnpm
 └── package.json
+```
+
+## 2.1. Packages Compartilhados
+
+### `@meupersonal/config`
+**Propósito:** Configurações TypeScript compartilhadas entre todos os apps e packages.
+
+**Conteúdo:**
+- `tsconfig/base.json` - Configuração base do TypeScript
+
+**Uso:**
+```json
+// Em apps/mobile/tsconfig.json
+{
+  "extends": "@meupersonal/config/tsconfig/base.json"
+}
+```
+
+### `@meupersonal/core`
+**Propósito:** Lógica de negócio e tipos compartilhados entre mobile e web.
+
+**Conteúdo:**
+- Tipos TypeScript comuns
+- Funções utilitárias de negócio
+- Validações compartilhadas
+
+**Uso:**
+```typescript
+import { type User } from '@meupersonal/core';
+```
+
+### `@meupersonal/supabase`
+**Propósito:** Cliente Supabase e controle de acesso (CASL) centralizados.
+
+**Conteúdo:**
+- `client.ts` - Cliente Supabase configurado
+- `abilities.ts` - Definições de permissões CASL
+- `types.ts` - Tipos do banco de dados
+
+**Uso:**
+```typescript
+import { supabase, defineAbilitiesFor } from '@meupersonal/supabase';
+
+const ability = defineAbilitiesFor('personal');
+if (ability.can('create', 'Workout')) {
+  // Criar treino
+}
 ```
 
 ## 3. Modelo de Dados (Esboço do Schema)
@@ -79,15 +135,87 @@ A estrutura segue o padrão do Expo Router:
 - `description` (text)
 - `scheduled_date` (date, nullable)
 
-## 4. Fluxo de Dados
-1.  **App** consome dados via **Supabase Client**.
-2.  **TanStack Query** (React Query) gerencia o fetch, cache e sincronização de dados do servidor.
-3.  **Zustand** armazena estado global da aplicação (autenticação, tema, UI state).
-4.  **Drizzle** é usado nas Edge Functions (se houver lógica backend complexa) ou o App chama o Supabase diretamente com RLS (Row Level Security) configurado.
+## 4. Controle de Acesso (CASL)
+
+O sistema utiliza **CASL (Ability)** para controle de acesso baseado em permissões.
+
+### Localização
+`packages/supabase/src/abilities.ts`
+
+### Roles Implementados
+
+| Role | Permissões |
+|------|------------|
+| **personal** | manage Student/Workout/Exercise<br>read Diet/Analytics<br>update Profile |
+| **nutritionist** | manage Student/Diet<br>read Workout/Analytics<br>update Profile |
+| **student** | read Workout/Diet/Exercise/Profile<br>update Profile |
+
+### Exemplo de Uso
+
+```typescript
+import { defineAbilitiesFor } from '@meupersonal/supabase';
+
+const ability = defineAbilitiesFor(user.role);
+
+// Verificar permissão
+if (ability.can('create', 'Workout')) {
+  // Mostrar botão "Criar Treino"
+}
+
+// Ocultar elementos baseado em permissão
+{ability.can('manage', 'Diet') && (
+  <Button>Criar Dieta</Button>
+)}
+```
+
+### Integração com RLS
+CASL trabalha em conjunto com **Row Level Security (RLS)** do Supabase:
+- **CASL**: Controle no frontend (UI/UX)
+- **RLS**: Segurança no backend (banco de dados)
+
+**Documentação completa:** Ver `docs/access_control.md` e `docs/CASL_GUIDE.md`
+
+## 4.1. Fluxo de Dados
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Mobile App / Web                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │   UI Layer   │  │  CASL Check  │  │ Zustand Store│  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
+│         │                 │                 │           │
+│         └─────────────────┴─────────────────┘           │
+│                           │                             │
+│                  ┌────────▼────────┐                    │
+│                  │ TanStack Query  │                    │
+│                  └────────┬────────┘                    │
+└───────────────────────────┼─────────────────────────────┘
+                            │
+                  ┌─────────▼─────────┐
+                  │ @meupersonal/     │
+                  │ supabase client   │
+                  └─────────┬─────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────┐
+│                    Supabase Backend                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │     RLS      │  │  PostgreSQL  │  │   Storage    │  │
+│  │   Policies   │  │   Database   │  │              │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Camadas:**
+1. **App** consome dados via `@meupersonal/supabase`
+2. **CASL** verifica permissões antes de ações (frontend)
+3. **TanStack Query** gerencia fetch, cache e sincronização
+4. **Zustand** armazena estado global (auth, tema, UI)
+5. **RLS** garante segurança no banco de dados (backend)
 
 ### Separação de Responsabilidades
 - **TanStack Query**: Estado do servidor (cache, sincronização, loading/error states)
 - **Zustand**: Estado global da aplicação (auth, theme, UI state)
+- **CASL**: Controle de acesso e permissões
 - **useState**: Estado local do componente
 
 ## 5. Estilização
@@ -104,7 +232,10 @@ A estrutura segue o padrão do Expo Router:
 - *Policy*: `workouts` só podem ser lidos pelo `creator_id` ou `student_id`.
 
 ## 7. Documentação de Referência
+- **Arquitetura Monorepo**: `docs/MONOREPO.md`
+- **Controle de Acesso**: `docs/access_control.md`
+- **Guia CASL**: `docs/CASL_GUIDE.md`
 - **Boas Práticas**: `docs/best_practices.md`
+- **Regras de Negócio**: `docs/business_rules.md`
 - **Avaliação TanStack Query**: `docs/tanstack_query_evaluation.md`
 - **Guia de Migração**: `docs/migration_guide.md`
-- **Regras de Negócio**: `docs/business_rules.md`

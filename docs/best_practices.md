@@ -1,11 +1,3 @@
-# Boas Práticas - MeuPersonal
-
-Este documento estabelece as diretrizes e padrões que devem ser seguidos em todo o projeto para garantir consistência, manutenibilidade e qualidade do código.
-
-## 📋 Índice
-
-1. [Estilização com Tailwind (NativeWind)](#estilização-com-tailwind-nativewind)
-2. [TypeScript](#typescript)
 3. [Estrutura de Componentes](#estrutura-de-componentes)
 4. [React Hooks e Boas Práticas](#react-hooks-e-boas-práticas)
 5. [Gerenciamento de Estado](#gerenciamento-de-estado)
