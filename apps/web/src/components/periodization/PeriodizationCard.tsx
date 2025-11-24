@@ -55,7 +55,7 @@ export function PeriodizationCard({ periodization, onEdit, onView, onDelete }: P
 
   return (
     <div
-      className={`relative bg-gradient-to-br ${objectiveColors[periodization.objective]} backdrop-blur-xl border-2 rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-2xl group`}
+      className="relative bg-surface border border-white/10 rounded-xl p-6 hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-black/20 group"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
@@ -64,7 +64,7 @@ export function PeriodizationCard({ periodization, onEdit, onView, onDelete }: P
             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusColors[periodization.status]}`}>
               {statusLabels[periodization.status]}
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-foreground border border-white/20">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold border bg-background/50 ${objectiveColors[periodization.objective]}`}>
               {objectiveLabels[periodization.objective]}
             </span>
           </div>
@@ -82,7 +82,7 @@ export function PeriodizationCard({ periodization, onEdit, onView, onDelete }: P
         <div className="flex items-center gap-2">
           <button
             onClick={onEdit}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
             title="Editar"
           >
             <svg className="w-5 h-5 text-muted-foreground hover:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,7 +108,7 @@ export function PeriodizationCard({ periodization, onEdit, onView, onDelete }: P
             <span>Progresso</span>
             <span className="font-bold">{Math.round(progress)}%</span>
           </div>
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -119,17 +119,17 @@ export function PeriodizationCard({ periodization, onEdit, onView, onDelete }: P
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-background/50 rounded-lg p-3 text-center">
+        <div className="bg-background/50 border border-white/5 rounded-lg p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Fichas</p>
           <p className="text-lg font-bold text-foreground">{periodization.training_plans_count || 0}</p>
         </div>
-        <div className="bg-background/50 rounded-lg p-3 text-center">
+        <div className="bg-background/50 border border-white/5 rounded-lg p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Início</p>
           <p className="text-sm font-bold text-foreground">
             {format(startDate, 'dd/MM', { locale: ptBR })}
           </p>
         </div>
-        <div className="bg-background/50 rounded-lg p-3 text-center">
+        <div className="bg-background/50 border border-white/5 rounded-lg p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Fim</p>
           <p className="text-sm font-bold text-foreground">
             {format(endDate, 'dd/MM', { locale: ptBR })}
@@ -149,17 +149,14 @@ export function PeriodizationCard({ periodization, onEdit, onView, onDelete }: P
       {/* View Button */}
       <button
         onClick={onView}
-        className="w-full px-4 py-3 bg-primary/10 border-2 border-primary rounded-lg text-primary font-medium hover:bg-primary/20 transition-colors flex items-center justify-center gap-2"
+        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground font-medium hover:bg-white/10 hover:border-white/20 transition-colors flex items-center justify-center gap-2"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
         Ver Detalhes
       </button>
-
-      {/* Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
     </div>
   );
 }

@@ -50,7 +50,7 @@ function getRelativeTime(date: Date): string {
 export function ActivityFeed({ activities, loading }: ActivityFeedProps) {
   if (loading) {
     return (
-      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+      <div className="bg-surface border border-white/10 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Atividades Recentes</h3>
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
@@ -69,7 +69,7 @@ export function ActivityFeed({ activities, loading }: ActivityFeedProps) {
 
   if (activities.length === 0) {
     return (
-      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+      <div className="bg-surface border border-white/10 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Atividades Recentes</h3>
         <div className="text-center py-8">
           <div className="text-muted-foreground text-sm">
@@ -82,7 +82,7 @@ export function ActivityFeed({ activities, loading }: ActivityFeedProps) {
   }
 
   return (
-    <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+    <div className="bg-surface border border-white/10 rounded-xl p-6">
       <h3 className="text-lg font-semibold text-foreground mb-4">Atividades Recentes</h3>
       <div className="space-y-4">
         {activities.map((activity) => (

@@ -43,12 +43,12 @@ export function StatCard({ title, value, icon, color, trend, loading }: StatCard
   }
 
   return (
-    <div className="group bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/5">
+    <div className="group bg-surface border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-black/20">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm text-muted-foreground font-medium mb-2">{title}</p>
           <div className="flex items-baseline gap-2">
-            <h3 className={`text-4xl font-bold ${colors.text}`}>{value}</h3>
+            <h3 className="text-4xl font-bold text-foreground">{value}</h3>
             {trend && (
               <span
                 className={`text-sm font-medium flex items-center gap-1 ${
@@ -61,7 +61,7 @@ export function StatCard({ title, value, icon, color, trend, loading }: StatCard
             )}
           </div>
         </div>
-        <div className={`${colors.bg} ${colors.text} p-3 rounded-lg group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`p-3 rounded-lg bg-white/5 ${colors.text} group-hover:scale-110 transition-transform duration-300`}>
           {icon}
         </div>
       </div>
