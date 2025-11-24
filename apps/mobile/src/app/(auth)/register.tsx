@@ -1,4 +1,4 @@
-import { supabase } from '@meupersonal/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { signUp } = useAuthStore();
 
   async function handleRegister() {
     if (password !== confirmPassword) {
@@ -20,18 +21,10 @@ export default function RegisterScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role: 'personal'
-        }
-      }
-    });
+    const result = await signUp(email, password, 'professional');
 
-    if (error) {
-      Alert.alert('Erro no Cadastro', error.message);
+    if (!result.success) {
+      Alert.alert('Erro no Cadastro', result.error || 'Erro desconhecido');
     } else {
       Alert.alert('Sucesso!', 'Conta criada com sucesso! Faça login para continuar.');
       router.replace('/(auth)/login');
@@ -69,7 +62,7 @@ export default function RegisterScreen() {
               letterSpacing: -1,
               textAlign: 'center'
             }}>
-              Cadastro de Personal
+              Cadastro de Professional
             </Text>
             
             <Text style={{ 

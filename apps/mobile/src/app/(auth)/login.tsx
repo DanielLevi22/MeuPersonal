@@ -1,9 +1,9 @@
-import { supabase } from '@meupersonal/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -11,16 +11,14 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { signIn } = useAuthStore();
 
   async function handleLogin() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const result = await signIn(email, password);
 
-    if (error) {
-      Alert.alert('Erro no Login', error.message);
+    if (!result.success) {
+      Alert.alert('Erro no Login', result.error || 'Erro desconhecido');
     }
     setLoading(false);
   }
@@ -227,6 +225,3 @@ export default function LoginScreen() {
     </View>
   );
 }
-
-// Temporary TextInput import
-import { TextInput } from 'react-native';
