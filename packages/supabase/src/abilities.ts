@@ -1,75 +1,225 @@
 import { AbilityBuilder, createMongoAbility, type MongoAbility } from '@casl/ability';
-import type { UserRole } from './types';
+import { supabase } from './client';
 
 // Define actions
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage';
 
 // Define subjects (resources)
 export type Subject =
-  | 'Student'
+  | 'Client'           // Aluno (gerenciado ou autônomo)
   | 'Workout'
   | 'Diet'
   | 'Exercise'
+  | 'Food'
   | 'Profile'
   | 'Analytics'
+  | 'Periodization'
+  | 'Community'
   | 'all';
 
 // Define the Ability type
 export type AppAbility = MongoAbility<[Action, Subject]>;
 
-// Define abilities based on user role
-export function defineAbilitiesFor(role: UserRole): AppAbility {
+import {
+    AccountType,
+    ServiceCategory,
+    SubscriptionTier
+} from './types';
+
+// User context for ability definition
+export interface UserContext {
+  accountType: AccountType;
+  services?: ServiceCategory[]; // If professional
+  subscriptionTier?: SubscriptionTier; // If autonomous student
+  featureAccess?: Record<string, boolean | number>; // Features enabled
+}
+
+/**
+ * Define abilities based on user context
+ */
+export function defineAbilitiesFor(context: UserContext): AppAbility {
   const { can, cannot, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
-  switch (role) {
-    case 'personal':
-      // Personal Trainer can manage students, workouts, and view analytics
-      can('manage', 'Student');
+  // === PROFISSIONAL ===
+  if (context.accountType === 'professional') {
+    // Sempre pode gerenciar clientes
+    can('manage', 'Client');
+    can('read', 'Analytics');
+    can('read', 'Profile');
+    can('update', 'Profile');
+
+    // Permissões baseadas em serviços oferecidos
+    if (context.services?.includes('training')) {
       can('manage', 'Workout');
       can('manage', 'Exercise');
-      can('read', 'Analytics');
-      can('read', 'Profile');
-      can('update', 'Profile');
-      // Cannot manage diets (only nutritionist can)
-      cannot('manage', 'Diet');
-      can('read', 'Diet'); // But can view
-      break;
+      can('manage', 'Periodization');
+      can('read', 'Diet'); // Pode VER dietas de clientes
+    }
 
-    case 'nutritionist':
-      // Nutritionist can manage students, diets, and view analytics
-      can('manage', 'Student');
+    if (context.services?.includes('nutrition')) {
       can('manage', 'Diet');
-      can('read', 'Analytics');
-      can('read', 'Profile');
-      can('update', 'Profile');
-      // Cannot manage workouts (only personal can)
-      cannot('manage', 'Workout');
-      can('read', 'Workout'); // But can view
-      break;
+      can('manage', 'Food');
+      can('read', 'Workout'); // Pode VER treinos de clientes
+      can('read', 'Periodization');
+    }
+  }
 
-    case 'student':
-      // Student can only read their own data
+  // === ALUNO GERENCIADO ===
+  if (context.accountType === 'managed_student') {
+    can('read', 'Workout');
+    can('read', 'Diet');
+    can('read', 'Exercise');
+    can('read', 'Profile');
+    can('update', 'Profile'); // Próprio perfil
+    cannot('create', 'all');
+    cannot('delete', 'all');
+  }
+
+  // === ALUNO AUTÔNOMO (FREEMIUM/PREMIUM) ===
+  if (context.accountType === 'autonomous_student') {
+    can('read', 'Profile');
+    can('update', 'Profile');
+
+    // Permissões baseadas em features habilitadas
+    const features = context.featureAccess || {};
+
+    // Treinos
+    if (features['workouts_view']) {
       can('read', 'Workout');
-      can('read', 'Diet');
       can('read', 'Exercise');
-      can('read', 'Profile');
-      can('update', 'Profile'); // Can update their own profile
-      // Cannot create or delete anything
-      cannot('create', 'all');
-      cannot('delete', 'all');
-      cannot('read', 'Analytics');
-      break;
+    }
+    if (features['workouts_create']) {
+      can('create', 'Workout');
+      can('update', 'Workout');
+      can('delete', 'Workout');
+    }
 
-    default:
-      // No permissions by default
-      break;
+    // Nutrição
+    if (features['nutrition_view']) {
+      can('read', 'Diet');
+      can('read', 'Food');
+    }
+    if (features['nutrition_create']) {
+      can('create', 'Diet');
+      can('update', 'Diet');
+      can('delete', 'Diet');
+    }
+
+    // Periodização
+    if (features['periodization_view']) {
+      can('read', 'Periodization');
+    }
+    if (features['periodization_create']) {
+      can('create', 'Periodization');
+      can('update', 'Periodization');
+      can('delete', 'Periodization');
+    }
+
+    // Analytics
+    if (features['analytics_basic']) {
+      can('read', 'Analytics');
+    }
+
+    // Community
+    if (features['community_access']) {
+      can('read', 'Community');
+      can('create', 'Community');
+    }
   }
 
   return build();
 }
 
-// Helper to check if user can perform action
-export function canUser(role: UserRole, action: Action, subject: Subject): boolean {
-  const ability = defineAbilitiesFor(role);
+/**
+ * Helper to fetch user context from database
+ */
+export async function getUserContext(userId: string): Promise<UserContext> {
+  // 1. Buscar usuário
+  const { data: user, error: userError } = await supabase
+    .from('profiles')
+    .select('account_type, subscription_tier')
+    .eq('id', userId)
+    .single();
+
+  if (userError || !user) {
+    throw new Error('User not found');
+  }
+
+  const context: UserContext = {
+    accountType: user.account_type as AccountType,
+  };
+
+  // 2. Se profissional, buscar serviços
+  if (user.account_type === 'professional') {
+    const { data: services } = await supabase
+      .from('professional_services')
+      .select('service_category')
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    context.services = (services?.map(s => s.service_category) || []) as ServiceCategory[];
+  }
+
+  // 3. Se aluno autônomo, buscar features
+  if (user.account_type === 'autonomous_student') {
+    context.subscriptionTier = user.subscription_tier as SubscriptionTier;
+
+    const { data: features } = await supabase
+      .from('feature_access')
+      .select('feature_key, is_enabled, limit_value')
+      .eq('subscription_tier', user.subscription_tier);
+
+    context.featureAccess = {};
+    features?.forEach(f => {
+      context.featureAccess![f.feature_key] = f.limit_value ?? f.is_enabled;
+    });
+  }
+
+  return context;
+}
+
+/**
+ * Helper to check if user can perform action
+ */
+export async function canUser(
+  userId: string,
+  action: Action,
+  subject: Subject
+): Promise<boolean> {
+  const context = await getUserContext(userId);
+  const ability = defineAbilitiesFor(context);
   return ability.can(action, subject);
+}
+
+/**
+ * Check if user has a specific feature (for autonomous students)
+ */
+export async function userHasFeature(
+  userId: string,
+  featureKey: string
+): Promise<boolean> {
+  const context = await getUserContext(userId);
+  
+  if (context.accountType !== 'autonomous_student') {
+    return false;
+  }
+
+  return context.featureAccess?.[featureKey] === true;
+}
+
+/**
+ * Get user's feature limit (for autonomous students)
+ */
+export async function getUserFeatureLimit(
+  userId: string,
+  featureKey: string
+): Promise<number> {
+  const context = await getUserContext(userId);
+  
+  if (context.accountType !== 'autonomous_student') {
+    return 0;
+  }
+
+  const limit = context.featureAccess?.[featureKey];
+  return typeof limit === 'number' ? limit : 0;
 }

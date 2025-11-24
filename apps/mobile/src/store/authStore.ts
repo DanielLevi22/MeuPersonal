@@ -1,3 +1,9 @@
+import {
+    AccountType,
+    AppAbility,
+    defineAbilitiesFor,
+    getUserContext
+} from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
@@ -5,20 +11,60 @@ import { supabase } from '../lib/supabase';
 interface AuthState {
   session: Session | null;
   user: User | null;
+  accountType: AccountType | null;
+  abilities: AppAbility | null;
   isLoading: boolean;
-  setSession: (session: Session | null) => void;
+  
+  initializeSession: (session: Session | null) => Promise<void>;
   signOut: () => Promise<void>;
   signInWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, role: AccountType, metadata?: any) => Promise<{ success: boolean; error?: string }>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   user: null,
+  accountType: null,
+  abilities: null,
   isLoading: true,
-  setSession: (session) => set({ session, user: session?.user ?? null, isLoading: false }),
+
+  initializeSession: async (session) => {
+    set({ isLoading: true });
+    try {
+      if (!session?.user) {
+        set({ session: null, user: null, accountType: null, abilities: null, isLoading: false });
+        return;
+      }
+
+      const user = session.user;
+      
+      try {
+        // Fetch context and define abilities
+        const context = await getUserContext(user.id);
+        const abilities = defineAbilitiesFor(context);
+        
+        set({ 
+          session, 
+          user, 
+          accountType: context.accountType, 
+          abilities, 
+          isLoading: false 
+        });
+      } catch (error) {
+        console.error('Error loading user context:', error);
+        // If profile doesn't exist or error, set basic session but no role/abilities
+        set({ session, user, isLoading: false });
+      }
+    } catch (error) {
+       console.error('Error initializing session:', error);
+       set({ isLoading: false });
+    }
+  },
+
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ session: null, user: null });
+    set({ session: null, user: null, accountType: null, abilities: null });
     
     // CRITICAL: Clear all stores to prevent data leakage between users
     // Import stores dynamically to avoid circular dependencies
@@ -32,6 +78,60 @@ export const useAuthStore = create<AuthState>((set) => ({
     
     console.log('✅ All stores cleared on logout');
   },
+
+  signIn: async (email, password) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      console.error('SignIn error:', error);
+      return { success: false, error: error.message || 'Erro ao entrar.' };
+    }
+  },
+
+  signUp: async (email, password, role, metadata = {}) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            ...metadata,
+            account_type: role, // Pass to trigger if exists, or for client-side use
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Create profile if not created by trigger
+        // Note: Ideally a trigger handles this, but we can do it here for safety
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: email,
+            account_type: role,
+            full_name: metadata.full_name,
+            ...metadata
+          });
+          
+        if (profileError) console.error('Error creating profile:', profileError);
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('SignUp error:', error);
+      return { success: false, error: error.message || 'Erro ao criar conta.' };
+    }
+  },
+
   signInWithCode: async (code: string) => {
     try {
       const cleanCode = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -70,11 +170,13 @@ export const useAuthStore = create<AuthState>((set) => ({
              // Fallback for returning user
              // 1. Link
              const { error: linkError } = await supabase
-              .from('students_personals')
+              .from('client_professional_relationships')
               .insert({
-                student_id: signInData.session.user.id,
-                personal_id: pendingInvite.personal_id,
-                status: 'active'
+                client_id: signInData.session.user.id,
+                professional_id: pendingInvite.personal_id,
+                service_category: 'training', // Default to training for now
+                relationship_status: 'active',
+                invited_by: pendingInvite.personal_id
               });
               
              // 2. Delete Invite (only if link succeeded or was duplicate)
@@ -109,7 +211,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         options: {
           data: {
             full_name: invite.name,
-            role: 'student',
+            account_type: 'managed_student',
             phone: invite.phone,
             invite_code: cleanCode
           }
@@ -141,17 +243,30 @@ export const useAuthStore = create<AuthState>((set) => ({
           const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
             .update({ 
-              role: 'student',
+              account_type: 'managed_student',
               full_name: invite.name,
-              phone: invite.phone,
-              weight: invite.weight,
-              height: invite.height,
-              notes: invite.notes,
-              invite_code: cleanCode
+              // phone: invite.phone, // Add these columns to profiles if needed or keep in students
+              // weight: invite.weight,
+              // height: invite.height,
+              // notes: invite.notes,
+              // invite_code: cleanCode
             })
             .eq('id', authData.user.id)
             .select()
             .single();
+            
+          // Also create student record
+          await supabase.from('students').insert({
+             id: authData.user.id, // Same ID as profile/user
+             personal_id: invite.personal_id,
+             email: email,
+             full_name: invite.name,
+             phone: invite.phone,
+             weight: invite.weight,
+             height: invite.height,
+             notes: invite.notes,
+             invite_code: cleanCode
+          });
 
           if (!updateError && updatedProfile) {
             profileUpdated = true;
@@ -163,23 +278,32 @@ export const useAuthStore = create<AuthState>((set) => ({
            await supabase.from('profiles').upsert({ 
               id: authData.user.id,
               email: email,
-              role: 'student',
+              account_type: 'managed_student',
               full_name: invite.name,
-              phone: invite.phone,
-              weight: invite.weight,
-              height: invite.height,
-              notes: invite.notes,
-              invite_code: cleanCode
             });
+            
+           await supabase.from('students').upsert({
+             id: authData.user.id,
+             personal_id: invite.personal_id,
+             email: email,
+             full_name: invite.name,
+             phone: invite.phone,
+             weight: invite.weight,
+             height: invite.height,
+             notes: invite.notes,
+             invite_code: cleanCode
+           });
         }
 
         // 2. Link Student
         const { error: linkError } = await supabase
-          .from('students_personals')
+          .from('client_professional_relationships')
           .insert({
-            student_id: authData.user.id,
-            personal_id: invite.personal_id,
-            status: 'active'
+            client_id: authData.user.id,
+            professional_id: invite.personal_id,
+            service_category: 'training',
+            relationship_status: 'active',
+            invited_by: invite.personal_id
           });
           
         if (linkError && linkError.code !== '23505') {
