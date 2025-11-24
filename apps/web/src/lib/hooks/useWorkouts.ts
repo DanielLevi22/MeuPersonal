@@ -11,6 +11,13 @@ export interface Workout {
   personal_id: string;
   student_id: string | null;
   created_at: string;
+  // New periodization fields
+  training_plan_id?: string | null;
+  identifier?: string | null;
+  estimated_duration?: number | null;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | null;
+  focus_areas?: string[] | null;
+  // Counts
   exercise_count?: number;
   assigned_count?: number;
 }

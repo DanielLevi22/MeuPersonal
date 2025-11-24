@@ -15,16 +15,29 @@ interface CreateWorkoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   workoutId?: string;
+  trainingPlanId?: string;
 }
 
-export function CreateWorkoutModal({ isOpen, onClose, workoutId }: CreateWorkoutModalProps) {
+export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId }: CreateWorkoutModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [estimatedDuration, setEstimatedDuration] = useState('');
+  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
+  
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showSelectModal, setShowSelectModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
+  
+  // Current exercise being configured (can be a new Exercise or an existing SelectedExercise)
+  const [currentExercise, setCurrentExercise] = useState<{
+    id: string;
+    name: string;
+    muscle_group: string | null;
+    video_url?: string | null;
+  } | null>(null);
+  
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const { data: existingWorkout } = useWorkout(workoutId || '');
@@ -40,6 +53,9 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId }: CreateWorkout
     if (existingWorkout) {
       setTitle(existingWorkout.title);
       setDescription(existingWorkout.description || '');
+      setIdentifier(existingWorkout.identifier || '');
+      setEstimatedDuration(existingWorkout.estimated_duration?.toString() || '');
+      setDifficultyLevel(existingWorkout.difficulty_level || 'intermediate');
       // TODO: Load workout items if editing
     }
   }, [existingWorkout]);
@@ -49,38 +65,114 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId }: CreateWorkout
     if (!isOpen) {
       setTitle('');
       setDescription('');
+      setIdentifier('');
+      setEstimatedDuration('');
+      setDifficultyLevel('intermediate');
       setSelectedStudentIds([]);
       setSelectedExercises([]);
     }
   }, [isOpen]);
 
-  const handleSelectExercise = (exercise: Exercise) => {
-    // Check if already selected
-    const alreadySelected = selectedExercises.some((ex) => ex.id === exercise.id);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (alreadySelected) {
-      // Edit existing
-      const index = selectedExercises.findIndex((ex) => ex.id === exercise.id);
-      setEditingIndex(index);
-      setCurrentExercise(exercise);
-      setShowConfigModal(true);
-    } else {
-      // Add new
-      setCurrentExercise(exercise);
-      setEditingIndex(null);
-      setShowConfigModal(true);
+    try {
+      const workoutData = {
+        title,
+        description,
+        training_plan_id: trainingPlanId,
+        identifier: trainingPlanId ? identifier : null,
+        estimated_duration: estimatedDuration ? parseInt(estimatedDuration) : null,
+        difficulty_level: difficultyLevel,
+      };
+
+      let newWorkoutId = workoutId;
+
+      if (isEditing && workoutId) {
+        await updateMutation.mutateAsync({
+          id: workoutId,
+          ...workoutData,
+        });
+      } else {
+        const result = await createMutation.mutateAsync(workoutData);
+        newWorkoutId = result.id;
+      }
+
+      if (newWorkoutId) {
+        // Create workout items
+        if (selectedExercises.length > 0) {
+          // Delete existing items if editing
+          if (isEditing) {
+            await supabase.from('workout_items').delete().eq('workout_id', newWorkoutId);
+          }
+
+          const items = selectedExercises.map((ex, index) => ({
+            workout_id: newWorkoutId,
+            exercise_id: ex.id,
+            order_index: index,
+            sets: ex.sets,
+            reps: ex.reps,
+            rest_seconds: ex.rest_seconds,
+            weight: ex.weight || null,
+            notes: null, // SelectedExercise doesn't have notes yet, can add later
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('workout_items')
+            .insert(items);
+
+          if (itemsError) throw itemsError;
+        }
+
+        // Create workout assignments (only if not part of a training plan)
+        if (!trainingPlanId && selectedStudentIds.length > 0) {
+          // Delete existing assignments if editing
+          if (isEditing) {
+            await supabase.from('workout_assignments').delete().eq('workout_id', newWorkoutId);
+          }
+
+          const assignments = selectedStudentIds.map(studentId => ({
+            workout_id: newWorkoutId,
+            student_id: studentId,
+          }));
+
+          const { error: assignmentError } = await supabase
+            .from('workout_assignments')
+            .insert(assignments);
+
+          if (assignmentError) throw assignmentError;
+        }
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      alert(`Erro ao salvar treino: ${JSON.stringify(error)}`);
     }
   };
 
-  const handleSaveExercise = (exercise: SelectedExercise) => {
+  const handleAddExercise = (exercise: Exercise) => {
+    setCurrentExercise({
+      id: exercise.id,
+      name: exercise.name,
+      muscle_group: exercise.muscle_group,
+      video_url: exercise.video_url,
+    });
+    setEditingIndex(null);
+    setShowSelectModal(false);
+    setShowConfigModal(true);
+  };
+
+  const handleSaveExerciseConfig = (config: SelectedExercise) => {
     if (editingIndex !== null) {
-      // Update existing
-      const updated = [...selectedExercises];
-      updated[editingIndex] = exercise;
-      setSelectedExercises(updated);
+      // Edit existing
+      const newExercises = [...selectedExercises];
+      newExercises[editingIndex] = config;
+      setSelectedExercises(newExercises);
     } else {
       // Add new
-      setSelectedExercises([...selectedExercises, exercise]);
+      setSelectedExercises([...selectedExercises, config]);
     }
     setShowConfigModal(false);
     setCurrentExercise(null);
@@ -93,249 +185,224 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId }: CreateWorkout
       id: exercise.id,
       name: exercise.name,
       muscle_group: exercise.muscle_group,
-      video_url: exercise.video_url || null,
+      video_url: exercise.video_url,
     });
     setEditingIndex(index);
     setShowConfigModal(true);
   };
 
   const handleRemoveExercise = (index: number) => {
-    setSelectedExercises(selectedExercises.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title.trim()) return;
-
-    try {
-      if (isEditing && workoutId) {
-        await updateMutation.mutateAsync({
-          id: workoutId,
-          data: { title, description },
-        });
-      } else {
-        // Create workout with items
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Usuário não autenticado');
-
-        // Create workout
-        const { data: workout, error: workoutError } = await supabase
-          .from('workouts')
-          .insert({
-            title,
-            description: description || null,
-            personal_id: user.id,
-          })
-          .select()
-          .single();
-
-        if (workoutError) throw workoutError;
-
-        // Create workout items
-        if (selectedExercises.length > 0) {
-          const workoutItems = selectedExercises.map((exercise, index) => ({
-            workout_id: workout.id,
-            exercise_id: exercise.id,
-            sets: exercise.sets,
-            reps: exercise.reps.toString(),
-            weight: exercise.weight || null,
-            rest_time: exercise.rest_seconds,
-            order: index,
-          }));
-
-          const { error: itemsError } = await supabase
-            .from('workout_items')
-            .insert(workoutItems);
-
-          if (itemsError) throw itemsError;
-        }
-
-        // Create workout assignments
-        if (selectedStudentIds.length > 0) {
-          const assignments = selectedStudentIds.map((studentId) => ({
-            workout_id: workout.id,
-            student_id: studentId,
-          }));
-
-          const { error: assignmentError } = await supabase
-            .from('workout_assignments')
-            .insert(assignments);
-
-          if (assignmentError) throw assignmentError;
-        }
-      }
-      onClose();
-    } catch (error) {
-      console.error('Error saving workout:', error);
-    }
+    const newExercises = [...selectedExercises];
+    newExercises.splice(index, 1);
+    setSelectedExercises(newExercises);
   };
 
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={onClose}
-        />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-surface z-10 flex-none">
+          <h2 className="text-2xl font-bold text-foreground">
+            {isEditing ? 'Editar Treino' : 'Novo Treino'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-        {/* Modal */}
-        <div className="relative bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-foreground">
-              {isEditing ? 'Editar Treino' : 'Novo Treino'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                {/* Basic Info */}
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
+                    Nome do Treino
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/50"
+                    placeholder="Ex: Treino A - Peito e Tríceps"
+                    required
+                  />
+                </div>
+
+                {trainingPlanId && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        Identificador
+                      </label>
+                      <input
+                        type="text"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/50"
+                        placeholder="Ex: A, B, C"
+                        maxLength={5}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        Duração (min)
+                      </label>
+                      <input
+                        type="number"
+                        value={estimatedDuration}
+                        onChange={(e) => setEstimatedDuration(e.target.value)}
+                        className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/50"
+                        placeholder="Ex: 60"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
+                    Descrição (Opcional)
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-4 py-2 bg-background border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/50 min-h-[100px]"
+                    placeholder="Instruções gerais para o treino..."
+                  />
+                </div>
+
+                {trainingPlanId && (
+                  <div>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                      Nível de Dificuldade
+                    </label>
+                    <div className="flex gap-2">
+                      {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => setDifficultyLevel(level)}
+                          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                            difficultyLevel === level
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-background border border-white/10 text-muted-foreground hover:bg-white/5'
+                          }`}
+                        >
+                          {level === 'beginner' && 'Iniciante'}
+                          {level === 'intermediate' && 'Intermediário'}
+                          {level === 'advanced' && 'Avançado'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Student Selection - Only if not in a training plan */}
+                {!trainingPlanId && (
+                  <div>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                      Atribuir a Alunos (Opcional)
+                    </label>
+                    <StudentMultiSelect
+                      students={students}
+                      selectedIds={selectedStudentIds}
+                      onSelectionChange={setSelectedStudentIds}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Exercises List */}
+              <div className="flex flex-col h-full min-h-[500px]">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    Exercícios ({selectedExercises.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowSelectModal(true)}
+                    className="text-sm text-secondary hover:text-secondary/80 font-medium flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Adicionar Exercício
+                  </button>
+                </div>
+
+                <div className="flex-1 bg-background/30 border border-white/10 rounded-xl overflow-hidden flex flex-col relative">
+                  {selectedExercises.length === 0 ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+                      <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                        <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <p className="text-lg font-medium mb-1">Seu treino está vazio</p>
+                      <p className="text-sm opacity-70 mb-4">Adicione exercícios para começar a montar o treino.</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowSelectModal(true)}
+                        className="px-4 py-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors"
+                      >
+                        Selecionar exercícios
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="overflow-y-auto absolute inset-0 p-3 space-y-2">
+                      {selectedExercises.map((item, index) => (
+                        <ExerciseListItem
+                          key={`${item.id}-${index}`}
+                          exercise={item}
+                          index={index}
+                          onEdit={() => handleEditExercise(index)}
+                          onRemove={() => handleRemoveExercise(index)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Student Selection */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Atribuir a Alunos (Opcional)
-              </label>
-              <StudentMultiSelect
-                students={students.filter((s) => !s.is_invite)}
-                selectedIds={selectedStudentIds}
-                onSelectionChange={setSelectedStudentIds}
-              />
-            </div>
-
-            {/* Title */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
-                Título *
-              </label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Treino A - Peito e Tríceps"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
-                Descrição
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descreva o objetivo deste treino..."
-                rows={3}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Exercises Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-foreground">
-                  Exercícios
-                </label>
-                <span className="text-sm text-muted-foreground">
-                  {selectedExercises.length} {selectedExercises.length === 1 ? 'exercício' : 'exercícios'}
-                </span>
-              </div>
-
-              {selectedExercises.length > 0 ? (
-                <div className="space-y-3 mb-3">
-                  {selectedExercises.map((exercise, index) => (
-                    <ExerciseListItem
-                      key={`${exercise.id}-${index}`}
-                      exercise={exercise}
-                      index={index}
-                      onEdit={() => handleEditExercise(index)}
-                      onRemove={() => handleRemoveExercise(index)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white/5 border-2 border-dashed border-white/10 rounded-lg p-8 text-center mb-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Adicione exercícios ao seu treino
-                  </p>
-                </div>
+          <div className="flex-none p-6 border-t border-white/10 bg-surface flex justify-end gap-3 z-10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading && (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               )}
-
-              <button
-                type="button"
-                onClick={() => setShowSelectModal(true)}
-                className="w-full px-4 py-3 bg-primary/10 border-2 border-primary rounded-lg text-primary font-medium hover:bg-primary/20 transition-colors flex items-center justify-center gap-2"
-                disabled={isLoading}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Adicionar Exercícios
-              </button>
-            </div>
-
-            {/* Error Message */}
-            {(createMutation.isError || updateMutation.isError) && (
-              <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-3">
-                <p className="text-sm text-destructive">
-                  {(createMutation.error as Error)?.message || (updateMutation.error as Error)?.message || 'Erro ao salvar treino'}
-                </p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground font-medium hover:bg-white/10 transition-colors"
-                disabled={isLoading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading || !title.trim()}
-              >
-                {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Criar Treino'}
-              </button>
-            </div>
-          </form>
-        </div>
+              {isEditing ? 'Salvar Alterações' : 'Criar Treino'}
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* Select Exercises Modal */}
+      {/* Modals */}
       <SelectExercisesModal
         isOpen={showSelectModal}
         onClose={() => setShowSelectModal(false)}
-        onSelectExercise={handleSelectExercise}
-        selectedIds={selectedExercises.map((ex) => ex.id)}
+        onSelectExercise={handleAddExercise}
+        selectedIds={selectedExercises.map(ex => ex.id)}
       />
 
-      {/* Exercise Config Modal */}
-      {currentExercise && (
+      {showConfigModal && currentExercise && (
         <ExerciseConfigModal
           isOpen={showConfigModal}
           onClose={() => {
@@ -344,10 +411,10 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId }: CreateWorkout
             setEditingIndex(null);
           }}
           exercise={currentExercise}
+          onSave={handleSaveExerciseConfig}
           initialData={editingIndex !== null ? selectedExercises[editingIndex] : undefined}
-          onSave={handleSaveExercise}
         />
       )}
-    </>
+    </div>
   );
 }

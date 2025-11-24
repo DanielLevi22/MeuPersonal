@@ -7,6 +7,11 @@ import { useEffect, useState } from 'react';
 export interface CreateWorkoutInput {
   title: string;
   description?: string;
+  training_plan_id?: string | null;
+  identifier?: string | null;
+  estimated_duration?: number | null;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | null;
+  focus_areas?: string[] | null;
 }
 
 export function useCreateWorkout() {
@@ -51,6 +56,11 @@ export function useCreateWorkout() {
           title: workout.title,
           description: workout.description || null,
           personal_id: user.id,
+          training_plan_id: workout.training_plan_id,
+          identifier: workout.identifier,
+          estimated_duration: workout.estimated_duration,
+          difficulty_level: workout.difficulty_level,
+          focus_areas: workout.focus_areas,
         })
         .select()
         .single();
@@ -88,7 +98,7 @@ export function useUpdateWorkout() {
   }, []);
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateWorkoutInput> }) => {
+    mutationFn: async ({ id, ...data }: { id: string } & Partial<CreateWorkoutInput>) => {
       // Check permissions with CASL
       if (userRole) {
         const ability = defineAbilitiesFor(userRole as any);
@@ -99,7 +109,15 @@ export function useUpdateWorkout() {
 
       const { data: updated, error } = await supabase
         .from('workouts')
-        .update(data)
+        .update({
+          title: data.title,
+          description: data.description,
+          training_plan_id: data.training_plan_id,
+          identifier: data.identifier,
+          estimated_duration: data.estimated_duration,
+          difficulty_level: data.difficulty_level,
+          focus_areas: data.focus_areas,
+        })
         .eq('id', id)
         .select()
         .single();

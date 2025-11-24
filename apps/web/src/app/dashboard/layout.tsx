@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-gray-800 border-r border-gray-700">
+      <div className="fixed inset-y-0 left-0 w-64 bg-gray-900 border-r border-white/10">
         <div className="flex flex-col h-full">
           <div className="p-6">
             <h1 className="text-2xl font-bold text-white">MeuPersonal</h1>
@@ -63,6 +63,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="block px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
             >
               📊 Dashboard
+            </a>
+            <a
+              href="/dashboard/periodizations"
+              className="block px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
+            >
+              📅 Periodizações
             </a>
             <a
               href="/dashboard/students"
