@@ -83,6 +83,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               💪 Treinos
             </a>
             <a
+              href="/dashboard/nutrition"
+              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+            >
+              📊 Nutrição
+            </a>
+            <a
               href="/dashboard/diets"
               className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
             >
