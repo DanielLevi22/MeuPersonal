@@ -4,8 +4,10 @@ import { CreateTrainingPlanModal } from '@/components/training-plans/CreateTrain
 import { ExpandableTrainingPlanCard } from '@/components/training-plans/ExpandableTrainingPlanCard';
 import { useUpdatePeriodizationStatus } from '@/lib/hooks/usePeriodizationMutations';
 import { usePeriodization } from '@/lib/hooks/usePeriodizations';
+import { useStudents } from '@/lib/hooks/useStudents';
 import { useCloneTrainingPlan, useDeleteTrainingPlan } from '@/lib/hooks/useTrainingPlanMutations';
 import { useTrainingPlans } from '@/lib/hooks/useTrainingPlans';
+import { exportPeriodizationToPDF } from '@/lib/utils/exportPeriodizationPDF';
 import { differenceInDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
@@ -16,6 +18,7 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
   const { id } = use(params); // Unwrap the params Promise
   const { data: periodization, isLoading } = usePeriodization(id);
   const { data: trainingPlans = [], isLoading: plansLoading } = useTrainingPlans(id);
+  const { data: students = [] } = useStudents();
   const deletePlanMutation = useDeleteTrainingPlan();
   const clonePlanMutation = useCloneTrainingPlan();
   const updateStatusMutation = useUpdatePeriodizationStatus();
@@ -92,6 +95,36 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
     }
   };
 
+  const handleExportPDF = async () => {
+    if (!periodization) return;
+    
+    try {
+      const student = students.find(s => s.id === periodization.student_id);
+      const studentName = student?.full_name || 'Aluno';
+      
+      // Transform training plans into phases format
+      const phases = trainingPlans.map((plan: any, index: number) => ({
+        id: plan.id,
+        name: `Fase ${index + 1}`,
+        start_week: index * 4 + 1,
+        end_week: (index + 1) * 4,
+        description: plan.description || '',
+        workouts: Array.isArray(plan.workouts) ? plan.workouts : [],
+      }));
+      
+      // Create periodization object with required fields
+      const periodizationData = {
+        ...periodization,
+        duration_weeks: periodization.duration_weeks || Math.ceil((new Date(periodization.end_date).getTime() - new Date(periodization.start_date).getTime()) / (7 * 24 * 60 * 60 * 1000)),
+      };
+      
+      await exportPeriodizationToPDF(periodizationData as any, phases, studentName);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Erro ao exportar PDF');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Effects */}
@@ -122,6 +155,15 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
               )}
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportPDF}
+                className="px-4 py-2 bg-surface border border-white/10 text-foreground rounded-lg font-medium hover:bg-white/5 transition-all flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Exportar PDF
+              </button>
               {periodization.status === 'planned' && (
                 <button
                   onClick={handleActivate}

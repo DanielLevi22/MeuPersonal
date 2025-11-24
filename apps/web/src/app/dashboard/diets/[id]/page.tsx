@@ -2,7 +2,9 @@
 
 import { DayOptionsModal } from '@/components/nutrition/DayOptionsModal';
 import { MealEditor } from '@/components/nutrition/MealEditor';
-import { useClearDay, useCopyDay, useDietPlan, usePasteDay } from '@/lib/hooks/useNutrition';
+import { useClearDay, useCopyDay, useDietMeals, useDietPlan, usePasteDay } from '@/lib/hooks/useNutrition';
+import { useStudents } from '@/lib/hooks/useStudents';
+import { exportDietToPDF } from '@/lib/utils/exportDietPDF';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useParams, useRouter } from 'next/navigation';
@@ -23,6 +25,8 @@ export default function DietDetailsPage() {
   const router = useRouter();
   const id = params.id as string;
   const { data: dietPlan, isLoading } = useDietPlan(id);
+  const { data: meals = [] } = useDietMeals(id);
+  const { data: students = [] } = useStudents();
   const [selectedDay, setSelectedDay] = useState(1); // Default to Monday
   const [isDayOptionsOpen, setIsDayOptionsOpen] = useState(false);
   const [copiedDay, setCopiedDay] = useState<{ meals: any[]; dayOfWeek: number } | null>(null);
@@ -68,6 +72,20 @@ export default function DietDetailsPage() {
     } catch (error) {
       console.error('Error clearing day:', error);
       alert('Erro ao limpar dia');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!dietPlan) return;
+    
+    try {
+      const student = students.find(s => s.id === dietPlan.student_id);
+      const studentName = student?.full_name || 'Aluno';
+      
+      await exportDietToPDF(dietPlan, meals, studentName);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Erro ao exportar PDF');
     }
   };
 
@@ -121,17 +139,29 @@ export default function DietDetailsPage() {
           </div>
         </div>
 
-        {isCyclic && (
+        <div className="flex gap-2">
           <button
-            onClick={() => setIsDayOptionsOpen(true)}
+            onClick={handleExportPDF}
             className="flex items-center gap-2 px-4 py-2 bg-surface border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Opções do Dia
+            Exportar PDF
           </button>
-        )}
+          
+          {isCyclic && (
+            <button
+              onClick={() => setIsDayOptionsOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-surface border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+              Opções do Dia
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Day Selector (Tabs) */}
