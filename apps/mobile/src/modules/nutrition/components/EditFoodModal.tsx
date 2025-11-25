@@ -1,4 +1,4 @@
-import { DietMealItem } from '@/store/nutritionStore';
+import { DietMealItem } from '@/nutrition';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {

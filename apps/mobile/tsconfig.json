@@ -5,6 +5,24 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@/modules/*": [
+        "./src/modules/*"
+      ],
+      "@/shared/*": [
+        "./src/shared/*"
+      ],
+      "@/nutrition": [
+        "./src/modules/nutrition"
+      ],
+      "@/workout": [
+        "./src/modules/workout"
+      ],
+      "@/students": [
+        "./src/modules/students"
+      ],
+      "@/auth": [
+        "./src/modules/auth"
       ]
     }
   },

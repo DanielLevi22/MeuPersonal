@@ -4,7 +4,7 @@ import { StatCard } from '@/components/gamification/StatCard';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useHealthData } from '@/hooks/useHealthData';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';

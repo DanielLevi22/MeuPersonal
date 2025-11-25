@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/store/authStore';
-import { useWorkoutStore } from '@/store/workoutStore';
+import { useAuthStore } from '@/auth';
+import { useWorkoutStore } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';

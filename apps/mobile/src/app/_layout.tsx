@@ -11,7 +11,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/query-client';
 import { registerBackgroundFetchAsync } from '@/services/backgroundTask';
 import { requestNotificationPermissions } from '@/services/notificationService';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { supabase } from '@meupersonal/supabase';
 
 export {

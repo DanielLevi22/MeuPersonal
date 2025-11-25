@@ -8,7 +8,7 @@ import type {
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
-import { useAuthStore } from './authStore';
+import { useAuthStore } from '@/auth';
 
 interface NutritionStore {
   // Foods

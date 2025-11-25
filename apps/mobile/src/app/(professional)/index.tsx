@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

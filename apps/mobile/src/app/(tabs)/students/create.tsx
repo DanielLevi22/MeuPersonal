@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/store/authStore';
-import { useStudentStore } from '@/store/studentStore';
+import { useAuthStore } from '@/auth';
+import { useStudentStore } from '@/students';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';

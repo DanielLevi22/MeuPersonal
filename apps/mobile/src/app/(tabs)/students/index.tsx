@@ -1,8 +1,8 @@
-import { StudentEditModal } from '@/components/StudentEditModal';
+import { StudentEditModal } from '@/students';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/store/authStore';
-import { useStudentStore } from '@/store/studentStore';
+import { useAuthStore } from '@/auth';
+import { useStudentStore } from '@/students';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';

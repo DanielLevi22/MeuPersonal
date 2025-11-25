@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
 import type { AccountType } from '@meupersonal/supabase';
 import { supabase } from '@meupersonal/supabase';

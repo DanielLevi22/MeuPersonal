@@ -1,5 +1,5 @@
-import { DietMeal, DietMealItem } from '@/store/nutritionStore';
-import { calculateFoodMacros } from '@/utils/nutrition';
+import { DietMeal, DietMealItem } from '@/nutrition';
+import { calculateFoodMacros } from '@/nutrition';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {

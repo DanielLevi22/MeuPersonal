@@ -2,7 +2,7 @@ import { AchievementBadge } from '@/components/gamification/AchievementBadge';
 import { GoalChart } from '@/components/gamification/GoalChart';
 import { StatCard } from '@/components/gamification/StatCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
