@@ -1,10 +1,11 @@
+import { useAuthStore } from '@/auth';
 import { AchievementBadge } from '@/components/gamification/AchievementBadge';
+import { ConfettiOverlay } from '@/components/gamification/ConfettiOverlay';
 import { ProgressCard } from '@/components/gamification/ProgressCard';
 import { StatCard } from '@/components/gamification/StatCard';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useHealthData } from '@/hooks/useHealthData';
-import { useAuthStore } from '@/auth';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
@@ -16,7 +17,7 @@ import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-
 
 export default function DashboardScreen() {
   const { user } = useAuthStore();
-  const { dailyGoal, streak, achievements, fetchDailyData, isLoading } = useGamificationStore();
+  const { dailyGoal, weeklyGoals, streak, achievements, showConfetti, fetchDailyData, isLoading } = useGamificationStore();
   const { steps, calories, refetch: refetchHealth, loading: healthLoading } = useHealthData();
   const [profile, setProfile] = useState<any>(null);
   const router = useRouter();
@@ -235,17 +236,44 @@ export default function DashboardScreen() {
             <View className="flex-1">
               <StatCard
                 label="Refeições"
-                value="85%"
-                trend="up"
-                change="+5%"
+                value={(() => {
+                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
+                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
+                  return targetMeals > 0 ? `${Math.round((totalMeals / targetMeals) * 100)}%` : '0%';
+                })()}
+                trend={(() => {
+                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
+                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
+                  const percentage = targetMeals > 0 ? (totalMeals / targetMeals) * 100 : 0;
+                  return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
+                })()}
+                change={(() => {
+                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
+                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
+                  return `${totalMeals}/${targetMeals}`;
+                })()}
               />
             </View>
             <View className="flex-1">
               <StatCard
                 label="Treinos"
-                value="4/5"
-                trend="neutral"
-                change="0%"
+                value={(() => {
+                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
+                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
+                  return `${totalWorkouts}/${targetWorkouts}`;
+                })()}
+                trend={(() => {
+                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
+                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
+                  const percentage = targetWorkouts > 0 ? (totalWorkouts / targetWorkouts) * 100 : 0;
+                  return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
+                })()}
+                change={(() => {
+                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
+                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
+                  const percentage = targetWorkouts > 0 ? Math.round((totalWorkouts / targetWorkouts) * 100) : 0;
+                  return `${percentage}%`;
+                })()}
               />
             </View>
           </View>
@@ -300,6 +328,9 @@ export default function DashboardScreen() {
         </View>
 
       </ScrollView>
+      
+      {/* Confetti Overlay */}
+      <ConfettiOverlay show={showConfetti} />
     </ScreenLayout>
   );
 }

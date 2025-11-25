@@ -1,8 +1,8 @@
+import { useAuthStore } from '@/auth';
 import { AchievementBadge } from '@/components/gamification/AchievementBadge';
 import { GoalChart } from '@/components/gamification/GoalChart';
 import { StatCard } from '@/components/gamification/StatCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -51,9 +51,34 @@ export default function ProgressScreen() {
           <View className="gap-y-4">
             <StatCard
               label="Meta Semanal"
-              value="85%" // This should ideally be calculated from weeklyGoals
-              trend="up"
-              change="+5%"
+              value={(() => {
+                const totalCompleted = weeklyGoals.reduce((sum, goal) => 
+                  sum + goal.meals_completed + goal.workout_completed, 0
+                );
+                const totalTarget = weeklyGoals.reduce((sum, goal) => 
+                  sum + goal.meals_target + goal.workout_target, 0
+                );
+                return totalTarget > 0 ? `${Math.round((totalCompleted / totalTarget) * 100)}%` : '0%';
+              })()}
+              trend={(() => {
+                const totalCompleted = weeklyGoals.reduce((sum, goal) => 
+                  sum + goal.meals_completed + goal.workout_completed, 0
+                );
+                const totalTarget = weeklyGoals.reduce((sum, goal) => 
+                  sum + goal.meals_target + goal.workout_target, 0
+                );
+                const percentage = totalTarget > 0 ? (totalCompleted / totalTarget) * 100 : 0;
+                return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
+              })()}
+              change={(() => {
+                const totalCompleted = weeklyGoals.reduce((sum, goal) => 
+                  sum + goal.meals_completed + goal.workout_completed, 0
+                );
+                const totalTarget = weeklyGoals.reduce((sum, goal) => 
+                  sum + goal.meals_target + goal.workout_target, 0
+                );
+                return `${totalCompleted}/${totalTarget}`;
+              })()}
               icon="trophy"
             />
             

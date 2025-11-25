@@ -9,10 +9,12 @@ interface GamificationState {
   streak: StudentStreak | null;
   achievements: Achievement[];
   isLoading: boolean;
+  showConfetti: boolean;
   
   fetchDailyData: (date: string) => Promise<void>;
   updateMealProgress: (completed: number) => Promise<void>;
   updateWorkoutProgress: (completed: number) => Promise<void>;
+  setShowConfetti: (show: boolean) => void;
 }
 
 export const useGamificationStore = create<GamificationState>((set, get) => ({
@@ -21,6 +23,7 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
   streak: null,
   achievements: [],
   isLoading: false,
+  showConfetti: false,
 
   fetchDailyData: async (date: string) => {
     set({ isLoading: true });
@@ -86,4 +89,6 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
       console.error('Error updating workout progress:', error);
     }
   },
+
+  setShowConfetti: (show: boolean) => set({ showConfetti: show }),
 }));

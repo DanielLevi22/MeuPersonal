@@ -1,49 +1,23 @@
+import { usePulseAnimation } from '@/hooks/useGamificationAnimations';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Animated, Text } from 'react-native';
 
 interface StreakCounterProps {
   streak: number;
 }
 
 export function StreakCounter({ streak }: StreakCounterProps) {
+  const scale = usePulseAnimation(streak > 0);
+
   return (
-    <LinearGradient
-      colors={['#FF6B35', '#E85A2A']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
+    <Animated.View 
+      className="bg-orange-500/10 px-3 py-2 rounded-full flex-row items-center gap-x-2 border border-orange-500/20"
+      style={{ transform: [{ scale }] }}
     >
-      <View style={styles.content}>
-        <Ionicons name="flame" size={20} color="#FFFFFF" />
-        <Text style={styles.text}>
-          <Text style={styles.number}>{streak}</Text> dias
-        </Text>
-      </View>
-    </LinearGradient>
+      <Ionicons name="flame" size={20} color="#F97316" />
+      <Text className="text-orange-500 font-bold text-base font-display">
+        {streak}
+      </Text>
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 12,
-    padding: 1,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  text: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  number: {
-    fontWeight: '800',
-    fontSize: 16,
-  },
-});
