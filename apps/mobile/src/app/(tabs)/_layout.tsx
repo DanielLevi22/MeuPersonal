@@ -61,6 +61,20 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progresso',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'stats-chart' : 'stats-chart-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
       
       <Tabs.Screen
         name="profile"
