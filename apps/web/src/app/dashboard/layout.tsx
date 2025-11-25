@@ -4,9 +4,12 @@ import { supabase } from '@meupersonal/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useProfessionalServices } from '@/shared/hooks/useStudents';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const { data: services = [] } = useProfessionalServices();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -39,6 +42,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/auth/login');
   };
 
+  const serviceLabels: Record<string, string> = {
+    training: 'Personal Trainer',
+    nutrition: 'Nutricionista',
+    physiotherapy: 'Fisioterapeuta',
+    psychology: 'Psicólogo'
+  };
+
+  const serviceColors: Record<string, string> = {
+    training: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    nutrition: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    physiotherapy: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    psychology: 'bg-pink-500/10 text-pink-500 border-pink-500/20'
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -55,6 +72,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-6">
             <h1 className="text-2xl font-bold text-foreground">MeuPersonal</h1>
             <p className="text-sm text-muted-foreground mt-1">Dashboard</p>
+            
+            {/* Access Badges */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {services.length > 0 ? (
+                services.map(service => (
+                  <span 
+                    key={service}
+                    className={`px-2 py-1 rounded-md text-xs font-medium border ${serviceColors[service] || 'bg-gray-500/10 text-gray-500 border-gray-500/20'}`}
+                  >
+                    {serviceLabels[service] || service}
+                  </span>
+                ))
+              ) : (
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-500/10 text-gray-500 border border-gray-500/20">
+                  Sem serviços ativos
+                </span>
+              )}
+            </div>
           </div>
 
           <nav className="flex-1 px-4 space-y-2">
