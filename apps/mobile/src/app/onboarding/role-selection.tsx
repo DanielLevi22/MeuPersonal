@@ -15,6 +15,12 @@ export default function RoleSelectionScreen() {
   async function selectRole(accountType: AccountType) {
     if (!session?.user) return;
 
+    // Prevent manual admin role selection
+    if (accountType === 'admin') {
+      Alert.alert('Acesso Restrito', 'Contas de administrador são criadas apenas por convite.');
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -73,6 +79,12 @@ export default function RoleSelectionScreen() {
           onPress={() => selectRole('autonomous_student')}
           isLoading={loading}
         />
+      </View>
+
+      <View className="mt-8 items-center">
+        <Text className="text-muted text-center text-sm">
+          💼 Contas de administrador são criadas apenas por convite
+        </Text>
       </View>
     </SafeAreaView>
   );

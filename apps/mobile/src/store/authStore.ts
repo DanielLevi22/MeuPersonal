@@ -44,6 +44,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const context = await getUserContext(user.id);
         const abilities = defineAbilitiesFor(context);
         
+        // Log admin access
+        if (context.accountType === 'admin') {
+          console.log('🔐 Admin access granted:', {
+            isSuperAdmin: context.isSuperAdmin,
+            userId: user.id,
+            email: user.email
+          });
+        }
+        
         set({ 
           session, 
           user, 

@@ -2,11 +2,16 @@ import { AbilityBuilder, createMongoAbility, type MongoAbility } from '@casl/abi
 import { supabase } from './client';
 
 // Define actions
-export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage';
+export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'impersonate' | 'ban';
 
 // Define subjects (resources)
 export type Subject =
-  | 'Client'           // Aluno (gerenciado ou autônomo)
+  | 'User'              // Admin: gerenciar usuários
+  | 'AdminPanel'        // Admin: acessar painel admin
+  | 'SystemSettings'    // Admin: configurações do sistema
+  | 'FeatureFlags'      // Admin: feature flags
+  | 'AuditLogs'         // Admin: logs de auditoria
+  | 'Client'            // Aluno (gerenciado ou autônomo)
   | 'Workout'
   | 'Diet'
   | 'Exercise'
@@ -29,6 +34,7 @@ import {
 // User context for ability definition
 export interface UserContext {
   accountType: AccountType;
+  isSuperAdmin?: boolean;       // If admin
   services?: ServiceCategory[]; // If professional
   subscriptionTier?: SubscriptionTier; // If autonomous student
   featureAccess?: Record<string, boolean | number>; // Features enabled
@@ -39,6 +45,27 @@ export interface UserContext {
  */
 export function defineAbilitiesFor(context: UserContext): AppAbility {
   const { can, cannot, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+
+  // === ADMIN (SUPER USER) ===
+  if (context.accountType === 'admin') {
+    // Full access to everything
+    can('manage', 'all');
+    
+    // Admin-specific abilities
+    can('manage', 'User');
+    can('manage', 'AdminPanel');
+    can('manage', 'SystemSettings');
+    can('manage', 'FeatureFlags');
+    can('manage', 'AuditLogs');
+    can('impersonate', 'User');
+    can('delete', 'User');
+    can('ban', 'User');
+    
+    // Note: Super admin deletion protection is enforced at the database level via RLS
+    // cannot('delete', 'User', { isSuperAdmin: true }); // Removed - RLS handles this
+    
+    return build();
+  }
 
   // === PROFISSIONAL ===
   if (context.accountType === 'professional') {
@@ -137,7 +164,7 @@ export async function getUserContext(userId: string): Promise<UserContext> {
   // 1. Buscar usuário
   const { data: user, error: userError } = await supabase
     .from('profiles')
-    .select('account_type, subscription_tier')
+    .select('account_type, subscription_tier, is_super_admin')
     .eq('id', userId)
     .single();
 
@@ -149,7 +176,13 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     accountType: user.account_type as AccountType,
   };
 
-  // 2. Se profissional, buscar serviços
+  // 2. Se admin, incluir flag de super admin
+  if (user.account_type === 'admin') {
+    context.isSuperAdmin = user.is_super_admin || false;
+    return context; // Admins não precisam de mais contexto
+  }
+
+  // 3. Se profissional, buscar serviços
   if (user.account_type === 'professional') {
     const { data: services } = await supabase
       .from('professional_services')
@@ -160,7 +193,7 @@ export async function getUserContext(userId: string): Promise<UserContext> {
     context.services = (services?.map(s => s.service_category) || []) as ServiceCategory[];
   }
 
-  // 3. Se aluno autônomo, buscar features
+  // 4. Se aluno autônomo, buscar features
   if (user.account_type === 'autonomous_student') {
     context.subscriptionTier = user.subscription_tier as SubscriptionTier;
 
