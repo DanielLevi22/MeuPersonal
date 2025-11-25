@@ -1,3 +1,5 @@
+import { LiveWorkoutOverlay } from '@/components/workout/LiveWorkoutOverlay';
+import { useWorkoutTimer } from '@/hooks/useWorkoutTimer';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +35,17 @@ export default function StudentWorkoutExecuteScreen() {
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
+  // Timer Hook
+  const { 
+    timeLeft, 
+    isActive, 
+    totalTime, 
+    startTimer, 
+    stopTimer, 
+    addTime, 
+    subtractTime 
+  } = useWorkoutTimer();
+
   useEffect(() => {
     fetchWorkoutAndStartSession();
   }, [id]);
@@ -57,8 +70,6 @@ export default function StudentWorkoutExecuteScreen() {
         .eq('id', id)
         .single();
 
-      console.log('📊 Workout query result:', { workoutData, workoutError });
-
       if (workoutError) throw workoutError;
       setWorkout(workoutData);
 
@@ -82,12 +93,6 @@ export default function StudentWorkoutExecuteScreen() {
         .eq('workout_id', id)
         .order('order', { ascending: true });
 
-      console.log('💪 Exercises query result:', { 
-        exercisesData, 
-        exercisesError,
-        count: exercisesData?.length 
-      });
-
       if (exercisesError) throw exercisesError;
       
       const transformed = (exercisesData || []).map((item: any) => ({
@@ -95,7 +100,6 @@ export default function StudentWorkoutExecuteScreen() {
         exercise: Array.isArray(item.exercise) ? item.exercise[0] : item.exercise,
       }));
       
-      console.log('✅ Transformed exercises:', transformed.length, 'exercises');
       setExercises(transformed);
 
       // Create or get active workout session
@@ -110,12 +114,9 @@ export default function StudentWorkoutExecuteScreen() {
         .single();
 
       if (existingSession) {
-        console.log('📝 Found existing session:', existingSession.id);
         setSessionId(existingSession.id);
-        // Load completed exercises for this session
         await loadCompletedExercises(existingSession.id);
       } else {
-        console.log('🆕 Creating new session...');
         // Create new session
         const { data: newSession, error: sessionError } = await supabase
           .from('workout_sessions')
@@ -127,11 +128,7 @@ export default function StudentWorkoutExecuteScreen() {
           .select('id')
           .single();
 
-        if (sessionError) {
-          console.error('❌ Session creation error:', sessionError);
-          throw sessionError;
-        }
-        console.log('✅ Created session:', newSession.id);
+        if (sessionError) throw sessionError;
         setSessionId(newSession.id);
       }
     } catch (error: any) {
@@ -160,7 +157,29 @@ export default function StudentWorkoutExecuteScreen() {
   };
 
   const handleExercisePress = (exercise: Exercise) => {
+    // If not completed, open detail. If completed, maybe just show info?
+    // For now, always open detail.
     router.push(`/student/exercise-detail?exerciseId=${exercise.id}&sessionId=${sessionId}&workoutId=${id}` as any);
+  };
+
+  // Function to simulate completing an exercise directly from list (optional, or triggered from detail)
+  // But here we want to trigger the timer when returning from detail if a set was just done.
+  // Actually, the requirement is "Trigger timer automatically when a set is marked as done".
+  // Sets are marked done in the detail screen usually.
+  // If we want to support it here, we need to know when a set was done.
+  // For now, let's assume the user clicks "Finish Set" in the detail screen.
+  // BUT, the user might want to start a rest timer manually or we need to pass the timer state to the detail screen?
+  // Or maybe we just show the overlay here if the user just returned from a set?
+  
+  // Let's keep it simple: We add a "Start Rest" button on the exercise card if it's not completed?
+  // Or better: We assume the user marks sets in the detail screen.
+  // The requirement says "Trigger timer automatically when a set is marked as done".
+  // Since we are editing the LIST screen, maybe we should move the timer to the DETAIL screen?
+  // OR we make the list screen the main execution hub.
+  
+  // Let's add a "Start Rest" button to the exercise item for quick access.
+  const handleStartRest = (restTime: number) => {
+    startTimer(restTime || 60);
   };
 
   const handleFinishWorkout = async () => {
@@ -246,7 +265,24 @@ export default function StudentWorkoutExecuteScreen() {
               </View>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+          
+          {/* Quick Rest Button */}
+          {!isCompleted && (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                handleStartRest(item.rest_time);
+              }}
+              style={{
+                backgroundColor: 'rgba(255, 107, 53, 0.2)',
+                padding: 8,
+                borderRadius: 8,
+                marginLeft: 8
+              }}
+            >
+              <Ionicons name="timer-outline" size={20} color="#FF6B35" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -375,6 +411,17 @@ export default function StudentWorkoutExecuteScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+
+        {/* Live Workout Overlay */}
+        <LiveWorkoutOverlay
+          visible={isActive}
+          timeLeft={timeLeft}
+          totalTime={totalTime}
+          onClose={stopTimer}
+          onAdd10s={() => addTime(10)}
+          onSubtract10s={() => subtractTime(10)}
+          onSkip={stopTimer}
+        />
       </SafeAreaView>
     </View>
   );

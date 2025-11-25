@@ -1,6 +1,6 @@
-import { supabase } from '@meupersonal/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -58,7 +58,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
-          {/* Profile Avatar */}
+          {/* Profile Avatar & Level */}
           <View style={{ alignItems: 'center', marginBottom: 32 }}>
             <View style={{
               width: 120,
@@ -72,15 +72,33 @@ export default function ProfileScreen() {
               borderColor: '#1E2A42'
             }}>
               <Ionicons name="person" size={60} color="#00D9FF" />
+              {/* Level Badge */}
+              <View style={{
+                position: 'absolute',
+                bottom: -10,
+                backgroundColor: '#FF6B35',
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: 12,
+                borderWidth: 2,
+                borderColor: '#0A0E1A'
+              }}>
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>
+                  LVL {profile?.level || 1}
+                </Text>
+              </View>
             </View>
+            
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginBottom: 4 }}>
               {profile?.full_name || 'Usuário'}
             </Text>
+            
             <View style={{
               backgroundColor: profile?.role === 'personal' ? 'rgba(255, 107, 53, 0.15)' : 'rgba(0, 217, 255, 0.15)',
               paddingHorizontal: 16,
               paddingVertical: 8,
-              borderRadius: 12
+              borderRadius: 12,
+              marginBottom: 16
             }}>
               <Text style={{
                 color: profile?.role === 'personal' ? '#FF6B35' : '#00D9FF',
@@ -90,6 +108,31 @@ export default function ProfileScreen() {
                 {profile?.role === 'personal' ? '🏋️ Personal Trainer' : '💪 Aluno'}
               </Text>
             </View>
+
+            {/* XP Progress Bar */}
+            {profile?.role !== 'personal' && (
+              <View style={{ width: '100%', paddingHorizontal: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ color: '#8B92A8', fontSize: 12, fontWeight: '600' }}>
+                    XP {profile?.xp || 0}
+                  </Text>
+                  <Text style={{ color: '#8B92A8', fontSize: 12, fontWeight: '600' }}>
+                    Próximo Nível: {Math.pow((profile?.level || 1) * 20, 2)}
+                  </Text>
+                </View>
+                <View style={{ height: 8, backgroundColor: '#1E2A42', borderRadius: 4, overflow: 'hidden' }}>
+                  <LinearGradient
+                    colors={['#00D9FF', '#0099FF']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      height: '100%',
+                      width: `${Math.min(100, Math.max(0, ((profile?.xp || 0) - Math.pow(((profile?.level || 1) - 1) * 20, 2)) / (Math.pow((profile?.level || 1) * 20, 2) - Math.pow(((profile?.level || 1) - 1) * 20, 2)) * 100))}%`
+                    }}
+                  />
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Info Cards */}

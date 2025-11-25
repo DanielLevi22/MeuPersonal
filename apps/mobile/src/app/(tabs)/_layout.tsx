@@ -77,6 +77,20 @@ export default function TabLayout() {
       />
       
       <Tabs.Screen
+        name="ranking"
+        options={{
+          title: 'Ranking',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'trophy' : 'trophy-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
