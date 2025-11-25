@@ -23,6 +23,13 @@ MeuPersonal é uma plataforma completa para personal trainers gerenciarem alunos
 - ✅ Sistema de convites com códigos únicos
 - ✅ Controle de acesso baseado em roles (RLS)
 - ✅ Multi-role access (admin, professional, managed_student, autonomous_student)
+- ✅ **Sistema de Aprovação de Profissionais**:
+  - Novos profissionais requerem aprovação admin
+  - Status: pending, active, rejected, suspended
+  - Telas de "Aguardando Aprovação" (web e mobile)
+  - Polling automático de status
+  - Redirecionamento automático após aprovação
+  - Admin panel para aprovar/rejeitar
 
 ### 👥 Gerenciamento de Alunos
 - ✅ CRUD completo de alunos
@@ -261,7 +268,7 @@ meupersonal.app/
 ## 🗄️ Banco de Dados - Tabelas Principais
 
 ### Implementadas ✅
-- `profiles` - Usuários (personal, alunos, admin)
+- `profiles` - Usuários (personal, alunos, admin) + account_status
 - `students_personals` - Relação personal-aluno
 - `student_invites` - Convites pendentes
 - `physical_assessments` - Avaliações físicas

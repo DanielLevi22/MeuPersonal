@@ -1,8 +1,49 @@
 'use client';
 
-import Link from 'next/link';
+import { supabase } from '@meupersonal/supabase';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function PendingApprovalPage() {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Poll account status every 30 seconds
+  const { data: profile } = useQuery({
+    queryKey: ['profile_status'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('account_status, full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
+  });
+
+  // Redirect if approved or rejected
+  useEffect(() => {
+    if (profile?.account_status === 'active') {
+      router.push('/dashboard');
+    } else if (profile?.account_status === 'rejected') {
+      handleLogout();
+    }
+  }, [profile, router]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
       {/* Animated Background Grid */}
@@ -15,7 +56,7 @@ export default function PendingApprovalPage() {
       <div className="relative max-w-md w-full mx-4 text-center">
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 space-y-6">
           <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-10 h-10 text-yellow-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -23,6 +64,13 @@ export default function PendingApprovalPage() {
           <h1 className="text-3xl font-bold text-foreground">
             Aguardando Aprovação
           </h1>
+
+          {/* Greeting */}
+          {profile?.full_name && (
+            <p className="text-muted-foreground">
+              Olá, <span className="text-foreground font-medium">{profile.full_name}</span>
+            </p>
+          )}
           
           <div className="space-y-4 text-muted-foreground">
             <p>
@@ -31,19 +79,61 @@ export default function PendingApprovalPage() {
             <p>
               Para garantir a qualidade da nossa plataforma, todos os cadastros de profissionais passam por uma verificação manual.
             </p>
-            <p className="text-sm bg-white/5 p-4 rounded-lg border border-white/5">
-              Você receberá um email assim que seu acesso for liberado.
+            <p className="text-sm bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-lg">
+              ⏱️ Tempo estimado: até 24 horas
             </p>
           </div>
 
-          <div className="pt-6">
-            <Link 
-              href="/auth/login"
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-            >
-              Voltar para Login
-            </Link>
+          {/* Status Indicator */}
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+            <p className="text-sm text-muted-foreground">
+              Verificando status automaticamente...
+            </p>
           </div>
+
+          {/* Info Box */}
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-left">
+            <h3 className="text-sm font-medium text-foreground mb-2">
+              O que acontece agora?
+            </h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Nossa equipe irá revisar suas informações</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Você receberá uma notificação quando for aprovado</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Esta página atualizará automaticamente</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Logout Button */}
+          <div className="pt-2">
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoggingOut ? 'Saindo...' : 'Sair'}
+            </button>
+          </div>
+
+          {/* Support */}
+          <p className="text-xs text-muted-foreground">
+            Dúvidas? Entre em contato:{' '}
+            <a 
+              href="mailto:suporte@meupersonal.app" 
+              className="text-primary hover:underline"
+            >
+              suporte@meupersonal.app
+            </a>
+          </p>
         </div>
       </div>
     </div>

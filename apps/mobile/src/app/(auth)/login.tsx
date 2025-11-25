@@ -34,11 +34,9 @@ export default function LoginScreen() {
           .single();
 
         if (profile?.account_status === 'pending') {
-          await supabase.auth.signOut();
-          Alert.alert(
-            'Aguardando Aprovação',
-            'Sua conta foi criada com sucesso e está em análise. Você receberá um aviso assim que seu acesso for liberado.'
-          );
+          router.replace('/(auth)/pending-approval' as any);
+          setLoading(false);
+          return;
         } else if (profile?.account_status === 'rejected' || profile?.account_status === 'suspended') {
           await supabase.auth.signOut();
           Alert.alert(

@@ -1,7 +1,7 @@
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -27,8 +27,8 @@ export default function RegisterScreen() {
     if (!result.success) {
       Alert.alert('Erro no Cadastro', result.error || 'Erro desconhecido');
     } else {
-      Alert.alert('Sucesso!', 'Conta criada com sucesso! Faça login para continuar.');
-      router.replace('/(auth)/login');
+      // Redirect to pending approval screen
+      router.replace('/(auth)/pending-approval' as any);
     }
     setLoading(false);
   }
