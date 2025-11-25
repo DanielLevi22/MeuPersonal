@@ -3,6 +3,7 @@ import { ProgressCard } from '@/components/gamification/ProgressCard';
 import { StatCard } from '@/components/gamification/StatCard';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useHealthData } from '@/hooks/useHealthData';
 import { useAuthStore } from '@/store/authStore';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-
 export default function DashboardScreen() {
   const { user } = useAuthStore();
   const { dailyGoal, streak, achievements, fetchDailyData, isLoading } = useGamificationStore();
+  const { steps, calories, refetch: refetchHealth, loading: healthLoading } = useHealthData();
   const [profile, setProfile] = useState<any>(null);
   const router = useRouter();
 
@@ -44,6 +46,7 @@ export default function DashboardScreen() {
     // Fetch gamification data
     const today = new Date().toISOString().split('T')[0];
     await fetchDailyData(today);
+    refetchHealth();
   };
 
   if (isLoading && !profile) {
@@ -188,6 +191,38 @@ export default function DashboardScreen() {
               color="warning"
               unit="treino"
             />
+          </View>
+        </View>
+
+        {/* Health Data Section */}
+        <View className="mb-8">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-foreground text-lg font-bold font-display">
+              ATIVIDADE
+            </Text>
+            <View className="bg-secondary/10 px-2 py-1 rounded-md">
+              <Text className="text-secondary text-[10px] font-bold font-sans">
+                SINCRONIZADO
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row gap-x-3">
+            <View className="flex-1">
+              <StatCard
+                label="Passos"
+                value={steps.toLocaleString()}
+                trend={steps >= 10000 ? 'up' : 'neutral'}
+                change={steps >= 10000 ? 'Meta atingida!' : `${Math.round((steps / 10000) * 100)}% da meta`}
+              />
+            </View>
+            <View className="flex-1">
+              <StatCard
+                label="Calorias"
+                value={`${calories} kcal`}
+                trend="up"
+                change="Hoje"
+              />
+            </View>
           </View>
         </View>
 
