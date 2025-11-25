@@ -1,3 +1,4 @@
+import { scheduleStreakReminder } from '@/services/notificationService';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
 import { Achievement, DailyGoal, gamificationService, StudentStreak } from '../services/gamification';
@@ -33,6 +34,10 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
         gamificationService.getStreak(),
         gamificationService.getAchievements(),
       ]);
+      
+      // Schedule daily streak reminder
+      await scheduleStreakReminder();
+      
       set({ dailyGoal, streak, achievements });
     } catch (error) {
       console.error('Error fetching gamification data:', error);

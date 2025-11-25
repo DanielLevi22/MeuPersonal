@@ -1,8 +1,9 @@
 import { LiveWorkoutOverlay } from '@/components/workout/LiveWorkoutOverlay';
 import { useWorkoutTimer } from '@/hooks/useWorkoutTimer';
-import { supabase } from '@/lib/supabase';
+import { schedulePostWorkoutReminder } from '@/services/notificationService';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -207,6 +208,9 @@ export default function StudentWorkoutExecuteScreen() {
         .eq('id', sessionId);
 
       if (error) throw error;
+
+      // Schedule post-workout meal reminder
+      await schedulePostWorkoutReminder();
 
       Alert.alert('Parabéns! 🎉', 'Treino concluído com sucesso!', [
         { text: 'OK', onPress: () => router.back() }
