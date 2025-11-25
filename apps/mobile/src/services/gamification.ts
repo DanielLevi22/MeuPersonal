@@ -60,7 +60,20 @@ export const gamificationService = {
       .order('earned_at', { ascending: false });
 
     if (error) throw error;
+    if (error) throw error;
     return data as Achievement[];
+  },
+
+  async getWeeklyGoals(startDate: string, endDate: string) {
+    const { data, error } = await supabase
+      .from('daily_goals')
+      .select('*')
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+    return data as DailyGoal[];
   },
 
   async updateMealProgress(goalId: string, completed: number) {

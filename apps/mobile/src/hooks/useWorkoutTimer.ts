@@ -1,5 +1,5 @@
-import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 
@@ -11,31 +11,25 @@ export function useWorkoutTimer({ onComplete }: UseWorkoutTimerProps = {}) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<number | null>(null);
   const backgroundTimeRef = useRef<number | null>(null);
 
   // Load sounds
-  const soundRef = useRef<Audio.Sound | null>(null);
+  // const soundRef = useRef<Audio.Sound | null>(null);
 
-  const playSound = async (type: 'start' | 'finish' | 'tick') => {
+  const playSound = async (type: 'start' | 'finish' | 'tick', value?: number) => {
     try {
-      // In a real app, you would load different sound files here
-      // For now, we'll just use haptics as a fallback if no sound file is provided
-      // or implement a simple beep if possible.
-      
-      // Placeholder for sound implementation
-      // const { sound } = await Audio.Sound.createAsync(require('./path/to/sound.mp3'));
-      // await sound.playAsync();
-      
       // Haptic feedback based on type
       if (type === 'start') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Speech.speak('Descanso iniciado', { language: 'pt-BR' });
       } else if (type === 'finish') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Long vibration
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      } else if (type === 'tick') {
+        Speech.speak('Vamos treinar!', { language: 'pt-BR', rate: 1.2 });
+      } else if (type === 'tick' && value) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Speech.speak(value.toString(), { language: 'pt-BR', rate: 1.5 });
       }
     } catch (error) {
       console.warn('Error playing sound/haptics:', error);
@@ -98,7 +92,7 @@ export function useWorkoutTimer({ onComplete }: UseWorkoutTimerProps = {}) {
           }
           // Tick sound for last 3 seconds
           if (prev <= 4) {
-            playSound('tick');
+            playSound('tick', prev - 1);
           }
           return prev - 1;
         });

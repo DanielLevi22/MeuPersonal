@@ -5,6 +5,7 @@ import { Achievement, DailyGoal, gamificationService, StudentStreak } from '../s
 
 interface GamificationState {
   dailyGoal: DailyGoal | null;
+  weeklyGoals: DailyGoal[];
   streak: StudentStreak | null;
   achievements: Achievement[];
   isLoading: boolean;
@@ -16,6 +17,7 @@ interface GamificationState {
 
 export const useGamificationStore = create<GamificationState>((set, get) => ({
   dailyGoal: null,
+  weeklyGoals: [],
   streak: null,
   achievements: [],
   isLoading: false,
@@ -29,8 +31,15 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
         await gamificationService.calculateDailyGoals(user.id, date);
       }
 
-      const [dailyGoal, streak, achievements] = await Promise.all([
+      // Calculate start of week (7 days ago)
+      const endDate = date;
+      const startDateObj = new Date(date);
+      startDateObj.setDate(startDateObj.getDate() - 6);
+      const startDate = startDateObj.toISOString().split('T')[0];
+
+      const [dailyGoal, weeklyGoals, streak, achievements] = await Promise.all([
         gamificationService.getDailyGoal(date),
+        gamificationService.getWeeklyGoals(startDate, endDate),
         gamificationService.getStreak(),
         gamificationService.getAchievements(),
       ]);
@@ -38,7 +47,7 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
       // Schedule daily streak reminder
       await scheduleStreakReminder();
       
-      set({ dailyGoal, streak, achievements });
+      set({ dailyGoal, weeklyGoals, streak, achievements });
     } catch (error) {
       console.error('Error fetching gamification data:', error);
     } finally {

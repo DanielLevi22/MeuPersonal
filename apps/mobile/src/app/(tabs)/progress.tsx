@@ -1,4 +1,5 @@
 import { AchievementBadge } from '@/components/gamification/AchievementBadge';
+import { GoalChart } from '@/components/gamification/GoalChart';
 import { StatCard } from '@/components/gamification/StatCard';
 import { useAuthStore } from '@/store/authStore';
 import { useGamificationStore } from '@/store/gamificationStore';
@@ -8,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProgressScreen() {
   const { user } = useAuthStore();
-  const { dailyGoal, achievements, fetchDailyData, isLoading } = useGamificationStore();
+  const { dailyGoal, weeklyGoals, achievements, fetchDailyData, isLoading } = useGamificationStore();
 
   useEffect(() => {
     if (user) {
@@ -47,32 +48,19 @@ export default function ProgressScreen() {
             <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 16 }}>
               RESUMO SEMANAL
             </Text>
-            <View style={{ gap: 12 }}>
+            
+            <View style={{ gap: 16 }}>
               <StatCard
                 label="Meta Semanal"
-                value="85%"
+                value="85%" // This should ideally be calculated from weeklyGoals
                 trend="up"
                 change="+5%"
                 icon="trophy"
               />
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <StatCard
-                    label="Refeições"
-                    value={`${dailyGoal?.meals_completed || 0}/${dailyGoal?.meals_target || 4}`}
-                    trend="neutral"
-                    change="Hoje"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <StatCard
-                    label="Treinos"
-                    value={`${dailyGoal?.workout_completed || 0}/${dailyGoal?.workout_target || 1}`}
-                    trend="neutral"
-                    change="Hoje"
-                  />
-                </View>
-              </View>
+              
+              {/* Charts */}
+              <GoalChart data={weeklyGoals} type="meals" />
+              <GoalChart data={weeklyGoals} type="workouts" />
             </View>
           </View>
 
