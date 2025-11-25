@@ -1,7 +1,8 @@
 import {
     AccountType,
     AppAbility,
-    defineAbilitiesFor
+    defineAbilitiesFor,
+    getUserContextJWT
 } from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
@@ -40,7 +41,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       try {
         // Fetch context and define abilities (using JWT version for admin)
+        console.log('🔄 Fetching user context for:', user.id);
         const context = await getUserContextJWT(user.id);
+        console.log('📊 User context loaded:', context);
+        
         const abilities = defineAbilitiesFor(context);
         
         // Log admin access
@@ -52,12 +56,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           });
         }
         
+        console.log('✅ Setting accountType to:', context.accountType);
         set({ 
           session, 
           user, 
           accountType: context.accountType, 
           abilities, 
           isLoading: false 
+        });
+        console.log('✅ AuthStore updated. Current state:', {
+          accountType: context.accountType,
+          hasAbilities: !!abilities
         });
       } catch (error) {
         console.error('Error loading user context:', error);

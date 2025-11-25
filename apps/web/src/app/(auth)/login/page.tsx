@@ -17,15 +17,27 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      if (authData.user) {
+        // Check user profile for account type
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profile?.account_type === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login');
     } finally {

@@ -15,16 +15,40 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Try to get full name from profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        setUserName(profile?.full_name || user.email?.split('@')[0] || 'Profissional');
+        if (userError) {
+          console.error('❌ Error getting user:', userError);
+          return;
+        }
+        
+        if (user) {
+          console.log('✅ User authenticated:', user.id, user.email);
+          
+          // Try to get full name from profiles
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('❌ Error fetching profile:', profileError);
+            console.error('Error details:', {
+              message: profileError.message,
+              details: profileError.details,
+              hint: profileError.hint,
+              code: profileError.code
+            });
+          } else {
+            console.log('✅ Profile loaded:', profile);
+          }
+          
+          setUserName(profile?.full_name || user.email?.split('@')[0] || 'Profissional');
+        }
+      } catch (error) {
+        console.error('❌ Unexpected error:', error);
       }
     };
 

@@ -17,7 +17,7 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
   console.log('🔍 getUserContextJWT - userId:', userId);
   console.log('🔍 getUserContextJWT - JWT claims:', jwtClaims);
   
-  // If account_type is in JWT claims and it's admin, return immediately
+  // If account_type is in JWT claims and it's admin, return immediately (fast path)
   if (jwtClaims.account_type === 'admin') {
     console.log('✅ Admin detected from JWT, skipping database query');
     return {
@@ -26,7 +26,8 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
     };
   }
   
-  // STEP 2: For non-admin users, query database as usual
+  // STEP 2: Query database (for all users, including admins if JWT doesn't have claims)
+  console.log('🔍 Querying database for user context...');
   const { data: user, error: userError } = await supabase
     .from('profiles')
     .select('account_type, subscription_tier, is_super_admin')
@@ -38,9 +39,21 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
     throw new Error('User not found');
   }
 
+  console.log('✅ User data from database:', user);
+
   const context: UserContext = {
     accountType: user.account_type as AccountType,
   };
+
+  // If user is admin, add super admin flag
+  if (user.account_type === 'admin') {
+    context.isSuperAdmin = user.is_super_admin || false;
+    console.log('🔐 Admin user detected from database:', {
+      accountType: context.accountType,
+      isSuperAdmin: context.isSuperAdmin
+    });
+    return context; // Return early for admins
+  }
 
   // STEP 3: Fetch additional context based on account type
   if (user.account_type === 'professional') {
