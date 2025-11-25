@@ -1,11 +1,11 @@
 'use client';
 
-import { cn } from "@/lib/utils";
-import { Footer } from "../components/layout/Footer";
-import { Header } from "../components/layout/Header";
-import { Pricing } from "../components/sections/Pricing";
-import { BackgroundGrid } from "../components/ui/BackgroundGrid";
-import { Marquee } from "../components/ui/Marquee";
+import { Footer } from "@/shared/components/layout/Footer";
+import { Header } from "@/shared/components/layout/Header";
+import { Pricing } from "@/shared/components/sections/Pricing";
+import { BackgroundGrid } from "@/shared/components/ui/BackgroundGrid";
+import { Marquee } from "@/shared/components/ui/Marquee";
+import { cn } from "@/shared/utils";
 
 const reviews = [
   {

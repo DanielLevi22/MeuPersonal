@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        router.push('/login');
+        router.push('/auth/login');
         return;
       }
 
@@ -47,6 +47,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       router.push('/dashboard');
     }
   }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+  };
 
   const navItems = [
     { href: '/admin', label: 'Dashboard', icon: '📊' },
@@ -107,7 +112,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         {/* User Info */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-muted">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
               {userEmail.charAt(0).toUpperCase()}
@@ -117,6 +122,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <p className="text-xs text-muted-foreground">Admin</p>
             </div>
           </div>
+          
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+          >
+            <span className="text-xl">🚪</span>
+            <span className="font-medium">Sair</span>
+          </button>
         </div>
       </aside>
 

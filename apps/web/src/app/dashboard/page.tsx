@@ -1,10 +1,10 @@
 'use client';
 
-import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
-import { QuickActions } from '@/components/dashboard/QuickActions';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { useDashboardStats } from '@/lib/hooks/useDashboardStats';
-import { useRecentActivity } from '@/lib/hooks/useRecentActivity';
+import { ActivityFeed } from '@/dashboard';
+import { QuickActions } from '@/dashboard';
+import { StatCard } from '@/dashboard';
+import { useDashboardStats } from '@/shared/hooks/useDashboardStats';
+import { useRecentActivity } from '@/shared/hooks/useRecentActivity';
 import { supabase } from '@meupersonal/supabase';
 import { useEffect, useState } from 'react';
 

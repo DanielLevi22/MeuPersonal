@@ -1,9 +1,9 @@
 'use client';
 
-import { CreatePeriodizationModal } from '@/components/periodization/CreatePeriodizationModal';
-import { PeriodizationCard } from '@/components/periodization/PeriodizationCard';
-import { useDeletePeriodization } from '@/lib/hooks/usePeriodizationMutations';
-import { usePeriodizations } from '@/lib/hooks/usePeriodizations';
+import { CreatePeriodizationModal } from '@/dashboard';
+import { PeriodizationCard } from '@/dashboard';
+import { useDeletePeriodization } from '@/shared/hooks/usePeriodizationMutations';
+import { usePeriodizations } from '@/shared/hooks/usePeriodizations';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

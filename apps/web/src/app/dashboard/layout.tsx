@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push('/login');
+        router.push('/auth/login');
       } else {
         setLoading(false);
       }
@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
-        router.push('/login');
+        router.push('/auth/login');
       }
     });
 
@@ -36,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   if (loading) {

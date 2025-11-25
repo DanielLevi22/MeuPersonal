@@ -1,10 +1,10 @@
 'use client';
 
-import { CreateDietModal } from '@/components/nutrition/CreateDietModal';
-import { DietCard } from '@/components/nutrition/DietCard';
-import { ImportDietModal } from '@/components/nutrition/ImportDietModal';
-import { useDietPlans, useFinishDietPlan } from '@/lib/hooks/useNutrition';
-import { useStudents } from '@/lib/hooks/useStudents';
+import { CreateDietModal } from '@/nutrition';
+import { DietCard } from '@/nutrition';
+import { ImportDietModal } from '@/nutrition';
+import { useDietPlans, useFinishDietPlan } from '@/shared/hooks/useNutrition';
+import { useStudents } from '@/shared/hooks/useStudents';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

@@ -1,13 +1,12 @@
 'use client';
 
-import { CreateTrainingPlanModal } from '@/components/training-plans/CreateTrainingPlanModal';
-import { ExpandableTrainingPlanCard } from '@/components/training-plans/ExpandableTrainingPlanCard';
-import { useUpdatePeriodizationStatus } from '@/lib/hooks/usePeriodizationMutations';
-import { usePeriodization } from '@/lib/hooks/usePeriodizations';
-import { useStudents } from '@/lib/hooks/useStudents';
-import { useCloneTrainingPlan, useDeleteTrainingPlan } from '@/lib/hooks/useTrainingPlanMutations';
-import { useTrainingPlans } from '@/lib/hooks/useTrainingPlans';
-import { exportPeriodizationToPDF } from '@/lib/utils/exportPeriodizationPDF';
+import { useUpdatePeriodizationStatus } from '@/shared/hooks/usePeriodizationMutations';
+import { usePeriodization } from '@/shared/hooks/usePeriodizations';
+import { useStudents } from '@/shared/hooks/useStudents';
+import { useCloneTrainingPlan, useDeleteTrainingPlan } from '@/shared/hooks/useTrainingPlanMutations';
+import { useTrainingPlans } from '@/shared/hooks/useTrainingPlans';
+import { exportPeriodizationToPDF } from '@/shared/utils/exportPeriodizationPDF';
+import { CreateTrainingPlanModal, ExpandableTrainingPlanCard } from '@/training-plans';
 import { differenceInDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
@@ -115,7 +114,7 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
       // Create periodization object with required fields
       const periodizationData = {
         ...periodization,
-        duration_weeks: periodization.duration_weeks || Math.ceil((new Date(periodization.end_date).getTime() - new Date(periodization.start_date).getTime()) / (7 * 24 * 60 * 60 * 1000)),
+        duration_weeks: (periodization as any).duration_weeks || Math.ceil((new Date(periodization.end_date).getTime() - new Date(periodization.start_date).getTime()) / (7 * 24 * 60 * 60 * 1000)),
       };
       
       await exportPeriodizationToPDF(periodizationData as any, phases, studentName);

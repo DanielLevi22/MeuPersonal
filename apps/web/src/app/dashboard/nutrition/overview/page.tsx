@@ -1,7 +1,7 @@
 'use client';
 
-import { useDietPlans, useStudentNutritionStats } from '@/lib/hooks/useNutrition';
-import { useStudents } from '@/lib/hooks/useStudents';
+import { useDietPlans, useStudentNutritionStats } from '@/shared/hooks/useNutrition';
+import { useStudents } from '@/shared/hooks/useStudents';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useDietPlans, useStudentNutritionStats } from '@/lib/hooks/useNutrition';
+import { useDietPlans, useStudentNutritionStats } from '@/shared/hooks/useNutrition';
 
 interface StudentNutritionDataProps {
   studentId: string;
