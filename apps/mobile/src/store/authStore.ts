@@ -1,8 +1,7 @@
 import {
     AccountType,
     AppAbility,
-    defineAbilitiesFor,
-    getUserContext
+    defineAbilitiesFor
 } from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
@@ -40,8 +39,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = session.user;
       
       try {
-        // Fetch context and define abilities
-        const context = await getUserContext(user.id);
+        // Fetch context and define abilities (using JWT version for admin)
+        const context = await getUserContextJWT(user.id);
         const abilities = defineAbilitiesFor(context);
         
         // Log admin access

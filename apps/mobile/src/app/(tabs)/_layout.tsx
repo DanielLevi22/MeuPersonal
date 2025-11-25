@@ -1,3 +1,4 @@
+import { AdminMenuButton } from '@/components/admin/AdminMenuButton';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
@@ -11,7 +12,11 @@ export default function TabLayout() {
   // If accountType is null (loading), default to student to avoid flashing restricted tabs
   const isStudent = !accountType || accountType === 'managed_student' || accountType === 'autonomous_student';
   
+  // Debug log
+  console.log('📱 TabLayout - accountType:', accountType);
+  
   return (
+    <>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -113,5 +118,9 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    
+    {/* Admin floating button */}
+    <AdminMenuButton />
+    </>
   );
 }
