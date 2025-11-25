@@ -1,7 +1,7 @@
-import { Exercise, ExerciseConfigModal } from '@/components/ExerciseConfigModal';
+import { Exercise, ExerciseConfigModal } from '@/workout';
 import { useCreateExercise } from '@/hooks/useExerciseMutations';
 import { useExercises } from '@/hooks/useExercises';
-import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
+import { SelectedExercise, useWorkoutStore } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

@@ -27,6 +27,33 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@/modules/*": [
+        "./src/modules/*"
+      ],
+      "@/shared/*": [
+        "./src/shared/*"
+      ],
+      "@/shared": [
+        "./src/shared"
+      ],
+      "@/auth": [
+        "./src/modules/auth"
+      ],
+      "@/admin": [
+        "./src/modules/admin"
+      ],
+      "@/dashboard": [
+        "./src/modules/dashboard"
+      ],
+      "@/nutrition": [
+        "./src/modules/nutrition"
+      ],
+      "@/workouts": [
+        "./src/modules/workouts"
+      ],
+      "@/training-plans": [
+        "./src/modules/training-plans"
       ]
     }
   },

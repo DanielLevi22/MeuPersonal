@@ -1,3 +1,6 @@
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { LiveWorkoutOverlay } from '@/components/workout/LiveWorkoutOverlay';
 import { useWorkoutTimer } from '@/hooks/useWorkoutTimer';
 import { schedulePostWorkoutReminder } from '@/services/notificationService';
@@ -8,7 +11,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Exercise {
   id: string;
@@ -158,27 +160,9 @@ export default function StudentWorkoutExecuteScreen() {
   };
 
   const handleExercisePress = (exercise: Exercise) => {
-    // If not completed, open detail. If completed, maybe just show info?
-    // For now, always open detail.
     router.push(`/student/exercise-detail?exerciseId=${exercise.id}&sessionId=${sessionId}&workoutId=${id}` as any);
   };
 
-  // Function to simulate completing an exercise directly from list (optional, or triggered from detail)
-  // But here we want to trigger the timer when returning from detail if a set was just done.
-  // Actually, the requirement is "Trigger timer automatically when a set is marked as done".
-  // Sets are marked done in the detail screen usually.
-  // If we want to support it here, we need to know when a set was done.
-  // For now, let's assume the user clicks "Finish Set" in the detail screen.
-  // BUT, the user might want to start a rest timer manually or we need to pass the timer state to the detail screen?
-  // Or maybe we just show the overlay here if the user just returned from a set?
-  
-  // Let's keep it simple: We add a "Start Rest" button on the exercise card if it's not completed?
-  // Or better: We assume the user marks sets in the detail screen.
-  // The requirement says "Trigger timer automatically when a set is marked as done".
-  // Since we are editing the LIST screen, maybe we should move the timer to the DETAIL screen?
-  // OR we make the list screen the main execution hub.
-  
-  // Let's add a "Start Rest" button to the exercise item for quick access.
   const handleStartRest = (restTime: number) => {
     startTimer(restTime || 60);
   };
@@ -227,206 +211,174 @@ export default function StudentWorkoutExecuteScreen() {
       <TouchableOpacity
         onPress={() => handleExercisePress(item)}
         activeOpacity={0.8}
-        style={{
-          backgroundColor: isCompleted ? 'rgba(0, 255, 136, 0.1)' : '#141B2D',
-          borderRadius: 16,
-          padding: 16,
-          marginBottom: 12,
-          borderWidth: 2,
-          borderColor: isCompleted ? '#00FF88' : '#1E2A42'
-        }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-          <View style={{
-            backgroundColor: isCompleted ? '#00FF88' : '#FF6B35',
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12
-          }}>
-            {isCompleted ? (
-              <Ionicons name="checkmark" size={20} color="#0A0E1A" />
-            ) : (
-              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>{index + 1}</Text>
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
-              {item.exercise.name}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <View style={{
-                backgroundColor: 'rgba(0, 217, 255, 0.15)',
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 6
-              }}>
-                <Text style={{ color: '#00D9FF', fontSize: 11, fontWeight: '600' }}>
-                  {item.exercise.muscle_group}
-                </Text>
+        <Card className={`mb-3 p-4 border-2 ${isCompleted ? 'border-primary bg-primary/10' : 'border-border'}`}>
+          <View className="flex-row items-center mb-2">
+            <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isCompleted ? 'bg-primary' : 'bg-primary/20'}`}>
+              {isCompleted ? (
+                <Ionicons name="checkmark" size={20} color="#000000" />
+              ) : (
+                <Text className="text-primary font-bold text-sm font-display">{index + 1}</Text>
+              )}
+            </View>
+            <View className="flex-1">
+              <Text className="text-foreground text-lg font-bold font-display">
+                {item.exercise.name}
+              </Text>
+              <View className="flex-row items-center mt-1">
+                <View className="bg-secondary/15 px-2 py-1 rounded-md">
+                  <Text className="text-secondary text-xs font-bold font-display uppercase">
+                    {item.exercise.muscle_group}
+                  </Text>
+                </View>
               </View>
             </View>
+            
+            {/* Quick Rest Button */}
+            {!isCompleted && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleStartRest(item.rest_time);
+                }}
+                className="bg-primary/10 p-2 rounded-lg ml-2 border border-primary/20"
+              >
+                <Ionicons name="timer-outline" size={20} color="#CCFF00" />
+              </TouchableOpacity>
+            )}
           </View>
-          
-          {/* Quick Rest Button */}
-          {!isCompleted && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                handleStartRest(item.rest_time);
-              }}
-              style={{
-                backgroundColor: 'rgba(255, 107, 53, 0.2)',
-                padding: 8,
-                borderRadius: 8,
-                marginLeft: 8
-              }}
-            >
-              <Ionicons name="timer-outline" size={20} color="#FF6B35" />
-            </TouchableOpacity>
-          )}
-        </View>
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-            <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Séries</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.sets}</Text>
-          </View>
-          <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-            <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Reps</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.reps}</Text>
-          </View>
-          {item.weight && (
-            <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Carga</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.weight}kg</Text>
+          <View className="flex-row gap-3 pl-11">
+            <View className="flex-1 bg-background p-2 rounded-lg border border-border">
+              <Text className="text-muted-foreground text-xs mb-1 font-sans">Séries</Text>
+              <Text className="text-foreground text-base font-bold font-display">{item.sets}</Text>
             </View>
-          )}
-          <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-            <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Descanso</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.rest_time}s</Text>
+            <View className="flex-1 bg-background p-2 rounded-lg border border-border">
+              <Text className="text-muted-foreground text-xs mb-1 font-sans">Reps</Text>
+              <Text className="text-foreground text-base font-bold font-display">{item.reps}</Text>
+            </View>
+            {item.weight && (
+              <View className="flex-1 bg-background p-2 rounded-lg border border-border">
+                <Text className="text-muted-foreground text-xs mb-1 font-sans">Carga</Text>
+                <Text className="text-foreground text-base font-bold font-display">{item.weight}kg</Text>
+              </View>
+            )}
+            <View className="flex-1 bg-background p-2 rounded-lg border border-border">
+              <Text className="text-muted-foreground text-xs mb-1 font-sans">Descanso</Text>
+              <Text className="text-foreground text-base font-bold font-display">{item.rest_time}s</Text>
+            </View>
           </View>
-        </View>
+        </Card>
       </TouchableOpacity>
     );
   };
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B35" />
-        <Text style={{ color: '#8B92A8', marginTop: 16, fontSize: 15 }}>Carregando treino...</Text>
-      </View>
+      <ScreenLayout className="justify-center items-center">
+        <ActivityIndicator size="large" color="#CCFF00" />
+        <Text className="text-muted-foreground mt-4 font-sans">Carregando treino...</Text>
+      </ScreenLayout>
     );
   }
 
   if (!workout) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 20 }}>Treino não encontrado</Text>
-      </View>
+      <ScreenLayout className="justify-center items-center px-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#5A6178" />
+        <Text className="text-foreground text-xl font-bold mt-4 mb-6 font-display">Treino não encontrado</Text>
+        <Button
+          onPress={() => router.back()}
+          variant="outline"
+          label="Voltar"
+        />
+      </ScreenLayout>
     );
   }
 
   const progress = exercises.length > 0 ? (completedExercises.size / exercises.length) * 100 : 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ backgroundColor: '#141B2D', padding: 10, borderRadius: 12, marginRight: 16 }}
-            >
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF' }}>
-                {workout.title}
-              </Text>
-              {workout.description && (
-                <Text style={{ color: '#8B92A8', fontSize: 14, marginTop: 4 }}>
-                  {workout.description}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {/* Progress */}
-          <View style={{ backgroundColor: '#141B2D', padding: 16, borderRadius: 16, borderWidth: 2, borderColor: '#1E2A42' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Progresso</Text>
-              <Text style={{ color: '#00FF88', fontSize: 16, fontWeight: '700' }}>
-                {completedExercises.size}/{exercises.length}
-              </Text>
-            </View>
-            <View style={{ height: 8, backgroundColor: '#0A0E1A', borderRadius: 4, overflow: 'hidden' }}>
-              <View style={{ height: '100%', width: `${progress}%`, backgroundColor: '#00FF88' }} />
-            </View>
-          </View>
-        </View>
-
-        {/* Exercise List */}
-        <FlatList
-          data={exercises}
-          renderItem={renderExercise}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-        />
-
-        {/* Finish Button */}
-        <View style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: 24,
-          backgroundColor: '#0A0E1A',
-          borderTopWidth: 2,
-          borderTopColor: '#1E2A42'
-        }}>
-          <TouchableOpacity onPress={handleFinishWorkout} activeOpacity={0.8}>
-            <LinearGradient
-              colors={completedExercises.size === exercises.length ? ['#00FF88', '#00CC6E'] : ['#FF6B35', '#E85A2A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                borderRadius: 16,
-                paddingVertical: 18,
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'center'
-              }}
-            >
-              <Ionicons
-                name={completedExercises.size === exercises.length ? "checkmark-circle" : "flag"}
-                size={22}
-                color="#0A0E1A"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={{ color: '#0A0E1A', fontSize: 18, fontWeight: '700' }}>
-                Finalizar Treino
-              </Text>
-            </LinearGradient>
+    <ScreenLayout>
+      {/* Header */}
+      <View className="px-6 pt-2 pb-4">
+        <View className="flex-row items-center mb-4">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="bg-surface p-2.5 rounded-xl mr-4 border border-border"
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
+          <View className="flex-1">
+            <Text className="text-2xl font-bold text-foreground font-display">
+              {workout.title}
+            </Text>
+            {workout.description && (
+              <Text className="text-muted-foreground text-sm mt-1 font-sans">
+                {workout.description}
+              </Text>
+            )}
+          </View>
         </View>
 
-        {/* Live Workout Overlay */}
-        <LiveWorkoutOverlay
-          visible={isActive}
-          timeLeft={timeLeft}
-          totalTime={totalTime}
-          onClose={stopTimer}
-          onAdd10s={() => addTime(10)}
-          onSubtract10s={() => subtractTime(10)}
-          onSkip={stopTimer}
-        />
-      </SafeAreaView>
-    </View>
+        {/* Progress */}
+        <Card className="p-4 border border-border">
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-foreground text-base font-bold font-display">Progresso</Text>
+            <Text className="text-primary text-base font-bold font-display">
+              {completedExercises.size}/{exercises.length}
+            </Text>
+          </View>
+          <View className="h-2 bg-background rounded-full overflow-hidden">
+            <View 
+              className="h-full bg-primary" 
+              style={{ width: `${progress}%` }} 
+            />
+          </View>
+        </Card>
+      </View>
+
+      {/* Exercise List */}
+      <FlatList
+        data={exercises}
+        renderItem={renderExercise}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Finish Button */}
+      <View className="absolute bottom-0 left-0 right-0 p-6 bg-background/95 border-t border-border">
+        <TouchableOpacity onPress={handleFinishWorkout} activeOpacity={0.8}>
+          <LinearGradient
+            colors={completedExercises.size === exercises.length ? ['#CCFF00', '#99CC00'] : ['#FF6B35', '#E85A2A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="rounded-xl py-4 items-center flex-row justify-center shadow-lg shadow-black/20"
+          >
+            <Ionicons
+              name={completedExercises.size === exercises.length ? "checkmark-circle" : "flag"}
+              size={22}
+              color="#000000"
+              style={{ marginRight: 8 }}
+            />
+            <Text className="text-black text-lg font-bold font-display">
+              Finalizar Treino
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+
+      {/* Live Workout Overlay */}
+      <LiveWorkoutOverlay
+        visible={isActive}
+        timeLeft={timeLeft}
+        totalTime={totalTime}
+        onClose={stopTimer}
+        onAdd10s={() => addTime(10)}
+        onSubtract10s={() => subtractTime(10)}
+        onSkip={stopTimer}
+      />
+    </ScreenLayout>
   );
 }

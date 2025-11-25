@@ -1,7 +1,7 @@
 import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { useNutritionStore } from '@/store/nutritionStore';
-import { useStudentStore } from '@/store/studentStore';
+import { useAuthStore } from '@/auth';
+import { useNutritionStore } from '@/nutrition';
+import { useStudentStore } from '@/students';
 import {
   ActivityLevel,
   Goal,
@@ -9,7 +9,7 @@ import {
   calculateTDEE,
   calculateTMB,
   calculateTargetCalories,
-} from '@/utils/nutrition';
+} from '@/nutrition';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';

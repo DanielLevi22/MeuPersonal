@@ -1,8 +1,8 @@
 'use client';
 
-import { ProgressCharts } from '@/components/nutrition/ProgressCharts';
-import { useDietPlans, useStudentNutritionStats } from '@/lib/hooks/useNutrition';
-import { useStudents } from '@/lib/hooks/useStudents';
+import { ProgressCharts } from '@/nutrition';
+import { useDietPlans, useStudentNutritionStats } from '@/shared/hooks/useNutrition';
+import { useStudents } from '@/shared/hooks/useStudents';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

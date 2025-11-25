@@ -1,10 +1,9 @@
 'use client';
 
-import { DayOptionsModal } from '@/components/nutrition/DayOptionsModal';
-import { MealEditor } from '@/components/nutrition/MealEditor';
-import { useClearDay, useCopyDay, useDietMeals, useDietPlan, usePasteDay } from '@/lib/hooks/useNutrition';
-import { useStudents } from '@/lib/hooks/useStudents';
-import { exportDietToPDF } from '@/lib/utils/exportDietPDF';
+import { DayOptionsModal, MealEditor } from '@/nutrition';
+import { useClearDay, useCopyDay, useDietMeals, useDietPlan, usePasteDay } from '@/shared/hooks/useNutrition';
+import { useStudents } from '@/shared/hooks/useStudents';
+import { exportDietToPDF } from '@/shared/utils/exportDietPDF';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useParams, useRouter } from 'next/navigation';

@@ -1,10 +1,10 @@
 'use client';
 
-import { CreateWorkoutModal } from '@/components/workouts/CreateWorkoutModal';
-import { DeleteConfirmModal } from '@/components/workouts/DeleteConfirmModal';
-import { WorkoutCard } from '@/components/workouts/WorkoutCard';
-import { useDeleteWorkout } from '@/lib/hooks/useWorkoutMutations';
-import { useWorkouts } from '@/lib/hooks/useWorkouts';
+import { CreateWorkoutModal } from '@/workouts';
+import { DeleteConfirmModal } from '@/workouts';
+import { WorkoutCard } from '@/workouts';
+import { useDeleteWorkout } from '@/shared/hooks/useWorkoutMutations';
+import { useWorkouts } from '@/shared/hooks/useWorkouts';
 import { defineAbilitiesFor, supabase } from '@meupersonal/supabase';
 import { useEffect, useState } from 'react';
 

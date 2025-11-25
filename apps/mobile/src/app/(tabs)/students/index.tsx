@@ -1,12 +1,13 @@
-import { StudentEditModal } from '@/components/StudentEditModal';
-import { useAuthStore } from '@/store/authStore';
-import { useStudentStore } from '@/store/studentStore';
+import { StudentEditModal } from '@/students';
+import { Card } from '@/components/ui/Card';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useAuthStore } from '@/auth';
+import { useStudentStore } from '@/students';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function StudentsScreen() {
   const { students, isLoading, fetchStudents, removeStudent, cancelInvite, updateStudent } = useStudentStore();
@@ -57,29 +58,7 @@ export default function StudentsScreen() {
     if (student.status === 'active') {
       setSelectedStudent(student);
       setIsEditModalVisible(true);
-    } else if (student.status === 'active') {
-       // Navigate to details if active (Wait, the original code didn't navigate on press? 
-       // Ah, renderItem has onPress={() => handleEdit(item)}. 
-       // I should probably change this to navigate to details, and have an edit button separately?
-       // The original code: onPress={() => handleEdit(item)} opens the modal.
-       // But we want to navigate to the student details screen now.
-       // Let's keep the edit modal for now, but maybe add a way to go to details.
-       // Actually, the user wants to see diet plans, which are in student details.
-       // So clicking a student should go to [id].
     }
-    
-    // Wait, previously how did we get to [id]? 
-    // The original code didn't seem to have navigation to [id] in the list item?
-    // Let me check the original code again.
-    // renderItem: onPress={() => handleEdit(item)}
-    // handleEdit: sets selectedStudent and opens modal.
-    // So where was the navigation to student details?
-    // Maybe it wasn't implemented or I missed it?
-    // Ah, looking at the file list, `src/app/students/[id]` exists.
-    // But `students.tsx` doesn't seem to link to it.
-    // This might be why the user is confused or can't see things.
-    // I should update the list item to navigate to `/(tabs)/students/${item.id}` on press.
-    // And maybe put the edit action on a button.
   };
 
   const handlePressStudent = (student: any) => {
@@ -107,31 +86,12 @@ export default function StudentsScreen() {
       activeOpacity={0.7}
       onPress={() => handlePressStudent(item)}
       disabled={false}
+      className="mb-3"
     >
-      <View 
-        style={{
-          backgroundColor: '#141B2D',
-          borderRadius: 16,
-          padding: 16,
-          marginBottom: 12,
-          borderWidth: 2,
-          borderColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.3)' : '#1E2A42',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <Card className={`p-4 border-2 flex-row items-center justify-between ${item.status === 'invited' ? 'border-yellow-500/30' : 'border-border'}`}>
+        <View className="flex-row items-center flex-1">
           {/* Avatar */}
-          <View style={{
-            height: 56,
-            width: 56,
-            borderRadius: 28,
-            backgroundColor: item.status === 'invited' ? 'rgba(255, 184, 0, 0.15)' : 'rgba(0, 217, 255, 0.15)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 16
-          }}>
+          <View className={`h-14 w-14 rounded-full items-center justify-center mr-4 ${item.status === 'invited' ? 'bg-yellow-500/15' : 'bg-secondary/15'}`}>
             <Ionicons 
               name={item.status === 'invited' ? "mail-outline" : "person"} 
               size={28} 
@@ -140,38 +100,32 @@ export default function StudentsScreen() {
           </View>
 
           {/* Info */}
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }} numberOfLines={1}>
+          <View className="flex-1 mr-2">
+            <Text className="text-foreground text-lg font-bold mb-1 font-display" numberOfLines={1}>
               {item.full_name || 'Aluno sem nome'}
             </Text>
-            <Text style={{ color: '#8B92A8', fontSize: 14 }} numberOfLines={1}>
+            <Text className="text-muted-foreground text-sm font-sans" numberOfLines={1}>
               {item.status === 'invited' ? item.email : `Código: ${item.invite_code || 'N/A'}`}
             </Text>
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View className="flex-row items-center">
           {/* Status Badge */}
-          <View style={{
-            backgroundColor: item.status === 'active' 
-              ? 'rgba(0, 255, 136, 0.15)' 
+          <View className={`px-2.5 py-1.5 rounded-xl mr-3 ${
+            item.status === 'active' 
+              ? 'bg-green-500/15' 
               : item.status === 'invited'
-                ? 'rgba(255, 184, 0, 0.15)'
-                : 'rgba(255, 255, 255, 0.1)',
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 12,
-            marginRight: 12
-          }}>
-            <Text style={{
-              color: item.status === 'active' 
-                ? '#00FF88' 
+                ? 'bg-yellow-500/15'
+                : 'bg-white/10'
+          }`}>
+            <Text className={`text-xs font-bold font-display ${
+              item.status === 'active' 
+                ? 'text-green-400' 
                 : item.status === 'invited'
-                  ? '#FFB800'
-                  : '#8B92A8',
-              fontSize: 12,
-              fontWeight: '700'
-            }}>
+                  ? 'text-yellow-500'
+                  : 'text-muted-foreground'
+            }`}>
               {item.status === 'active' ? 'Ativo' : item.status === 'invited' ? 'Convite' : 'Pendente'}
             </Text>
           </View>
@@ -180,7 +134,7 @@ export default function StudentsScreen() {
           {item.status === 'active' && (
              <TouchableOpacity 
              onPress={() => handleEdit(item)}
-             style={{ padding: 8, marginRight: 4 }}
+             className="p-2 mr-1"
            >
              <Ionicons name="pencil-outline" size={20} color="#FFFFFF" />
            </TouchableOpacity>
@@ -189,117 +143,93 @@ export default function StudentsScreen() {
           {/* Remove Button */}
           <TouchableOpacity 
             onPress={() => handleRemove(item)}
-            style={{ padding: 8 }}
+            className="p-2"
           >
             <Ionicons name="trash-outline" size={20} color="#FF4444" />
           </TouchableOpacity>
         </View>
-      </View>
+      </Card>
     </TouchableOpacity>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ 
-          flexDirection: 'row', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          paddingHorizontal: 24,
-          paddingTop: 16,
-          paddingBottom: 24
-        }}>
-          <View>
-            <Text style={{ fontSize: 36, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 }}>
-              Meus Alunos
-            </Text>
-            <Text style={{ fontSize: 16, color: '#8B92A8' }}>
-              {students.length} {students.length === 1 ? 'aluno' : 'alunos'}
-            </Text>
+    <ScreenLayout>
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-6 pt-4 pb-6">
+        <View>
+          <Text className="text-4xl font-bold text-foreground mb-1 font-display">
+            Meus Alunos
+          </Text>
+          <Text className="text-base text-muted-foreground font-sans">
+            {students.length} {students.length === 1 ? 'aluno' : 'alunos'}
+          </Text>
+        </View>
+        
+        <Link href={'/(tabs)/students/create' as any} asChild>
+          <TouchableOpacity activeOpacity={0.8}>
+            <LinearGradient
+              colors={['#CCFF00', '#99CC00']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-primary/30"
+            >
+              <Ionicons name="add" size={28} color="#000000" />
+            </LinearGradient>
+          </TouchableOpacity>
+        </Link>
+      </View>
+
+      {/* Content */}
+      {students.length === 0 && !isLoading ? (
+        <View className="flex-1 justify-center items-center px-6">
+          <View className="bg-surface p-8 rounded-full mb-6 border border-border">
+            <Ionicons name="people-outline" size={80} color="#71717A" />
           </View>
+          <Text className="text-foreground text-2xl font-bold mb-2 text-center font-display">
+            Nenhum aluno ainda
+          </Text>
+          <Text className="text-muted-foreground text-center px-8 text-base mb-8 font-sans">
+            Comece cadastrando seu primeiro aluno
+          </Text>
           
           <Link href={'/(tabs)/students/create' as any} asChild>
             <TouchableOpacity activeOpacity={0.8}>
               <LinearGradient
-                colors={['#00FF88', '#00CC6E']}
+                colors={['#CCFF00', '#99CC00']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{
-                  height: 56,
-                  width: 56,
-                  borderRadius: 28,
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                className="rounded-2xl py-4 px-8 shadow-lg shadow-primary/30"
               >
-                <Ionicons name="add" size={28} color="#0A0E1A" />
+                <Text className="text-black text-base font-bold font-display">
+                  Novo Aluno
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </Link>
         </View>
-
-        {/* Content */}
-        {students.length === 0 && !isLoading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-            <View style={{
-              backgroundColor: '#141B2D',
-              padding: 32,
-              borderRadius: 50,
-              marginBottom: 24
-            }}>
-              <Ionicons name="people-outline" size={80} color="#5A6178" />
-            </View>
-            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8 }}>
-              Nenhum aluno ainda
-            </Text>
-            <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
-              Comece cadastrando seu primeiro aluno
-            </Text>
-            
-            <Link href={'/(tabs)/students/create' as any} asChild>
-              <TouchableOpacity activeOpacity={0.8}>
-                <LinearGradient
-                  colors={['#00FF88', '#00CC6E']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    borderRadius: 16,
-                    paddingVertical: 16,
-                    paddingHorizontal: 32
-                  }}
-                >
-                  <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>
-                    Novo Aluno
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        ) : (
-          <FlatList
-            data={students}
-            renderItem={renderItem}
-            keyExtractor={(item, index) => item.id || `student-${index}`}
-            contentContainerStyle={{ paddingHorizontal: 24 }}
-            refreshControl={
-              <RefreshControl 
-                refreshing={isLoading} 
-                onRefresh={() => user?.id && fetchStudents(user.id)} 
-                tintColor="#00FF88" 
-              />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-
-        <StudentEditModal
-          visible={isEditModalVisible}
-          onClose={() => setIsEditModalVisible(false)}
-          onSave={handleSaveEdit}
-          student={selectedStudent}
+      ) : (
+        <FlatList
+          data={students}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item.id || `student-${index}`}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl 
+              refreshing={isLoading} 
+              onRefresh={() => user?.id && fetchStudents(user.id)} 
+              tintColor="#CCFF00" 
+            />
+          }
+          showsVerticalScrollIndicator={false}
         />
-      </SafeAreaView>
-    </View>
+      )}
+
+      <StudentEditModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        onSave={handleSaveEdit}
+        student={selectedStudent}
+      />
+    </ScreenLayout>
   );
 }

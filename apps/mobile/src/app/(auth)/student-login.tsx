@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

@@ -1,12 +1,13 @@
-import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { useWorkoutStore } from '@/store/workoutStore';
+import { Card } from '@/components/ui/Card';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useAuthStore } from '@/auth';
+import { useWorkoutStore } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WorkoutsScreen() {
   const { workouts, isLoading, fetchWorkouts } = useWorkoutStore();
@@ -39,13 +40,10 @@ export default function WorkoutsScreen() {
   const fetchWorkoutsData = useCallback(async () => {
     if (!user?.id || !userRole) return;
 
-    console.log('🔍 Fetching workouts for role:', userRole, 'user:', user.id);
-
     if (userRole === 'student') {
       // Fetch assigned workouts for students
       setLoadingStudentWorkouts(true);
       try {
-        console.log('📚 Fetching student workouts from workout_assignments...');
         const { data, error } = await supabase
           .from('workout_assignments')
           .select(`
@@ -58,27 +56,19 @@ export default function WorkoutsScreen() {
           `)
           .eq('student_id', user.id);
 
-        console.log('📊 Student workouts query result:', { data, error });
-
-        if (error) {
-          console.error('❌ Error fetching student workouts:', error);
-        }
-
         if (!error && data) {
           const workoutsData = data
             .map((item: any) => item.workout)
             .filter(Boolean);
-          console.log('✅ Processed student workouts:', workoutsData.length, 'workouts');
           setStudentWorkouts(workoutsData);
         }
       } catch (error) {
-        console.error('💥 Exception fetching student workouts:', error);
+        console.error('Exception fetching student workouts:', error);
       } finally {
         setLoadingStudentWorkouts(false);
       }
     } else {
       // Fetch created workouts for personal trainers
-      console.log('👨‍⚕️ Fetching personal trainer workouts...');
       fetchWorkouts(user.id);
     }
   }, [user, userRole]);
@@ -102,148 +92,113 @@ export default function WorkoutsScreen() {
       : `/workouts/${item.id}`;
 
     return (
-      <TouchableOpacity 
-        onPress={() => router.push(targetRoute as any)}
-        activeOpacity={0.8}
-        style={{
-          backgroundColor: '#141B2D',
-          borderRadius: 16,
-          padding: 20,
-          marginBottom: 12,
-          borderWidth: 2,
-          borderColor: '#1E2A42'
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700', flex: 1 }}>
-            {item.title}
-          </Text>
-          <View style={{
-            backgroundColor: 'rgba(255, 107, 53, 0.15)',
-            padding: 8,
-            borderRadius: 12
-          }}>
-            <Ionicons name="chevron-forward" size={20} color="#FF6B35" />
-          </View>
-        </View>
-        
-        {item.description && (
-          <Text style={{ color: '#8B92A8', fontSize: 14, marginBottom: 12 }} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-        
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="calendar-outline" size={16} color="#5A6178" />
-          <Text style={{ color: '#5A6178', fontSize: 12, marginLeft: 6 }}>
-            Criado em {new Date(item.created_at).toLocaleDateString('pt-BR')}
-          </Text>
-        </View>
-      </TouchableOpacity>
+      <Link href={targetRoute as any} asChild>
+        <TouchableOpacity activeOpacity={0.8} className="mb-3">
+          <Card className="p-5 border-2 border-border">
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-foreground text-xl font-bold flex-1 font-display">
+                {item.title}
+              </Text>
+              <View className="bg-primary/10 p-2 rounded-xl">
+                <Ionicons name="chevron-forward" size={20} color="#CCFF00" />
+              </View>
+            </View>
+            
+            {item.description && (
+              <Text className="text-muted-foreground text-sm mb-3 font-sans" numberOfLines={2}>
+                {item.description}
+              </Text>
+            )}
+            
+            <View className="flex-row items-center">
+              <Ionicons name="calendar-outline" size={16} color="#71717A" />
+              <Text className="text-muted-foreground text-xs ml-2 font-sans">
+                Criado em {new Date(item.created_at).toLocaleDateString('pt-BR')}
+              </Text>
+            </View>
+          </Card>
+        </TouchableOpacity>
+      </Link>
     );
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ 
-          flexDirection: 'row', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          paddingHorizontal: 24,
-          paddingTop: 16,
-          paddingBottom: 24
-        }}>
-          <View>
-            <Text style={{ fontSize: 36, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 }}>
-              Meus Treinos
-            </Text>
-            <Text style={{ fontSize: 16, color: '#8B92A8' }}>
-              {displayWorkouts.length} {displayWorkouts.length === 1 ? 'treino' : 'treinos'}
-            </Text>
+    <ScreenLayout>
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-6 pt-4 pb-6">
+        <View>
+          <Text className="text-4xl font-bold text-foreground mb-1 font-display">
+            Meus Treinos
+          </Text>
+          <Text className="text-base text-muted-foreground font-sans">
+            {displayWorkouts.length} {displayWorkouts.length === 1 ? 'treino' : 'treinos'}
+          </Text>
+        </View>
+        
+        {userRole === 'personal' && (
+          <Link href={'/workouts/create' as any} asChild>
+            <TouchableOpacity activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#CCFF00', '#99CC00']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-primary/30"
+              >
+                <Ionicons name="add" size={28} color="#000000" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </Link>
+        )}
+      </View>
+
+      {/* Content */}
+      {displayWorkouts.length === 0 && !loading ? (
+        <View className="flex-1 justify-center items-center px-6">
+          <View className="bg-surface p-8 rounded-full mb-6 border border-border">
+            <Ionicons name="barbell-outline" size={80} color="#71717A" />
           </View>
+          <Text className="text-foreground text-2xl font-bold mb-2 text-center font-display">
+            {userRole === 'student' ? 'Nenhum treino atribuído' : 'Nenhum treino criado'}
+          </Text>
+          <Text className="text-muted-foreground text-center px-8 text-base mb-8 font-sans">
+            {userRole === 'student' 
+              ? 'Seu personal ainda não atribuiu treinos para você' 
+              : 'Crie seu primeiro treino personalizado'}
+          </Text>
           
           {userRole === 'personal' && (
             <Link href={'/workouts/create' as any} asChild>
               <TouchableOpacity activeOpacity={0.8}>
                 <LinearGradient
-                  colors={['#00FF88', '#00CC6E']}
+                  colors={['#CCFF00', '#99CC00']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={{
-                    height: 56,
-                    width: 56,
-                    borderRadius: 28,
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
+                  className="rounded-2xl py-4 px-8 shadow-lg shadow-primary/30"
                 >
-                  <Ionicons name="add" size={28} color="#0A0E1A" />
+                  <Text className="text-black text-base font-bold font-display">
+                    Criar Treino
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </Link>
           )}
         </View>
-
-        {/* Content */}
-        {displayWorkouts.length === 0 && !loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-            <View style={{
-              backgroundColor: '#141B2D',
-              padding: 32,
-              borderRadius: 50,
-              marginBottom: 24
-            }}>
-              <Ionicons name="barbell-outline" size={80} color="#5A6178" />
-            </View>
-            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8 }}>
-              {userRole === 'student' ? 'Nenhum treino atribuído' : 'Nenhum treino criado'}
-            </Text>
-            <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
-              {userRole === 'student' 
-                ? 'Seu personal ainda não atribuiu treinos para você' 
-                : 'Crie seu primeiro treino personalizado'}
-            </Text>
-            
-            {userRole === 'personal' && (
-              <Link href={'/workouts/create' as any} asChild>
-                <TouchableOpacity activeOpacity={0.8}>
-                  <LinearGradient
-                    colors={['#00FF88', '#00CC6E']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: 16,
-                      paddingVertical: 16,
-                      paddingHorizontal: 32
-                    }}
-                  >
-                    <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>
-                      Criar Treino
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </Link>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={displayWorkouts}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingHorizontal: 24 }}
-            refreshControl={
-              <RefreshControl 
-                refreshing={loading} 
-                onRefresh={fetchWorkoutsData} 
-                tintColor="#00FF88" 
-              />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </SafeAreaView>
-    </View>
+      ) : (
+        <FlatList
+          data={displayWorkouts}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl 
+              refreshing={loading} 
+              onRefresh={fetchWorkoutsData} 
+              tintColor="#CCFF00" 
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </ScreenLayout>
   );
 }

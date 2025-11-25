@@ -1,5 +1,5 @@
 import { supabase } from '@meupersonal/supabase';
-import { useNutritionStore } from '@/store/nutritionStore';
+import { useNutritionStore } from '@/nutrition';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 
