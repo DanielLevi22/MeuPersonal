@@ -1,11 +1,11 @@
 import { Podium } from '@/components/gamification/Podium';
 import { RankListItem } from '@/components/gamification/RankListItem';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface LeaderboardEntry {
   student_id: string;
@@ -77,57 +77,55 @@ export default function LeaderboardScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B35" />
+      <View className="flex-1 bg-background justify-center items-center">
+        <ActivityIndicator size="large" color="#CCFF00" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
-          <Text style={{ fontSize: 28, fontWeight: '800', color: '#FFFFFF', textAlign: 'center' }}>
-            Ranking Semanal 🏆
-          </Text>
-          <Text style={{ fontSize: 14, color: '#8B92A8', textAlign: 'center', marginTop: 4 }}>
-            Quem está mais focado essa semana?
-          </Text>
-        </View>
+    <ScreenLayout>
+      <View className="px-6 pt-4 pb-2">
+        <Text className="text-3xl font-bold text-foreground text-center font-display">
+          Ranking Semanal 🏆
+        </Text>
+        <Text className="text-sm text-muted-foreground text-center mt-1 font-sans">
+          Quem está mais focado essa semana?
+        </Text>
+      </View>
 
-        <FlatList
-          data={rest}
-          keyExtractor={(item) => item.student_id}
-          ListHeaderComponent={() => (
-            <View style={{ marginBottom: 16 }}>
-              {topThree.length > 0 ? (
-                <Podium topThree={topThree} />
-              ) : (
-                <View style={{ height: 200, justifyContent: 'center', alignItems: 'center' }}>
-                  <Ionicons name="trophy-outline" size={64} color="#5A6178" />
-                  <Text style={{ color: '#8B92A8', marginTop: 16 }}>
-                    Seja o primeiro a pontuar!
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-          renderItem={({ item }) => (
-            <RankListItem item={item} isCurrentUser={item.student_id === user?.id} />
-          )}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B35" />
-          }
-          ListEmptyComponent={
-            topThree.length === 0 ? null : (
-              <Text style={{ color: '#8B92A8', textAlign: 'center', marginTop: 24 }}>
-                Nenhum outro aluno pontuou ainda.
-              </Text>
-            )
-          }
-        />
-      </SafeAreaView>
-    </View>
+      <FlatList
+        data={rest}
+        keyExtractor={(item) => item.student_id}
+        ListHeaderComponent={() => (
+          <View className="mb-4">
+            {topThree.length > 0 ? (
+              <Podium topThree={topThree} />
+            ) : (
+              <View className="h-48 justify-center items-center">
+                <Ionicons name="trophy-outline" size={64} color="#71717A" />
+                <Text className="text-muted-foreground mt-4 font-sans">
+                  Seja o primeiro a pontuar!
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <RankListItem item={item} isCurrentUser={item.student_id === user?.id} />
+        )}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />
+        }
+        ListEmptyComponent={
+          topThree.length === 0 ? null : (
+            <Text className="text-muted-foreground text-center mt-6 font-sans">
+              Nenhum outro aluno pontuou ainda.
+            </Text>
+          )
+        }
+      />
+    </ScreenLayout>
   );
 }

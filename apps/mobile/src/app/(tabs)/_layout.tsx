@@ -11,26 +11,24 @@ export default function TabLayout() {
   // If accountType is null (loading), default to student to avoid flashing restricted tabs
   const isStudent = !accountType || accountType === 'managed_student' || accountType === 'autonomous_student';
   
-  // Debug log
-  console.log('📱 TabLayout - accountType:', accountType);
-  
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0A0E1A',
+          backgroundColor: '#0A0E1A', // bg-background
           borderTopWidth: 1,
-          borderTopColor: '#1E2A42',
+          borderTopColor: '#1E2A42', // border-border
           height: Platform.OS === 'ios' ? 85 : 65 + insets.bottom,
           paddingBottom: Platform.OS === 'ios' ? 25 : 10 + insets.bottom,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#00D9FF',
-        tabBarInactiveTintColor: '#5A6178',
+        tabBarActiveTintColor: '#CCFF00', // text-primary (Neon Lime)
+        tabBarInactiveTintColor: '#5A6178', // text-muted-foreground
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+          fontFamily: 'Orbitron_600SemiBold', // Use custom font if available, else default
         },
       }}
     >

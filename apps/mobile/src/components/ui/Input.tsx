@@ -35,13 +35,13 @@ export function Input({
   return (
     <View className={className}>
       {label && (
-        <Text className="text-white font-semibold text-sm mb-2">{label}</Text>
+        <Text className="text-foreground font-semibold text-sm mb-2 font-display">{label}</Text>
       )}
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#5A6178"
+        placeholderTextColor="#71717A" // Zinc 500
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
@@ -50,14 +50,15 @@ export function Input({
         numberOfLines={numberOfLines}
         textAlignVertical={textAlignVertical}
         className={cn(
-          'bg-surface border-2 border-border rounded-xl px-4 py-4 text-white text-base',
-          error && 'border-error',
+          'bg-input/50 border border-input rounded-xl px-4 py-4 text-foreground text-base font-sans',
+          'focus:border-primary focus:bg-input',
+          error && 'border-destructive',
           !editable && 'opacity-60'
         )}
         style={{ minHeight: 56 }}
       />
       {error && (
-        <Text className="text-error text-sm mt-1">{error}</Text>
+        <Text className="text-destructive text-sm mt-1">{error}</Text>
       )}
     </View>
   );

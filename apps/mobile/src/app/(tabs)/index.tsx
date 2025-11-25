@@ -2,6 +2,7 @@ import { AchievementBadge } from '@/components/gamification/AchievementBadge';
 import { ProgressCard } from '@/components/gamification/ProgressCard';
 import { StatCard } from '@/components/gamification/StatCard';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useAuthStore } from '@/store/authStore';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +12,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardScreen() {
   const { user } = useAuthStore();
@@ -48,265 +48,223 @@ export default function DashboardScreen() {
 
   if (isLoading && !profile) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ 
-          backgroundColor: 'rgba(255, 107, 53, 0.15)', 
-          padding: 20, 
-          borderRadius: 50,
-          marginBottom: 16
-        }}>
-          <Ionicons name="barbell" size={48} color="#FF6B35" />
+      <ScreenLayout className="justify-center items-center">
+        <View className="bg-primary/10 p-5 rounded-full mb-4 border border-primary/20">
+          <Ionicons name="barbell" size={48} color="#CCFF00" />
         </View>
-        <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '600' }}>Carregando...</Text>
-      </View>
+        <Text className="text-foreground text-lg font-semibold font-display">Carregando...</Text>
+      </ScreenLayout>
     );
   }
 
   // Personal Trainer Dashboard (Legacy View)
   if (profile?.role === 'personal') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={{ padding: 24 }}>
-            <View style={{ marginBottom: 32 }}>
-              <Text style={{ fontSize: 36, fontWeight: '800', color: '#FFFFFF', marginBottom: 8 }}>
-                Dashboard 🔥
-              </Text>
-              <Text style={{ fontSize: 16, color: '#8B92A8' }}>
-                Gerencie seus alunos e treinos
-              </Text>
-            </View>
-
-            <View>
-              {/* Stats Card - Students */}
-              <TouchableOpacity 
-                onPress={() => router.push('/(tabs)/students')}
-                activeOpacity={0.8}
-                style={{ marginBottom: 16 }}
-              >
-                <LinearGradient
-                  colors={['#00D9FF', '#00B8D9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    borderRadius: 20,
-                    padding: 24,
-                    shadowColor: '#00D9FF',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 8
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View>
-                      <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>
-                        ALUNOS ATIVOS
-                      </Text>
-                      <Text style={{ color: '#FFFFFF', fontSize: 48, fontWeight: '800' }}>
-                        0
-                      </Text>
-                    </View>
-                    <View style={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                      padding: 16, 
-                      borderRadius: 20 
-                    }}>
-                      <Ionicons name="people" size={40} color="white" />
-                    </View>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {/* Stats Card - Workouts */}
-              <TouchableOpacity 
-                onPress={() => router.push('/(tabs)/workouts')}
-                activeOpacity={0.8}
-                style={{ marginBottom: 24 }}
-              >
-                <LinearGradient
-                  colors={['#00FF88', '#00CC6E']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    borderRadius: 20,
-                    padding: 24,
-                    shadowColor: '#00FF88',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 8
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View>
-                      <Text style={{ color: 'rgba(10, 14, 26, 0.8)', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>
-                        TREINOS CRIADOS
-                      </Text>
-                      <Text style={{ color: '#0A0E1A', fontSize: 48, fontWeight: '800' }}>
-                        0
-                      </Text>
-                    </View>
-                    <View style={{ 
-                      backgroundColor: 'rgba(10, 14, 26, 0.2)', 
-                      padding: 16, 
-                      borderRadius: 20 
-                    }}>
-                      <Ionicons name="barbell" size={40} color="#0A0E1A" />
-                    </View>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {/* Quick Action */}
-              <TouchableOpacity 
-                onPress={() => router.push('/(tabs)/students')}
-                activeOpacity={0.8}
-              >
-                <View style={{
-                  backgroundColor: '#141B2D',
-                  borderWidth: 2,
-                  borderColor: '#FF6B35',
-                  borderRadius: 20,
-                  padding: 20,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Ionicons name="add-circle" size={28} color="#FF6B35" />
-                  <Text style={{ color: '#FF6B35', fontSize: 18, fontWeight: '700', marginLeft: 12 }}>
-                    Adicionar Novo Aluno
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+      <ScreenLayout>
+        <View className="p-6">
+          <View className="mb-8">
+            <Text className="text-4xl font-bold text-foreground mb-2 font-display">
+              Dashboard 🔥
+            </Text>
+            <Text className="text-base text-muted-foreground font-sans">
+              Gerencie seus alunos e treinos
+            </Text>
           </View>
-        </SafeAreaView>
-      </View>
+
+          <View>
+            {/* Stats Card - Students */}
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/students')}
+              activeOpacity={0.8}
+              className="mb-4"
+            >
+              <LinearGradient
+                colors={['#00D9FF', '#00B8D9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-2xl p-6 shadow-lg shadow-secondary/30"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-white/80 text-xs font-bold tracking-widest mb-2 font-sans">
+                      ALUNOS ATIVOS
+                    </Text>
+                    <Text className="text-white text-5xl font-bold font-display">
+                      0
+                    </Text>
+                  </View>
+                  <View className="bg-white/20 p-4 rounded-2xl">
+                    <Ionicons name="people" size={40} color="white" />
+                  </View>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Stats Card - Workouts */}
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/workouts')}
+              activeOpacity={0.8}
+              className="mb-6"
+            >
+              <LinearGradient
+                colors={['#CCFF00', '#99CC00']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-2xl p-6 shadow-lg shadow-primary/30"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-black/60 text-xs font-bold tracking-widest mb-2 font-sans">
+                      TREINOS CRIADOS
+                    </Text>
+                    <Text className="text-black text-5xl font-bold font-display">
+                      0
+                    </Text>
+                  </View>
+                  <View className="bg-black/10 p-4 rounded-2xl">
+                    <Ionicons name="barbell" size={40} color="#000000" />
+                  </View>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Quick Action */}
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/students')}
+              activeOpacity={0.8}
+            >
+              <View className="bg-surface border-2 border-primary rounded-2xl p-5 flex-row items-center justify-center">
+                <Ionicons name="add-circle" size={28} color="#CCFF00" />
+                <Text className="text-primary text-lg font-bold ml-3 font-display">
+                  Adicionar Novo Aluno
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScreenLayout>
     );
   }
 
   // Student Dashboard (Gamified)
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#FF6B35" />
-          }
-        >
-          {/* Header */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <View>
-              <Text style={{ color: '#8B92A8', fontSize: 16, marginBottom: 4 }}>Olá,</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '800' }}>
-                {profile?.full_name?.split(' ')[0] || 'Aluno'}! 👋
-              </Text>
-            </View>
-            <StreakCounter streak={streak?.current_streak || 0} />
-          </View>
-
-          {/* Daily Progress Section */}
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 16 }}>
-              HOJE
-            </Text>
-            <View style={{ gap: 12 }}>
-              <ProgressCard
-                title="Dieta"
-                current={dailyGoal?.meals_completed || 0}
-                target={dailyGoal?.meals_target || 4}
-                icon="restaurant"
-                color="success"
-                unit="ref."
-              />
-              <ProgressCard
-                title="Treino"
-                current={dailyGoal?.workout_completed || 0}
-                target={dailyGoal?.workout_target || 1}
-                icon="barbell"
-                color="warning"
-                unit="treino"
-              />
-            </View>
-          </View>
-
-          {/* Weekly Goals Section */}
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 16 }}>
-              METAS DA SEMANA
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <StatCard
-                  label="Refeições"
-                  value="85%"
-                  trend="up"
-                  change="+5%"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <StatCard
-                  label="Treinos"
-                  value="4/5"
-                  trend="neutral"
-                  change="0%"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Recent Achievements */}
+    <ScreenLayout>
+      <ScrollView
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#CCFF00" />
+        }
+      >
+        {/* Header */}
+        <View className="flex-row justify-between items-center mb-6">
           <View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
-                CONQUISTAS RECENTES
-              </Text>
-              <TouchableOpacity>
-                <Text style={{ color: '#FF6B35', fontSize: 14, fontWeight: '600' }}>Ver todas</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-              {achievements.length > 0 ? (
-                achievements.map((achievement) => (
-                  <AchievementBadge
-                    key={achievement.id}
-                    title={achievement.title}
-                    subtitle={new Date(achievement.earned_at).toLocaleDateString()}
-                    icon={achievement.icon}
-                    earned={true}
-                  />
-                ))
-              ) : (
-                // Placeholder achievements
-                <>
-                  <AchievementBadge
-                    title="Início"
-                    subtitle="Jornada"
-                    icon="🚀"
-                    earned={true}
-                  />
-                  <AchievementBadge
-                    title="7 Dias"
-                    subtitle="Sequência"
-                    icon="🔥"
-                    earned={false}
-                  />
-                  <AchievementBadge
-                    title="Foco"
-                    subtitle="Total"
-                    icon="🎯"
-                    earned={false}
-                  />
-                </>
-              )}
-            </ScrollView>
+            <Text className="text-muted-foreground text-base mb-1 font-sans">Olá,</Text>
+            <Text className="text-foreground text-2xl font-bold font-display">
+              {profile?.full_name?.split(' ')[0] || 'Aluno'}! 👋
+            </Text>
           </View>
+          <StreakCounter streak={streak?.current_streak || 0} />
+        </View>
 
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+        {/* Daily Progress Section */}
+        <View className="mb-8">
+          <Text className="text-foreground text-lg font-bold mb-4 font-display">
+            HOJE
+          </Text>
+          <View className="gap-y-3">
+            <ProgressCard
+              title="Dieta"
+              current={dailyGoal?.meals_completed || 0}
+              target={dailyGoal?.meals_target || 4}
+              icon="restaurant"
+              color="success"
+              unit="ref."
+            />
+            <ProgressCard
+              title="Treino"
+              current={dailyGoal?.workout_completed || 0}
+              target={dailyGoal?.workout_target || 1}
+              icon="barbell"
+              color="warning"
+              unit="treino"
+            />
+          </View>
+        </View>
+
+        {/* Weekly Goals Section */}
+        <View className="mb-8">
+          <Text className="text-foreground text-lg font-bold mb-4 font-display">
+            METAS DA SEMANA
+          </Text>
+          <View className="flex-row gap-x-3">
+            <View className="flex-1">
+              <StatCard
+                label="Refeições"
+                value="85%"
+                trend="up"
+                change="+5%"
+              />
+            </View>
+            <View className="flex-1">
+              <StatCard
+                label="Treinos"
+                value="4/5"
+                trend="neutral"
+                change="0%"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Achievements */}
+        <View>
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-foreground text-lg font-bold font-display">
+              CONQUISTAS RECENTES
+            </Text>
+            <TouchableOpacity>
+              <Text className="text-primary text-sm font-semibold font-sans">Ver todas</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+            {achievements.length > 0 ? (
+              achievements.map((achievement) => (
+                <AchievementBadge
+                  key={achievement.id}
+                  title={achievement.title}
+                  subtitle={new Date(achievement.earned_at).toLocaleDateString()}
+                  icon={achievement.icon}
+                  earned={true}
+                />
+              ))
+            ) : (
+              // Placeholder achievements
+              <>
+                <AchievementBadge
+                  title="Início"
+                  subtitle="Jornada"
+                  icon="🚀"
+                  earned={true}
+                />
+                <AchievementBadge
+                  title="7 Dias"
+                  subtitle="Sequência"
+                  icon="🔥"
+                  earned={false}
+                />
+                <AchievementBadge
+                  title="Foco"
+                  subtitle="Total"
+                  icon="🎯"
+                  earned={false}
+                />
+              </>
+            )}
+          </ScrollView>
+        </View>
+
+      </ScrollView>
+    </ScreenLayout>
   );
 }
