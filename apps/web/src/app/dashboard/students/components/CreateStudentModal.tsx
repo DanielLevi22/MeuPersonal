@@ -1,6 +1,6 @@
 'use client';
 
-import { useAssociateStudent, useCreateStudent, useFindStudentByCode, useProfessionalServices } from '@/shared/hooks/useStudents';
+import { useAssociateStudent, useCheckStudentRelationship, useCreateStudent, useFindStudentByCode, useProfessionalServices, useTransferStudent } from '@/shared/hooks/useStudents';
 import { useEffect, useState } from 'react';
 
 interface CreateStudentModalProps {
@@ -21,10 +21,11 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
   const createStudent = useCreateStudent();
   const associateStudent = useAssociateStudent();
   const findStudent = useFindStudentByCode();
-  const { data: fetchedServices = [] } = useProfessionalServices();
+  const checkRelationship = useCheckStudentRelationship();
+  const transferStudent = useTransferStudent();
+  const { data: fetchedServices = [], isLoading: isLoadingServices } = useProfessionalServices();
   
-  // Fallback for development/testing if no services configured
-  const availableServices = fetchedServices.length > 0 ? fetchedServices : ['training', 'nutrition'];
+  const availableServices = fetchedServices;
 
   // Auto-select service if only one is available
   useEffect(() => {
@@ -34,6 +35,29 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
   }, [availableServices, selectedServices.length]);
 
   if (!isOpen) return null;
+
+  if (isLoadingServices) {
+    return null; // Or a loading spinner
+  }
+
+  if (availableServices.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-xl text-center">
+          <h3 className="text-xl font-bold text-foreground mb-2">Configure seus Serviços</h3>
+          <p className="text-muted-foreground mb-6">
+            Para adicionar alunos, você precisa primeiro configurar quais serviços você oferece (ex: Personal Trainer, Nutricionista) no seu perfil.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Entendi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSearchCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,14 +103,47 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
     }
 
     try {
-      await associateStudent.mutateAsync({ 
-        studentId: existingProfile.id, 
-        services: selectedServices,
-        isPending: isPendingProfile 
-      });
+      // Check for conflicts for each selected service
+      for (const service of selectedServices) {
+        const conflict = await checkRelationship.mutateAsync({ 
+          studentId: existingProfile.id, 
+          service 
+        });
+
+        if (conflict) {
+          // @ts-ignore - Supabase types might return array or object depending on generation
+          const professionalName = Array.isArray(conflict.profiles) ? conflict.profiles[0]?.full_name : conflict.profiles?.full_name;
+          
+          const confirmTransfer = window.confirm(
+            `O aluno já possui um profissional (${professionalName}) para ${serviceLabels[service]}. Deseja solicitar a transferência?`
+          );
+
+          if (confirmTransfer) {
+            await transferStudent.mutateAsync({
+              studentId: existingProfile.id,
+              currentProfessionalId: conflict.professional_id,
+              service
+            });
+            alert(`Solicitação de transferência enviada para ${serviceLabels[service]}!`);
+          }
+          // If rejected, we just skip this service or abort? 
+          // For simplicity, let's continue to next service or finish.
+          // But we shouldn't call associateStudent for this service if there's a conflict.
+          continue; 
+        }
+
+        // If no conflict, associate directly
+        await associateStudent.mutateAsync({ 
+          studentId: existingProfile.id, 
+          services: [service], // Associate one by one to handle mixed states
+          isPending: isPendingProfile 
+        });
+      }
+      
       handleClose();
     } catch (error) {
-      console.error('Error associating student:', error);
+      console.error('Error associating/transferring student:', error);
+      alert('Erro ao processar associação.');
     }
   };
 

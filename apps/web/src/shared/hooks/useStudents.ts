@@ -128,12 +128,118 @@ export function useFindStudentByCode() {
 
       if (error) {
         if (error.code === 'PGRST116') { // Not found
+          // Try to find in active profiles too
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .eq('invite_code', code.toUpperCase()) // Assuming profiles also have invite_code now? 
+            // Actually, the migration unified logic might not have added invite_code to profiles explicitly if not there.
+            // But let's assume we search students table which might be enough if we are looking for "access code".
+            // If the user is already a profile, they might not be in 'students' table if they were migrated?
+            // The migration 20241125_unify_invite_logic.sql kept the student record but didn't clear invite_code.
+            // So querying 'students' table should work for both pending and converted students if the record persists.
+            // But wait, if they are converted, does the student record stay?
+            // The migration logic I wrote: "We do NOT clear the invite_code...".
+            // So yes, the record in 'students' table should persist as a lookup.
           return null;
         }
         throw error;
       }
+      
+      // Check for existing relationships for this student
+      // We need to know if we can associate or need to transfer.
+      // But this hook just finds the student. The UI handles the check.
       return data;
     },
+  });
+}
+
+export function useCheckStudentRelationship() {
+  return useMutation({
+    mutationFn: async ({ studentId, service }: { studentId: string; service: string }) => {
+       const { data, error } = await supabase
+        .from('client_professional_relationships')
+        .select('professional_id, profiles(full_name)')
+        .eq('client_id', studentId) // Check active relationships
+        .eq('service_category', service)
+        .eq('relationship_status', 'active')
+        .single();
+        
+       if (error && error.code !== 'PGRST116') throw error;
+       
+       return data; // Returns { professional_id, profiles: { full_name } } if exists
+    }
+  });
+}
+
+export function useTransferStudent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, currentProfessionalId, service }: { studentId: string; currentProfessionalId: string; service: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Unauthorized');
+
+      const { error } = await supabase
+        .from('relationship_transfers')
+        .insert({
+          student_id: studentId,
+          from_professional_id: currentProfessionalId,
+          to_professional_id: user.id,
+          service_category: service,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    }
+  });
+}
+
+export function useTransferRequests() {
+  return useQuery({
+    queryKey: ['transfer-requests'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('relationship_transfers')
+        .select(`
+          id,
+          service_category,
+          created_at,
+          profiles:student_id (full_name),
+          requester:to_professional_id (full_name)
+        `)
+        .eq('from_professional_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      return data;
+    }
+  });
+}
+
+export function useRespondToTransfer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ transferId, approve }: { transferId: string; approve: boolean }) => {
+      if (approve) {
+        const { error } = await supabase.rpc('approve_transfer_request', { p_transfer_id: transferId });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('relationship_transfers')
+          .update({ status: 'rejected' })
+          .eq('id', transferId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transfer-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    }
   });
 }
 

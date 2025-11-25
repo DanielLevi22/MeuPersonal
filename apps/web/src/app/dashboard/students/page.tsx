@@ -4,6 +4,7 @@ import { useStudents } from '@/shared/hooks/useStudents';
 import Link from 'next/link';
 import { useState } from 'react';
 import { CreateStudentModal } from './components/CreateStudentModal';
+import { TransferRequestsList } from './components/TransferRequestsList';
 
 export default function StudentsPage() {
   const { data: students = [], isLoading } = useStudents();
@@ -12,7 +13,7 @@ export default function StudentsPage() {
 
   const filteredStudents = students.filter(student =>
     student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+    student.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -41,6 +42,9 @@ export default function StudentsPage() {
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
       />
+
+      {/* Transfer Requests */}
+      <TransferRequestsList />
 
       {/* Search and Filter */}
       <div className="relative">
@@ -90,7 +94,7 @@ export default function StudentsPage() {
                 {student.full_name}
               </h3>
               <p className="text-sm text-muted-foreground mb-4 truncate">
-                {student.email}
+                {student.email || 'Sem email'}
               </p>
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-white/5 pt-4">

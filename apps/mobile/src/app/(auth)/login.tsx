@@ -1,7 +1,8 @@
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -20,6 +21,32 @@ export default function LoginScreen() {
 
     if (!result.success) {
       Alert.alert('Erro no Login', result.error || 'Erro desconhecido');
+    } else {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Check account status
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('account_status')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.account_status === 'pending') {
+          await supabase.auth.signOut();
+          Alert.alert(
+            'Aguardando Aprovação',
+            'Sua conta foi criada com sucesso e está em análise. Você receberá um aviso assim que seu acesso for liberado.'
+          );
+        } else if (profile?.account_status === 'rejected' || profile?.account_status === 'suspended') {
+          await supabase.auth.signOut();
+          Alert.alert(
+            'Acesso Negado',
+            'Sua conta foi suspensa ou rejeitada. Entre em contato com o suporte.'
+          );
+        }
+      }
     }
     setLoading(false);
   }
