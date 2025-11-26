@@ -13,20 +13,18 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "clean": "turbo run clean",
-    "mobile:dev": "pnpm --filter @meupersonal/mobile dev",
-    "mobile:android": "pnpm --filter @meupersonal/mobile android",
-    "mobile:ios": "pnpm --filter @meupersonal/mobile ios",
-    "web:dev": "pnpm --filter @meupersonal/web dev",
-    "web:build": "pnpm --filter @meupersonal/web build"
+    "mobile:dev": "npm run dev --workspace=@meupersonal/mobile",
+    "mobile:android": "npm run android --workspace=@meupersonal/mobile",
+    "mobile:ios": "npm run ios --workspace=@meupersonal/mobile",
+    "web:dev": "npm run dev --workspace=@meupersonal/web",
+    "web:build": "npm run build --workspace=@meupersonal/web"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "turbo": "^2.3.0",
     "typescript": "~5.9.2"
   },
-  "packageManager": "pnpm@9.0.0",
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=18.0.0"
   }
 }

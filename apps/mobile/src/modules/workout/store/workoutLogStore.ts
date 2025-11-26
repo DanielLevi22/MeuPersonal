@@ -1,13 +1,31 @@
+import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 
-interface WorkoutLog {
+export interface WorkoutLog {
   id: string;
   student_id: string;
   workout_id: string;
   completed_at: string;
   feedback: string | null;
   created_at: string;
+}
+
+export interface WorkoutSession {
+  id: string;
+  workout_id: string;
+  student_id: string;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface ExerciseLog {
+  id: string;
+  workout_session_id: string;
+  workout_item_id: string;
+  sets_completed: number;
+  reps_completed: string;
+  weight_used: string;
+  completed: boolean;
 }
 
 interface WorkoutLogState {

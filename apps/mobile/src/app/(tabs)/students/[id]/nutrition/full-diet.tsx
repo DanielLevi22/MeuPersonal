@@ -1,7 +1,7 @@
-import { DayOptionsModal } from '@/components/nutrition/DayOptionsModal';
-import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
-import { MealCard } from '@/components/nutrition/MealCard';
-import { Food, useNutritionStore } from '@/store/nutritionStore';
+import { DayOptionsModal } from '@/modules/nutrition/components/DayOptionsModal';
+import { FoodSearchModal } from '@/modules/nutrition/components/FoodSearchModal';
+import { MealCard } from '@/modules/nutrition/components/MealCard';
+import { Food, useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';

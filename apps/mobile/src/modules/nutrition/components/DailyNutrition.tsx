@@ -1,5 +1,4 @@
 import { useAuthStore } from '@/auth';
-import { useNutritionStore } from '@/nutrition';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo } from 'react';
 import {
@@ -9,6 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useNutritionStore } from '../store/nutritionStore';
 
 export function DailyNutrition() {
   const { user } = useAuthStore();

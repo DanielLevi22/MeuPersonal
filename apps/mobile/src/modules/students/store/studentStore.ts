@@ -2,7 +2,7 @@ import { supabase } from '@meupersonal/supabase';
 import { Alert } from 'react-native';
 import { create } from 'zustand';
 
-interface Student {
+export interface Student {
   id: string;
   full_name: string;
   email: string;
@@ -14,6 +14,37 @@ interface Student {
   height?: string;
   notes?: string;
   assessment?: any;
+}
+
+export interface PhysicalAssessment {
+  id: string;
+  student_id: string;
+  personal_id: string;
+  created_at: string;
+  weight: number | null;
+  height: number | null;
+  notes: string | null;
+  neck: number | null;
+  shoulder: number | null;
+  chest: number | null;
+  arm_right_relaxed: number | null;
+  arm_left_relaxed: number | null;
+  arm_right_contracted: number | null;
+  arm_left_contracted: number | null;
+  forearm: number | null;
+  waist: number | null;
+  abdomen: number | null;
+  hips: number | null;
+  thigh_proximal: number | null;
+  thigh_distal: number | null;
+  calf: number | null;
+  skinfold_chest: number | null;
+  skinfold_abdominal: number | null;
+  skinfold_thigh: number | null;
+  skinfold_triceps: number | null;
+  skinfold_suprailiac: number | null;
+  skinfold_subscapular: number | null;
+  skinfold_midaxillary: number | null;
 }
 
 interface StudentState {

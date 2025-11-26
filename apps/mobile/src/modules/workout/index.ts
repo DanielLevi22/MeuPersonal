@@ -15,5 +15,5 @@ export { StudentAssignmentModal } from './components/StudentAssignmentModal';
 
 // Types (re-export from stores for now)
 export type { ExerciseLog, WorkoutSession } from './store/workoutLogStore';
-export type { Exercise, Workout, WorkoutItem } from './store/workoutStore';
+export type { Exercise, SelectedExercise, Workout, WorkoutItem } from './store/workoutStore';
 

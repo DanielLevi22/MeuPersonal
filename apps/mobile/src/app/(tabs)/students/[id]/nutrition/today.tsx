@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/store/authStore';
-import { useNutritionStore } from '@/store/nutritionStore';
+import { useAuthStore } from '@/auth';
+import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';

@@ -1,4 +1,4 @@
-import { useStudentStore } from '@/store/studentStore';
+import { useStudentStore } from '@/modules/students/store/studentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';

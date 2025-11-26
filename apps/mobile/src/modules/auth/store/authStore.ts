@@ -1,14 +1,14 @@
 import {
-    AccountType,
-    AppAbility,
-    defineAbilitiesFor,
-    getUserContextJWT
+  AccountType,
+  AppAbility,
+  defineAbilitiesFor,
+  getUserContextJWT
 } from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 
-interface AuthState {
+export interface AuthState {
   session: Session | null;
   user: User | null;
   accountType: AccountType | null;
@@ -85,9 +85,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     
     // CRITICAL: Clear all stores to prevent data leakage between users
     // Import stores dynamically to avoid circular dependencies
-    const { useStudentStore } = await import('./studentStore');
-    const { useNutritionStore } = await import('./nutritionStore');
-    const { useWorkoutStore } = await import('./workoutStore');
+    const { useStudentStore } = await import('../../students/store/studentStore');
+    const { useNutritionStore } = await import('../../nutrition/store/nutritionStore');
+    const { useWorkoutStore } = await import('../../workout/store/workoutStore');
     
     useStudentStore.getState().reset();
     useNutritionStore.getState().reset();

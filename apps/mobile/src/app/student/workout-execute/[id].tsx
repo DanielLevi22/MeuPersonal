@@ -1,10 +1,10 @@
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { LiveWorkoutOverlay } from '@/components/workout/LiveWorkoutOverlay';
-import { useWorkoutTimer } from '@/hooks/useWorkoutTimer';
 import { schedulePostWorkoutReminder } from '@/services/notificationService';
-import { useAuthStore } from '@/store/authStore';
+import { useWorkoutTimer } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';

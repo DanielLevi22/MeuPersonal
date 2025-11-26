@@ -55,6 +55,14 @@
         {
           "rationaleActivityName": "com.anonymous.MeuPersonal.RationaleActivity"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
       ]
     ],
     "experiments": {

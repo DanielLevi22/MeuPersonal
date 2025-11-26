@@ -1,6 +1,6 @@
-import { StudentAssignmentModal } from '@/components/StudentAssignmentModal';
+import { useAuthStore } from '@/auth';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
+import { StudentAssignmentModal } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -64,7 +64,7 @@ export default function WorkoutAssignmentsScreen() {
       if (studentsError) throw studentsError;
 
       // Process Assignments
-      const allAssigned = [];
+      const allAssigned: any[] = [];
       const seenIds = new Set();
 
       // Legacy assignment

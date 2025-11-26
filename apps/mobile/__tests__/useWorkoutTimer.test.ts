@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useWorkoutTimer } from '../src/hooks/useWorkoutTimer';
+import { useWorkoutTimer } from '../src/modules/workout/hooks/useWorkoutTimer';
 
 // Mock Expo Speech
 vi.mock('expo-speech', () => ({

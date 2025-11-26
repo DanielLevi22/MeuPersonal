@@ -5,23 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export interface Exercise {
-  id: string;
-  name: string;
-  muscle_group: string;
-  video_url?: string | null;
-}
-
-export interface SelectedExercise {
-  id: string;
-  name: string;
-  muscle_group: string;
-  sets: number;
-  reps: number;
-  weight: string;
-  rest_seconds: number;
-  video_url?: string;
-}
+import { Exercise, SelectedExercise } from '../store/workoutStore';
 
 interface Props {
   visible: boolean;
@@ -69,7 +53,7 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
       const result: SelectedExercise = {
         id: exercise.id,
         name: exercise.name,
-        muscle_group: exercise.muscle_group,
+        muscle_group: exercise.muscle_group || '',
         sets: setsNum,
         reps: repsNum,
         weight: weight,

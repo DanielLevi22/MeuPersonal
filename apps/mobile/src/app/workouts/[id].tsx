@@ -1,9 +1,9 @@
-import { ExerciseConfigModal } from '@/components/ExerciseConfigModal';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
+import { useAuthStore } from '@/modules/auth';
+import { ExerciseConfigModal, useWorkoutStore } from '@/modules/workout';
+import type { SelectedExercise } from '@/modules/workout/store/workoutStore';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';

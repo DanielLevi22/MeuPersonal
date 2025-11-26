@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAuthStore } from '../src/store/authStore';
+import { useAuthStore } from '../src/modules/auth/store/authStore';
 
 // Mock Supabase
 vi.mock('@meupersonal/supabase', () => ({

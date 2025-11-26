@@ -14,7 +14,7 @@ interface RestTimerProps {
 export function RestTimer({ restSeconds, onComplete, autoStart = false }: RestTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState(restSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<any>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
 
   // Load alarm sound

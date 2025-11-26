@@ -1,6 +1,6 @@
+import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications, scheduleMealNotifications } from '@/services/notificationService';
 import type {
-    DailyLog,
     DietMeal,
     DietMealItem,
     DietPlan,
@@ -8,7 +8,7 @@ import type {
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
-import { useAuthStore } from '@/auth';
+export type { Food };
 
 interface NutritionStore {
   // Foods

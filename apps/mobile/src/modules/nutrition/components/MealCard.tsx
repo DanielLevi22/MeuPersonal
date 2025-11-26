@@ -1,6 +1,5 @@
-import { DietMeal, DietMealItem } from '@/nutrition';
-import { calculateFoodMacros } from '@/nutrition';
 import { Ionicons } from '@expo/vector-icons';
+import { DietMeal, DietMealItem } from '@meupersonal/core';
 import { useState } from 'react';
 import {
   Alert,
@@ -9,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { calculateFoodMacros } from '../utils/nutrition';
 import { EditFoodModal } from './EditFoodModal';
 import { TimePickerModal } from './TimePickerModal';
 

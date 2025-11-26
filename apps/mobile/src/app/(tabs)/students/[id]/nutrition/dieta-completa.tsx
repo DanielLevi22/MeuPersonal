@@ -1,6 +1,6 @@
-import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
-import { MealCard } from '@/components/nutrition/MealCard';
-import { Food, useNutritionStore } from '@/store/nutritionStore';
+import { FoodSearchModal } from '@/modules/nutrition/components/FoodSearchModal';
+import { MealCard } from '@/modules/nutrition/components/MealCard';
+import { Food, useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -47,7 +47,9 @@ export default function DietaCompletaScreen() {
     fetchMeals,
     fetchMealItems,
     addMeal,
+    updateMeal,
     addFoodToMeal,
+    updateMealItem,
     removeFoodFromMeal,
     isLoading,
   } = useNutritionStore();
@@ -99,6 +101,14 @@ export default function DietaCompletaScreen() {
     }
   };
 
+  const handleUpdateMealTime = async (mealId: string, mealTime: string) => {
+    try {
+      await updateMeal(mealId, { meal_time: mealTime });
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar o horário.');
+    }
+  };
+
   const handleAddFoodToMeal = (mealId: string) => {
     setSelectedMealId(mealId);
     setShowFoodSearch(true);
@@ -113,6 +123,14 @@ export default function DietaCompletaScreen() {
       setSelectedMealId(null);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar o alimento.');
+    }
+  };
+
+  const handleUpdateFood = async (itemId: string, quantity: number) => {
+    try {
+      await updateMealItem(itemId, { quantity });
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar o alimento.');
     }
   };
 
@@ -280,6 +298,8 @@ export default function DietaCompletaScreen() {
                   items={mealItems[meal.id] || []}
                   onAddFood={() => handleAddFoodToMeal(meal.id)}
                   onRemoveFood={handleRemoveFood}
+                  onUpdateMealTime={handleUpdateMealTime}
+                  onUpdateFood={handleUpdateFood}
                   isEditable={true}
                 />
               );

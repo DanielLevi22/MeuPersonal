@@ -1,4 +1,4 @@
-import { useNutritionStore } from '@/store/nutritionStore';
+import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';

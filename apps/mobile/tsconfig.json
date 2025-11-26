@@ -24,7 +24,8 @@
       "@/auth": [
         "./src/modules/auth"
       ]
-    }
+    },
+    "jsx": "react-jsx"
   },
   "include": [
     "**/*.ts",

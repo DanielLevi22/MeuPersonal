@@ -1,4 +1,4 @@
-import { useStudentStore } from '@/store/studentStore';
+import { useStudentStore } from '@/modules/students/store/studentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
