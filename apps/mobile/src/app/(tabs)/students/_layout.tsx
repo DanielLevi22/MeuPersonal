@@ -1,12 +1,6 @@
-import { Stack } from 'expo-router';
+import { StudentsNavigator } from '@/modules/students';
 
 export default function StudentsLayout() {
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="create" />
-      <Stack.Screen name="invite" />
-      <Stack.Screen name="[id]" />
-    </Stack>
-  );
+  return <StudentsNavigator />;
 }
+

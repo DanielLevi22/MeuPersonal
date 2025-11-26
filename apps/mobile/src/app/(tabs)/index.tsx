@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DashboardScreen() {
-  const { user } = useAuthStore();
+  const { user, abilities } = useAuthStore();
   const { dailyGoal, weeklyGoals, streak, achievements, showConfetti, fetchDailyData, isLoading } = useGamificationStore();
   const { steps, calories, refetch: refetchHealth, loading: healthLoading } = useHealthData();
   const [profile, setProfile] = useState<any>(null);
@@ -62,7 +62,7 @@ export default function DashboardScreen() {
   }
 
   // Personal Trainer Dashboard (Legacy View)
-  if (profile?.role === 'personal') {
+  if (profile?.account_type === 'professional') {
     return (
       <ScreenLayout>
         <View className="p-6">
@@ -105,32 +105,34 @@ export default function DashboardScreen() {
             </TouchableOpacity>
 
             {/* Stats Card - Workouts */}
-            <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/workouts')}
-              activeOpacity={0.8}
-              className="mb-6"
-            >
-              <LinearGradient
-                colors={['#CCFF00', '#99CC00']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="rounded-2xl p-6 shadow-lg shadow-primary/30"
+            {abilities?.can('manage', 'Workout') && (
+              <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/workouts')}
+                activeOpacity={0.8}
+                className="mb-6"
               >
-                <View className="flex-row items-center justify-between">
-                  <View>
-                    <Text className="text-black/60 text-xs font-bold tracking-widest mb-2 font-sans">
-                      TREINOS CRIADOS
-                    </Text>
-                    <Text className="text-black text-5xl font-bold font-display">
-                      0
-                    </Text>
+                <LinearGradient
+                  colors={['#CCFF00', '#99CC00']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  className="rounded-2xl p-6 shadow-lg shadow-primary/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View>
+                      <Text className="text-black/60 text-xs font-bold tracking-widest mb-2 font-sans">
+                        TREINOS CRIADOS
+                      </Text>
+                      <Text className="text-black text-5xl font-bold font-display">
+                        0
+                      </Text>
+                    </View>
+                    <View className="bg-black/10 p-4 rounded-2xl">
+                      <Ionicons name="barbell" size={40} color="#000000" />
+                    </View>
                   </View>
-                  <View className="bg-black/10 p-4 rounded-2xl">
-                    <Ionicons name="barbell" size={40} color="#000000" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
             {/* Quick Action */}
             <TouchableOpacity 

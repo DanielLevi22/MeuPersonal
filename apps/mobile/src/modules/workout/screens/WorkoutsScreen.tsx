@@ -1,46 +1,28 @@
+import { useAuthStore } from '@/auth';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
-import { useWorkoutStore } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
+import { useWorkoutStore } from '../store/workoutStore';
 
 export default function WorkoutsScreen() {
   const { workouts, isLoading, fetchWorkouts } = useWorkoutStore();
-  const { user } = useAuthStore();
+  const { user, accountType } = useAuthStore();
   const router = useRouter();
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [studentWorkouts, setStudentWorkouts] = useState<any[]>([]);
   const [loadingStudentWorkouts, setLoadingStudentWorkouts] = useState(false);
 
-  // Fetch user role
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.id) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      
-      if (!error && data) {
-        setUserRole(data.role);
-      }
-    };
-
-    fetchUserRole();
-  }, [user]);
+  const isProfessional = accountType === 'professional';
 
   // Fetch workouts based on role
   const fetchWorkoutsData = useCallback(async () => {
-    if (!user?.id || !userRole) return;
+    if (!user?.id) return;
 
-    if (userRole === 'student') {
+    if (!isProfessional) {
       // Fetch assigned workouts for students
       setLoadingStudentWorkouts(true);
       try {
@@ -71,7 +53,7 @@ export default function WorkoutsScreen() {
       // Fetch created workouts for personal trainers
       fetchWorkouts(user.id);
     }
-  }, [user, userRole]);
+  }, [user, isProfessional]);
 
   useEffect(() => {
     fetchWorkoutsData();
@@ -83,11 +65,11 @@ export default function WorkoutsScreen() {
     }, [fetchWorkoutsData])
   );
 
-  const displayWorkouts = userRole === 'student' ? studentWorkouts : workouts;
-  const loading = userRole === 'student' ? loadingStudentWorkouts : isLoading;
+  const displayWorkouts = !isProfessional ? studentWorkouts : workouts;
+  const loading = !isProfessional ? loadingStudentWorkouts : isLoading;
 
   const renderItem = ({ item }: { item: any }) => {
-    const targetRoute = userRole === 'student' 
+    const targetRoute = !isProfessional 
       ? `/student/workout-execute/${item.id}`
       : `/workouts/${item.id}`;
 
@@ -135,7 +117,7 @@ export default function WorkoutsScreen() {
           </Text>
         </View>
         
-        {userRole === 'personal' && (
+        {isProfessional && (
           <Link href={'/workouts/create' as any} asChild>
             <TouchableOpacity activeOpacity={0.8}>
               <LinearGradient
@@ -158,15 +140,15 @@ export default function WorkoutsScreen() {
             <Ionicons name="barbell-outline" size={80} color="#71717A" />
           </View>
           <Text className="text-foreground text-2xl font-bold mb-2 text-center font-display">
-            {userRole === 'student' ? 'Nenhum treino atribuído' : 'Nenhum treino criado'}
+            {!isProfessional ? 'Nenhum treino atribuído' : 'Nenhum treino criado'}
           </Text>
           <Text className="text-muted-foreground text-center px-8 text-base mb-8 font-sans">
-            {userRole === 'student' 
+            {!isProfessional 
               ? 'Seu personal ainda não atribuiu treinos para você' 
               : 'Crie seu primeiro treino personalizado'}
           </Text>
           
-          {userRole === 'personal' && (
+          {isProfessional && (
             <Link href={'/workouts/create' as any} asChild>
               <TouchableOpacity activeOpacity={0.8}>
                 <LinearGradient

@@ -77,14 +77,14 @@ export function defineAbilitiesFor(context: UserContext): AppAbility {
     can('update', 'Profile');
 
     // Permissões baseadas em serviços oferecidos
-    if (context.services?.includes('training')) {
+    if (context.services?.includes('personal_training')) {
       can('manage', 'Workout');
       can('manage', 'Exercise');
       can('manage', 'Periodization');
       can('read', 'Diet'); // Pode VER dietas de clientes
     }
 
-    if (context.services?.includes('nutrition')) {
+    if (context.services?.includes('nutrition_consulting')) {
       can('manage', 'Diet');
       can('manage', 'Food');
       can('read', 'Workout'); // Pode VER treinos de clientes

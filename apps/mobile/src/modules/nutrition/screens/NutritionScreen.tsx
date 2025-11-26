@@ -1,6 +1,6 @@
+import { useAuthStore } from '@/auth';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
 import { useStudentStore } from '@/students';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
@@ -26,12 +26,19 @@ interface StudentWithPlan {
 
 export default function NutritionScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, abilities, accountType } = useAuthStore();
   const { students, fetchStudents } = useStudentStore();
   const [studentsWithPlans, setStudentsWithPlans] = useState<StudentWithPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [plans, setPlans] = useState<any[]>([]);
+
+  // Permission check
+  useEffect(() => {
+    if (accountType && !abilities?.can('manage', 'Diet')) {
+      router.replace('/(tabs)');
+    }
+  }, [accountType, abilities]);
 
   useEffect(() => {
     if (user?.id) {

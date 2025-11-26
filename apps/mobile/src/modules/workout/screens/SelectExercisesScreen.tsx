@@ -1,13 +1,14 @@
-import { Exercise, ExerciseConfigModal } from '@/workout';
 import { useCreateExercise } from '@/hooks/useExerciseMutations';
 import { useExercises } from '@/hooks/useExercises';
-import { SelectedExercise, useWorkoutStore } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ExerciseConfigModal } from '../components/ExerciseConfigModal';
+import type { Exercise, SelectedExercise } from '../store/workoutStore';
+import { useWorkoutStore } from '../store/workoutStore';
 
 export default function SelectExercisesScreen() {
   const { data: exercisesData = [], isLoading } = useExercises();

@@ -1,14 +1,14 @@
-import { DietMealItem } from '@/nutrition';
+import { DietMealItem } from '@/modules/nutrition/routes/index';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface EditFoodModalProps {

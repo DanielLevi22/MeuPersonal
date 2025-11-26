@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-  const { accountType } = useAuthStore();
+  const { accountType, abilities } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   // If accountType is null (loading), default to student to avoid flashing restricted tabs
@@ -50,6 +50,7 @@ export default function TabLayout() {
         name="workouts"
         options={{
           title: 'Treinos',
+          href: (isStudent || abilities?.can('manage', 'Workout')) ? '/workouts' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'barbell' : 'barbell-outline'} 
@@ -64,6 +65,7 @@ export default function TabLayout() {
         name="progress"
         options={{
           title: 'Progresso',
+          href: isStudent ? '/progress' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'stats-chart' : 'stats-chart-outline'} 
@@ -78,6 +80,7 @@ export default function TabLayout() {
         name="ranking"
         options={{
           title: 'Ranking',
+          href: isStudent ? '/ranking' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'trophy' : 'trophy-outline'} 
@@ -107,7 +110,7 @@ export default function TabLayout() {
         name="students"
         options={{
           title: 'Alunos',
-          tabBarButton: isStudent ? () => null : undefined,
+          href: (accountType === 'professional' && abilities?.can('manage', 'Workout')) ? '/students' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'people' : 'people-outline'} 
@@ -118,12 +121,12 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Personal Trainer only - Nutrition */}
+      {/* Nutritionist only */}
       <Tabs.Screen
         name="nutrition"
         options={{
           title: 'Nutrição',
-          tabBarButton: isStudent ? () => null : undefined,
+          href: (accountType === 'professional' && abilities?.can('manage', 'Diet')) ? '/nutrition' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'restaurant' : 'restaurant-outline'} 

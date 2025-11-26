@@ -10,3 +10,5 @@ export { StudentEditModal } from './components/StudentEditModal';
 // Types (re-export from store for now)
 export type { PhysicalAssessment, Student } from './store/studentStore';
 
+export * from './routes';
+

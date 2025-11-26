@@ -1,5 +1,5 @@
 
-import { Food } from '@/nutrition';
+import { Food } from '@/modules/nutrition/routes/index';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { useEffect, useMemo, useState } from 'react';

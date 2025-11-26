@@ -89,7 +89,7 @@ function RootLayoutNav() {
       if (accountType === 'professional' && accountStatus === 'pending') {
         router.replace('/(auth)/pending-approval' as any);
       } else if (accountType === 'professional') {
-        router.replace('/(professional)' as any);
+        router.replace('/(tabs)' as any);
       } else {
         router.replace('/(tabs)' as any);
       }

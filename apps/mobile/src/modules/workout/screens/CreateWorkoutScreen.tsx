@@ -1,15 +1,16 @@
-import { Exercise, ExerciseConfigModal } from '@/workout';
-import { StudentMultiSelect } from '@/components/StudentMultiSelect';
-import { supabase } from '@meupersonal/supabase';
 import { useAuthStore } from '@/auth';
+import { StudentMultiSelect } from '@/components/StudentMultiSelect';
 import { useStudentStore } from '@/students';
-import { SelectedExercise, useWorkoutStore } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ExerciseConfigModal } from '../components/ExerciseConfigModal';
+import type { Exercise, SelectedExercise } from '../store/workoutStore';
+import { useWorkoutStore } from '../store/workoutStore';
 
 export default function CreateWorkoutScreen() {
   const [title, setTitle] = useState('');
