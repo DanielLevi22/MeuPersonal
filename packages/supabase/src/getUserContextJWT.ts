@@ -33,7 +33,7 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
   let user = null;
   let userError = null;
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = 8;
   
   while (!user && attempts < maxAttempts) {
     attempts++;

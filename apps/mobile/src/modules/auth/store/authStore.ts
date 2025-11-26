@@ -32,6 +32,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
 
   initializeSession: async (session) => {
+    const state = get();
+    // Prevent multiple initializations for the same user or if already loading
+    if (state.isLoading && state.session?.user?.id === session?.user?.id) {
+      console.log('⏭️ Already initializing session for this user, skipping...');
+      return;
+    }
+
     set({ isLoading: true });
     try {
       if (!session?.user) {

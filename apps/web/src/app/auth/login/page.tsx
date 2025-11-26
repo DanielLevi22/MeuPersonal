@@ -1,6 +1,7 @@
 'use client';
 
 import { supabase } from '@meupersonal/supabase';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -145,8 +146,14 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="text-center text-xs text-muted-foreground">
-            <p>Acesso exclusivo para profissionais</p>
+          <div className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Não tem uma conta?{' '}
+              <Link href="/auth/role-selection" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                Cadastre-se
+              </Link>
+            </p>
+            <p className="text-xs text-muted-foreground">Acesso exclusivo para profissionais</p>
           </div>
         </div>
       </div>

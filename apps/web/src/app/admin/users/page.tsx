@@ -9,6 +9,7 @@ interface User {
   email: string;
   full_name: string | null;
   account_type: string;
+  account_status: string | null;
   created_at: string;
   last_login_at: string | null;
   is_super_admin: boolean;
@@ -20,6 +21,7 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
     loadUsers();
@@ -31,7 +33,7 @@ export default function UsersPage() {
 
       let query = supabase
         .from('profiles')
-        .select('id, email, full_name, account_type, created_at, last_login_at, is_super_admin')
+        .select('id, email, full_name, account_type, account_status, created_at, last_login_at, is_super_admin')
         .order('created_at', { ascending: false });
 
       const { data, error } = await query;
@@ -53,8 +55,12 @@ export default function UsersPage() {
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesType = filterType === 'all' || user.account_type === filterType;
+    
+    // Handle null status as 'active' for backward compatibility if needed, or strict check
+    const userStatus = user.account_status || 'active'; 
+    const matchesStatus = filterStatus === 'all' || userStatus === filterStatus;
 
-    return matchesSearch && matchesType;
+    return matchesSearch && matchesType && matchesStatus;
   });
 
   const getAccountTypeBadge = (accountType: string, isSuperAdmin: boolean) => {
@@ -66,6 +72,24 @@ export default function UsersPage() {
     };
 
     const badge = badges[accountType as keyof typeof badges] || { label: accountType, color: 'bg-gray-500/20 text-gray-400 border-gray-500/50' };
+
+    return (
+      <span className={`px-2 py-1 rounded-md text-xs font-medium border ${badge.color}`}>
+        {badge.label}
+      </span>
+    );
+  };
+
+  const getStatusBadge = (status: string | null) => {
+    const s = status || 'active';
+    const badges = {
+      active: { label: 'Ativo', color: 'bg-green-500/10 text-green-400 border-green-500/20' },
+      pending: { label: 'Pendente', color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+      rejected: { label: 'Rejeitado', color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+      suspended: { label: 'Suspenso', color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+    };
+
+    const badge = badges[s as keyof typeof badges] || badges.active;
 
     return (
       <span className={`px-2 py-1 rounded-md text-xs font-medium border ${badge.color}`}>
@@ -111,6 +135,19 @@ export default function UsersPage() {
             />
           </div>
 
+          {/* Status Filter */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">Todos os Status</option>
+            <option value="active">Ativo</option>
+            <option value="pending">Pendente</option>
+            <option value="rejected">Rejeitado</option>
+            <option value="suspended">Suspenso</option>
+          </select>
+
           {/* Type Filter */}
           <select
             value={filterType}
@@ -138,6 +175,7 @@ export default function UsersPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Usuário</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Tipo</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Criado em</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Último Login</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">Ações</th>
@@ -163,6 +201,9 @@ export default function UsersPage() {
                   </td>
                   <td className="px-6 py-4">
                     {getAccountTypeBadge(user.account_type, user.is_super_admin)}
+                  </td>
+                  <td className="px-6 py-4">
+                    {getStatusBadge(user.account_status)}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
                     {new Date(user.created_at).toLocaleDateString()}

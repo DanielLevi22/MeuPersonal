@@ -134,13 +134,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hide unused tabs */}
-      <Tabs.Screen
-        name="two"
-        options={{
-          href: null,
-        }}
-      />
+
     </Tabs>
   );
 }
