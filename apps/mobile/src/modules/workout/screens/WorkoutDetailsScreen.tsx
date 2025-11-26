@@ -327,6 +327,16 @@ export default function WorkoutDetailScreen() {
             <Ionicons name="chevron-forward" size={20} color="#5A6178" />
           </TouchableOpacity>
 
+          {/* Start Workout Button */}
+          <TouchableOpacity 
+            onPress={() => router.push(`/workouts/execute/${id}` as any)}
+            activeOpacity={0.8}
+            className="bg-primary p-5 rounded-2xl mb-6 flex-row items-center justify-center"
+          >
+            <Ionicons name="play-circle" size={28} color="#000" />
+            <Text className="text-black text-lg font-bold ml-3 font-display">Iniciar Treino</Text>
+          </TouchableOpacity>
+
           {/* Exercises Section */}
           <View>
             <View className="flex-row justify-between items-center mb-4">
