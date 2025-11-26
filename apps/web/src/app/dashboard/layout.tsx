@@ -86,6 +86,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               📊 Dashboard
             </a>
             
+            <a
+              href="/dashboard/chat"
+              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+            >
+              💬 Chat
+            </a>
+            
             {canManageWorkouts && (
               <>
                 <a

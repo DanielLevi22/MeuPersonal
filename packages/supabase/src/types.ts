@@ -134,6 +134,91 @@ export interface Student {
 }
 
 // ============================================================================
+// CHAT TYPES
+// ============================================================================
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  message_type: 'text' | 'image' | 'audio' | 'file';
+  media_url?: string;
+  read_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Conversation {
+  id: string;
+  personal_id: string;
+  student_id: string;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface ConversationWithDetails extends Conversation {
+  other_user?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  last_message?: ChatMessage;
+  unread_count?: number;
+}
+
+// ============================================================================
+// WORKOUT FEEDBACK TYPES
+// ============================================================================
+
+export interface WorkoutFeedback {
+  id: string;
+  workout_log_id: string;
+  student_id: string;
+  
+  // Ratings (1-5)
+  difficulty_rating?: number;
+  energy_level?: number;
+  satisfaction_rating?: number;
+  
+  // Mood
+  mood?: 'great' | 'good' | 'ok' | 'tired' | 'exhausted';
+  
+  // Comments
+  notes?: string;
+  exercises_notes?: Record<string, string>;
+  
+  // RPE (Rate of Perceived Exertion) 1-10
+  perceived_exertion?: number;
+  
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeedbackAverages {
+  avg_difficulty: number;
+  avg_energy: number;
+  avg_satisfaction: number;
+  avg_perceived_exertion: number;
+  total_feedbacks: number;
+}
+
+export interface FeedbackTrend {
+  date: string;
+  avg_difficulty: number;
+  avg_energy: number;
+  avg_satisfaction: number;
+  feedback_count: number;
+}
+
+export interface MoodDistribution {
+  mood: string;
+  count: number;
+  percentage: number;
+}
+
+// ============================================================================
 // LEGACY TYPES (for backward compatibility)
 // ============================================================================
 
