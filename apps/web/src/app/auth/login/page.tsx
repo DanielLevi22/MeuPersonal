@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@meupersonal/supabase';
+import { useAuthStore } from '@/modules/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -18,38 +18,30 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const result = await useAuthStore.getState().signIn(email, password);
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Check user profile for account type and status
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('account_type, account_status')
-          .eq('id', authData.user.id)
-          .single();
-
-        if (profile?.account_status === 'pending') {
-          await supabase.auth.signOut();
+      if (!result.success) {
+        if (result.error === 'pending_approval') {
           router.push('/auth/pending-approval');
           return;
         }
-
-        if (profile?.account_status === 'rejected' || profile?.account_status === 'suspended') {
-          await supabase.auth.signOut();
+        if (result.error === 'account_suspended') {
           setError('Sua conta foi suspensa ou rejeitada. Entre em contato com o suporte.');
           return;
         }
+        setError(result.error || 'Erro ao fazer login');
+        return;
+      }
 
-        if (profile?.account_type === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+      // Wait for auth store to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const { accountType } = useAuthStore.getState();
+      
+      if (accountType === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login');

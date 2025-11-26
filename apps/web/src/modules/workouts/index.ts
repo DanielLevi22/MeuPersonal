@@ -9,3 +9,6 @@ export { SelectExercisesModal } from './components/SelectExercisesModal';
 export { StudentMultiSelect } from './components/StudentMultiSelect';
 export { WorkoutCard } from './components/WorkoutCard';
 
+// Pages
+export { default as WorkoutsPage } from './pages/WorkoutsPage';
+

@@ -1,68 +1,54 @@
 'use client';
 
-import { supabase } from '@meupersonal/supabase';
+import { useAuth, useAuthStore } from '@/modules/auth';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-import { useProfessionalServices } from '@/shared/hooks/useStudents';
+import { useEffect } from 'react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const { data: services = [] } = useProfessionalServices();
+  const { user, accountType, abilities, services, isLoading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push('/auth/login');
-      } else {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.push('/auth/login');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
+    if (!isLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, isLoading, router]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    const { signOut } = useAuthStore.getState();
+    await signOut();
     router.push('/auth/login');
   };
 
   const serviceLabels: Record<string, string> = {
-    training: 'Personal Trainer',
+    personal_training: 'Personal Trainer',
     nutrition: 'Nutricionista',
     physiotherapy: 'Fisioterapeuta',
     psychology: 'Psicólogo'
   };
 
   const serviceColors: Record<string, string> = {
-    training: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    personal_training: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     nutrition: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
     physiotherapy: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
     psychology: 'bg-pink-500/10 text-pink-500 border-pink-500/20'
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-white">Carregando...</div>
       </div>
     );
   }
+
+  if (!user) {
+    return null;
+  }
+
+  // Check permissions for navigation items
+  const canManageWorkouts = abilities?.can('manage', 'Workout');
+  const canManageDiet = abilities?.can('manage', 'Diet');
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,36 +85,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               📊 Dashboard
             </a>
-            <a
-              href="/dashboard/periodizations"
-              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
-            >
-              📅 Periodizações
-            </a>
-            <a
-              href="/dashboard/students"
-              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
-            >
-              👥 Alunos
-            </a>
-            <a
-              href="/dashboard/workouts"
-              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
-            >
-              💪 Treinos
-            </a>
-            <a
-              href="/dashboard/nutrition"
-              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
-            >
-              📊 Nutrição
-            </a>
-            <a
-              href="/dashboard/diets"
-              className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
-            >
-              🥗 Dietas
-            </a>
+            
+            {canManageWorkouts && (
+              <>
+                <a
+                  href="/dashboard/periodizations"
+                  className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+                >
+                  📅 Periodizações
+                </a>
+                <a
+                  href="/dashboard/students"
+                  className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+                >
+                  👥 Alunos
+                </a>
+                <a
+                  href="/dashboard/workouts"
+                  className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+                >
+                  💪 Treinos
+                </a>
+              </>
+            )}
+            
+            {canManageDiet && (
+              <>
+                <a
+                  href="/dashboard/nutrition"
+                  className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+                >
+                  📊 Nutrição
+                </a>
+                <a
+                  href="/dashboard/diets"
+                  className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
+                >
+                  🥗 Dietas
+                </a>
+              </>
+            )}
           </nav>
 
           <div className="p-4 border-t border-border">
@@ -149,3 +145,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
+
