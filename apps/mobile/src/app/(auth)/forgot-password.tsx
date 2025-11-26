@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
                 <Ionicons name="lock-closed-outline" size={48} color="#CCFF00" />
               </View>
               <Text className="text-foreground text-xl font-bold mb-2 font-display">Recuperar Senha</Text>
-              <Text className="text-muted-foreground text-center text-sm font-sans">
+              <Text className="text-zinc-400 text-center text-sm font-sans">
                 Digite seu e-mail e enviaremos um link para redefinir sua senha.
               </Text>
             </View>

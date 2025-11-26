@@ -57,22 +57,23 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header with Icon */}
-        <View className="items-center mt-10 mb-12">
-          <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center mb-6 border border-primary/20">
-            <Ionicons name="barbell" size={48} color="#CCFF00" />
+        <View className="items-center mt-16 mb-12">
+          <View className="w-28 h-28 rounded-full bg-primary/15 items-center justify-center mb-8 border-2 border-primary/30 shadow-lg shadow-primary/20">
+            <Ionicons name="barbell" size={56} color="#A3E635" />
           </View>
           
-          <Text className="text-5xl font-bold text-foreground mb-3 tracking-tighter font-display">
+          <Text className="text-5xl font-extrabold text-foreground mb-4 tracking-tight">
             MeuPersonal
           </Text>
           
-          <Text className="text-base text-muted-foreground text-center px-8 leading-6 font-sans">
-            Transforme seu corpo,{'\n'}transforme sua vida 💪
+          <Text className="text-lg text-zinc-400 text-center px-4 leading-7">
+            Transforme seu corpo,{'\n'}transforme sua vida
           </Text>
+          <Text className="text-4xl mt-2">💪</Text>
         </View>
 
         {/* Login Form */}
-        <View className="mb-6 gap-y-4">
+        <View className="mb-6 gap-y-5">
           <Input
             label="E-mail"
             value={email}
@@ -94,12 +95,13 @@ export default function LoginScreen() {
             label="Entrar"
             onPress={handleLogin}
             isLoading={loading}
-            className="mt-2"
+            className="mt-3"
+            size="lg"
           />
 
           <Link href={'/(auth)/forgot-password' as any} asChild>
-            <TouchableOpacity className="mt-4 items-center">
-              <Text className="text-secondary text-base font-semibold">
+            <TouchableOpacity className="items-center py-2">
+              <Text className="text-cyan-400 text-base font-semibold">
                 Esqueci minha senha
               </Text>
             </TouchableOpacity>
@@ -108,25 +110,38 @@ export default function LoginScreen() {
 
         {/* Divider */}
         <View className="flex-row items-center my-8">
-          <View className="flex-1 h-[1px] bg-border" />
-          <Text className="text-muted-foreground px-4 text-sm">ou</Text>
-          <View className="flex-1 h-[1px] bg-border" />
+          <View className="flex-1 h-[1px] bg-white/10" />
+          <Text className="text-zinc-500 px-4 text-sm font-medium">ou</Text>
+          <View className="flex-1 h-[1px] bg-white/10" />
         </View>
+
 
         {/* Student Login Button */}
         <View className="mb-8">
-          <Button
-            label="Sou Aluno (Entrar com Código)"
+          <TouchableOpacity
             onPress={() => router.push('/(auth)/student-login' as any)}
-            variant="outline"
-            icon={<Ionicons name="school-outline" size={20} color="#CCFF00" />}
-            className="border-secondary/30 bg-secondary/5"
-          />
+            activeOpacity={0.7}
+            className="bg-cyan-400/10 border-2 border-cyan-400/40 rounded-2xl p-4 flex-row items-center justify-center shadow-lg shadow-cyan-400/10"
+          >
+            <View className="bg-cyan-400/20 p-3 rounded-xl mr-3 border border-cyan-400/30">
+              <Ionicons name="school" size={28} color="#22D3EE" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-cyan-400 text-base font-bold">
+                Sou Aluno
+              </Text>
+              <Text className="text-cyan-400/70 text-xs font-medium mt-0.5">
+                Entrar com Código
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#22D3EE" />
+          </TouchableOpacity>
         </View>
+
 
         {/* Register Link */}
         <View className="flex-row justify-center items-center mt-auto mb-8">
-          <Text className="text-muted-foreground text-base">Personal Trainer? </Text>
+          <Text className="text-zinc-400 text-base">Personal Trainer? </Text>
           <Link href={'/(auth)/register' as any} asChild>
             <TouchableOpacity>
               <Text className="text-primary text-base font-bold">

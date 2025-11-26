@@ -3,7 +3,6 @@ import { DietMeal, DietMealItem } from '@meupersonal/core';
 import { useState } from 'react';
 import {
   Alert,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -80,74 +79,78 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
   const mealLabel = meal.name || MEAL_TYPE_LABELS[meal.meal_type] || meal.meal_type;
 
   return (
-    <View style={styles.container}>
+    <View className="bg-card rounded-xl mb-3 border-2 border-border overflow-hidden">
       {/* Header */}
       <TouchableOpacity
-        style={styles.header}
+        className="flex-row justify-between items-center p-4"
         onPress={() => setIsExpanded(!isExpanded)}
         activeOpacity={0.7}
       >
-        <View style={styles.headerLeft}>
+        <View className="flex-row items-center flex-1">
           <Ionicons
             name={isExpanded ? 'chevron-down' : 'chevron-forward'}
             size={20}
-            color="#FFFFFF"
+            color="#FAFAFA" 
           />
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.mealName}>{mealLabel}</Text>
+          <View className="ml-2 flex-1">
+            <Text className="text-base font-bold text-foreground">{mealLabel}</Text>
             {meal.meal_time ? (
-              <Text style={styles.mealTime}>
-                <Ionicons name="time-outline" size={12} color="#8B92A8" /> {meal.meal_time}
+              <Text className="text-xs text-muted-foreground mt-0.5">
+                <Ionicons name="time-outline" size={12} color="#A1A1AA" /> {meal.meal_time}
               </Text>
             ) : (
-              <Text style={[styles.mealTime, { color: '#FF6B35' }]}>
-                <Ionicons name="alert-circle-outline" size={12} color="#FF6B35" /> Definir Horário
+              <Text className="text-xs text-orange-500 mt-0.5">
+                <Ionicons name="alert-circle-outline" size={12} color="#F97316" /> Definir Horário
               </Text>
             )}
           </View>
         </View>
-        <View style={styles.headerRight}>
-          <Text style={styles.calories}>{totalMacros.calories.toFixed(0)} kcal</Text>
-          <Text style={styles.itemCount}>{items.length} {items.length === 1 ? 'item' : 'itens'}</Text>
+        <View className="items-end">
+          <Text className="text-base font-bold text-primary">{totalMacros.calories.toFixed(0)} kcal</Text>
+          <Text className="text-xs text-muted-foreground mt-0.5">{items.length} {items.length === 1 ? 'item' : 'itens'}</Text>
         </View>
       </TouchableOpacity>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <View style={styles.content}>
+        <View className="px-4 pb-4">
           {/* Time Selector */}
           {isEditable && (
             <TouchableOpacity
-              style={styles.timeSelector}
+              className="flex-row items-center bg-muted/30 rounded-xl p-3.5 mb-3 border-2 border-border gap-2.5"
               onPress={() => setShowTimePicker(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="time" size={20} color="#00FF88" />
-              <Text style={styles.timeSelectorLabel}>
+              <Ionicons name="time" size={20} color="#CCFF00" />
+              <Text className="flex-1 text-sm font-semibold text-foreground">
                 {meal.meal_time ? `Horário: ${meal.meal_time}` : 'Definir Horário'}
               </Text>
-              {!meal.meal_time && <Text style={styles.requiredBadge}>OBRIGATÓRIO</Text>}
-              <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+              {!meal.meal_time && (
+                <Text className="text-[10px] font-bold text-orange-500 bg-orange-500/15 px-2 py-1 rounded-md">
+                  OBRIGATÓRIO
+                </Text>
+              )}
+              <Ionicons name="chevron-forward" size={20} color="#71717A" />
             </TouchableOpacity>
           )}
 
           {/* Macros Summary */}
-          <View style={styles.macrosSummary}>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroLabel}>Proteína</Text>
-              <Text style={[styles.macroValue, { color: '#00ff9d' }]}>
+          <View className="flex-row justify-around bg-muted/30 rounded-lg p-3 mb-3">
+            <View className="items-center">
+              <Text className="text-[11px] text-muted-foreground mb-1">Proteína</Text>
+              <Text className="text-sm font-bold text-[#00ff9d]">
                 {totalMacros.protein.toFixed(1)}g
               </Text>
             </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroLabel}>Carbs</Text>
-              <Text style={[styles.macroValue, { color: '#7f5aff' }]}>
+            <View className="items-center">
+              <Text className="text-[11px] text-muted-foreground mb-1">Carbs</Text>
+              <Text className="text-sm font-bold text-[#7f5aff]">
                 {totalMacros.carbs.toFixed(1)}g
               </Text>
             </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroLabel}>Gordura</Text>
-              <Text style={[styles.macroValue, { color: '#ffde59' }]}>
+            <View className="items-center">
+              <Text className="text-[11px] text-muted-foreground mb-1">Gordura</Text>
+              <Text className="text-sm font-bold text-[#ffde59]">
                 {totalMacros.fat.toFixed(1)}g
               </Text>
             </View>
@@ -155,30 +158,30 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
 
           {/* Food Items */}
           {items.map((item, index) => (
-            <View key={item.id} style={styles.foodItem}>
+            <View key={item.id} className="flex-row justify-between items-center py-2 border-b border-border">
               <TouchableOpacity 
-                style={styles.foodInfo}
+                className="flex-1"
                 onPress={() => isEditable && setEditingItem(item)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.foodName}>
+                <Text className="text-sm text-foreground mb-0.5">
                   {item.food?.name || 'Alimento desconhecido'}
                 </Text>
-                <View style={styles.foodQuantityContainer}>
-                  <Text style={styles.foodQuantity}>
+                <View className="flex-row items-center">
+                  <Text className="text-xs text-muted-foreground">
                     {item.quantity}{item.unit}
                   </Text>
                   {isEditable && (
-                    <Ionicons name="pencil" size={12} color="#8B92A8" style={{ marginLeft: 4 }} />
+                    <Ionicons name="pencil" size={12} color="#A1A1AA" style={{ marginLeft: 4 }} />
                   )}
                 </View>
               </TouchableOpacity>
               {isEditable && (
                 <TouchableOpacity
                   onPress={() => onRemoveFood(item.id)}
-                  style={styles.removeButton}
+                  className="p-1"
                 >
-                  <Ionicons name="close-circle" size={20} color="#ff6b6b" />
+                  <Ionicons name="close-circle" size={20} color="#EF4444" />
                 </TouchableOpacity>
               )}
             </View>
@@ -187,12 +190,12 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
           {/* Add Food Button */}
           {isEditable && (
             <TouchableOpacity
-              style={styles.addButton}
+              className="flex-row items-center justify-center py-3 mt-2"
               onPress={handleAddFood}
               activeOpacity={0.7}
             >
-              <Ionicons name="add-circle-outline" size={20} color="#00FF88" />
-              <Text style={styles.addButtonText}>Adicionar Alimento</Text>
+              <Ionicons name="add-circle-outline" size={20} color="#CCFF00" />
+              <Text className="text-sm font-semibold text-primary ml-2">Adicionar Alimento</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -215,142 +218,3 @@ export function MealCard({ meal, items, onAddFood, onRemoveFood, onUpdateMealTim
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  headerTextContainer: {
-    marginLeft: 8,
-    flex: 1,
-  },
-  mealName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  mealTime: {
-    fontSize: 12,
-    color: '#8B92A8',
-    marginTop: 2,
-  },
-  headerRight: {
-    alignItems: 'flex-end',
-  },
-  calories: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#00FF88',
-  },
-  itemCount: {
-    fontSize: 12,
-    color: '#8B92A8',
-    marginTop: 2,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  macrosSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#0A0E1A',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  macroItem: {
-    alignItems: 'center',
-  },
-  macroLabel: {
-    fontSize: 11,
-    color: '#8B92A8',
-    marginBottom: 4,
-  },
-  macroValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  foodItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E2A42',
-  },
-  foodInfo: {
-    flex: 1,
-  },
-  foodName: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  foodQuantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  foodQuantity: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  removeButton: {
-    padding: 4,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#00FF88',
-    marginLeft: 8,
-  },
-  timeSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0A0E1A',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    gap: 10,
-  },
-  timeSelectorLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  requiredBadge: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FF6B35',
-    backgroundColor: 'rgba(255, 107, 53, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-});

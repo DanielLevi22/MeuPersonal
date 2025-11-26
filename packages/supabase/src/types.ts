@@ -11,7 +11,7 @@ export type AccountType = 'admin' | 'professional' | 'managed_student' | 'autono
 
 export type AccountStatus = 'pending' | 'active' | 'rejected' | 'suspended';
 
-export type ServiceCategory = 'training' | 'nutrition' | 'physiotherapy' | 'psychology';
+export type ServiceCategory = 'personal_training' | 'nutrition_consulting' | 'physiotherapy' | 'sports_psychology';
 
 export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
 

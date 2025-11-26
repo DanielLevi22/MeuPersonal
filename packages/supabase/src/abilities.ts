@@ -34,6 +34,7 @@ import {
 // User context for ability definition
 export interface UserContext {
   accountType: AccountType;
+  accountStatus?: 'pending' | 'active' | 'rejected' | 'suspended'; // Account approval status
   isSuperAdmin?: boolean;       // If admin
   services?: ServiceCategory[]; // If professional
   subscriptionTier?: SubscriptionTier; // If autonomous student

@@ -1,12 +1,12 @@
-import { supabase } from '@meupersonal/supabase';
+
 import { Food } from '@/nutrition';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Modal,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -237,44 +237,46 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
     
     return (
       <TouchableOpacity
-        style={styles.foodItem}
+        className="bg-card rounded-xl p-4 mb-3 border-2 border-border"
         onPress={() => handleSelectFood(item)}
         activeOpacity={0.7}
       >
-        <View style={styles.foodInfo}>
-          <Text style={styles.foodName}>{item.name}</Text>
-          <Text style={styles.foodCategory}>{item.category}</Text>
+        <View className="mb-2">
+          <Text className="text-base font-bold text-foreground mb-1">{item.name}</Text>
+          <Text className="text-xs text-muted-foreground">{item.category}</Text>
         </View>
         
         {match?.isMatch ? (
-          <View style={styles.calculatedPreview}>
-            <View style={styles.matchHeader}>
-              <Text style={styles.calculatedQuantity}>
+          <View className="bg-primary/5 p-3 rounded-lg mt-1">
+            <View className="flex-row justify-between items-center mb-1">
+              <Text className="text-lg font-bold text-primary">
                 {Math.round(match.quantity)}{item.serving_unit}
               </Text>
               {activeMacros.length > 1 && (
-                <View style={[
-                  styles.matchBadge,
-                  { backgroundColor: match.score > 80 ? 'rgba(0, 255, 136, 0.2)' : match.score > 40 ? 'rgba(255, 222, 89, 0.2)' : 'rgba(255, 107, 53, 0.2)' }
-                ]}>
-                  <Text style={[
-                    styles.matchBadgeText,
-                    { color: match.score > 80 ? '#00FF88' : match.score > 40 ? '#ffde59' : '#FF6B35' }
-                  ]}>
+                <View 
+                  className={`px-2 py-1 rounded-md ${
+                    match.score > 80 ? 'bg-primary/20' : match.score > 40 ? 'bg-yellow-500/20' : 'bg-orange-500/20'
+                  }`}
+                >
+                  <Text 
+                    className={`text-[10px] font-bold ${
+                      match.score > 80 ? 'text-primary' : match.score > 40 ? 'text-yellow-500' : 'text-orange-500'
+                    }`}
+                  >
                     {match.score > 80 ? 'Combinação Perfeita' : match.score > 40 ? 'Boa Combinação' : 'Baixa Combinação'}
                   </Text>
                 </View>
               )}
             </View>
-            <Text style={styles.calculatedLabel}>
+            <Text className="text-[11px] text-muted-foreground">
               para atingir metas
             </Text>
-            <View style={styles.targetComparison}>
+            <View className="flex-row flex-wrap gap-2 mt-1">
                {activeMacros.map(macro => {
                  const val = (item[macro] * match.quantity) / item.serving_size;
                  const target = parseFloat(targets[macro] || '0');
                  return (
-                   <Text key={macro} style={styles.comparisonText}>
+                   <Text key={macro} className="text-[11px] text-muted-foreground">
                      {macro === 'calories' ? 'Kcal' : macro.charAt(0).toUpperCase() + macro.slice(1, 3)}: {Math.round(val)}/{Math.round(target)}
                    </Text>
                  );
@@ -282,11 +284,11 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
             </View>
           </View>
         ) : (
-          <View style={styles.macrosPreview}>
-            <Text style={styles.macroText}>
+          <View className="flex-row justify-between items-center">
+            <Text className="text-xs font-semibold text-primary">
               {item.calories}kcal | {item.protein}p | {item.carbs}c | {item.fat}g
             </Text>
-            <Text style={styles.servingText}>
+            <Text className="text-[11px] text-muted-foreground">
               por {item.serving_size}{item.serving_unit}
             </Text>
           </View>
@@ -300,17 +302,17 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
 
     if (isLoadingMore) {
       return (
-        <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color="#00FF88" />
-          <Text style={styles.footerText}>Carregando mais...</Text>
+        <View className="flex-row items-center justify-center py-4 gap-2">
+          <ActivityIndicator size="small" color="#CCFF00" />
+          <Text className="text-muted-foreground text-sm">Carregando mais...</Text>
         </View>
       );
     }
 
     return (
-      <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
-        <Text style={styles.loadMoreText}>Carregar mais alimentos</Text>
-        <Ionicons name="chevron-down" size={16} color="#00FF88" />
+      <TouchableOpacity className="flex-row items-center justify-center py-4 gap-1.5" onPress={loadMore}>
+        <Text className="text-primary text-sm font-semibold">Carregar mais alimentos</Text>
+        <Ionicons name="chevron-down" size={16} color="#CCFF00" />
       </TouchableOpacity>
     );
   };
@@ -322,23 +324,23 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <View className="flex-1 bg-black/80 justify-end">
+        <View className="bg-background rounded-t-3xl h-[85%] pt-5">
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Buscar Alimento</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
+          <View className="flex-row justify-between items-center px-6 mb-5">
+            <Text className="text-2xl font-extrabold text-foreground">Buscar Alimento</Text>
+            <TouchableOpacity onPress={onClose} className="p-2">
+              <Ionicons name="close" size={24} color="#FAFAFA" />
             </TouchableOpacity>
           </View>
 
           {/* Search Input */}
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#8B92A8" style={styles.searchIcon} />
+          <View className="flex-row items-center bg-card rounded-xl mx-6 mb-4 px-4 border-2 border-border">
+            <Ionicons name="search" size={20} color="#A1A1AA" className="mr-3" />
             <TextInput
-              style={styles.searchInput}
+              className="flex-1 text-foreground text-base py-3.5"
               placeholder="Digite o nome do alimento..."
-              placeholderTextColor="#5A6178"
+              placeholderTextColor="#A1A1AA"
               value={searchQuery}
               onChangeText={handleSearch}
               autoFocus
@@ -346,34 +348,28 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
           </View>
 
           {/* Reverse Calculator */}
-          <View style={styles.calculatorContainer}>
-            <Text style={styles.calculatorTitle}>Calculadora Reversa (Multimeta)</Text>
-            <View style={styles.macroGrid}>
+          <View className="mx-6 mb-4 p-3 bg-card rounded-xl border border-border">
+            <Text className="text-xs text-muted-foreground mb-3 font-semibold">Calculadora Reversa (Multimeta)</Text>
+            <View className="flex-row flex-wrap gap-2">
               {(['protein', 'carbs', 'fat', 'calories'] as const).map((macro) => (
-                <View key={macro} style={styles.macroInputGroup}>
+                <View key={macro} className="flex-row items-center bg-muted/30 rounded-lg border border-border overflow-hidden">
                   <TouchableOpacity
-                    style={[
-                      styles.macroButton,
-                      activeMacros.includes(macro) && styles.macroButtonActive,
-                    ]}
+                    className={`py-2 px-3 border-r border-border ${activeMacros.includes(macro) ? 'bg-primary/10' : 'bg-muted/30'}`}
                     onPress={() => toggleMacro(macro)}
                   >
                     <Text
-                      style={[
-                        styles.macroButtonText,
-                        activeMacros.includes(macro) && styles.macroButtonTextActive,
-                      ]}
+                      className={`text-xs font-semibold ${activeMacros.includes(macro) ? 'text-primary' : 'text-muted-foreground'}`}
                     >
                       {macro === 'protein' ? 'Prot' : macro === 'carbs' ? 'Carb' : macro === 'fat' ? 'Gord' : 'Kcal'}
                     </Text>
                   </TouchableOpacity>
                   
                   {activeMacros.includes(macro) && (
-                    <View style={styles.targetInputWrapper}>
+                    <View className="w-[60px] px-2">
                        <TextInput
-                        style={styles.targetInput}
+                        className="text-foreground text-sm py-2 font-semibold text-center"
                         placeholder="0"
-                        placeholderTextColor="#5A6178"
+                        placeholderTextColor="#A1A1AA"
                         keyboardType="numeric"
                         value={targets[macro] || ''}
                         onChangeText={(val) => updateTarget(macro, val)}
@@ -387,8 +383,8 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
 
           {/* Results Count */}
           {foods.length > 0 && !isLoading && (
-            <View style={styles.resultsCount}>
-              <Text style={styles.resultsCountText}>
+            <View className="px-6 py-2 bg-card mx-6 mb-3 rounded-lg">
+              <Text className="text-xs text-muted-foreground text-center">
                 {foods.length} alimento{foods.length !== 1 ? 's' : ''} encontrado{foods.length !== 1 ? 's' : ''}
               </Text>
             </View>
@@ -396,23 +392,23 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
 
           {/* Results */}
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FF6B35" />
-              <Text style={styles.loadingText}>Buscando...</Text>
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#F97316" />
+              <Text className="text-muted-foreground mt-4 text-base">Buscando...</Text>
             </View>
           ) : (
             <FlatList
               data={sortedFoods}
               renderItem={renderFoodItem}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContainer}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
               onEndReached={loadMore}
               onEndReachedThreshold={0.5}
               ListFooterComponent={renderFooter}
               ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="search-outline" size={48} color="#5A6178" />
-                  <Text style={styles.emptyText}>
+                <View className="flex-1 justify-center items-center py-16">
+                  <Ionicons name="search-outline" size={48} color="#A1A1AA" />
+                  <Text className="text-muted-foreground text-base mt-4 text-center">
                     {searchQuery.length < 2
                       ? 'Digite para buscar alimentos'
                       : 'Nenhum alimento encontrado'}
@@ -426,248 +422,3 @@ export function FoodSearchModal({ visible, onClose, onSelectFood }: FoodSearchMo
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#0A0E1A',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: '85%',
-    paddingTop: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    marginHorizontal: 24,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-  },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 16,
-    paddingVertical: 14,
-  },
-  calculatorContainer: {
-    marginHorizontal: 24,
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  calculatorTitle: {
-    fontSize: 12,
-    color: '#8B92A8',
-    marginBottom: 12,
-    fontWeight: '600',
-  },
-  macroGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  macroInputGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0A0E1A',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-    overflow: 'hidden',
-  },
-  macroButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#0A0E1A',
-    borderRightWidth: 1,
-    borderRightColor: '#1E2A42',
-  },
-  macroButtonActive: {
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-  },
-  macroButtonText: {
-    fontSize: 12,
-    color: '#8B92A8',
-    fontWeight: '600',
-  },
-  macroButtonTextActive: {
-    color: '#00FF88',
-  },
-  targetInputWrapper: {
-    width: 60,
-    paddingHorizontal: 8,
-  },
-  targetInput: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    paddingVertical: 8,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  listContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  foodItem: {
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-  },
-  foodInfo: {
-    marginBottom: 8,
-  },
-  foodName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  foodCategory: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  macrosPreview: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  calculatedPreview: {
-    backgroundColor: 'rgba(0, 255, 136, 0.05)',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  matchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  matchBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  matchBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  targetComparison: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  comparisonText: {
-    fontSize: 11,
-    color: '#8B92A8',
-  },
-  macroText: {
-    fontSize: 12,
-    color: '#00FF88',
-    fontWeight: '600',
-  },
-  servingText: {
-    fontSize: 11,
-    color: '#5A6178',
-  },
-  calculatedQuantity: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#00FF88',
-  },
-  calculatedLabel: {
-    fontSize: 11,
-    color: '#8B92A8',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#8B92A8',
-    marginTop: 16,
-    fontSize: 15,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    color: '#8B92A8',
-    fontSize: 15,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  resultsCount: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    backgroundColor: '#141B2D',
-    marginHorizontal: 24,
-    marginBottom: 12,
-    borderRadius: 8,
-  },
-  resultsCountText: {
-    fontSize: 12,
-    color: '#8B92A8',
-    textAlign: 'center',
-  },
-  footerLoader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
-  },
-  footerText: {
-    color: '#8B92A8',
-    fontSize: 13,
-  },
-  loadMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 6,
-  },
-  loadMoreText: {
-    color: '#00FF88',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

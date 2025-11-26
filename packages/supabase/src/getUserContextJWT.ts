@@ -27,15 +27,34 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
   }
   
   // STEP 2: Query database (for all users, including admins if JWT doesn't have claims)
+  // Add retry logic to handle race condition where profile might not exist yet
   console.log('🔍 Querying database for user context...');
-  const { data: user, error: userError } = await supabase
-    .from('profiles')
-    .select('account_type, subscription_tier, is_super_admin')
-    .eq('id', userId)
-    .single();
+  
+  let user = null;
+  let userError = null;
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  while (!user && attempts < maxAttempts) {
+    attempts++;
+    
+    const result = await supabase
+      .from('profiles')
+      .select('account_type, subscription_tier, is_super_admin, account_status')
+      .eq('id', userId)
+      .single();
+    
+    user = result.data;
+    userError = result.error;
+    
+    if (!user && attempts < maxAttempts) {
+      console.log(`⏳ Profile not found yet, retrying (${attempts}/${maxAttempts})...`);
+      await new Promise(resolve => setTimeout(resolve, 500 * attempts)); // Exponential backoff
+    }
+  }
 
   if (userError || !user) {
-    console.error('❌ Error fetching user:', userError);
+    console.error('❌ Error fetching user after retries:', userError);
     throw new Error('User not found');
   }
 
@@ -43,6 +62,7 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
 
   const context: UserContext = {
     accountType: user.account_type as AccountType,
+    accountStatus: user.account_status as 'pending' | 'active' | 'rejected' | 'suspended',
   };
 
   // If user is admin, add super admin flag

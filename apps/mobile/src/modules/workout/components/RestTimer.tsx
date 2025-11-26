@@ -111,16 +111,16 @@ export function RestTimer({ restSeconds, onComplete, autoStart = false }: RestTi
   const strokeDashoffset = circumference * (1 - progress);
 
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+    <View className="items-center py-6">
       {/* Circular Progress */}
-      <View style={{ position: 'relative', marginBottom: 24 }}>
+      <View className="relative mb-6">
         <Svg width={200} height={200}>
           {/* Background circle */}
           <Circle
             cx={100}
             cy={100}
             r={90}
-            stroke="#1E2A42"
+            stroke="#27272A"
             strokeWidth={12}
             fill="none"
           />
@@ -129,7 +129,7 @@ export function RestTimer({ restSeconds, onComplete, autoStart = false }: RestTi
             cx={100}
             cy={100}
             r={90}
-            stroke={timeRemaining === 0 ? '#00FF88' : '#FF6B35'}
+            stroke={timeRemaining === 0 ? '#CCFF00' : '#F97316'}
             strokeWidth={12}
             fill="none"
             strokeDasharray={circumference}
@@ -140,64 +140,40 @@ export function RestTimer({ restSeconds, onComplete, autoStart = false }: RestTi
         </Svg>
         
         {/* Time display */}
-        <View style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          justifyContent: 'center', 
-          alignItems: 'center' 
-        }}>
-          <Text style={{ 
-            fontSize: 48, 
-            fontWeight: '800', 
-            color: timeRemaining === 0 ? '#00FF88' : '#FFFFFF' 
-          }}>
+        <View className="absolute inset-0 justify-center items-center">
+          <Text 
+            className="text-5xl font-extrabold"
+            style={{ color: timeRemaining === 0 ? '#CCFF00' : '#FAFAFA' }}
+          >
             {formatTime(timeRemaining)}
           </Text>
-          <Text style={{ fontSize: 14, color: '#8B92A8', marginTop: 4 }}>
+          <Text className="text-sm text-muted-foreground mt-1">
             {timeRemaining === 0 ? 'Concluído!' : 'Descanso'}
           </Text>
         </View>
       </View>
 
       {/* Controls */}
-      <View style={{ flexDirection: 'row', gap: 16 }}>
+      <View className="flex-row gap-4">
         <TouchableOpacity
           onPress={handleStartPause}
-          style={{
-            backgroundColor: isRunning ? '#FF6B35' : '#00FF88',
-            paddingVertical: 16,
-            paddingHorizontal: 32,
-            borderRadius: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8
-          }}
+          className={`py-4 px-8 rounded-2xl flex-row items-center gap-2 ${isRunning ? 'bg-orange-500' : 'bg-primary'}`}
         >
           <Ionicons 
             name={isRunning ? 'pause' : 'play'} 
             size={20} 
-            color="#0A0E1A" 
+            color="#09090B" 
           />
-          <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>
+          <Text className="text-primary-foreground text-base font-bold">
             {isRunning ? 'Pausar' : 'Iniciar'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={handleReset}
-          style={{
-            backgroundColor: '#141B2D',
-            paddingVertical: 16,
-            paddingHorizontal: 24,
-            borderRadius: 16,
-            borderWidth: 2,
-            borderColor: '#1E2A42'
-          }}
+          className="bg-card py-4 px-6 rounded-2xl border-2 border-border"
         >
-          <Ionicons name="refresh" size={20} color="#FFFFFF" />
+          <Ionicons name="refresh" size={20} color="#FAFAFA" />
         </TouchableOpacity>
       </View>
     </View>

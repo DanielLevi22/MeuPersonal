@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 interface StatCardProps {
   label: string;
@@ -12,22 +11,24 @@ interface StatCardProps {
 
 export function StatCard({ label, value, trend, change, icon }: StatCardProps) {
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value}>{value}</Text>
+    <View className="bg-card rounded-2xl p-4 border border-white/5 flex-row justify-between items-start">
+      <View className="flex-1">
+        <Text className="text-muted-foreground text-xs font-medium mb-1 uppercase tracking-widest">
+          {label}
+        </Text>
+        <Text className="text-foreground text-2xl font-bold mb-1">{value}</Text>
         
         {(trend && change) && (
-          <View style={styles.trendContainer}>
+          <View className="flex-row items-center gap-1">
             <Ionicons 
               name={trend === 'up' ? 'arrow-up' : trend === 'down' ? 'arrow-down' : 'remove'} 
               size={12} 
               color={trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#9CA3AF'} 
             />
-            <Text style={[
-              styles.change, 
-              { color: trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#9CA3AF' }
-            ]}>
+            <Text 
+              className="text-xs font-semibold"
+              style={{ color: trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#9CA3AF' }}
+            >
               {change}
             </Text>
           </View>
@@ -35,54 +36,10 @@ export function StatCard({ label, value, trend, change, icon }: StatCardProps) {
       </View>
       
       {icon && (
-        <View style={styles.iconContainer}>
-          <Ionicons name={icon} size={24} color="#8B92A8" />
+        <View className="bg-white/5 p-2 rounded-xl">
+          <Ionicons name={icon} size={24} color="#A1A1AA" />
         </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#141B2D',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  content: {
-    flex: 1,
-  },
-  label: {
-    color: '#8B92A8',
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  value: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  change: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  iconContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 8,
-    borderRadius: 12,
-  },
-});

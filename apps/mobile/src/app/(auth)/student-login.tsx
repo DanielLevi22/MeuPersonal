@@ -36,52 +36,38 @@ export default function StudentLoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
+    <View className="flex-1 bg-background">
+      <SafeAreaView className="flex-1">
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+          className="flex-1"
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={{ flex: 1, padding: 24 }}>
+            <View className="flex-1 p-6">
               {/* Header */}
               <TouchableOpacity 
                 onPress={() => router.back()}
-                style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: '#141B2D',
-                  padding: 10,
-                  borderRadius: 12,
-                  marginBottom: 32
-                }}
+                className="self-start bg-card p-2.5 rounded-xl mb-8"
               >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
 
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={{ alignItems: 'center', marginBottom: 40 }}>
-                  <View style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 50,
-                    backgroundColor: 'rgba(0, 217, 255, 0.15)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 24
-                  }}>
-                    <Ionicons name="school" size={56} color="#00D9FF" />
+              <View className="flex-1 justify-center">
+                <View className="items-center mb-10">
+                  <View className="w-[100px] h-[100px] rounded-full bg-cyan-400/15 items-center justify-center mb-6">
+                    <Ionicons name="school" size={56} color="#22D3EE" />
                   </View>
                   
-                  <Text style={{ fontSize: 32, fontWeight: '800', color: '#FFFFFF', marginBottom: 12, textAlign: 'center' }}>
+                  <Text className="text-3xl font-extrabold text-foreground mb-3 text-center">
                     Área do Aluno
                   </Text>
-                  <Text style={{ fontSize: 16, color: '#8B92A8', textAlign: 'center', lineHeight: 24 }}>
+                  <Text className="text-base text-zinc-400 text-center leading-6">
                     Insira o código fornecido pelo seu Personal Trainer para acessar seus treinos.
                   </Text>
                 </View>
 
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ color: '#8B92A8', fontSize: 14, marginBottom: 8, fontWeight: '600', marginLeft: 4 }}>
+                <View className="mb-6">
+                  <Text className="text-zinc-400 text-sm mb-2 font-semibold ml-1">
                     CÓDIGO DE CONVITE
                   </Text>
                   <TextInput
@@ -91,18 +77,7 @@ export default function StudentLoginScreen() {
                     placeholderTextColor="#5A6178"
                     autoCapitalize="characters"
                     maxLength={6}
-                    style={{
-                      backgroundColor: '#141B2D',
-                      borderWidth: 2,
-                      borderColor: '#1E2A42',
-                      borderRadius: 16,
-                      padding: 20,
-                      color: '#FFFFFF',
-                      fontSize: 24,
-                      fontWeight: '700',
-                      textAlign: 'center',
-                      letterSpacing: 4
-                    }}
+                    className="bg-card border-2 border-border rounded-2xl p-5 text-foreground text-2xl font-bold text-center tracking-[4px]"
                   />
                 </View>
 
@@ -110,28 +85,18 @@ export default function StudentLoginScreen() {
                   onPress={handleLogin}
                   disabled={loading || code.length < 6}
                   activeOpacity={0.8}
-                  style={{ opacity: (loading || code.length < 6) ? 0.5 : 1 }}
+                  className={loading || code.length < 6 ? 'opacity-50' : 'opacity-100'}
                 >
                   <LinearGradient
-                    colors={['#00D9FF', '#00A6C4']}
+                    colors={['#22D3EE', '#0891B2']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: 16,
-                      paddingVertical: 18,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowColor: '#00D9FF',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 8
-                    }}
+                    className="rounded-2xl py-4.5 items-center justify-center shadow-lg shadow-cyan-400/30"
                   >
                     {loading ? (
                       <ActivityIndicator color="#FFF" />
                     ) : (
-                      <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
+                      <Text className="text-white text-lg font-bold">
                         Acessar Treinos
                       </Text>
                     )}

@@ -7,11 +7,11 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import '../global.css';
 
+import { useAuthStore } from '@/auth';
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/query-client';
 import { registerBackgroundFetchAsync } from '@/services/backgroundTask';
 import { requestNotificationPermissions } from '@/services/notificationService';
-import { useAuthStore } from '@/auth';
 import { supabase } from '@meupersonal/supabase';
 
 export {
@@ -49,7 +49,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { session, initializeSession, isLoading, accountType } = useAuthStore();
+  const { session, initializeSession, isLoading, accountType, accountStatus } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -59,7 +59,7 @@ function RootLayoutNav() {
       initializeSession(session);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       initializeSession(session);
     });
 
@@ -68,6 +68,11 @@ function RootLayoutNav() {
     
     // Register background fetch for diet sync
     registerBackgroundFetchAsync();
+    
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Auth Guard
@@ -80,14 +85,16 @@ function RootLayoutNav() {
       // Redirect to login if not authenticated
       router.replace('/(auth)/login' as any);
     } else if (session && inAuthGroup) {
-      // Redirect based on role
-      if (accountType === 'professional') {
+      // Redirect based on role and status
+      if (accountType === 'professional' && accountStatus === 'pending') {
+        router.replace('/(auth)/pending-approval' as any);
+      } else if (accountType === 'professional') {
         router.replace('/(professional)' as any);
       } else {
         router.replace('/(tabs)' as any);
       }
     }
-  }, [session, segments, isLoading, accountType]);
+  }, [session, segments, isLoading, accountType, accountStatus]);
 
   return (
     <QueryClientProvider client={queryClient}>

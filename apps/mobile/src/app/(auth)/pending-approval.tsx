@@ -76,18 +76,18 @@ export default function PendingApprovalScreen() {
 
         {/* Greeting */}
         {profile?.full_name && (
-          <Text className="text-base text-muted-foreground text-center mb-6 font-sans">
+          <Text className="text-base text-zinc-400 text-center mb-6 font-sans">
             Olá, <Text className="text-foreground font-semibold">{profile.full_name}</Text>
           </Text>
         )}
 
         {/* Main Message */}
         <View className="bg-surface border border-border rounded-2xl p-6 mb-6">
-          <Text className="text-base text-muted-foreground text-center leading-6 mb-4 font-sans">
+          <Text className="text-base text-zinc-400 text-center leading-6 mb-4 font-sans">
             Sua conta de profissional foi criada com sucesso e está em análise.
           </Text>
           
-          <Text className="text-base text-muted-foreground text-center leading-6 font-sans">
+          <Text className="text-base text-zinc-400 text-center leading-6 font-sans">
             Para garantir a qualidade da nossa plataforma, todos os cadastros de profissionais passam por uma verificação manual.
           </Text>
         </View>
@@ -105,7 +105,7 @@ export default function PendingApprovalScreen() {
         {/* Status Indicator */}
         <View className="flex-row items-center justify-center gap-2 mb-8">
           <View className="w-2 h-2 bg-yellow-500 rounded-full" style={{ opacity: 0.8 }} />
-          <Text className="text-sm text-muted-foreground font-sans">
+          <Text className="text-sm text-zinc-400 font-sans">
             Verificando status automaticamente...
           </Text>
         </View>
@@ -121,7 +121,7 @@ export default function PendingApprovalScreen() {
               <View className="w-6 h-6 rounded-full bg-primary/10 items-center justify-center mt-0.5">
                 <Text className="text-primary text-xs font-bold">1</Text>
               </View>
-              <Text className="flex-1 text-sm text-muted-foreground leading-5 font-sans">
+              <Text className="flex-1 text-sm text-zinc-400 leading-5 font-sans">
                 Nossa equipe irá revisar suas informações
               </Text>
             </View>
@@ -130,7 +130,7 @@ export default function PendingApprovalScreen() {
               <View className="w-6 h-6 rounded-full bg-primary/10 items-center justify-center mt-0.5">
                 <Text className="text-primary text-xs font-bold">2</Text>
               </View>
-              <Text className="flex-1 text-sm text-muted-foreground leading-5 font-sans">
+              <Text className="flex-1 text-sm text-zinc-400 leading-5 font-sans">
                 Você receberá uma notificação quando for aprovado
               </Text>
             </View>
@@ -139,7 +139,7 @@ export default function PendingApprovalScreen() {
               <View className="w-6 h-6 rounded-full bg-primary/10 items-center justify-center mt-0.5">
                 <Text className="text-primary text-xs font-bold">3</Text>
               </View>
-              <Text className="flex-1 text-sm text-muted-foreground leading-5 font-sans">
+              <Text className="flex-1 text-sm text-zinc-400 leading-5 font-sans">
                 O app atualizará automaticamente quando aprovado
               </Text>
             </View>
@@ -157,7 +157,7 @@ export default function PendingApprovalScreen() {
 
         {/* Support */}
         <View className="items-center mt-auto mb-8">
-          <Text className="text-xs text-muted-foreground text-center font-sans">
+          <Text className="text-xs text-zinc-500 text-center font-sans">
             Dúvidas? Entre em contato:
           </Text>
           <Text className="text-xs text-primary text-center mt-1 font-sans">

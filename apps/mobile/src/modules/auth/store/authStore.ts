@@ -12,6 +12,7 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   accountType: AccountType | null;
+  accountStatus: 'pending' | 'active' | 'rejected' | 'suspended' | null;
   abilities: AppAbility | null;
   isLoading: boolean;
   
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   user: null,
   accountType: null,
+  accountStatus: null,
   abilities: null,
   isLoading: true,
 
@@ -33,7 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       if (!session?.user) {
-        set({ session: null, user: null, accountType: null, abilities: null, isLoading: false });
+        set({ session: null, user: null, accountType: null, accountStatus: null, abilities: null, isLoading: false });
         return;
       }
 
@@ -61,6 +63,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           session, 
           user, 
           accountType: context.accountType, 
+          accountStatus: context.accountStatus || 'active',
           abilities, 
           isLoading: false 
         });
@@ -71,7 +74,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (error) {
         console.error('Error loading user context:', error);
         // If profile doesn't exist or error, set basic session but no role/abilities
-        set({ session, user, isLoading: false });
+        set({ session, user, accountStatus: null, isLoading: false });
       }
     } catch (error) {
        console.error('Error initializing session:', error);
@@ -81,7 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ session: null, user: null, accountType: null, abilities: null });
+    set({ session: null, user: null, accountType: null, accountStatus: null, abilities: null });
     
     // CRITICAL: Clear all stores to prevent data leakage between users
     // Import stores dynamically to avoid circular dependencies

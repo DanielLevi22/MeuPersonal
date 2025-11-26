@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useColorScheme } from 'nativewind';
 import { Text, TextInput, View } from 'react-native';
 
 interface InputProps {
@@ -32,16 +33,30 @@ export function Input({
   numberOfLines = 1,
   textAlignVertical = 'center',
 }: InputProps) {
+  const { colorScheme } = useColorScheme();
+  
+  // Theme colors - always use dark mode colors since we set dark as default
+  const colors = {
+    text: '#FFFFFF',
+    placeholder: '#A1A1AA',
+    background: '#18181B', // zinc-900
+    border: '#3F3F46', // zinc-700
+    borderFocus: '#A3E635', // lime-400
+    borderError: '#F87171', // red-400
+  };
+
   return (
     <View className={className}>
       {label && (
-        <Text className="text-foreground font-semibold text-sm mb-2 font-display">{label}</Text>
+        <Text className="text-white font-semibold text-sm mb-2">
+          {label}
+        </Text>
       )}
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#71717A" // Zinc 500
+        placeholderTextColor={colors.placeholder}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
@@ -50,15 +65,17 @@ export function Input({
         numberOfLines={numberOfLines}
         textAlignVertical={textAlignVertical}
         className={cn(
-          'bg-input/50 border border-input rounded-xl px-4 py-4 text-foreground text-base font-sans',
-          'focus:border-primary focus:bg-input',
-          error && 'border-destructive',
+          'bg-zinc-900 border-2 border-zinc-700 rounded-2xl px-4 py-4 text-base h-14',
+          error && 'border-red-400',
           !editable && 'opacity-60'
         )}
-        style={{ minHeight: 56 }}
+        style={{
+          color: colors.text,
+          fontSize: 16,
+        }}
       />
       {error && (
-        <Text className="text-destructive text-sm mt-1">{error}</Text>
+        <Text className="text-red-400 text-sm mt-1">{error}</Text>
       )}
     </View>
   );

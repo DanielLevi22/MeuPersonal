@@ -4,13 +4,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -85,10 +84,10 @@ export default function NutritionDashboard() {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <View className="flex-1 bg-background">
+      <SafeAreaView className="flex-1">
         {/* Header */}
-        <View style={styles.header}>
+        <View className="flex-row items-center px-6 pt-4 pb-4">
           <TouchableOpacity
             onPress={() => {
               if (router.canGoBack()) {
@@ -97,52 +96,52 @@ export default function NutritionDashboard() {
                 router.push(`/(tabs)/students/${studentId}` as any);
               }
             }}
-            style={styles.backButton}
+            className="bg-card p-2.5 rounded-xl mr-4"
           >
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Nutrição</Text>
-            <Text style={styles.headerSubtitle}>Gerenciar planos</Text>
+          <View className="flex-1">
+            <Text className="text-2xl font-extrabold text-foreground">Nutrição</Text>
+            <Text className="text-sm text-muted-foreground mt-1">Gerenciar planos</Text>
           </View>
         </View>
 
-        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
           {/* Active Plan Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Plano Ativo</Text>
+          <View className="mb-8">
+            <Text className="text-lg font-bold text-foreground mb-4">Plano Ativo</Text>
             
             {isLoading ? (
-              <ActivityIndicator size="small" color="#FF6B35" />
+              <ActivityIndicator size="small" color="#F97316" />
             ) : currentDietPlan ? (
               <TouchableOpacity 
-                style={styles.planCard}
+                className="rounded-3xl overflow-hidden border border-orange-500"
                 onPress={() => handleOpenPlan(currentDietPlan.id)}
                 activeOpacity={0.8}
               >
                 <LinearGradient
                   colors={['#141B2D', '#1E2A42']}
-                  style={styles.planCardGradient}
+                  className="p-5"
                 >
-                  <View style={styles.planHeader}>
+                  <View className="flex-row justify-between items-start mb-5">
                     <View>
-                      <Text style={styles.planName}>{currentDietPlan.name}</Text>
-                      <Text style={styles.planDate}>
+                      <Text className="text-xl font-bold text-foreground mb-1">{currentDietPlan.name}</Text>
+                      <Text className="text-sm text-muted-foreground">
                         Início: {new Date(currentDietPlan.start_date).toLocaleDateString('pt-BR')}
                       </Text>
                       {currentDietPlan.end_date && (
-                        <Text style={styles.planDate}>
+                        <Text className="text-sm text-muted-foreground">
                           Término: {new Date(currentDietPlan.end_date).toLocaleDateString('pt-BR')}
                           {calculateDaysRemaining() !== null && (
-                            <Text style={{ color: calculateDaysRemaining()! > 7 ? '#00FF88' : '#FFB800' }}>
+                            <Text style={{ color: calculateDaysRemaining()! > 7 ? '#A3E635' : '#FBBF24' }}>
                               {' '}({calculateDaysRemaining()} dias restantes)
                             </Text>
                           )}
                         </Text>
                       )}
                     </View>
-                    <View style={styles.activeBadge}>
-                      <Text style={styles.activeText}>
+                    <View className="bg-lime-400/15 px-2.5 py-1 rounded-lg border border-lime-400">
+                      <Text className="text-lime-400 text-xs font-bold">
                         {currentDietPlan.status === 'active' ? 'ATIVO' : 
                          currentDietPlan.status === 'completed' ? 'CONCLUÍDO' :
                          currentDietPlan.status === 'finished' ? 'FINALIZADO' : 'RASCUNHO'}
@@ -150,44 +149,44 @@ export default function NutritionDashboard() {
                     </View>
                   </View>
 
-                  <View style={styles.macrosContainer}>
-                    <View style={styles.macroItem}>
-                      <Text style={styles.macroValue}>{currentDietPlan.target_calories}</Text>
-                      <Text style={styles.macroLabel}>Kcal</Text>
+                  <View className="flex-row justify-between bg-black/20 p-4 rounded-2xl mb-4">
+                    <View className="items-center flex-1">
+                      <Text className="text-lg font-bold text-foreground mb-1">{currentDietPlan.target_calories}</Text>
+                      <Text className="text-xs text-muted-foreground">Kcal</Text>
                     </View>
-                    <View style={styles.divider} />
-                    <View style={styles.macroItem}>
-                      <Text style={[styles.macroValue, { color: '#00FF88' }]}>
+                    <View className="w-px bg-white/10" />
+                    <View className="items-center flex-1">
+                      <Text className="text-lg font-bold text-lime-400 mb-1">
                         {currentDietPlan.target_protein}g
                       </Text>
-                      <Text style={styles.macroLabel}>Prot</Text>
+                      <Text className="text-xs text-muted-foreground">Prot</Text>
                     </View>
-                    <View style={styles.divider} />
-                    <View style={styles.macroItem}>
-                      <Text style={[styles.macroValue, { color: '#00D9FF' }]}>
+                    <View className="w-px bg-white/10" />
+                    <View className="items-center flex-1">
+                      <Text className="text-lg font-bold text-cyan-400 mb-1">
                         {currentDietPlan.target_carbs}g
                       </Text>
-                      <Text style={styles.macroLabel}>Carb</Text>
+                      <Text className="text-xs text-muted-foreground">Carb</Text>
                     </View>
-                    <View style={styles.divider} />
-                    <View style={styles.macroItem}>
-                      <Text style={[styles.macroValue, { color: '#FFDE59' }]}>
+                    <View className="w-px bg-white/10" />
+                    <View className="items-center flex-1">
+                      <Text className="text-lg font-bold text-yellow-300 mb-1">
                         {currentDietPlan.target_fat}g
                       </Text>
-                      <Text style={styles.macroLabel}>Gord</Text>
+                      <Text className="text-xs text-muted-foreground">Gord</Text>
                     </View>
                   </View>
 
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.editLink}>Toque para editar</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#FF6B35" />
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-orange-500 text-sm font-semibold">Toque para editar</Text>
+                    <Ionicons name="chevron-forward" size={20} color="#F97316" />
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
             ) : (
-              <View style={styles.emptyState}>
+              <View className="bg-card rounded-3xl p-8 items-center border-2 border-border border-dashed">
                 <Ionicons name="restaurant-outline" size={48} color="#5A6178" />
-                <Text style={styles.emptyText}>Nenhum plano ativo</Text>
+                <Text className="text-muted-foreground mt-3 text-base">Nenhum plano ativo</Text>
               </View>
             )}
           </View>
@@ -197,11 +196,11 @@ export default function NutritionDashboard() {
             <TouchableOpacity 
               onPress={handleFinishPlan}
               activeOpacity={0.8}
-              style={styles.finishButton}
+              className="mb-4 rounded-2xl bg-card border-2 border-amber-500"
             >
-              <View style={styles.finishButtonContent}>
-                <Ionicons name="checkmark-done" size={24} color="#FFB800" style={{ marginRight: 8 }} />
-                <Text style={styles.finishButtonText}>Finalizar Plano</Text>
+              <View className="flex-row items-center justify-center py-4">
+                <Ionicons name="checkmark-done" size={24} color="#F59E0B" style={{ marginRight: 8 }} />
+                <Text className="text-amber-500 text-base font-bold">Finalizar Plano</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -210,48 +209,42 @@ export default function NutritionDashboard() {
             <TouchableOpacity 
               onPress={handleCreateNew}
               activeOpacity={0.8}
-              style={styles.createButton}
+              className="mb-8 rounded-2xl overflow-hidden"
             >
               <LinearGradient
                 colors={['#FF6B35', '#E85A2A']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.createButtonGradient}
+                className="flex-row items-center justify-center py-4"
               >
                 <Ionicons name="add-circle" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text style={styles.createButtonText}>Criar Novo Plano</Text>
+                <Text className="text-white text-base font-bold">Criar Novo Plano</Text>
               </LinearGradient>
             </TouchableOpacity>
           ) : null}
 
 
           {/* History Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Histórico</Text>
+          <View className="mb-8">
+            <Text className="text-lg font-bold text-foreground mb-4">Histórico</Text>
             
             {dietPlanHistory.length > 0 ? (
               dietPlanHistory.map((plan) => (
                 <TouchableOpacity
                   key={plan.id}
-                  style={styles.historyCard}
+                  className="bg-card rounded-2xl p-4 mb-3 border border-border"
                   onPress={() => handleOpenPlan(plan.id)}
                   disabled={true} // For now, maybe we want to view details later
                 >
-                  <View style={styles.historyHeader}>
+                  <View className="flex-row justify-between items-center">
                     <View>
-                      <Text style={styles.historyName}>{plan.name}</Text>
-                      <Text style={styles.historyDate}>
+                      <Text className="text-base font-bold text-foreground mb-1">{plan.name}</Text>
+                      <Text className="text-xs text-muted-foreground">
                         {new Date(plan.start_date).toLocaleDateString('pt-BR')} - {plan.end_date ? new Date(plan.end_date).toLocaleDateString('pt-BR') : '...'}
                       </Text>
                     </View>
-                    <View style={[
-                      styles.statusBadge, 
-                      { 
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        borderColor: '#5A6178'
-                      }
-                    ]}>
-                      <Text style={[styles.statusText, { color: '#8B92A8' }]}>
+                    <View className="px-2 py-1 rounded-lg border border-zinc-500 bg-white/10">
+                      <Text className="text-[10px] font-bold text-muted-foreground">
                         {plan.status === 'completed' ? 'CONCLUÍDO' : 'FINALIZADO'}
                       </Text>
                     </View>
@@ -259,7 +252,7 @@ export default function NutritionDashboard() {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={styles.historyPlaceholder}>
+              <Text className="text-muted-foreground italic text-center mt-4">
                 Nenhum plano arquivado.
               </Text>
             )}
@@ -269,215 +262,3 @@ export default function NutritionDashboard() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0E1A',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  backButton: {
-    backgroundColor: '#141B2D',
-    padding: 10,
-    borderRadius: 12,
-    marginRight: 16,
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#8B92A8',
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 16,
-  },
-  planCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#FF6B35',
-  },
-  planCardGradient: {
-    padding: 20,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  planName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  planDate: {
-    fontSize: 14,
-    color: '#8B92A8',
-  },
-  activeBadge: {
-    backgroundColor: 'rgba(0, 255, 136, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#00FF88',
-  },
-  activeText: {
-    color: '#00FF88',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  macrosContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  macroItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  macroValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  macroLabel: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  divider: {
-    width: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  editLink: {
-    color: '#FF6B35',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  emptyState: {
-    backgroundColor: '#141B2D',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    borderStyle: 'dashed',
-  },
-  emptyText: {
-    color: '#8B92A8',
-    marginTop: 12,
-    fontSize: 16,
-  },
-  createButton: {
-    marginBottom: 32,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  createButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  createButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  finishButton: {
-    marginBottom: 16,
-    borderRadius: 16,
-    backgroundColor: '#141B2D',
-    borderWidth: 2,
-    borderColor: '#FFB800',
-  },
-  finishButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  finishButtonText: {
-    color: '#FFB800',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  historyPlaceholder: {
-    color: '#8B92A8',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  historyCard: {
-    backgroundColor: '#141B2D',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  historyName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  historyDate: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-});

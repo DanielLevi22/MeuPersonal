@@ -1,6 +1,5 @@
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,137 +78,78 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
       <TouchableOpacity 
         activeOpacity={1}
         onPress={onClose}
-        style={{ 
-          flex: 1, 
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          justifyContent: 'flex-end'
-        }}
+        className="flex-1 bg-black/80 justify-end"
       >
         <TouchableOpacity 
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
-          style={{ 
-            backgroundColor: '#141B2D',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            padding: 24,
-            paddingBottom: Math.max(insets.bottom, 24) + 16,
-            maxHeight: '90%'
-          }}
+          className="bg-card rounded-t-3xl p-6 max-h-[90%]"
+          style={{ paddingBottom: Math.max(insets.bottom, 24) + 16 }}
         >
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Configurar Exercício</Text>
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-2xl font-extrabold text-foreground">Configurar Exercício</Text>
               <TouchableOpacity onPress={onClose}>
-                <Ionicons name="close" size={28} color="#8B92A8" />
+                <Ionicons name="close" size={28} color="#A1A1AA" />
               </TouchableOpacity>
             </View>
             
-            <View style={{ backgroundColor: '#0A0E1A', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 2, borderColor: '#1E2A42' }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }}>{exercise.name}</Text>
-              <Text style={{ color: '#00D9FF', fontSize: 14 }}>{exercise.muscle_group}</Text>
+            <View className="bg-muted/30 p-4 rounded-2xl mb-6 border-2 border-border">
+              <Text className="text-foreground text-lg font-bold mb-1">{exercise.name}</Text>
+              <Text className="text-secondary text-sm">{exercise.muscle_group}</Text>
             </View>
             
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Séries</Text>
+            <View className="flex-row gap-3 mb-6">
+              <View className="flex-1">
+                <Text className="text-muted-foreground text-xs mb-2 font-semibold">Séries</Text>
                 <TextInput
                   value={sets}
                   onChangeText={setSets}
                   keyboardType="number-pad"
-                  style={{ 
-                    backgroundColor: '#0A0E1A', 
-                    borderWidth: 2, 
-                    borderColor: '#1E2A42', 
-                    borderRadius: 12, 
-                    padding: 14, 
-                    color: '#FFFFFF', 
-                    fontSize: 18, 
-                    fontWeight: '700', 
-                    textAlign: 'center' 
-                  }}
+                  className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Repetições</Text>
+              <View className="flex-1">
+                <Text className="text-muted-foreground text-xs mb-2 font-semibold">Repetições</Text>
                 <TextInput
                   value={reps}
                   onChangeText={setReps}
                   keyboardType="number-pad"
-                  style={{ 
-                    backgroundColor: '#0A0E1A', 
-                    borderWidth: 2, 
-                    borderColor: '#1E2A42', 
-                    borderRadius: 12, 
-                    padding: 14, 
-                    color: '#FFFFFF', 
-                    fontSize: 18, 
-                    fontWeight: '700', 
-                    textAlign: 'center' 
-                  }}
+                  className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Descanso (s)</Text>
+              <View className="flex-1">
+                <Text className="text-muted-foreground text-xs mb-2 font-semibold">Descanso (s)</Text>
                 <TextInput
                   value={restSeconds}
                   onChangeText={setRestSeconds}
                   keyboardType="number-pad"
-                  style={{ 
-                    backgroundColor: '#0A0E1A', 
-                    borderWidth: 2, 
-                    borderColor: '#1E2A42', 
-                    borderRadius: 12, 
-                    padding: 14, 
-                    color: '#FFFFFF', 
-                    fontSize: 18, 
-                    fontWeight: '700', 
-                    textAlign: 'center' 
-                  }}
+                  className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
                 />
               </View>
             </View>
             
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Carga (kg)</Text>
+            <View className="mb-6">
+              <Text className="text-muted-foreground text-xs mb-2 font-semibold">Carga (kg)</Text>
               <TextInput
                 value={weight}
                 onChangeText={setWeight}
                 keyboardType="numeric"
                 placeholder="Ex: 20"
                 placeholderTextColor="#5A6178"
-                style={{ 
-                  backgroundColor: '#0A0E1A', 
-                  borderWidth: 2, 
-                  borderColor: '#1E2A42', 
-                  borderRadius: 12, 
-                  padding: 14, 
-                  color: '#FFFFFF', 
-                  fontSize: 18, 
-                  fontWeight: '700', 
-                  textAlign: 'center' 
-                }}
+                className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
               />
             </View>
             
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Link do Vídeo (YouTube)</Text>
+            <View className="mb-6">
+              <Text className="text-muted-foreground text-xs mb-2 font-semibold">Link do Vídeo (YouTube)</Text>
               <TextInput
                 value={videoUrl}
                 onChangeText={setVideoUrl}
                 placeholder="https://youtube.com/..."
                 placeholderTextColor="#5A6178"
                 autoCapitalize="none"
-                style={{ 
-                  backgroundColor: '#0A0E1A', 
-                  borderWidth: 2, 
-                  borderColor: '#1E2A42', 
-                  borderRadius: 12, 
-                  padding: 16, 
-                  color: '#FFFFFF', 
-                  fontSize: 16, 
-                  marginBottom: 12 
-                }}
+                className="bg-muted/30 border-2 border-border rounded-xl p-4 text-foreground text-base mb-3"
               />
               {videoUrl.trim() ? <VideoPlayer videoUrl={videoUrl.trim()} height={200} /> : null}
             </View>
@@ -218,22 +158,15 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
               onPress={handleSave} 
               activeOpacity={0.8} 
               disabled={saving}
-              style={{ opacity: saving ? 0.5 : 1 }}
+              className={`bg-primary rounded-2xl py-4 items-center ${saving ? 'opacity-50' : ''}`}
             >
-              <LinearGradient
-                colors={['#FF6B35', '#E85A2A']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ borderRadius: 16, paddingVertical: 16, alignItems: 'center' }}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>
-                    {initialData ? 'Salvar Alterações' : 'Adicionar Exercício'}
-                  </Text>
-                )}
-              </LinearGradient>
+              {saving ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text className="text-primary-foreground text-base font-bold">
+                  {initialData ? 'Salvar Alterações' : 'Adicionar Exercício'}
+                </Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </TouchableOpacity>

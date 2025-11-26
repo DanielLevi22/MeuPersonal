@@ -5,7 +5,6 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
-    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
@@ -56,57 +55,57 @@ export function EditFoodModal({ visible, onClose, onSave, item }: EditFoodModalP
     >
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalOverlay}
+        className="flex-1 bg-black/80 justify-center p-6"
       >
-        <View style={styles.modalContent}>
+        <View className="bg-card rounded-3xl p-6 border border-border">
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Editar Quantidade</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="text-xl font-bold text-foreground">Editar Quantidade</Text>
+            <TouchableOpacity onPress={handleClose} className="p-1">
+              <Ionicons name="close" size={24} color="#FAFAFA" />
             </TouchableOpacity>
           </View>
 
           {/* Food Info */}
-          <View style={styles.foodInfo}>
-            <Text style={styles.foodName}>{item.food?.name}</Text>
-            <Text style={styles.foodDetails}>
+          <View className="mb-6 bg-muted/30 p-4 rounded-xl">
+            <Text className="text-base font-semibold text-foreground mb-1">{item.food?.name}</Text>
+            <Text className="text-xs text-muted-foreground">
               {item.food?.calories} kcal por {item.food?.serving_size}{item.food?.serving_unit}
             </Text>
           </View>
 
           {/* Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Quantidade ({item.unit})</Text>
-            <View style={styles.inputWrapper}>
+          <View className="mb-6">
+            <Text className="text-sm text-muted-foreground mb-2">Quantidade ({item.unit})</Text>
+            <View className="flex-row items-center bg-muted/30 rounded-xl border-2 border-border px-4">
               <TextInput
-                style={styles.input}
+                className="flex-1 text-foreground text-lg font-semibold py-3"
                 value={quantity}
                 onChangeText={setQuantity}
                 keyboardType="numeric"
                 placeholder="0"
-                placeholderTextColor="#5A6178"
+                placeholderTextColor="#A1A1AA"
                 autoFocus={true}
                 selectTextOnFocus={true}
               />
-              <Text style={styles.unitText}>{item.unit}</Text>
+              <Text className="text-muted-foreground text-base font-semibold ml-2">{item.unit}</Text>
             </View>
           </View>
 
           {/* Actions */}
-          <View style={styles.actions}>
+          <View className="flex-row gap-3">
             <TouchableOpacity 
-              style={styles.cancelButton} 
+              className="flex-1 py-3.5 rounded-xl bg-muted items-center" 
               onPress={handleClose}
             >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+              <Text className="text-foreground font-semibold text-base">Cancelar</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.saveButton} 
+              className="flex-1 py-3.5 rounded-xl bg-primary items-center" 
               onPress={handleSave}
             >
-              <Text style={styles.saveButtonText}>Salvar</Text>
+              <Text className="text-primary-foreground font-bold text-base">Salvar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -114,107 +113,3 @@ export function EditFoodModal({ visible, onClose, onSave, item }: EditFoodModalP
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: '#141B2D',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  foodInfo: {
-    marginBottom: 24,
-    backgroundColor: '#0A0E1A',
-    padding: 16,
-    borderRadius: 12,
-  },
-  foodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  foodDetails: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: '#8B92A8',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0A0E1A',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    paddingHorizontal: 16,
-  },
-  input: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-    paddingVertical: 12,
-  },
-  unitText: {
-    color: '#8B92A8',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#1E2A42',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  saveButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#00FF88',
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#0A0E1A',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-});

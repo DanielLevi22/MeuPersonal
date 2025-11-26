@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo } from 'react';
 import {
     ActivityIndicator,
-    StyleSheet,
     Text,
     TouchableOpacity,
     View,
@@ -90,28 +89,28 @@ export function DailyNutrition() {
 
   if (isLoading && !currentDietPlan) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B35" />
+      <View className="p-6 items-center">
+        <ActivityIndicator size="large" color="#F97316" />
       </View>
     );
   }
 
   if (!currentDietPlan) {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="restaurant-outline" size={48} color="#5A6178" />
-        <Text style={styles.emptyText}>Nenhum plano de dieta ativo</Text>
+      <View className="p-6 items-center bg-card rounded-2xl border border-border">
+        <Ionicons name="restaurant-outline" size={48} color="#A1A1AA" />
+        <Text className="text-muted-foreground mt-3 text-base">Nenhum plano de dieta ativo</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View className="mb-6">
       {/* Header */}
-      <View style={styles.header}>
+      <View className="flex-row justify-between items-start mb-6">
         <View>
-          <Text style={styles.title}>Nutrição de Hoje</Text>
-          <Text style={styles.subtitle}>
+          <Text className="text-2xl font-extrabold text-foreground mb-1">Nutrição de Hoje</Text>
+          <Text className="text-sm text-muted-foreground capitalize">
             {new Date().toLocaleDateString('pt-BR', {
               weekday: 'long',
               day: 'numeric',
@@ -119,43 +118,43 @@ export function DailyNutrition() {
             })}
           </Text>
         </View>
-        <View style={styles.caloriesBadge}>
-          <Text style={styles.caloriesValue}>
+        <View className="bg-card px-3 py-2 rounded-xl border border-border items-end">
+          <Text className="text-lg font-bold text-orange-500">
             {consumedMacros.calories.toFixed(0)}
           </Text>
-          <Text style={styles.caloriesLabel}>
+          <Text className="text-xs text-muted-foreground">
             / {currentDietPlan.target_calories.toFixed(0)} kcal
           </Text>
         </View>
       </View>
 
       {/* Macro Bars */}
-      <View style={styles.macrosContainer}>
+      <View className="bg-card p-4 rounded-2xl border border-border mb-6 gap-4">
         <MacroBar
           label="Proteína"
           current={consumedMacros.protein}
           target={currentDietPlan.target_protein}
-          color="#00FF88"
+          colorClass="bg-primary"
         />
         <MacroBar
           label="Carboidratos"
           current={consumedMacros.carbs}
           target={currentDietPlan.target_carbs}
-          color="#00D9FF"
+          colorClass="bg-secondary"
         />
         <MacroBar
           label="Gordura"
           current={consumedMacros.fat}
           target={currentDietPlan.target_fat}
-          color="#FFDE59"
+          colorClass="bg-yellow-400"
         />
       </View>
 
       {/* Meals List */}
-      <View style={styles.mealsContainer}>
-        <Text style={styles.sectionTitle}>Refeições</Text>
+      <View className="gap-3">
+        <Text className="text-lg font-bold text-foreground mb-1">Refeições</Text>
         {todayMeals.length === 0 ? (
-          <Text style={styles.noMealsText}>Nenhuma refeição planejada para hoje.</Text>
+          <Text className="text-muted-foreground italic">Nenhuma refeição planejada para hoje.</Text>
         ) : (
           todayMeals.map((meal) => {
             const isCompleted = dailyLogs[meal.id]?.completed;
@@ -170,34 +169,25 @@ export function DailyNutrition() {
             return (
               <TouchableOpacity
                 key={meal.id}
-                style={[styles.mealCard, isCompleted && styles.mealCardCompleted]}
+                className={`bg-card p-4 rounded-2xl border border-border ${isCompleted ? 'opacity-60 border-primary bg-primary/5' : ''}`}
                 onPress={() => toggleMealCompletion(meal.id, today, !isCompleted)}
                 activeOpacity={0.7}
               >
-                <View style={styles.mealHeader}>
-                  <View style={styles.mealInfo}>
+                <View className="flex-row justify-between items-center mb-1">
+                  <View className="flex-1">
                     <Text
-                      style={[
-                        styles.mealTime,
-                        isCompleted && styles.textCompleted,
-                      ]}
+                      className={`text-xs text-muted-foreground mb-0.5 ${isCompleted ? 'line-through' : ''}`}
                     >
                       {meal.meal_time || 'Sem horário'}
                     </Text>
                     <Text
-                      style={[
-                        styles.mealName,
-                        isCompleted && styles.textCompleted,
-                      ]}
+                      className={`text-base font-semibold text-foreground ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
                     >
                       {meal.name || getMealTypeName(meal.meal_type)}
                     </Text>
                   </View>
                   <View
-                    style={[
-                      styles.checkbox,
-                      isCompleted && styles.checkboxCompleted,
-                    ]}
+                    className={`w-6 h-6 rounded-full border-2 border-muted-foreground items-center justify-center ${isCompleted ? 'bg-primary border-primary' : ''}`}
                   >
                     {isCompleted && (
                       <Ionicons name="checkmark" size={16} color="#0A0E1A" />
@@ -205,10 +195,7 @@ export function DailyNutrition() {
                   </View>
                 </View>
                 <Text
-                  style={[
-                    styles.mealCalories,
-                    isCompleted && styles.textCompleted,
-                  ]}
+                  className={`text-xs text-muted-foreground ${isCompleted ? 'line-through' : ''}`}
                 >
                   {totalCalories.toFixed(0)} kcal • {items.length} itens
                 </Text>
@@ -225,29 +212,27 @@ function MacroBar({
   label,
   current,
   target,
-  color,
+  colorClass,
 }: {
   label: string;
   current: number;
   target: number;
-  color: string;
+  colorClass: string;
 }) {
   const progress = Math.min((current / target) * 100, 100);
 
   return (
-    <View style={styles.macroBarContainer}>
-      <View style={styles.macroHeader}>
-        <Text style={styles.macroLabel}>{label}</Text>
-        <Text style={styles.macroValue}>
+    <View className="gap-2">
+      <View className="flex-row justify-between">
+        <Text className="text-sm font-semibold text-foreground">{label}</Text>
+        <Text className="text-xs text-muted-foreground">
           {current.toFixed(0)} / {target.toFixed(0)}g
         </Text>
       </View>
-      <View style={styles.progressBarBg}>
+      <View className="h-2 bg-muted/30 rounded-full overflow-hidden">
         <View
-          style={[
-            styles.progressBarFill,
-            { width: `${progress}%`, backgroundColor: color },
-          ]}
+          className={`h-full rounded-full ${colorClass}`}
+          style={{ width: `${progress}%` }}
         />
       </View>
     </View>
@@ -265,161 +250,3 @@ function getMealTypeName(type: string) {
   };
   return types[type] || type;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-  },
-  loadingContainer: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    padding: 24,
-    alignItems: 'center',
-    backgroundColor: '#141B2D',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  emptyText: {
-    color: '#8B92A8',
-    marginTop: 12,
-    fontSize: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#8B92A8',
-    textTransform: 'capitalize',
-  },
-  caloriesBadge: {
-    backgroundColor: '#141B2D',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-    alignItems: 'flex-end',
-  },
-  caloriesValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FF6B35',
-  },
-  caloriesLabel: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  macrosContainer: {
-    backgroundColor: '#141B2D',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-    marginBottom: 24,
-    gap: 16,
-  },
-  macroBarContainer: {
-    gap: 8,
-  },
-  macroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  macroLabel: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  macroValue: {
-    fontSize: 12,
-    color: '#8B92A8',
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#0A0E1A',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  mealsContainer: {
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  noMealsText: {
-    color: '#8B92A8',
-    fontStyle: 'italic',
-  },
-  mealCard: {
-    backgroundColor: '#141B2D',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  mealCardCompleted: {
-    opacity: 0.6,
-    borderColor: '#00FF88',
-    backgroundColor: 'rgba(0, 255, 136, 0.05)',
-  },
-  mealHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  mealInfo: {
-    flex: 1,
-  },
-  mealTime: {
-    fontSize: 12,
-    color: '#8B92A8',
-    marginBottom: 2,
-  },
-  mealName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  mealCalories: {
-    fontSize: 13,
-    color: '#8B92A8',
-  },
-  textCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#8B92A8',
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#5A6178',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxCompleted: {
-    backgroundColor: '#00FF88',
-    borderColor: '#00FF88',
-  },
-});
