@@ -70,7 +70,7 @@ export default function PeriodizationsScreen() {
           </Text>
         </View>
         
-        <Link href={'/(tabs)/workouts/periodization/create' as any} asChild>
+        <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
           <TouchableOpacity activeOpacity={0.8}>
             <LinearGradient
               colors={['#00D9FF', '#00B8D9']}
@@ -111,7 +111,7 @@ export default function PeriodizationsScreen() {
                 Crie um planejamento de longo prazo para seus alunos
               </Text>
               
-              <Link href={'/(tabs)/workouts/periodization/create' as any} asChild>
+              <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
                 <TouchableOpacity activeOpacity={0.8}>
                   <LinearGradient
                     colors={['#00D9FF', '#00B8D9']}

@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/auth';
+import { StudentPickerModal } from '@/components/StudentPickerModal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
@@ -9,9 +10,12 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { useWorkoutStore } from '../store/workoutStore';
+
 export default function CreatePeriodizationScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { createPeriodization } = useWorkoutStore();
 
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -34,20 +38,34 @@ export default function CreatePeriodizationScreen() {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
-        .from('student_professional')
+      // 1. Fetch active students
+      const { data: activeData, error: activeError } = await supabase
+        .from('students_personals')
         .select(`
-          student:profiles!student_professional_student_id_fkey (
+          student:profiles!student_id (
             id,
             full_name
           )
         `)
-        .eq('professional_id', user.id)
+        .eq('personal_id', user.id)
         .eq('status', 'active');
 
-      if (!error && data) {
-        const studentsList = data.map((item: any) => item.student).filter(Boolean);
-        setStudents(studentsList);
+      // 2. Fetch pending students
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('students')
+        .select('id, full_name')
+        .eq('personal_id', user.id)
+        .not('invite_code', 'is', null);
+
+      if (!activeError && !pendingError) {
+        const activeList = activeData?.map((item: any) => item.student).filter(Boolean) || [];
+        const pendingList = pendingData || [];
+        
+        // Merge and deduplicate
+        const allStudents = [...activeList, ...pendingList];
+        const uniqueStudents = Array.from(new Map(allStudents.map(item => [item.id, item])).values());
+        
+        setStudents(uniqueStudents);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -70,26 +88,23 @@ export default function CreatePeriodizationScreen() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('periodizations')
-        .insert({
-          name,
-          student_id: studentId,
-          professional_id: user.id,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0],
-          status: 'planned',
-          notes: notes || null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await createPeriodization({
+        name,
+        student_id: studentId,
+        personal_id: user.id,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        status: 'planned',
+        notes: notes || null,
+      } as any);
 
       Alert.alert('Sucesso', 'Periodização criada com sucesso!', [
         {
           text: 'OK',
-          onPress: () => router.back(),
+          onPress: () => {
+             // Navigate to the periodization details/edit screen
+             router.replace(`/(tabs)/students/${studentId}/workouts/${data.id}` as any);
+          },
         },
       ]);
     } catch (error) {
@@ -153,32 +168,27 @@ export default function CreatePeriodizationScreen() {
               />
             </TouchableOpacity>
 
-            {/* Student List */}
-            {showStudentPicker && (
-              <View className="mt-2 bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl overflow-hidden">
-                {students.map((student) => (
-                  <TouchableOpacity
-                    key={student.id}
-                    onPress={() => {
-                      setStudentId(student.id);
-                      setShowStudentPicker(false);
-                    }}
-                    className="px-4 py-3 border-b border-zinc-800"
-                  >
-                    <Text className="text-foreground text-base font-sans">
-                      {student.full_name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {students.length === 0 && (
-                  <View className="px-4 py-6">
-                    <Text className="text-muted-foreground text-center font-sans">
-                      Nenhum aluno encontrado
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
+            <TouchableOpacity
+              onPress={() => setShowStudentPicker(true)}
+              className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
+            >
+              <Text className={selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'}>
+                {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
+              </Text>
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color="#71717A"
+              />
+            </TouchableOpacity>
+
+            <StudentPickerModal
+              visible={showStudentPicker}
+              onClose={() => setShowStudentPicker(false)}
+              onSelect={(student) => setStudentId(student.id)}
+              students={students}
+              selectedStudentId={studentId}
+            />
           </View>
 
           {/* Dates */}

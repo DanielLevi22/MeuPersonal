@@ -162,27 +162,32 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         };
       }).filter(Boolean);
 
-      // 2. Fetch pending invites
-      const { data: invitesData, error: invitesError } = await supabase
-        .from('student_invites')
-        .select('id, name, invite_code, created_at')
-        .eq('personal_id', personalId);
+      // 2. Fetch pending invites (from students table)
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('personal_id', personalId)
+        .not('invite_code', 'is', null);
 
-      if (invitesError) throw invitesError;
+      if (pendingError) throw pendingError;
 
-      const formattedInvites = invitesData.map((invite: any) => ({
+      const formattedInvites = pendingData.map((invite: any) => ({
         id: invite.id,
-        full_name: invite.name,
-        email: `Código: ${invite.invite_code}`,
+        full_name: invite.full_name,
+        email: invite.email || `Código: ${invite.invite_code}`,
         avatar_url: null,
-        status: 'invited', // New status for invites not yet accepted
-        is_invite: true
+        status: 'invited',
+        is_invite: true,
+        invite_code: invite.invite_code,
+        phone: invite.phone,
+        weight: invite.weight,
+        height: invite.height,
+        notes: invite.notes,
+        assessment: invite.initial_assessment
       }));
 
-      // 3. Merge lists
       // 3. Merge lists and deduplicate
-      // 3. Merge lists and deduplicate
-      // Get all invite codes from linked students
+      // Get all invite codes from linked students to filter out those who already joined
       const linkedInviteCodes = new Set(
         formattedLinkedStudents
           .map((s: any) => s.invite_code)
@@ -203,18 +208,18 @@ export const useStudentStore = create<StudentState>((set, get) => ({
           .filter(Boolean)
       );
 
-      // Filter out invites that have already been used
+      // Filter out invites that have already been used or linked
       const uniqueInvites = formattedInvites.filter((invite: any) => {
         // Check by invite code
         if (linkedInviteCodes.has(invite.invite_code)) return false;
         
-        // Check by generated email
+        // Check by generated email (if applicable)
         if (invite.invite_code) {
           const generatedEmail = `aluno${invite.invite_code.toLowerCase()}@test.com`;
           if (linkedEmails.has(generatedEmail)) return false;
         }
 
-        // Check by name (heuristic for when code/email link is missing)
+        // Check by name (heuristic)
         if (invite.full_name && linkedNames.has(invite.full_name.trim().toLowerCase())) {
           return false;
         }
@@ -268,7 +273,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   cancelInvite: async (inviteId: string) => {
     try {
       const { error } = await supabase
-        .from('student_invites')
+        .from('students')
         .delete()
         .eq('id', inviteId);
 

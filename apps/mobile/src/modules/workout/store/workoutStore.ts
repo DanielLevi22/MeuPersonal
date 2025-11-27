@@ -41,6 +41,7 @@ export interface Periodization {
   id: string;
   name: string;
   student_id: string;
+  personal_id: string;
   start_date: string;
   end_date: string;
   status: 'planned' | 'active' | 'completed';
@@ -60,6 +61,7 @@ interface WorkoutState {
   fetchPeriodizations: (personalId: string) => Promise<void>;
   fetchExercises: () => Promise<void>;
   createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
+  createPeriodization: (periodization: Omit<Periodization, 'id' | 'created_at' | 'student'>) => Promise<Periodization>;
   createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
@@ -76,19 +78,47 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   fetchPeriodizations: async (personalId) => {
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase
+      // 1. Fetch periodizations
+      const { data: periodizations, error } = await supabase
         .from('periodizations')
-        .select(`
-          *,
-          student:profiles!periodizations_student_id_fkey (
-            full_name
-          )
-        `)
+        .select('*')
         .eq('professional_id', personalId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      set({ periodizations: data });
+
+      if (!periodizations || periodizations.length === 0) {
+        set({ periodizations: [] });
+        return;
+      }
+
+      // 2. Extract unique student IDs
+      const studentIds = [...new Set(periodizations.map(p => p.student_id))];
+
+      // 3. Fetch student details (Active & Pending)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      const { data: pendingStudents } = await supabase
+        .from('students')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      // 4. Create a map of ID -> Name
+      const studentMap = new Map<string, { full_name: string }>();
+      
+      profiles?.forEach(p => studentMap.set(p.id, { full_name: p.full_name }));
+      pendingStudents?.forEach(p => studentMap.set(p.id, { full_name: p.full_name }));
+
+      // 5. Merge data
+      const periodizationsWithStudent = periodizations.map(p => ({
+        ...p,
+        student: studentMap.get(p.student_id)
+      }));
+
+      set({ periodizations: periodizationsWithStudent });
     } catch (error) {
       console.error('Error fetching periodizations:', error);
     } finally {
@@ -138,6 +168,51 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       await get().fetchExercises();
     } catch (error) {
       console.error('Error creating exercise:', error);
+      throw error;
+    }
+  },
+
+  createPeriodization: async (periodization) => {
+    try {
+      const { data, error } = await supabase
+        .from('periodizations')
+        .insert(periodization)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Fetch student name for the local state update
+      let studentName = '';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', periodization.student_id)
+        .single();
+        
+      if (profile) {
+        studentName = profile.full_name;
+      } else {
+        const { data: pending } = await supabase
+          .from('students')
+          .select('full_name')
+          .eq('id', periodization.student_id)
+          .single();
+        if (pending) studentName = pending.full_name;
+      }
+
+      const newPeriodizationWithStudent = {
+        ...data,
+        student: { full_name: studentName }
+      };
+
+      set((state) => ({
+        periodizations: [newPeriodizationWithStudent, ...state.periodizations]
+      }));
+
+      return data;
+    } catch (error) {
+      console.error('Error creating periodization:', error);
       throw error;
     }
   },

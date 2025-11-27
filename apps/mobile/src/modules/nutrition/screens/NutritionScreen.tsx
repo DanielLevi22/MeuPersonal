@@ -3,8 +3,8 @@ import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { useNutritionStore } from '../routes';
@@ -13,12 +13,13 @@ export default function NutritionScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { dietPlans, isLoading, fetchDietPlans } = useNutritionStore();
-
-  useEffect(() => {
-    if (user?.id) {
-      fetchDietPlans(user.id);
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        fetchDietPlans(user.id);
+      }
+    }, [user?.id])
+  );
 
   const handlePressPlan = (studentId: string, planId: string) => {
     Haptics.selectionAsync();

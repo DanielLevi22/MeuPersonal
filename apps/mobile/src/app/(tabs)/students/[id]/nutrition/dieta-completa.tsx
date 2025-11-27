@@ -1,18 +1,19 @@
-import { FoodSearchModal } from '@/modules/nutrition/components/FoodSearchModal';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
+import FoodSearchScreen from '@/modules/nutrition/screens/FoodSearchScreen';
 import { Food, useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -322,14 +323,20 @@ export default function DietaCompletaScreen() {
         </ScrollView>
 
         {/* Food Search Modal */}
-        <FoodSearchModal
+        <Modal
           visible={showFoodSearch}
-          onClose={() => {
-            setShowFoodSearch(false);
-            setSelectedMealId(null);
-          }}
-          onSelectFood={handleSelectFood}
-        />
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowFoodSearch(false)}
+        >
+          <FoodSearchScreen
+            onClose={() => {
+              setShowFoodSearch(false);
+              setSelectedMealId(null);
+            }}
+            onSelect={handleSelectFood}
+          />
+        </Modal>
       </SafeAreaView>
     </View>
   );

@@ -1,3 +1,3 @@
-import CreateDietPlanScreen from '@/app/nutrition/create';
+import { CreateDietScreen } from '@/modules/nutrition/routes';
 
-export default CreateDietPlanScreen;
+export default CreateDietScreen;

@@ -338,19 +338,47 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchDietPlans: async (professionalId: string) => {
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase
+      // 1. Fetch diet plans
+      const { data: plans, error } = await supabase
         .from('diet_plans')
-        .select(`
-          *,
-          student:profiles!diet_plans_student_id_fkey (
-            full_name
-          )
-        `)
-        .eq('professional_id', professionalId)
+        .select('*')
+        .eq('personal_id', professionalId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      set({ dietPlans: data || [] });
+
+      if (!plans || plans.length === 0) {
+        set({ dietPlans: [] });
+        return;
+      }
+
+      // 2. Extract unique student IDs
+      const studentIds = [...new Set(plans.map(p => p.student_id))];
+
+      // 3. Fetch student details (Active & Pending)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      const { data: pendingStudents } = await supabase
+        .from('students')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      // 4. Create a map of ID -> Name
+      const studentMap = new Map<string, { full_name: string }>();
+      
+      profiles?.forEach(p => studentMap.set(p.id, { full_name: p.full_name }));
+      pendingStudents?.forEach(p => studentMap.set(p.id, { full_name: p.full_name }));
+
+      // 5. Merge data
+      const plansWithStudent = plans.map(p => ({
+        ...p,
+        student: studentMap.get(p.student_id)
+      }));
+
+      set({ dietPlans: plansWithStudent });
     } catch (error) {
       console.error('Error fetching diet plans:', error);
     } finally {
@@ -542,7 +570,34 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       // NOTE: Notifications are NOT scheduled here because this runs on the professor's device.
       // Notifications will be scheduled on the STUDENT'S device when they fetch their diet plan.
       
-      set({ currentDietPlan: newPlan });
+      // Fetch student name for the local state update
+      let studentName = '';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', plan.student_id)
+        .single();
+        
+      if (profile) {
+        studentName = profile.full_name;
+      } else {
+        const { data: pending } = await supabase
+          .from('students')
+          .select('full_name')
+          .eq('id', plan.student_id)
+          .single();
+        if (pending) studentName = pending.full_name;
+      }
+
+      const newPlanWithStudent = {
+        ...newPlan,
+        student: { full_name: studentName }
+      };
+      
+      set((state) => ({
+        currentDietPlan: newPlan,
+        dietPlans: [newPlanWithStudent, ...state.dietPlans]
+      }));
     } catch (error) {
       console.error('Error creating diet plan:', error);
       throw error;
