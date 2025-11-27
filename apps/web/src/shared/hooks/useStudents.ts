@@ -247,7 +247,16 @@ export function useCreateStudent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ fullName, email, services }: { fullName: string; email?: string; services: string[] }) => {
+    mutationFn: async ({ fullName, email, services, phone, weight, height, notes, initial_assessment }: { 
+      fullName: string; 
+      email?: string; 
+      services: string[];
+      phone?: string;
+      weight?: string;
+      height?: string;
+      notes?: string;
+      initial_assessment?: any;
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
@@ -262,6 +271,11 @@ export function useCreateStudent() {
           email: email, // Optional now
           personal_id: user.id,
           invite_code: inviteCode,
+          phone: phone,
+          weight: weight ? parseFloat(weight) : null,
+          height: height ? parseFloat(height) : null,
+          notes: notes,
+          initial_assessment: initial_assessment
         })
         .select()
         .single();

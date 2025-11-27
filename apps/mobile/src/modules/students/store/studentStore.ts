@@ -246,11 +246,11 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       
       const { error } = await supabase
-        .from('student_invites')
+        .from('students')
         .insert({
           personal_id: data.personal_id,
           invite_code: code,
-          name: data.name,
+          full_name: data.name,
           phone: data.phone,
           weight: data.weight ? parseFloat(data.weight) : null,
           height: data.height ? parseFloat(data.height) : null,

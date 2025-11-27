@@ -97,21 +97,14 @@ export default function CreateStudentScreen() {
     });
 
     if (result.success && result.code) {
-      Alert.alert(
-        'Aluno Cadastrado!',
-        `O código de convite é:\n\n${result.code}\n\nCompartilhe este código com o aluno para que ele possa se vincular.`,
-        [
-          {
-            text: 'Copiar Código',
-            onPress: () => router.back(),
-            style: 'default'
-          },
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      // Navigate to success screen
+      router.replace({
+        pathname: '/(tabs)/students/invite',
+        params: { 
+          code: result.code,
+          name: fullName
+        }
+      });
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Erro', result.error || 'Falha ao cadastrar aluno');

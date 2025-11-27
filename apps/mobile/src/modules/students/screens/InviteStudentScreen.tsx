@@ -24,8 +24,8 @@ export default function InviteStudentScreen() {
   return (
     <ScreenLayout>
       <View className="flex-1 px-6 justify-center items-center">
-        <View className="w-24 h-24 rounded-full bg-emerald-500/15 items-center justify-center mb-6 border-2 border-emerald-500/20">
-          <Ionicons name="checkmark" size={48} color="#00C9A7" />
+        <View className="w-24 h-24 rounded-full bg-orange-500/15 items-center justify-center mb-6 border-2 border-orange-500/20">
+          <Ionicons name="checkmark" size={48} color="#FF6B35" />
         </View>
 
         <Text className="text-3xl font-extrabold text-white mb-2 text-center font-display">
@@ -35,8 +35,8 @@ export default function InviteStudentScreen() {
           Envie o código abaixo para <Text className="text-white font-bold">{name}</Text> acessar o app.
         </Text>
 
-        <View className="bg-zinc-900 px-10 py-8 rounded-3xl mb-10 border-2 border-dashed border-emerald-500/50 w-full items-center shadow-lg shadow-emerald-500/10">
-          <Text className="text-5xl font-bold text-emerald-400 tracking-widest font-mono">
+        <View className="bg-zinc-900 px-10 py-8 rounded-3xl mb-10 border-2 border-dashed border-orange-500/50 w-full items-center shadow-lg shadow-orange-500/10">
+          <Text className="text-5xl font-bold text-orange-500 tracking-widest font-mono">
             {code}
           </Text>
           <Text className="text-zinc-500 text-xs mt-2 font-sans uppercase tracking-wider">
@@ -51,10 +51,10 @@ export default function InviteStudentScreen() {
           className="w-full mb-4"
         >
           <LinearGradient
-            colors={['#00C9A7', '#00A88E']}
+            colors={['#FF6B35', '#FF2E63']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="rounded-2xl py-4 flex-row items-center justify-center shadow-lg shadow-emerald-500/20"
+            className="rounded-2xl py-4 flex-row items-center justify-center shadow-lg shadow-orange-500/20"
           >
             <Ionicons name="share-social" size={24} color="#FFFFFF" style={{ marginRight: 12 }} />
             <Text className="text-white text-lg font-bold font-display">

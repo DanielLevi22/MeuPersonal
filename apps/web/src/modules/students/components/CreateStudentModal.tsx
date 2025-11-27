@@ -11,6 +11,10 @@ interface CreateStudentModalProps {
 export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState(''); // Optional now
+  const [phone, setPhone] = useState('');
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [notes, setNotes] = useState('');
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [existingProfile, setExistingProfile] = useState<{ id: string; full_name: string } | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -27,12 +31,38 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
   
   const availableServices = fetchedServices;
 
+  const serviceLabels: Record<string, string> = {
+    training: 'Treinos',
+    nutrition: 'Nutrição',
+    physiotherapy: 'Fisioterapia',
+    psychology: 'Psicologia'
+  };
+
   // Auto-select service if only one is available
   useEffect(() => {
     if (availableServices.length === 1 && selectedServices.length === 0) {
       setSelectedServices([availableServices[0]]);
     }
   }, [availableServices, selectedServices.length]);
+
+  const handleClose = () => {
+    setFullName('');
+    setEmail('');
+    setPhone('');
+    setWeight('');
+    setHeight('');
+    setNotes('');
+    setInviteCode(null);
+    setExistingProfile(null);
+    setSelectedServices([]);
+    setIsPendingProfile(false);
+    setHasCode(false);
+    setSearchCode('');
+    createStudent.reset();
+    associateStudent.reset();
+    findStudent.reset();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -85,7 +115,20 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
     }
 
     try {
-      const result = await createStudent.mutateAsync({ fullName, email, services: selectedServices });
+      const result = await createStudent.mutateAsync({ 
+        fullName, 
+        email, 
+        services: selectedServices,
+        phone,
+        weight,
+        height,
+        notes,
+        initial_assessment: {
+          weight: weight ? parseFloat(weight) : null,
+          height: height ? parseFloat(height) : null,
+          notes
+        }
+      });
       
       if (result.status === 'created' && result.data) {
         setInviteCode(result.data.invite_code);
@@ -126,9 +169,6 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
             });
             alert(`Solicitação de transferência enviada para ${serviceLabels[service]}!`);
           }
-          // If rejected, we just skip this service or abort? 
-          // For simplicity, let's continue to next service or finish.
-          // But we shouldn't call associateStudent for this service if there's a conflict.
           continue; 
         }
 
@@ -147,21 +187,6 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
     }
   };
 
-  const handleClose = () => {
-    setFullName('');
-    setEmail('');
-    setInviteCode(null);
-    setExistingProfile(null);
-    setSelectedServices([]);
-    setIsPendingProfile(false);
-    setHasCode(false);
-    setSearchCode('');
-    createStudent.reset();
-    associateStudent.reset();
-    findStudent.reset();
-    onClose();
-  };
-
   const handleCopyCode = () => {
     if (inviteCode) {
       navigator.clipboard.writeText(inviteCode);
@@ -174,13 +199,6 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
         ? prev.filter(s => s !== service)
         : [...prev, service]
     );
-  };
-
-  const serviceLabels: Record<string, string> = {
-    training: 'Treinos',
-    nutrition: 'Nutrição',
-    physiotherapy: 'Fisioterapia',
-    psychology: 'Psicologia'
   };
 
   return (
@@ -371,6 +389,63 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     placeholder="Ex: joao@email.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="block text-sm font-medium text-foreground">
+                    Telefone (Opcional)
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    placeholder="Ex: (11) 99999-9999"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="weight" className="block text-sm font-medium text-foreground">
+                      Peso (kg)
+                    </label>
+                    <input
+                      id="weight"
+                      type="number"
+                      step="0.1"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      placeholder="Ex: 70.5"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="height" className="block text-sm font-medium text-foreground">
+                      Altura (cm)
+                    </label>
+                    <input
+                      id="height"
+                      type="number"
+                      value={height}
+                      onChange={(e) => setHeight(e.target.value)}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      placeholder="Ex: 175"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="notes" className="block text-sm font-medium text-foreground">
+                    Observações
+                  </label>
+                  <textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all min-h-[80px]"
+                    placeholder="Ex: Objetivo: Hipertrofia..."
                   />
                 </div>
 
