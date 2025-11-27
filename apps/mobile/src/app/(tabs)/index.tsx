@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function DashboardScreen() {
   const { user, abilities } = useAuthStore();
@@ -163,20 +164,27 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="flex-row justify-between items-center mb-8">
+        <Animated.View 
+          entering={FadeInDown.delay(100).springify()}
+          className="flex-row justify-between items-end mb-8 mt-2"
+        >
           <View>
-            <Text className="text-zinc-400 text-base mb-1 font-sans">Olá,</Text>
-            <Text className="text-white text-3xl font-extrabold font-display">
-              {profile?.full_name?.split(' ')[0] || 'Aluno'}! 👋
+            <Text className="text-zinc-400 text-[15px] font-medium mb-1 font-sans tracking-wide uppercase">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </Text>
+            <Text className="text-white text-[34px] font-bold font-display tracking-tight leading-tight">
+              Olá, {profile?.full_name?.split(' ')[0] || 'Aluno'}
             </Text>
           </View>
-          <StreakCounter streak={streak?.current_streak || 0} />
-        </View>
+          <View className="mb-1">
+            <StreakCounter streak={streak?.current_streak || 0} />
+          </View>
+        </Animated.View>
 
         {/* Daily Progress Section */}
-        <View className="mb-8">
-          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
-            HOJE
+        <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-8">
+          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+            Hoje
           </Text>
           <View className="gap-y-3">
             <ProgressCard
@@ -196,19 +204,21 @@ export default function DashboardScreen() {
               unit="treino"
             />
           </View>
-        </View>
+        </Animated.View>
 
         {/* Health Data Section */}
-        <View className="mb-8">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-lg font-bold font-display tracking-wide">
-              ATIVIDADE
+        <Animated.View entering={FadeInDown.delay(300).springify()} className="mb-8">
+          <View className="flex-row justify-between items-center mb-3 ml-1">
+            <Text className="text-zinc-500 text-[13px] font-bold font-sans uppercase tracking-widest">
+              Atividade
             </Text>
-            <View className="bg-cyan-500/10 px-2 py-1 rounded-md border border-cyan-500/20">
-              <Text className="text-cyan-400 text-[10px] font-bold font-sans">
-                SINCRONIZADO
-              </Text>
-            </View>
+            {steps > 0 && (
+              <View className="bg-zinc-800/50 px-2.5 py-1 rounded-full">
+                <Text className="text-zinc-400 text-[10px] font-bold font-sans uppercase tracking-wider">
+                  Sincronizado
+                </Text>
+              </View>
+            )}
           </View>
           <View className="flex-row gap-x-3">
             <View className="flex-1">
@@ -216,26 +226,26 @@ export default function DashboardScreen() {
                 label="Passos"
                 value={steps.toLocaleString()}
                 trend={steps >= 10000 ? 'up' : 'neutral'}
-                change={steps >= 10000 ? 'Meta atingida!' : `${Math.round((steps / 10000) * 100)}% da meta`}
+                change={steps >= 10000 ? 'Meta!' : `${Math.round((steps / 10000) * 100)}%`}
                 icon="walk"
               />
             </View>
             <View className="flex-1">
               <StatCard
                 label="Calorias"
-                value={`${calories} kcal`}
+                value={`${calories}`}
                 trend="up"
-                change="Hoje"
+                change="Kcal"
                 icon="flame"
               />
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Weekly Goals Section */}
-        <View className="mb-8">
-          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
-            METAS DA SEMANA
+        <Animated.View entering={FadeInDown.delay(400).springify()} className="mb-8">
+          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+            Semana
           </Text>
           <View className="flex-row gap-x-3">
             <View className="flex-1">
@@ -252,11 +262,8 @@ export default function DashboardScreen() {
                   const percentage = targetMeals > 0 ? (totalMeals / targetMeals) * 100 : 0;
                   return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
                 })()}
-                change={(() => {
-                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
-                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
-                  return `${totalMeals}/${targetMeals}`;
-                })()}
+                change="Meta"
+                icon="restaurant"
               />
             </View>
             <View className="flex-1">
@@ -273,25 +280,21 @@ export default function DashboardScreen() {
                   const percentage = targetWorkouts > 0 ? (totalWorkouts / targetWorkouts) * 100 : 0;
                   return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
                 })()}
-                change={(() => {
-                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
-                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
-                  const percentage = targetWorkouts > 0 ? Math.round((totalWorkouts / targetWorkouts) * 100) : 0;
-                  return `${percentage}%`;
-                })()}
+                change="Treinos"
+                icon="barbell"
               />
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Recent Achievements */}
-        <View>
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-lg font-bold font-display tracking-wide">
-              CONQUISTAS RECENTES
+        <Animated.View entering={FadeInDown.delay(500).springify()}>
+          <View className="flex-row justify-between items-center mb-3 ml-1">
+            <Text className="text-zinc-500 text-[13px] font-bold font-sans uppercase tracking-widest">
+              Conquistas
             </Text>
             <TouchableOpacity>
-              <Text className="text-orange-500 text-sm font-semibold font-sans">Ver todas</Text>
+              <Text className="text-[#FF6B35] text-[13px] font-bold font-sans tracking-wide">VER TODAS</Text>
             </TouchableOpacity>
           </View>
           
@@ -330,7 +333,7 @@ export default function DashboardScreen() {
               </>
             )}
           </ScrollView>
-        </View>
+        </Animated.View>
 
       </ScrollView>
       

@@ -12,17 +12,24 @@ interface ProgressCardProps {
 }
 
 const colors = {
-  success: ['#00C9A7', '#00A88E'], // Emerald
-  warning: ['#FFB800', '#FF9500'], // Gold
-  danger: ['#FF2E63', '#FF0000'],  // Pink/Red
-  info: ['#00D9FF', '#00B8D9'],    // Cyan
+  success: ['#34C759', '#30D158'], // Apple Green
+  warning: ['#FF6B35', '#FF8C61'], // Brand Orange
+  danger: ['#FF2E63', '#FF4C79'],  // Brand Red
+  info: ['#0A84FF', '#5AC8FA'],    // Apple Blue
 };
 
 const iconColors = {
-  success: '#00C9A7',
-  warning: '#FFB800',
+  success: '#34C759',
+  warning: '#FF6B35',
   danger: '#FF2E63',
-  info: '#00D9FF',
+  info: '#0A84FF',
+};
+
+const borderColors = {
+  success: 'rgba(52, 199, 89, 0.15)',
+  warning: 'rgba(255, 107, 53, 0.15)',
+  danger: 'rgba(255, 46, 99, 0.15)',
+  info: 'rgba(10, 132, 255, 0.15)',
 };
 
 export function ProgressCard({ title, current, target, icon, color, unit = '' }: ProgressCardProps) {
@@ -30,27 +37,34 @@ export function ProgressCard({ title, current, target, icon, color, unit = '' }:
   const percentage = Math.round(progress * 100);
 
   return (
-    <View className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-      <View className="flex-row justify-between items-center mb-3">
-        <View className="flex-row items-center gap-2">
+    <View 
+      className="rounded-[22px] p-5 mb-3"
+      style={{ 
+        backgroundColor: '#1C1C1E',
+        borderWidth: 1,
+        borderColor: borderColors[color]
+      }}
+    >
+      <View className="flex-row justify-between items-center mb-4">
+        <View className="flex-row items-center gap-3">
           <View 
-            className="p-2 rounded-xl"
-            style={{ backgroundColor: iconColors[color] + '20' }}
+            className="p-2.5 rounded-full"
+            style={{ backgroundColor: iconColors[color] + '15' }}
           >
             <Ionicons name={icon} size={20} color={iconColors[color]} />
           </View>
-          <Text className="text-white text-sm font-semibold">{title}</Text>
+          <Text className="text-white text-[17px] font-semibold tracking-tight">{title}</Text>
         </View>
         <Text 
-          className="text-sm font-bold"
+          className="text-[15px] font-bold"
           style={{ color: iconColors[color] }}
         >
           {percentage}%
         </Text>
       </View>
 
-      <View className="mb-2">
-        <View className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+      <View className="mb-3">
+        <View className="h-2.5 bg-zinc-800/50 rounded-full overflow-hidden">
           <LinearGradient
             colors={colors[color] as [string, string]}
             start={{ x: 0, y: 0 }}
@@ -62,11 +76,11 @@ export function ProgressCard({ title, current, target, icon, color, unit = '' }:
       </View>
 
       <View className="flex-row justify-between items-center">
-        <Text className="text-white text-sm font-bold">
-          {current} <Text className="text-zinc-500 font-normal">/ {target} {unit}</Text>
+        <Text className="text-zinc-400 text-[14px] font-medium">
+          <Text className="text-white font-semibold">{current}</Text> / {target} {unit}
         </Text>
         {percentage >= 100 && (
-          <Ionicons name="checkmark-circle" size={16} color={iconColors[color]} />
+          <Ionicons name="checkmark-circle" size={18} color={iconColors[color]} />
         )}
       </View>
     </View>
