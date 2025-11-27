@@ -18,7 +18,9 @@ interface NutritionStore {
   
   // Diet Plans
   currentDietPlan: DietPlan | null;
+  dietPlans: DietPlan[]; // List of plans for the professional view
   dietPlanHistory: DietPlan[];
+  fetchDietPlans: (professionalId: string) => Promise<void>;
   fetchDietPlan: (studentId: string) => Promise<void>;
   fetchDietPlanHistory: (studentId: string) => Promise<void>;
   createDietPlan: (plan: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>, sourcePlanId?: string) => Promise<void>;
@@ -72,6 +74,7 @@ export interface DailyLog {
 export const useNutritionStore = create<NutritionStore>((set, get) => ({
   foods: [],
   currentDietPlan: null,
+  dietPlans: [],
   dietPlanHistory: [],
   meals: [],
   mealItems: {},
@@ -328,6 +331,30 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     } catch (error) {
       console.error('Error creating custom food:', error);
       throw error;
+    }
+  },
+
+  // Fetch diet plans for a professional
+  fetchDietPlans: async (professionalId: string) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('diet_plans')
+        .select(`
+          *,
+          student:profiles!diet_plans_student_id_fkey (
+            full_name
+          )
+        `)
+        .eq('professional_id', professionalId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      set({ dietPlans: data || [] });
+    } catch (error) {
+      console.error('Error fetching diet plans:', error);
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -793,6 +820,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     set({
       foods: [],
       currentDietPlan: null,
+      dietPlans: [],
       dietPlanHistory: [],
       meals: [],
       mealItems: {},
