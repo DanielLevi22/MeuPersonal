@@ -6,6 +6,7 @@ import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function ProgressScreen() {
   const { user } = useAuthStore();
@@ -34,19 +35,22 @@ export default function ProgressScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View className="mb-8">
-          <Text className="text-4xl font-extrabold text-white mb-2 font-display">
+        <Animated.View 
+          entering={FadeInDown.delay(100).springify()}
+          className="mb-8 mt-2"
+        >
+          <Text className="text-[34px] font-bold text-white mb-1 font-display tracking-tight leading-tight">
             Seu Progresso 📈
           </Text>
-          <Text className="text-base text-zinc-400 font-sans">
+          <Text className="text-[15px] text-zinc-400 font-sans font-medium tracking-wide">
             Acompanhe sua evolução semanal
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Weekly Summary */}
-        <View className="mb-8">
-          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
-            RESUMO SEMANAL
+        <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-8">
+          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+            Resumo Semanal
           </Text>
           
           <View className="gap-y-4">
@@ -87,14 +91,14 @@ export default function ProgressScreen() {
             <GoalChart data={weeklyGoals} type="meals" />
             <GoalChart data={weeklyGoals} type="workouts" />
           </View>
-        </View>
+        </Animated.View>
 
         {/* Achievements Grid */}
-        <View>
-          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
-            SUAS CONQUISTAS
+        <Animated.View entering={FadeInDown.delay(300).springify()}>
+          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+            Suas Conquistas
           </Text>
-          <View className="flex-row flex-wrap gap-6 justify-center">
+          <View className="flex-row flex-wrap gap-4 justify-center">
             {achievements.length > 0 ? (
               achievements.map((achievement) => (
                 <AchievementBadge
@@ -153,7 +157,7 @@ export default function ProgressScreen() {
               </>
             )}
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </ScreenLayout>
   );
