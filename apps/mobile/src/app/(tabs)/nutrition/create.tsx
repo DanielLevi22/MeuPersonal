@@ -1,5 +1,3 @@
-import { CreateDietScreen } from '@/modules/nutrition/routes/index';
+import CreateDietPlanScreen from '@/app/nutrition/create';
 
-export default function CreateDietRoute() {
-  return <CreateDietScreen />;
-}
+export default CreateDietPlanScreen;

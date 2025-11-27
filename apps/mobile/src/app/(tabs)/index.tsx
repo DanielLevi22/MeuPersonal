@@ -53,10 +53,10 @@ export default function DashboardScreen() {
   if (isLoading && !profile) {
     return (
       <ScreenLayout className="justify-center items-center">
-        <View className="bg-primary/10 p-5 rounded-full mb-4 border border-primary/20">
-          <Ionicons name="barbell" size={48} color="#CCFF00" />
+        <View className="bg-zinc-900 p-5 rounded-full mb-4 border border-zinc-800">
+          <Ionicons name="barbell" size={48} color="#FF6B35" />
         </View>
-        <Text className="text-foreground text-lg font-semibold font-display">Carregando...</Text>
+        <Text className="text-white text-lg font-semibold font-display">Carregando...</Text>
       </ScreenLayout>
     );
   }
@@ -67,10 +67,10 @@ export default function DashboardScreen() {
       <ScreenLayout>
         <View className="p-6">
           <View className="mb-8">
-            <Text className="text-4xl font-bold text-foreground mb-2 font-display">
+            <Text className="text-4xl font-extrabold text-white mb-2 font-display">
               Dashboard 🔥
             </Text>
-            <Text className="text-base text-muted-foreground font-sans">
+            <Text className="text-base text-zinc-400 font-sans">
               Gerencie seus alunos e treinos
             </Text>
           </View>
@@ -86,7 +86,7 @@ export default function DashboardScreen() {
                 colors={['#00D9FF', '#00B8D9']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="rounded-2xl p-6 shadow-lg shadow-secondary/30"
+                className="rounded-2xl p-6 shadow-lg shadow-cyan-500/20"
               >
                 <View className="flex-row items-center justify-between">
                   <View>
@@ -112,22 +112,22 @@ export default function DashboardScreen() {
                 className="mb-6"
               >
                 <LinearGradient
-                  colors={['#CCFF00', '#99CC00']}
+                  colors={['#FF6B35', '#FF2E63']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  className="rounded-2xl p-6 shadow-lg shadow-primary/30"
+                  className="rounded-2xl p-6 shadow-lg shadow-orange-500/20"
                 >
                   <View className="flex-row items-center justify-between">
                     <View>
-                      <Text className="text-black/60 text-xs font-bold tracking-widest mb-2 font-sans">
+                      <Text className="text-white/80 text-xs font-bold tracking-widest mb-2 font-sans">
                         TREINOS CRIADOS
                       </Text>
-                      <Text className="text-black text-5xl font-bold font-display">
+                      <Text className="text-white text-5xl font-bold font-display">
                         0
                       </Text>
                     </View>
-                    <View className="bg-black/10 p-4 rounded-2xl">
-                      <Ionicons name="barbell" size={40} color="#000000" />
+                    <View className="bg-white/20 p-4 rounded-2xl">
+                      <Ionicons name="barbell" size={40} color="white" />
                     </View>
                   </View>
                 </LinearGradient>
@@ -139,9 +139,9 @@ export default function DashboardScreen() {
               onPress={() => router.push('/(tabs)/students')}
               activeOpacity={0.8}
             >
-              <View className="bg-surface border-2 border-primary rounded-2xl p-5 flex-row items-center justify-center">
-                <Ionicons name="add-circle" size={28} color="#CCFF00" />
-                <Text className="text-primary text-lg font-bold ml-3 font-display">
+              <View className="bg-zinc-900 border-2 border-orange-500 rounded-2xl p-5 flex-row items-center justify-center">
+                <Ionicons name="add-circle" size={28} color="#FF6B35" />
+                <Text className="text-orange-500 text-lg font-bold ml-3 font-display">
                   Adicionar Novo Aluno
                 </Text>
               </View>
@@ -158,14 +158,15 @@ export default function DashboardScreen() {
       <ScrollView
         contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#CCFF00" />
+          <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#FF6B35" />
         }
+        showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="flex-row justify-between items-center mb-6">
+        <View className="flex-row justify-between items-center mb-8">
           <View>
-            <Text className="text-muted-foreground text-base mb-1 font-sans">Olá,</Text>
-            <Text className="text-foreground text-2xl font-bold font-display">
+            <Text className="text-zinc-400 text-base mb-1 font-sans">Olá,</Text>
+            <Text className="text-white text-3xl font-extrabold font-display">
               {profile?.full_name?.split(' ')[0] || 'Aluno'}! 👋
             </Text>
           </View>
@@ -174,7 +175,7 @@ export default function DashboardScreen() {
 
         {/* Daily Progress Section */}
         <View className="mb-8">
-          <Text className="text-foreground text-lg font-bold mb-4 font-display">
+          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
             HOJE
           </Text>
           <View className="gap-y-3">
@@ -200,11 +201,11 @@ export default function DashboardScreen() {
         {/* Health Data Section */}
         <View className="mb-8">
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-foreground text-lg font-bold font-display">
+            <Text className="text-white text-lg font-bold font-display tracking-wide">
               ATIVIDADE
             </Text>
-            <View className="bg-secondary/10 px-2 py-1 rounded-md">
-              <Text className="text-secondary text-[10px] font-bold font-sans">
+            <View className="bg-cyan-500/10 px-2 py-1 rounded-md border border-cyan-500/20">
+              <Text className="text-cyan-400 text-[10px] font-bold font-sans">
                 SINCRONIZADO
               </Text>
             </View>
@@ -216,6 +217,7 @@ export default function DashboardScreen() {
                 value={steps.toLocaleString()}
                 trend={steps >= 10000 ? 'up' : 'neutral'}
                 change={steps >= 10000 ? 'Meta atingida!' : `${Math.round((steps / 10000) * 100)}% da meta`}
+                icon="walk"
               />
             </View>
             <View className="flex-1">
@@ -224,6 +226,7 @@ export default function DashboardScreen() {
                 value={`${calories} kcal`}
                 trend="up"
                 change="Hoje"
+                icon="flame"
               />
             </View>
           </View>
@@ -231,7 +234,7 @@ export default function DashboardScreen() {
 
         {/* Weekly Goals Section */}
         <View className="mb-8">
-          <Text className="text-foreground text-lg font-bold mb-4 font-display">
+          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
             METAS DA SEMANA
           </Text>
           <View className="flex-row gap-x-3">
@@ -284,11 +287,11 @@ export default function DashboardScreen() {
         {/* Recent Achievements */}
         <View>
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-foreground text-lg font-bold font-display">
+            <Text className="text-white text-lg font-bold font-display tracking-wide">
               CONQUISTAS RECENTES
             </Text>
             <TouchableOpacity>
-              <Text className="text-primary text-sm font-semibold font-sans">Ver todas</Text>
+              <Text className="text-orange-500 text-sm font-semibold font-sans">Ver todas</Text>
             </TouchableOpacity>
           </View>
           

@@ -29,22 +29,23 @@ export default function ProgressScreen() {
               const today = new Date().toISOString().split('T')[0];
               fetchDailyData(today);
             }} 
-            tintColor="#CCFF00" 
+            tintColor="#FF6B35" 
           />
         }
+        showsVerticalScrollIndicator={false}
       >
         <View className="mb-8">
-          <Text className="text-4xl font-bold text-foreground mb-2 font-display">
+          <Text className="text-4xl font-extrabold text-white mb-2 font-display">
             Seu Progresso 📈
           </Text>
-          <Text className="text-base text-muted-foreground font-sans">
+          <Text className="text-base text-zinc-400 font-sans">
             Acompanhe sua evolução semanal
           </Text>
         </View>
 
         {/* Weekly Summary */}
         <View className="mb-8">
-          <Text className="text-foreground text-lg font-bold mb-4 font-display">
+          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
             RESUMO SEMANAL
           </Text>
           
@@ -90,7 +91,7 @@ export default function ProgressScreen() {
 
         {/* Achievements Grid */}
         <View>
-          <Text className="text-foreground text-lg font-bold mb-4 font-display">
+          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
             SUAS CONQUISTAS
           </Text>
           <View className="flex-row flex-wrap gap-6 justify-center">

@@ -1,5 +1,3 @@
-import { WorkoutsScreen } from '@/workout';
+import PeriodizationsScreen from '@/modules/workout/screens/PeriodizationsScreen';
 
-export default function WorkoutsRoute() {
-  return <WorkoutsScreen />;
-}
+export default PeriodizationsScreen;

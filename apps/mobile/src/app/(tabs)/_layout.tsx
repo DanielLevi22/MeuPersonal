@@ -16,15 +16,15 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0A0E1A', // bg-background
+          backgroundColor: '#0A0A0A', // bg-background (Deep Black)
           borderTopWidth: 1,
-          borderTopColor: '#1E2A42', // border-border
+          borderTopColor: '#27272A', // border-dark
           height: Platform.OS === 'ios' ? 85 : 65 + insets.bottom,
           paddingBottom: Platform.OS === 'ios' ? 25 : 10 + insets.bottom,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#CCFF00', // text-primary (Neon Lime)
-        tabBarInactiveTintColor: '#5A6178', // text-muted-foreground
+        tabBarActiveTintColor: '#FF6B35', // text-primary (Vibrant Orange)
+        tabBarInactiveTintColor: '#71717A', // text-muted
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',

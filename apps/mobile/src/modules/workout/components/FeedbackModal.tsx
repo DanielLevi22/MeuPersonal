@@ -14,7 +14,7 @@ interface FeedbackModalProps {
 type Mood = 'great' | 'good' | 'ok' | 'tired' | 'exhausted';
 
 const moodOptions: { value: Mood; label: string; emoji: string; color: string }[] = [
-  { value: 'great', label: 'Ótimo', emoji: '🔥', color: '#CCFF00' },
+  { value: 'great', label: 'Ótimo', emoji: '🔥', color: '#FF6B35' },
   { value: 'good', label: 'Bom', emoji: '😊', color: '#00FF88' },
   { value: 'ok', label: 'Ok', emoji: '😐', color: '#FFD700' },
   { value: 'tired', label: 'Cansado', emoji: '😓', color: '#FF9500' },
@@ -85,7 +85,7 @@ export function FeedbackModal({ visible, onClose, workoutLogId, workoutName }: F
           <Ionicons
             name={star <= rating ? 'star' : 'star-outline'}
             size={32}
-            color={star <= rating ? '#CCFF00' : '#71717A'}
+            color={star <= rating ? '#FFB800' : '#71717A'}
           />
         </TouchableOpacity>
       ))}

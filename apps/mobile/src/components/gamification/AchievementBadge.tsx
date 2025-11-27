@@ -1,6 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 interface AchievementBadgeProps {
   title: string;
@@ -12,30 +11,31 @@ interface AchievementBadgeProps {
 
 export function AchievementBadge({ title, subtitle, icon, earned, size = 'md' }: AchievementBadgeProps) {
   const sizeMap = {
-    sm: { container: 60, icon: 24, fontSize: 10 },
-    md: { container: 80, icon: 32, fontSize: 12 },
-    lg: { container: 100, icon: 40, fontSize: 14 },
+    sm: { container: 60, icon: 24, fontSize: 'text-[10px]' },
+    md: { container: 80, icon: 32, fontSize: 'text-xs' },
+    lg: { container: 100, icon: 40, fontSize: 'text-sm' },
   };
 
   const currentSize = sizeMap[size];
 
   return (
-    <View style={[styles.wrapper, { opacity: earned ? 1 : 0.5 }]}>
+    <View className={`items-center gap-2 ${earned ? 'opacity-100' : 'opacity-50'}`}>
       <LinearGradient
-        colors={earned ? ['#FFD700', '#F59E0B'] : ['#374151', '#1F2937']}
-        style={[styles.container, { width: currentSize.container, height: currentSize.container }]}
+        colors={earned ? ['#FFB800', '#FF9500'] : ['#27272A', '#18181B']}
+        className="rounded-full p-[2px] justify-center items-center"
+        style={{ width: currentSize.container, height: currentSize.container }}
       >
-        <View style={styles.innerCircle}>
+        <View className="flex-1 w-full bg-zinc-900 rounded-full m-[2px] justify-center items-center">
           <Text style={{ fontSize: currentSize.icon }}>{icon}</Text>
         </View>
       </LinearGradient>
       
-      <View style={styles.textContainer}>
-        <Text style={[styles.title, { fontSize: currentSize.fontSize }]} numberOfLines={1}>
+      <View className="items-center">
+        <Text className={`text-white font-bold text-center ${currentSize.fontSize}`} numberOfLines={1}>
           {title}
         </Text>
         {subtitle && (
-          <Text style={[styles.subtitle, { fontSize: currentSize.fontSize - 2 }]} numberOfLines={1}>
+          <Text className={`text-zinc-400 font-medium text-center ${currentSize.fontSize}`} numberOfLines={1}>
             {subtitle}
           </Text>
         )}
@@ -43,38 +43,3 @@ export function AchievementBadge({ title, subtitle, icon, earned, size = 'md' }:
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  container: {
-    borderRadius: 999,
-    padding: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  innerCircle: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#141B2D',
-    borderRadius: 999,
-    margin: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textContainer: {
-    alignItems: 'center',
-  },
-  title: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: '#8B92A8',
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-});

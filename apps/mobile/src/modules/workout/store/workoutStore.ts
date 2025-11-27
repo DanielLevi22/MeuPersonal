@@ -37,12 +37,27 @@ export interface SelectedExercise {
   video_url?: string;
 }
 
+export interface Periodization {
+  id: string;
+  name: string;
+  student_id: string;
+  start_date: string;
+  end_date: string;
+  status: 'planned' | 'active' | 'completed';
+  notes?: string;
+  student?: {
+    full_name: string;
+  };
+}
+
 interface WorkoutState {
   workouts: Workout[];
+  periodizations: Periodization[];
   exercises: Exercise[];
   selectedExercises: SelectedExercise[];
   isLoading: boolean;
   fetchWorkouts: (personalId: string) => Promise<void>;
+  fetchPeriodizations: (personalId: string) => Promise<void>;
   fetchExercises: () => Promise<void>;
   createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
   createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
@@ -53,9 +68,33 @@ interface WorkoutState {
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   workouts: [],
+  periodizations: [],
   exercises: [],
   selectedExercises: [],
   isLoading: false,
+
+  fetchPeriodizations: async (personalId) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('periodizations')
+        .select(`
+          *,
+          student:profiles!periodizations_student_id_fkey (
+            full_name
+          )
+        `)
+        .eq('professional_id', personalId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      set({ periodizations: data });
+    } catch (error) {
+      console.error('Error fetching periodizations:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
   fetchWorkouts: async (personalId) => {
     set({ isLoading: true });
     try {
@@ -117,6 +156,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   reset: () => {
     set({
       workouts: [],
+      periodizations: [],
       exercises: [],
       selectedExercises: [],
       isLoading: false

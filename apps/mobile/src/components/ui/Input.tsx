@@ -1,5 +1,6 @@
+import colors from '@/constants/colors';
 import { cn } from '@/lib/utils';
-import { useColorScheme } from 'nativewind';
+import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
 interface InputProps {
@@ -33,22 +34,12 @@ export function Input({
   numberOfLines = 1,
   textAlignVertical = 'center',
 }: InputProps) {
-  const { colorScheme } = useColorScheme();
-  
-  // Theme colors - always use dark mode colors since we set dark as default
-  const colors = {
-    text: '#FFFFFF',
-    placeholder: '#A1A1AA',
-    background: '#18181B', // zinc-900
-    border: '#3F3F46', // zinc-700
-    borderFocus: '#A3E635', // lime-400
-    borderError: '#F87171', // red-400
-  };
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View className={className}>
       {label && (
-        <Text className="text-white font-semibold text-sm mb-2">
+        <Text className="text-white font-semibold text-sm mb-2 font-sans">
           {label}
         </Text>
       )}
@@ -56,7 +47,7 @@ export function Input({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.placeholder}
+        placeholderTextColor={colors.text.disabled}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
@@ -64,18 +55,22 @@ export function Input({
         multiline={multiline}
         numberOfLines={numberOfLines}
         textAlignVertical={textAlignVertical}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         className={cn(
-          'bg-zinc-900 border-2 border-zinc-700 rounded-2xl px-4 py-4 text-base h-14',
+          'bg-zinc-900/80 border-2 rounded-2xl px-4 py-4 text-base h-14',
+          isFocused && !error && 'border-secondary-500',
+          !isFocused && !error && 'border-zinc-700',
           error && 'border-red-400',
           !editable && 'opacity-60'
         )}
         style={{
-          color: colors.text,
+          color: colors.text.primary,
           fontSize: 16,
         }}
       />
       {error && (
-        <Text className="text-red-400 text-sm mt-1">{error}</Text>
+        <Text className="text-red-400 text-sm mt-1 font-sans">{error}</Text>
       )}
     </View>
   );

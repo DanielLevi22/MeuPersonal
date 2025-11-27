@@ -1,4 +1,6 @@
+import colors from '@/constants/colors';
 import { cn } from '@/lib/utils';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 interface ButtonProps {
@@ -22,19 +24,11 @@ export function Button({
   className,
   icon,
 }: ButtonProps) {
-  const baseStyles = 'rounded-xl flex-row items-center justify-center';
+  const baseStyles = 'rounded-xl flex-row items-center justify-center overflow-hidden';
   
-  const variantStyles = {
-    primary: 'bg-primary active:bg-primary/90 shadow-lg shadow-primary/20',
-    secondary: 'bg-secondary active:bg-secondary/90 shadow-lg shadow-secondary/20',
-    outline: 'border-2 border-primary bg-transparent active:bg-primary/10',
-    ghost: 'bg-transparent active:bg-surface',
-    destructive: 'bg-destructive active:bg-destructive/90',
-  };
-
   const sizeStyles = {
     sm: 'px-4 py-2',
-    md: 'px-6 py-3',
+    md: 'px-6 py-3.5',
     lg: 'px-8 py-4',
   };
 
@@ -44,15 +38,75 @@ export function Button({
     lg: 'text-lg',
   };
 
-  const textColorStyles = {
-    primary: 'text-primary-foreground',
-    secondary: 'text-secondary-foreground',
-    outline: 'text-primary',
-    ghost: 'text-foreground',
-    destructive: 'text-destructive-foreground',
+  const disabledStyles = disabled || isLoading ? 'opacity-50' : '';
+
+  // Gradient variants
+  const useGradient = variant === 'primary' || variant === 'secondary';
+  const gradientColors = variant === 'primary' 
+    ? colors.gradients.primary 
+    : variant === 'secondary'
+    ? colors.gradients.secondary
+    : ['transparent', 'transparent'];
+
+  // Non-gradient variant styles
+  const solidVariantStyles = {
+    outline: 'border-2 border-primary-400 bg-transparent active:bg-primary-400/10',
+    ghost: 'bg-transparent active:bg-zinc-800/50',
+    destructive: 'bg-red-500 active:bg-red-600',
   };
 
-  const disabledStyles = disabled || isLoading ? 'opacity-50' : '';
+  const textColor = variant === 'primary' || variant === 'secondary' || variant === 'destructive'
+    ? 'text-black'
+    : variant === 'outline'
+    ? 'text-primary-400'
+    : 'text-foreground';
+
+  const ButtonContent = () => (
+    <>
+      {isLoading ? (
+        <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? colors.primary.solid : '#000000'} />
+      ) : (
+        <View className="flex-row items-center">
+          {icon && <View className="mr-2">{icon}</View>}
+          <Text
+            className={cn(
+              'font-bold font-display',
+              textSizeStyles[size],
+              textColor
+            )}
+          >
+            {label}
+          </Text>
+        </View>
+      )}
+    </>
+  );
+
+  if (useGradient) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled || isLoading}
+        className={cn(
+          baseStyles,
+          sizeStyles[size],
+          disabledStyles,
+          className
+        )}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="absolute inset-0"
+        />
+        <View className="z-10">
+          <ButtonContent />
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity
@@ -61,29 +115,13 @@ export function Button({
       className={cn(
         baseStyles,
         // @ts-ignore
-        variantStyles[variant],
+        solidVariantStyles[variant],
         sizeStyles[size],
         disabledStyles,
         className
       )}
     >
-      {isLoading ? (
-        <ActivityIndicator color={variant === 'outline' ? '#CCFF00' : '#000000'} />
-      ) : (
-        <View className="flex-row items-center">
-          {icon && <View className="mr-2">{icon}</View>}
-          <Text
-            className={cn(
-              'font-bold font-display',
-              textSizeStyles[size],
-              // @ts-ignore
-              textColorStyles[variant]
-            )}
-          >
-            {label}
-          </Text>
-        </View>
-      )}
+      <ButtonContent />
     </TouchableOpacity>
   );
 }

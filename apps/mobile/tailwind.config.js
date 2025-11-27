@@ -1,4 +1,5 @@
 const { theme } = require('../../packages/config/src/theme');
+const { tailwindColors } = require('./src/constants/colors');
 
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
@@ -6,7 +7,19 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      colors: theme.colors,
+      colors: {
+        ...theme.colors,
+        // Override with mobile-specific Energy Gradient colors
+        primary: tailwindColors.primary,
+        secondary: tailwindColors.secondary,
+        accent: tailwindColors.accent,
+        // Keep semantic colors from shared theme
+        background: 'var(--color-background)',
+        surface: 'var(--color-surface)',
+        foreground: 'var(--color-foreground)',
+        muted: 'var(--color-muted)',
+        border: 'var(--color-border)',
+      },
       fontFamily: theme.fontFamily,
     },
   },

@@ -11,23 +11,23 @@ interface StatCardProps {
 
 export function StatCard({ label, value, trend, change, icon }: StatCardProps) {
   return (
-    <View className="bg-card rounded-2xl p-4 border border-white/5 flex-row justify-between items-start">
+    <View className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800 flex-row justify-between items-start">
       <View className="flex-1">
-        <Text className="text-muted-foreground text-xs font-medium mb-1 uppercase tracking-widest">
+        <Text className="text-zinc-500 text-xs font-medium mb-1 uppercase tracking-widest">
           {label}
         </Text>
-        <Text className="text-foreground text-2xl font-bold mb-1">{value}</Text>
+        <Text className="text-white text-2xl font-bold mb-1">{value}</Text>
         
         {(trend && change) && (
           <View className="flex-row items-center gap-1">
             <Ionicons 
               name={trend === 'up' ? 'arrow-up' : trend === 'down' ? 'arrow-down' : 'remove'} 
               size={12} 
-              color={trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#9CA3AF'} 
+              color={trend === 'up' ? '#00C9A7' : trend === 'down' ? '#FF2E63' : '#A1A1AA'} 
             />
             <Text 
               className="text-xs font-semibold"
-              style={{ color: trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#9CA3AF' }}
+              style={{ color: trend === 'up' ? '#00C9A7' : trend === 'down' ? '#FF2E63' : '#A1A1AA' }}
             >
               {change}
             </Text>
@@ -36,7 +36,7 @@ export function StatCard({ label, value, trend, change, icon }: StatCardProps) {
       </View>
       
       {icon && (
-        <View className="bg-white/5 p-2 rounded-xl">
+        <View className="bg-zinc-800 p-2 rounded-xl">
           <Ionicons name={icon} size={24} color="#A1A1AA" />
         </View>
       )}

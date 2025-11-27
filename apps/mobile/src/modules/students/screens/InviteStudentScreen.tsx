@@ -1,31 +1,20 @@
-import { useAuthStore } from '@/auth';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Share, Text, TouchableOpacity, View } from 'react-native';
-import { useStudentStore } from '../store/studentStore';
 
 export default function InviteStudentScreen() {
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const { generateInviteCode } = useStudentStore();
-  const { user } = useAuthStore();
   const router = useRouter();
-
-  const handleGenerateCode = async (force = false) => {
-    if (!user?.id) return;
-    const code = await generateInviteCode(user.id, force);
-    setInviteCode(code);
-  };
+  const { code, name } = useLocalSearchParams();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleShare = async () => {
-    if (!inviteCode) return;
+    if (!code) return;
     try {
       await Share.share({
-        message: `Olá! 💪\n\nUse o código ${inviteCode} para se cadastrar no MeuPersonal e acessar seus treinos personalizados!\n\nBaixe o app e comece sua transformação hoje!`,
+        message: `Olá ${name}! 💪\n\nJá cadastrei seu perfil no MeuPersonal.\nUse o código *${code}* para acessar seus treinos!\n\nBaixe o app agora!`,
       });
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível compartilhar.');
@@ -34,90 +23,52 @@ export default function InviteStudentScreen() {
 
   return (
     <ScreenLayout>
-      {/* Header */}
-      <View className="flex-row items-center px-6 py-4">
-        <TouchableOpacity 
-          onPress={() => router.back()}
-          className="bg-surface p-2.5 rounded-xl mr-4 border border-border"
-        >
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-foreground font-display">
-          Convidar Aluno
-        </Text>
-      </View>
+      <View className="flex-1 px-6 justify-center items-center">
+        <View className="w-24 h-24 rounded-full bg-emerald-500/15 items-center justify-center mb-6 border-2 border-emerald-500/20">
+          <Ionicons name="checkmark" size={48} color="#00C9A7" />
+        </View>
 
-      {/* Content */}
-      <View className="flex-1 justify-center px-6">
-        <Card className="p-8 items-center border-2 border-border">
-          {/* Icon */}
+        <Text className="text-3xl font-extrabold text-white mb-2 text-center font-display">
+          Aluno Cadastrado!
+        </Text>
+        <Text className="text-base text-zinc-400 text-center mb-10 font-sans px-4">
+          Envie o código abaixo para <Text className="text-white font-bold">{name}</Text> acessar o app.
+        </Text>
+
+        <View className="bg-zinc-900 px-10 py-8 rounded-3xl mb-10 border-2 border-dashed border-emerald-500/50 w-full items-center shadow-lg shadow-emerald-500/10">
+          <Text className="text-5xl font-bold text-emerald-400 tracking-widest font-mono">
+            {code}
+          </Text>
+          <Text className="text-zinc-500 text-xs mt-2 font-sans uppercase tracking-wider">
+            Código de Acesso
+          </Text>
+        </View>
+
+        <TouchableOpacity 
+          onPress={handleShare}
+          disabled={isLoading}
+          activeOpacity={0.8}
+          className="w-full mb-4"
+        >
           <LinearGradient
-            colors={['rgba(204, 255, 0, 0.2)', 'rgba(204, 255, 0, 0.05)']}
+            colors={['#00C9A7', '#00A88E']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="p-5 rounded-full mb-6"
+            className="rounded-2xl py-4 flex-row items-center justify-center shadow-lg shadow-emerald-500/20"
           >
-            <Ionicons name="qr-code-outline" size={64} color="#CCFF00" />
+            <Ionicons name="share-social" size={24} color="#FFFFFF" style={{ marginRight: 12 }} />
+            <Text className="text-white text-lg font-bold font-display">
+              Compartilhar Código
+            </Text>
           </LinearGradient>
-          
-          <Text className="text-foreground text-2xl font-bold mb-2 text-center font-display">
-            Gerar Código de Convite
-          </Text>
-          <Text className="text-muted-foreground text-base text-center mb-8 px-4 font-sans">
-            Envie este código para seu aluno se cadastrar e vincular ao seu perfil.
-          </Text>
+        </TouchableOpacity>
 
-          {inviteCode ? (
-            <View className="w-full items-center">
-              {/* Code Display */}
-              <View className="bg-background px-6 py-5 rounded-2xl mb-6 border-2 border-dashed border-primary w-full items-center">
-                <Text className="text-4xl font-bold text-primary tracking-widest font-mono">
-                  {inviteCode}
-                </Text>
-              </View>
-              
-              {/* Share Button */}
-              <Button
-                onPress={handleShare}
-                className="w-full mb-3"
-                variant="primary"
-                label="Compartilhar Código"
-                icon={<Ionicons name="share-social" size={20} color="#000000" />}
-              />
-
-              {/* Generate New Button */}
-              <TouchableOpacity 
-                onPress={() => handleGenerateCode(true)}
-                className="w-full border-2 border-primary rounded-2xl py-3.5 items-center"
-              >
-                <Text className="text-primary text-base font-bold font-display">
-                  Gerar Novo Código
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <Button
-              onPress={() => handleGenerateCode(false)}
-              className="w-full"
-              variant="primary"
-              label="Gerar Código"
-              icon={<Ionicons name="add-circle" size={22} color="#000000" />}
-            />
-          )}
-        </Card>
-
-        {/* Info Card */}
-        <View className="bg-secondary/10 p-4 rounded-2xl mt-6 border border-secondary/30 flex-row items-start">
-          <Ionicons name="information-circle" size={24} color="#00D9FF" style={{ marginRight: 12, marginTop: 2 }} />
-          <View className="flex-1">
-            <Text className="text-secondary text-sm font-bold mb-1 font-display">
-              Como funciona?
-            </Text>
-            <Text className="text-muted-foreground text-xs leading-5 font-sans">
-              O aluno deve usar este código durante o cadastro para se vincular automaticamente ao seu perfil de Personal Trainer.
-            </Text>
-          </View>
-        </View>
+        <TouchableOpacity 
+          onPress={() => router.replace('/(tabs)/students')}
+          className="p-4"
+        >
+          <Text className="text-zinc-500 text-base font-sans font-medium">Voltar para Lista</Text>
+        </TouchableOpacity>
       </View>
     </ScreenLayout>
   );

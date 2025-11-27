@@ -1,270 +1,165 @@
-import { useStudentStore } from '@/modules/students/store/studentStore';
+import { useAuthStore } from '@/auth';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useStudentStore } from '../store/studentStore';
 
-export default function StudentDashboard() {
+export default function StudentDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { students, fetchStudents, isLoading } = useStudentStore();
+  const { user } = useAuthStore();
   const [student, setStudent] = useState<any>(null);
 
   useEffect(() => {
-    if (id && typeof id === 'string') {
-      // If we have students in store, try to find the student
-      const found = students.find(s => s.id === id);
-      if (found) {
-        setStudent(found);
-      } else {
-        // If not found (maybe deep link or refresh), we might need to fetch
-        // For now, let's rely on the list being populated or fetch if empty
-        // We don't have a direct fetchStudentById in the store shown, 
-        // but fetchStudents fetches all linked students.
-        // We can trigger a fetch if students is empty.
-        // Ideally we would have a fetchStudentById.
-      }
+    if (user?.id && !students.length) {
+      fetchStudents(user.id);
     }
-  }, [id, students]);
+  }, [user]);
 
-  if (!student && isLoading) {
+  useEffect(() => {
+    if (students.length > 0 && id) {
+      const found = students.find(s => s.id === id);
+      setStudent(found);
+    }
+  }, [students, id]);
+
+  if (isLoading || !student) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#00FF88" />
-      </View>
+      <ScreenLayout className="justify-center items-center">
+        <ActivityIndicator size="large" color="#FF6B35" />
+      </ScreenLayout>
     );
   }
 
-  if (!student && !isLoading) {
-    return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aluno não encontrado</Text>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
+  const menuItems = [
+    {
+      title: 'Treinos',
+      subtitle: 'Gerenciar fichas',
+      icon: 'barbell-outline',
+      color: '#FF6B35',
+      gradient: ['#FF6B35', '#FF2E63'],
+      route: `/(tabs)/students/${id}/workouts`,
+    },
+    {
+      title: 'Dieta',
+      subtitle: 'Plano alimentar',
+      icon: 'restaurant-outline',
+      color: '#00D9FF',
+      gradient: ['#00D9FF', '#00B8D9'],
+      route: `/(tabs)/students/${id}/nutrition`,
+    },
+    {
+      title: 'Histórico',
+      subtitle: 'Evolução e logs',
+      icon: 'time-outline',
+      color: '#00C9A7',
+      gradient: ['#00C9A7', '#00A88E'],
+      route: `/(tabs)/students/${id}/history`,
+    },
+    {
+      title: 'Avaliação',
+      subtitle: 'Medidas e fotos',
+      icon: 'body-outline',
+      color: '#FFB800',
+      gradient: ['#FFB800', '#FF9500'],
+      route: `/(tabs)/students/${id}/assessment`, // Future implementation
+      disabled: true,
+    },
+  ];
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <ScreenLayout>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Perfil do Aluno</Text>
-          <View style={{ width: 40 }} /> 
-        </View>
+        <View className="items-center pt-8 pb-8 px-6 bg-zinc-900 rounded-b-[32px] border-b border-zinc-800">
+          <View className="w-24 h-24 rounded-full bg-cyan-400/10 items-center justify-center mb-4 border-2 border-cyan-400/20">
+            <Ionicons name="person" size={48} color="#00D9FF" />
+          </View>
+          
+          <Text className="text-2xl font-extrabold text-white mb-1 font-display text-center">
+            {student.full_name}
+          </Text>
+          <Text className="text-zinc-400 font-sans mb-6">
+            {student.email}
+          </Text>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          {/* Student Info Card */}
-          <View style={styles.studentCard}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={40} color="#00D9FF" />
-              </View>
-            </View>
-            <Text style={styles.studentName}>{student.full_name}</Text>
-            <Text style={styles.studentEmail}>{student.email}</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>
+          {/* Quick Stats */}
+          <View className="flex-row gap-4 w-full">
+            <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
+              <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase tracking-wider">Status</Text>
+              <Text className={`text-base font-bold ${student.status === 'active' ? 'text-emerald-400' : 'text-orange-500'}`}>
                 {student.status === 'active' ? 'Ativo' : 'Pendente'}
               </Text>
             </View>
+            <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
+              <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase tracking-wider">Desde</Text>
+              <Text className="text-white text-base font-bold">
+                {new Date(student.created_at).toLocaleDateString()}
+              </Text>
+            </View>
           </View>
+        </View>
 
-          {/* Menu Grid */}
-          <View style={styles.menuGrid}>
-            {/* Nutrition */}
-            <Link href={`/(tabs)/students/${id}/nutrition` as any} asChild>
-              <TouchableOpacity activeOpacity={0.8} style={styles.menuItem}>
-                <LinearGradient
-                  colors={['rgba(255, 107, 53, 0.1)', 'rgba(255, 107, 53, 0.05)']}
-                  style={styles.menuItemGradient}
-                >
-                  <View style={[styles.iconContainer, { backgroundColor: 'rgba(255, 107, 53, 0.2)' }]}>
-                    <Ionicons name="restaurant" size={32} color="#FF6B35" />
-                  </View>
-                  <Text style={styles.menuTitle}>Nutrição</Text>
-                  <Text style={styles.menuSubtitle}>Planos e dieta</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </Link>
-
-            {/* History */}
-            <Link href={`/(tabs)/students/${id}/history` as any} asChild>
-              <TouchableOpacity activeOpacity={0.8} style={styles.menuItem}>
-                <LinearGradient
-                  colors={['rgba(0, 217, 255, 0.1)', 'rgba(0, 217, 255, 0.05)']}
-                  style={styles.menuItemGradient}
-                >
-                  <View style={[styles.iconContainer, { backgroundColor: 'rgba(0, 217, 255, 0.2)' }]}>
-                    <Ionicons name="time" size={32} color="#00D9FF" />
-                  </View>
-                  <Text style={styles.menuTitle}>Histórico</Text>
-                  <Text style={styles.menuSubtitle}>Avaliações físicas</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </Link>
-
-             {/* Workouts (Placeholder for now, or link if available) */}
-             {/* Assuming workouts will be implemented later or linked differently */}
-             <TouchableOpacity 
-                activeOpacity={0.8} 
-                style={styles.menuItem}
-                onPress={() => Alert.alert('Em breve', 'Funcionalidade de treinos para aluno em desenvolvimento.')}
+        {/* Menu Grid */}
+        <View className="p-6">
+          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
+            GERENCIAMENTO
+          </Text>
+          
+          <View className="flex-row flex-wrap gap-4">
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                className={`w-[47%] h-40 rounded-3xl p-4 justify-between border ${item.disabled ? 'bg-zinc-900/50 border-zinc-800' : 'bg-zinc-900 border-zinc-800'}`}
+                onPress={() => !item.disabled && router.push(item.route as any)}
+                activeOpacity={item.disabled ? 1 : 0.7}
               >
-                <LinearGradient
-                  colors={['rgba(0, 255, 136, 0.1)', 'rgba(0, 255, 136, 0.05)']}
-                  style={styles.menuItemGradient}
+                <View 
+                  className="w-12 h-12 rounded-2xl items-center justify-center"
+                  style={{ backgroundColor: item.disabled ? '#27272A' : `${item.color}20` }}
                 >
-                  <View style={[styles.iconContainer, { backgroundColor: 'rgba(0, 255, 136, 0.2)' }]}>
-                    <Ionicons name="barbell" size={32} color="#00FF88" />
-                  </View>
-                  <Text style={styles.menuTitle}>Treinos</Text>
-                  <Text style={styles.menuSubtitle}>Fichas de treino</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                  <Ionicons 
+                    name={item.icon as any} 
+                    size={24} 
+                    color={item.disabled ? '#52525B' : item.color} 
+                  />
+                </View>
+                
+                <View>
+                  <Text className={`text-base font-bold mb-1 font-display ${item.disabled ? 'text-zinc-600' : 'text-white'}`}>
+                    {item.title}
+                  </Text>
+                  <Text className="text-zinc-500 text-xs font-sans">
+                    {item.subtitle}
+                  </Text>
+                </View>
 
+                {!item.disabled && (
+                  <View className="absolute top-4 right-4">
+                    <Ionicons name="arrow-forward" size={16} color={item.color} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+        </View>
+
+        {/* Danger Zone */}
+        <View className="px-6 mt-4">
+          <TouchableOpacity 
+            className="flex-row items-center justify-center p-4 rounded-2xl border border-red-500/20 bg-red-500/5"
+            onPress={() => {
+              Alert.alert('Em breve', 'Funcionalidade de arquivar aluno em desenvolvimento');
+            }}
+          >
+            <Ionicons name="archive-outline" size={20} color="#FF4444" />
+            <Text className="text-red-500 font-bold ml-2">Arquivar Aluno</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </ScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0E1A',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0A0E1A',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  backButton: {
-    padding: 8,
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  content: {
-    padding: 24,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#8B92A8',
-    fontSize: 16,
-  },
-  studentCard: {
-    alignItems: 'center',
-    marginBottom: 32,
-    padding: 24,
-    backgroundColor: '#141B2D',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#00D9FF',
-  },
-  studentName: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  studentEmail: {
-    fontSize: 14,
-    color: '#8B92A8',
-    marginBottom: 16,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#00FF88',
-  },
-  statusText: {
-    color: '#00FF88',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  menuGrid: {
-    gap: 16,
-  },
-  menuItem: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    height: 100,
-  },
-  menuItemGradient: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  menuTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  menuSubtitle: {
-    fontSize: 14,
-    color: '#8B92A8',
-  },
-});

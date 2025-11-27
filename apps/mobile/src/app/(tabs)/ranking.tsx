@@ -1,7 +1,7 @@
+import { useAuthStore } from '@/auth';
 import { Podium } from '@/components/gamification/Podium';
 import { RankListItem } from '@/components/gamification/RankListItem';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { useEffect, useState } from 'react';
@@ -77,8 +77,8 @@ export default function LeaderboardScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View className="flex-1 bg-background justify-center items-center">
-        <ActivityIndicator size="large" color="#CCFF00" />
+      <View className="flex-1 bg-[#0A0A0A] justify-center items-center">
+        <ActivityIndicator size="large" color="#FFB800" />
       </View>
     );
   }
@@ -86,10 +86,10 @@ export default function LeaderboardScreen() {
   return (
     <ScreenLayout>
       <View className="px-6 pt-4 pb-2">
-        <Text className="text-3xl font-bold text-foreground text-center font-display">
+        <Text className="text-3xl font-extrabold text-white text-center font-display">
           Ranking Semanal 🏆
         </Text>
-        <Text className="text-sm text-muted-foreground text-center mt-1 font-sans">
+        <Text className="text-sm text-zinc-400 text-center mt-1 font-sans">
           Quem está mais focado essa semana?
         </Text>
       </View>
@@ -103,8 +103,8 @@ export default function LeaderboardScreen() {
               <Podium topThree={topThree} />
             ) : (
               <View className="h-48 justify-center items-center">
-                <Ionicons name="trophy-outline" size={64} color="#71717A" />
-                <Text className="text-muted-foreground mt-4 font-sans">
+                <Ionicons name="trophy-outline" size={64} color="#52525B" />
+                <Text className="text-zinc-500 mt-4 font-sans">
                   Seja o primeiro a pontuar!
                 </Text>
               </View>
@@ -116,11 +116,11 @@ export default function LeaderboardScreen() {
         )}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFB800" />
         }
         ListEmptyComponent={
           topThree.length === 0 ? null : (
-            <Text className="text-muted-foreground text-center mt-6 font-sans">
+            <Text className="text-zinc-500 text-center mt-6 font-sans">
               Nenhum outro aluno pontuou ainda.
             </Text>
           )

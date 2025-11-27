@@ -5,32 +5,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { useNutritionStore } from '../routes';
+import { useWorkoutStore } from '../store/workoutStore';
 
-export default function NutritionScreen() {
+export default function PeriodizationsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { dietPlans, isLoading, fetchDietPlans } = useNutritionStore();
+  const { periodizations, isLoading, fetchPeriodizations } = useWorkoutStore();
 
   useEffect(() => {
     if (user?.id) {
-      fetchDietPlans(user.id);
+      fetchPeriodizations(user.id);
     }
   }, [user]);
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       activeOpacity={0.8}
-      onPress={() => router.push(`/(tabs)/students/${item.student_id}/nutrition/${item.id}` as any)}
+      onPress={() => router.push(`/(tabs)/workouts/periodization/${item.id}` as any)}
       className="mb-4"
     >
       <View className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
-        <View className="flex-row justify-between items-start mb-4">
-          <View>
+        <View className="flex-row justify-between items-start mb-3">
+          <View className="flex-1 mr-4">
             <Text className="text-white text-lg font-bold font-display mb-1">
               {item.name}
             </Text>
-            <Text className="text-zinc-400 text-sm font-sans">
+            <Text className="text-zinc-400 text-sm font-sans" numberOfLines={2}>
               {item.description || 'Sem descrição'}
             </Text>
           </View>
@@ -45,34 +45,12 @@ export default function NutritionScreen() {
           </View>
         </View>
 
-        {/* Macros Summary */}
-        <View className="flex-row gap-2 mb-4">
-          <View className="flex-1 bg-zinc-950 p-3 rounded-xl border border-zinc-800 items-center">
-            <Text className="text-emerald-400 text-xs font-bold mb-1">PROT</Text>
-            <Text className="text-white font-bold">{item.target_protein}g</Text>
-          </View>
-          <View className="flex-1 bg-zinc-950 p-3 rounded-xl border border-zinc-800 items-center">
-            <Text className="text-purple-400 text-xs font-bold mb-1">CARB</Text>
-            <Text className="text-white font-bold">{item.target_carbs}g</Text>
-          </View>
-          <View className="flex-1 bg-zinc-950 p-3 rounded-xl border border-zinc-800 items-center">
-            <Text className="text-amber-400 text-xs font-bold mb-1">GORD</Text>
-            <Text className="text-white font-bold">{item.target_fat}g</Text>
-          </View>
-        </View>
-
-        <View className="flex-row justify-between items-center pt-4 border-t border-zinc-800">
+        <View className="flex-row items-center gap-4 mt-2">
           <View className="flex-row items-center">
-            <Ionicons name="flame" size={16} color="#FF6B35" style={{ marginRight: 6 }} />
-            <Text className="text-white font-bold text-sm">
-              {item.target_calories} <Text className="text-zinc-500 font-normal">kcal</Text>
+            <Ionicons name="calendar-outline" size={16} color="#00D9FF" style={{ marginRight: 6 }} />
+            <Text className="text-zinc-300 text-xs font-bold">
+              {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
             </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-zinc-500 text-xs mr-2">
-              {new Date(item.start_date).toLocaleDateString()}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color="#52525B" />
           </View>
         </View>
       </View>
@@ -85,14 +63,14 @@ export default function NutritionScreen() {
       <View className="flex-row justify-between items-center px-6 pt-4 pb-6">
         <View>
           <Text className="text-4xl font-extrabold text-white mb-1 font-display">
-            Nutrição
+            Periodização
           </Text>
           <Text className="text-base text-zinc-400 font-sans">
-            Planos alimentares
+            Planejamento de treinos
           </Text>
         </View>
         
-        <Link href={'/nutrition/create' as any} asChild>
+        <Link href={'/(tabs)/workouts/periodization/create' as any} asChild>
           <TouchableOpacity activeOpacity={0.8}>
             <LinearGradient
               colors={['#00D9FF', '#00B8D9']}
@@ -108,14 +86,14 @@ export default function NutritionScreen() {
 
       {/* Content */}
       <FlatList
-        data={dietPlans}
+        data={periodizations}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
         refreshControl={
           <RefreshControl 
             refreshing={isLoading} 
-            onRefresh={() => user?.id && fetchDietPlans(user.id)} 
+            onRefresh={() => user?.id && fetchPeriodizations(user.id)} 
             tintColor="#00D9FF" 
           />
         }
@@ -124,16 +102,16 @@ export default function NutritionScreen() {
           !isLoading ? (
             <View className="flex-1 justify-center items-center py-20">
               <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
-                <Ionicons name="restaurant-outline" size={64} color="#52525B" />
+                <Ionicons name="calendar-outline" size={64} color="#52525B" />
               </View>
               <Text className="text-white text-xl font-bold mb-2 text-center font-display">
-                Nenhum plano encontrado
+                Nenhuma periodização
               </Text>
               <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
-                Crie o primeiro plano alimentar para seus alunos
+                Crie um planejamento de longo prazo para seus alunos
               </Text>
               
-              <Link href={'/nutrition/create' as any} asChild>
+              <Link href={'/(tabs)/workouts/periodization/create' as any} asChild>
                 <TouchableOpacity activeOpacity={0.8}>
                   <LinearGradient
                     colors={['#00D9FF', '#00B8D9']}
@@ -142,7 +120,7 @@ export default function NutritionScreen() {
                     className="rounded-2xl py-3 px-6 shadow-lg shadow-cyan-500/20"
                   >
                     <Text className="text-white text-base font-bold font-display">
-                      Criar Plano
+                      Criar Periodização
                     </Text>
                   </LinearGradient>
                 </TouchableOpacity>

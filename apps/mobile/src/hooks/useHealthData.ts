@@ -5,6 +5,7 @@ import AppleHealthKit, {
     HealthValue,
 } from 'react-native-health';
 import {
+    getGrantedPermissions,
     initialize,
     readRecords,
     requestPermission
@@ -65,9 +66,18 @@ export function useHealthData() {
           { accessType: 'read', recordType: 'Steps' },
           { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
         ]);
-        
-        setHasPermissions(true);
-        fetchAndroidData();
+
+        const granted = await getGrantedPermissions();
+        const hasSteps = granted.some(p => p.recordType === 'Steps' && p.accessType === 'read');
+        const hasCalories = granted.some(p => p.recordType === 'ActiveCaloriesBurned' && p.accessType === 'read');
+
+        if (hasSteps && hasCalories) {
+          setHasPermissions(true);
+          fetchAndroidData();
+        } else {
+          console.log('[HealthConnect] Permissions denied');
+          setData((prev) => ({ ...prev, error: 'Permissions denied', loading: false }));
+        }
       } catch (err: any) {
         console.log('[HealthConnect] Error initializing:', err);
         setData((prev) => ({ ...prev, error: err.message, loading: false }));
@@ -147,12 +157,20 @@ export function useHealthData() {
     }
   };
 
-  const refetch = () => {
+  const refetch = async () => {
     setData((prev) => ({ ...prev, loading: true }));
     if (Platform.OS === 'ios') {
       fetchIOSData();
     } else {
-      fetchAndroidData();
+      const granted = await getGrantedPermissions();
+      const hasSteps = granted.some(p => p.recordType === 'Steps' && p.accessType === 'read');
+      const hasCalories = granted.some(p => p.recordType === 'ActiveCaloriesBurned' && p.accessType === 'read');
+
+      if (hasSteps && hasCalories) {
+        fetchAndroidData();
+      } else {
+        setData((prev) => ({ ...prev, loading: false }));
+      }
     }
   };
 

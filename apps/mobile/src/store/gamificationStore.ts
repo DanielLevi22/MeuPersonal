@@ -31,7 +31,12 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
       // Ensure goals exist/are up to date for today
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await gamificationService.calculateDailyGoals(user.id, date);
+        try {
+          await gamificationService.calculateDailyGoals(user.id, date);
+        } catch (error) {
+          console.warn('Error calculating daily goals:', error);
+          // Continue execution to fetch existing data
+        }
       }
 
       // Calculate start of week (7 days ago)

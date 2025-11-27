@@ -129,7 +129,7 @@ export function RestTimer({ restSeconds, onComplete, autoStart = false }: RestTi
             cx={100}
             cy={100}
             r={90}
-            stroke={timeRemaining === 0 ? '#CCFF00' : '#F97316'}
+            stroke={timeRemaining === 0 ? '#00C9A7' : '#F97316'}
             strokeWidth={12}
             fill="none"
             strokeDasharray={circumference}
@@ -143,7 +143,7 @@ export function RestTimer({ restSeconds, onComplete, autoStart = false }: RestTi
         <View className="absolute inset-0 justify-center items-center">
           <Text 
             className="text-5xl font-extrabold"
-            style={{ color: timeRemaining === 0 ? '#CCFF00' : '#FAFAFA' }}
+            style={{ color: timeRemaining === 0 ? '#00C9A7' : '#FAFAFA' }}
           >
             {formatTime(timeRemaining)}
           </Text>

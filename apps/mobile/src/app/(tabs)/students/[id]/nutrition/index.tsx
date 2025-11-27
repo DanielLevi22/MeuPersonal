@@ -4,12 +4,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -140,8 +140,8 @@ export default function NutritionDashboard() {
                         </Text>
                       )}
                     </View>
-                    <View className="bg-lime-400/15 px-2.5 py-1 rounded-lg border border-lime-400">
-                      <Text className="text-lime-400 text-xs font-bold">
+                    <View className="bg-green-500/15 px-2.5 py-1 rounded-lg border border-green-500">
+                      <Text className="text-green-400 text-xs font-bold">
                         {currentDietPlan.status === 'active' ? 'ATIVO' : 
                          currentDietPlan.status === 'completed' ? 'CONCLUÍDO' :
                          currentDietPlan.status === 'finished' ? 'FINALIZADO' : 'RASCUNHO'}
@@ -156,21 +156,21 @@ export default function NutritionDashboard() {
                     </View>
                     <View className="w-px bg-white/10" />
                     <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-lime-400 mb-1">
+                      <Text className="text-lg font-bold text-[#00C9A7] mb-1">
                         {currentDietPlan.target_protein}g
                       </Text>
                       <Text className="text-xs text-muted-foreground">Prot</Text>
                     </View>
                     <View className="w-px bg-white/10" />
                     <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-cyan-400 mb-1">
+                      <Text className="text-lg font-bold text-[#9D4EDD] mb-1">
                         {currentDietPlan.target_carbs}g
                       </Text>
                       <Text className="text-xs text-muted-foreground">Carb</Text>
                     </View>
                     <View className="w-px bg-white/10" />
                     <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-yellow-300 mb-1">
+                      <Text className="text-lg font-bold text-[#FFB800] mb-1">
                         {currentDietPlan.target_fat}g
                       </Text>
                       <Text className="text-xs text-muted-foreground">Gord</Text>
@@ -178,8 +178,8 @@ export default function NutritionDashboard() {
                   </View>
 
                   <View className="flex-row justify-between items-center">
-                    <Text className="text-orange-500 text-sm font-semibold">Toque para editar</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#F97316" />
+                    <Text className="text-primary text-sm font-semibold">Toque para editar</Text>
+                    <Ionicons name="chevron-forward" size={20} color="#FF6B35" />
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
@@ -212,7 +212,7 @@ export default function NutritionDashboard() {
               className="mb-8 rounded-2xl overflow-hidden"
             >
               <LinearGradient
-                colors={['#FF6B35', '#E85A2A']}
+                colors={['#00C9A7', '#00A389']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="flex-row items-center justify-center py-4"
