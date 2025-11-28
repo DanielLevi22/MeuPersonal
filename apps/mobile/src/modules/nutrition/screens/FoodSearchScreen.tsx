@@ -1,8 +1,9 @@
 import { Input } from '@/components/ui/Input';
 import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FoodSearchScreenProps {
@@ -22,6 +23,8 @@ interface FoodSearchScreenProps {
     carbs: number;
     fat: number;
   };
+  mealTime?: string;
+  onTimeChange?: (time: string) => void;
 }
 
 type MacroType = 'protein' | 'carbs' | 'fat' | 'calories';
@@ -33,7 +36,7 @@ interface MacroTargets {
   calories?: string;
 }
 
-export default function FoodSearchScreen({ mealId, initialData, onSelect, onClose, onSave, dailyTotals }: FoodSearchScreenProps) {
+export default function FoodSearchScreen({ mealId, initialData, onSelect, onClose, onSave, dailyTotals, mealTime, onTimeChange }: FoodSearchScreenProps) {
   const insets = useSafeAreaInsets();
   const { searchFoods, foods, meals, mealItems, fetchMealItems } = useNutritionStore();
   const [query, setQuery] = useState('');
@@ -41,6 +44,27 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
   const [isSaving, setIsSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+
+  // Time Picker Logic
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const parseTime = (timeStr: string) => {
+    if (!timeStr) return new Date();
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours || 0);
+    date.setMinutes(minutes || 0);
+    return date;
+  };
+
+  const handleTimeChange = (event: any, selectedDate?: Date) => {
+    setShowTimePicker(false);
+    if (selectedDate && onTimeChange) {
+      const hours = selectedDate.getHours().toString().padStart(2, '0');
+      const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+      onTimeChange(`${hours}:${minutes}`);
+    }
+  };
 
   // Local state for items (Draft Mode)
   const [localItems, setLocalItems] = useState<any[]>([]);
@@ -220,80 +244,100 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
         </View>
         
         {/* Draft Mode Header Actions */}
-        {(localItems.length > 0 || mealId) && (
+        {(onTimeChange || localItems.length > 0 || mealId) && (
           <View className="px-6 mb-4 flex-row justify-between items-center">
              <View>
                <Text className="text-zinc-400 text-xs font-bold">REFEIÇÃO</Text>
                <Text className="text-white font-bold text-lg">{mealName || 'Nova Refeição'}</Text>
-             </View>
-             <TouchableOpacity 
-               onPress={handleSavePress}
-               disabled={isSaving}
-               className="bg-cyan-500 px-4 py-2 rounded-full"
-             >
-               {isSaving ? (
-                 <ActivityIndicator size="small" color="#000" />
-               ) : (
-                 <Text className="text-black font-bold text-sm">Concluir</Text>
-               )}
-             </TouchableOpacity>
-          </View>
-        )}
-
-         {/* Daily Totals Summary */}
-         {dailyTotals && (
-           <View className="px-6 mb-4">
-             <View className="bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex-row justify-between items-center">
-               <View className="items-center flex-1">
-                 <Text className="text-zinc-500 text-[10px] font-bold uppercase">Kcal</Text>
-                 <Text className="text-white font-bold">{Math.round(dailyTotals.calories)}</Text>
+                {onTimeChange && (
+                  <View className="mt-2">
+                    <TouchableOpacity 
+                      onPress={() => setShowTimePicker(true)}
+                      className="bg-black rounded-lg border-2 border-zinc-800 px-4 py-2 flex-row items-center justify-center shadow-md"
+                      style={{ shadowColor: '#00D9FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
+                    >
+                      <Text className="text-cyan-400 font-mono text-xl font-bold tracking-[4px]">
+                        {mealTime || '00:00'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
                </View>
-               <View className="w-[1px] h-8 bg-zinc-800" />
-               <View className="items-center flex-1">
-                 <Text className="text-emerald-500 text-[10px] font-bold uppercase">Prot</Text>
-                 <Text className="text-white font-bold">{Math.round(dailyTotals.protein)}g</Text>
-               </View>
-               <View className="w-[1px] h-8 bg-zinc-800" />
-               <View className="items-center flex-1">
-                 <Text className="text-purple-500 text-[10px] font-bold uppercase">Carb</Text>
-                 <Text className="text-white font-bold">{Math.round(dailyTotals.carbs)}g</Text>
-               </View>
-               <View className="w-[1px] h-8 bg-zinc-800" />
-               <View className="items-center flex-1">
-                 <Text className="text-amber-500 text-[10px] font-bold uppercase">Gord</Text>
-                 <Text className="text-white font-bold">{Math.round(dailyTotals.fat)}g</Text>
-               </View>
-             </View>
-           </View>
+               <TouchableOpacity 
+                 onPress={handleSavePress}
+                 disabled={isSaving}
+                 className="bg-cyan-500 px-4 py-2 rounded-full"
+               >
+                 {isSaving ? (
+                   <ActivityIndicator size="small" color="#000" />
+                 ) : (
+                   <Text className="text-black font-bold text-sm">Concluir</Text>
+                 )}
+               </TouchableOpacity>
+            </View>
          )}
 
-        <View className="px-6">
-          <Input
-            placeholder="Digite o nome do alimento..."
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-            className="mb-4"
-          />
-          <TouchableOpacity 
-            onPress={() => setShowCalculator(!showCalculator)}
-            className="flex-row items-center justify-between bg-zinc-950 p-3 rounded-xl border border-zinc-800"
-          >
-            <View className="flex-row items-center gap-2">
-              <Ionicons name="calculator-outline" size={20} color="#00D9FF" />
-              <Text className="text-zinc-300 font-bold text-sm">Calculadora Reversa</Text>
+         {showTimePicker && (
+           <DateTimePicker
+             value={parseTime(mealTime || '00:00')}
+             mode="time"
+             is24Hour={true}
+             display="default"
+             onChange={handleTimeChange}
+           />
+         )}
+ 
+          {/* Meal Macros Summary (Replaces Daily Totals) */}
+          <View className="px-6 mb-4">
+            <View className="bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex-row justify-between items-center">
+              <View className="items-center flex-1">
+                <Text className="text-zinc-500 text-[10px] font-bold uppercase">Kcal</Text>
+              </View>
+              <View className="w-[1px] h-8 bg-zinc-800" />
+              <View className="items-center flex-1">
+                <Text className="text-emerald-500 text-[10px] font-bold uppercase">Prot</Text>
+                <Text className="text-white font-bold">{Math.round(mealMacros.protein)}g</Text>
+              </View>
+              <View className="w-[1px] h-8 bg-zinc-800" />
+              <View className="items-center flex-1">
+                <Text className="text-purple-500 text-[10px] font-bold uppercase">Carb</Text>
+                <Text className="text-white font-bold">{Math.round(mealMacros.carbs)}g</Text>
+              </View>
+              <View className="w-[1px] h-8 bg-zinc-800" />
+              <View className="items-center flex-1">
+                <Text className="text-amber-500 text-[10px] font-bold uppercase">Gord</Text>
+                <Text className="text-white font-bold">{Math.round(mealMacros.fat)}g</Text>
+              </View>
             </View>
-            <Ionicons name={showCalculator ? "chevron-up" : "chevron-down"} size={20} color="#71717A" />
-          </TouchableOpacity>
-
-          {showCalculator && (
+          </View>
+ 
+         <View className="px-6">
+           <Input
+             placeholder="Digite o nome do alimento..."
+             value={query}
+             onChangeText={setQuery}
+             autoFocus
+             className="mb-4"
+           />
+           <TouchableOpacity 
+             onPress={() => setShowCalculator(!showCalculator)}
+             className="flex-row items-center justify-between bg-zinc-950 p-3 rounded-xl border border-zinc-800"
+           >
+             <View className="flex-row items-center gap-2">
+               <Ionicons name="calculator-outline" size={20} color="#00D9FF" />
+               <Text className="text-zinc-300 font-bold text-sm">Calculadora Reversa</Text>
+             </View>
+             <Ionicons name={showCalculator ? "chevron-up" : "chevron-down"} size={20} color="#71717A" />
+           </TouchableOpacity>
+ 
+           {showCalculator && (
             <View className="mt-3 flex-row flex-wrap gap-2">
               {(['protein', 'carbs', 'fat', 'calories'] as const).map((macro) => (
-                <View key={macro} className={`flex-row items-center rounded-lg border overflow-hidden ${
+                <View key={macro} className={`flex-row items-center rounded-lg border overflow-hidden h-12 w-[48%] ${
                   activeMacros.includes(macro) ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-zinc-950 border-zinc-800'
                 }`}>
                   <TouchableOpacity
-                    className="py-2 px-3 border-r border-zinc-800"
+                    className={`h-full px-3 justify-center items-center flex-1 ${activeMacros.includes(macro) ? 'border-r border-cyan-500/30' : ''}`}
                     onPress={() => toggleMacro(macro)}
                   >
                     <Text className={`text-xs font-bold ${
@@ -304,15 +348,15 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
                   </TouchableOpacity>
                   
                   {activeMacros.includes(macro) && (
-                    <View className="w-20 justify-center border-l border-cyan-500/30">
-                       <Input
-                        className="h-9 w-full text-center text-sm p-0 border-0 bg-transparent text-white font-bold"
+                    <View className="w-16 h-full justify-center">
+                       <TextInput
+                        className="h-full w-full text-center text-sm p-0 text-white font-bold"
                         placeholder="0"
                         placeholderTextColor="rgba(255, 255, 255, 0.3)"
                         keyboardType="numeric"
                         value={targets[macro] || ''}
                         onChangeText={(val) => updateTarget(macro, val)}
-                        style={{ fontSize: 14, textAlignVertical: 'center' }}
+                        style={{ fontSize: 14, textAlignVertical: 'center', includeFontPadding: false }}
                       />
                     </View>
                   )}
@@ -337,29 +381,6 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
         onEndReachedThreshold={0.5}
         ListHeaderComponent={() => (
           <View className="mb-6">
-            {/* Meal Summary Card */}
-            <View className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-6">
-              <Text className="text-white font-bold text-lg mb-2">{mealName || 'Refeição'}</Text>
-              <View className="flex-row justify-between">
-                <View className="items-center">
-                  <Text className="text-zinc-500 text-xs font-bold">KCAL</Text>
-                  <Text className="text-white font-bold">{Math.round(mealMacros.calories)}</Text>
-                </View>
-                <View className="items-center">
-                  <Text className="text-emerald-500 text-xs font-bold">PROT</Text>
-                  <Text className="text-white font-bold">{Math.round(mealMacros.protein)}g</Text>
-                </View>
-                <View className="items-center">
-                  <Text className="text-purple-500 text-xs font-bold">CARB</Text>
-                  <Text className="text-white font-bold">{Math.round(mealMacros.carbs)}g</Text>
-                </View>
-                <View className="items-center">
-                  <Text className="text-amber-500 text-xs font-bold">GORD</Text>
-                  <Text className="text-white font-bold">{Math.round(mealMacros.fat)}g</Text>
-                </View>
-              </View>
-            </View>
-
             {/* Added Foods List */}
             {localItems.length > 0 && (
               <View className="mb-6">

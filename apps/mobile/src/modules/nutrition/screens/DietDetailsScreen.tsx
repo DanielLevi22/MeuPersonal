@@ -9,14 +9,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, {
-  Extrapolation,
-  interpolate,
-  runOnUI,
-  scrollTo,
-  useAnimatedRef,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue
+    Extrapolation,
+    interpolate,
+    runOnUI,
+    scrollTo,
+    useAnimatedRef,
+    useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue
 } from 'react-native-reanimated';
 import { FoodSearchModal, useNutritionStore } from '../routes';
 
@@ -170,6 +170,11 @@ export default function DietDetailsScreen() {
 
   const handleSaveMeal = async () => {
     if (!mealName.trim() || !plan) return;
+
+    if (!mealTime.trim()) {
+      Alert.alert('Erro', 'Por favor, informe o horário da refeição.');
+      return;
+    }
     
     try {
       if (editingMealId) {
@@ -267,10 +272,17 @@ export default function DietDetailsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await pasteDay(selectedDay);
+              await pasteDay(selectedDay, plan.id);
               fetchMeals(plan.id);
-            } catch (error) {
-              Alert.alert('Erro', 'Falha ao colar dia.');
+            } catch (error: any) {
+              if (error?.code === '23503' && (error?.details?.includes('daily_goals') || error?.details?.includes('leaderboard') || error?.details?.includes('streak') || error?.details?.includes('achievement'))) {
+                Alert.alert(
+                  'Erro de Cadastro',
+                  'O aluno não possui um perfil completo. Por favor, peça ao administrador para verificar o cadastro do aluno ou execute o script de correção de perfis.'
+                );
+              } else {
+                Alert.alert('Erro', `Falha ao colar dia: ${error.message || JSON.stringify(error)}`);
+              }
             }
           }
         }
@@ -289,7 +301,7 @@ export default function DietDetailsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await clearDay(selectedDay);
+              await clearDay(selectedDay, plan.id);
               fetchMeals(plan.id);
             } catch (error) {
               Alert.alert('Erro', 'Falha ao limpar dia.');
@@ -672,6 +684,7 @@ export default function DietDetailsScreen() {
                           type: stdMeal.type,
                           order: index
                         });
+                        setMealTime(stdMeal.defaultTime); // Pre-fill time
                         setShowFoodSearch(true);
                       }}
                       className="bg-zinc-900/50 p-4 rounded-2xl border border-dashed border-zinc-800 flex-row items-center justify-center mb-2"
@@ -708,6 +721,8 @@ export default function DietDetailsScreen() {
           mealId={selectedMealId || undefined}
           initialData={initialMealData || undefined}
           dailyTotals={dailyTotals}
+          mealTime={mealTime}
+          onTimeChange={setMealTime}
           onSave={async (items) => {
             try {
               if (selectedMealId) {

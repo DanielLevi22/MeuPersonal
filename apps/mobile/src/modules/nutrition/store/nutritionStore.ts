@@ -44,8 +44,8 @@ interface NutritionStore {
   // Day Operations
   copiedDay: { meals: DietMeal[]; items: Record<string, DietMealItem[]> } | null;
   copyDay: (dayOfWeek: number) => Promise<void>;
-  pasteDay: (targetDay: number) => Promise<void>;
-  clearDay: (dayOfWeek: number) => Promise<void>;
+  pasteDay: (targetDay: number, dietPlanId?: string) => Promise<void>;
+  clearDay: (dayOfWeek: number, dietPlanId?: string) => Promise<void>;
   
   // Daily Logs
   dailyLogs: Record<string, DailyLog>; // Keyed by meal_id
@@ -189,9 +189,17 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   },
 
   // Paste Day
-  pasteDay: async (targetDay: number) => {
+  pasteDay: async (targetDay: number, dietPlanId?: string) => {
     const { copiedDay, currentDietPlan, clearDay } = get();
-    if (!copiedDay || !currentDietPlan) return;
+    
+    if (!copiedDay) {
+      throw new Error('Nenhum dia copiado para colar.');
+    }
+
+    const targetPlanId = dietPlanId || currentDietPlan?.id;
+    if (!targetPlanId) {
+      throw new Error('Plano de dieta não identificado.');
+    }
 
     set({ isLoading: true });
     try {
@@ -204,7 +212,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         const { data: newMeal, error: mealError } = await supabase
           .from('diet_meals')
           .insert({
-            diet_plan_id: currentDietPlan.id,
+            diet_plan_id: targetPlanId,
             day_of_week: targetDay,
             meal_type: sourceMeal.meal_type,
             meal_order: sourceMeal.meal_order,
@@ -237,17 +245,13 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       }
 
       // Refresh meals
-      await get().fetchMeals(currentDietPlan.id);
+      await get().fetchMeals(targetPlanId);
       
-      // Refresh items for the new meals (optional, but good for consistency)
-      // We can just let the UI fetch them when needed or fetch all now.
-      // For simplicity, we'll let the UI fetch or just rely on fetchMeals for the structure.
-      // Actually, fetchMeals updates 'meals', but 'mealItems' might be empty for the new meals.
-      // Let's fetch items for the newly created meals to be safe.
+      // Refresh items for the new meals
       const { data: newMeals } = await supabase
         .from('diet_meals')
         .select('id')
-        .eq('diet_plan_id', currentDietPlan.id)
+        .eq('diet_plan_id', targetPlanId)
         .eq('day_of_week', targetDay);
         
       if (newMeals) {
@@ -265,16 +269,20 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   },
 
   // Clear Day
-  clearDay: async (dayOfWeek: number) => {
+  clearDay: async (dayOfWeek: number, dietPlanId?: string) => {
     const { currentDietPlan } = get();
-    if (!currentDietPlan) return;
+    const targetPlanId = dietPlanId || currentDietPlan?.id;
+
+    if (!targetPlanId) {
+      throw new Error('Plano de dieta não identificado.');
+    }
 
     try {
       // Delete all meals for this day (Cascade should handle items)
       const { error } = await supabase
         .from('diet_meals')
         .delete()
-        .eq('diet_plan_id', currentDietPlan.id)
+        .eq('diet_plan_id', targetPlanId)
         .eq('day_of_week', dayOfWeek);
 
       if (error) throw error;

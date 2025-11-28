@@ -19,9 +19,11 @@ interface FoodSearchModalProps {
     carbs: number;
     fat: number;
   };
+  mealTime?: string;
+  onTimeChange?: (time: string) => void;
 }
 
-export function FoodSearchModal({ visible, onClose, onSelect, mealId, initialData, onSave, dailyTotals }: FoodSearchModalProps) {
+export function FoodSearchModal({ visible, onClose, onSelect, mealId, initialData, onSave, dailyTotals, mealTime, onTimeChange }: FoodSearchModalProps) {
   return (
     <Modal
       visible={visible}
@@ -36,6 +38,8 @@ export function FoodSearchModal({ visible, onClose, onSelect, mealId, initialDat
         initialData={initialData}
         onSave={onSave}
         dailyTotals={dailyTotals}
+        mealTime={mealTime}
+        onTimeChange={onTimeChange}
       />
     </Modal>
   );
