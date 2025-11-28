@@ -1,10 +1,10 @@
 import { useAuthStore } from '@/auth';
 import AddFoodQuantityModal from '@/components/AddFoodQuantityModal';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { tailwindColors } from '@/constants/colors';
 import { DayActionsModal } from '@/modules/nutrition/components/DayActionsModal';
-import DateTimePicker from '@react-native-community/datetimepicker';
-
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -407,7 +407,7 @@ export default function DietDetailsScreen() {
   if (isLoading || !plan) {
     return (
       <ScreenLayout className="justify-center items-center">
-        <ActivityIndicator size="large" color="#00D9FF" />
+        <ActivityIndicator size="large" color={tailwindColors.primary[400]} />
       </ScreenLayout>
     );
   }
@@ -443,7 +443,7 @@ export default function DietDetailsScreen() {
     <ScreenLayout>
       <Animated.View 
         style={[headerStyle]} 
-        className="absolute top-0 left-0 right-0 bg-zinc-900 rounded-b-[32px] border-b border-zinc-800 z-10 overflow-hidden"
+        className="absolute top-0 left-0 right-0 bg-background-secondary rounded-b-[32px] border-b border-zinc-800 z-10 overflow-hidden"
       >
         <View className="pt-12 px-6">
           {/* Collapsed Title - Positioned absolutely relative to the container */}
@@ -461,7 +461,7 @@ export default function DietDetailsScreen() {
           <View className="flex-row items-center justify-between w-full mb-2 z-20 h-11">
             <TouchableOpacity 
               onPress={() => router.back()} 
-              className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
+              className="bg-background-primary p-2.5 rounded-xl border border-zinc-800"
             >
               <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
@@ -469,7 +469,7 @@ export default function DietDetailsScreen() {
             <View className="flex-row gap-2">
               <TouchableOpacity 
                 onPress={() => Alert.alert('Em breve', 'Edição em desenvolvimento')}
-                className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
+                className="bg-background-primary p-2.5 rounded-xl border border-zinc-800"
               >
                 <Ionicons name="pencil" size={20} color="#FFFFFF" />
               </TouchableOpacity>
@@ -478,8 +478,8 @@ export default function DietDetailsScreen() {
 
           {/* Expanded Content */}
           <Animated.View style={[contentStyle]} className="items-center w-full">
-            <View className="w-20 h-20 rounded-full bg-cyan-400/10 items-center justify-center mb-4 border-2 border-cyan-400/20">
-              <Ionicons name="restaurant" size={40} color="#00D9FF" />
+            <View className="w-20 h-20 rounded-full bg-primary-400/10 items-center justify-center mb-4 border-2 border-primary-400/20">
+              <Ionicons name="restaurant" size={40} color={tailwindColors.primary[400]} />
             </View>
             
             <Text className="text-2xl font-extrabold text-white mb-1 font-display text-center">
@@ -491,22 +491,22 @@ export default function DietDetailsScreen() {
 
             {/* Macros Grid */}
             <View className="flex-row gap-3 w-full">
-              <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
+              <View className="flex-1 bg-background-primary p-4 rounded-2xl border border-zinc-800 items-center">
                 <Text className="text-emerald-400 text-xs font-bold mb-1">PROTEÍNA</Text>
                 <Text className="text-white text-xl font-bold">{plan.target_protein}g</Text>
               </View>
-              <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
+              <View className="flex-1 bg-background-primary p-4 rounded-2xl border border-zinc-800 items-center">
                 <Text className="text-purple-400 text-xs font-bold mb-1">CARBO</Text>
                 <Text className="text-white text-xl font-bold">{plan.target_carbs}g</Text>
               </View>
-              <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
+              <View className="flex-1 bg-background-primary p-4 rounded-2xl border border-zinc-800 items-center">
                 <Text className="text-amber-400 text-xs font-bold mb-1">GORDURA</Text>
                 <Text className="text-white text-xl font-bold">{plan.target_fat}g</Text>
               </View>
             </View>
 
-            <View className="mt-4 bg-zinc-950 px-6 py-3 rounded-xl border border-zinc-800 flex-row items-center mb-6">
-              <Ionicons name="flame" size={20} color="#FF6B35" style={{ marginRight: 8 }} />
+            <View className="mt-4 bg-background-primary px-6 py-3 rounded-xl border border-zinc-800 flex-row items-center mb-6">
+              <Ionicons name="flame" size={20} color={tailwindColors.primary[400]} style={{ marginRight: 8 }} />
               <Text className="text-white font-bold text-lg">
                 {plan.target_calories} <Text className="text-zinc-500 font-normal text-sm">kcal/dia</Text>
               </Text>
@@ -540,10 +540,10 @@ export default function DietDetailsScreen() {
             <Text className="text-zinc-400 font-bold text-sm">DIA DA SEMANA</Text>
             <TouchableOpacity 
               onPress={() => setShowDayActions(true)}
-              className="flex-row items-center gap-1 bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800"
+              className="flex-row items-center gap-1 bg-background-secondary px-3 py-1.5 rounded-full border border-zinc-800"
             >
-              <Ionicons name="ellipsis-horizontal" size={16} color="#00D9FF" />
-              <Text className="text-cyan-400 text-xs font-bold">Opções</Text>
+              <Ionicons name="ellipsis-horizontal" size={16} color={tailwindColors.secondary.DEFAULT} />
+              <Text className="text-secondary-DEFAULT text-xs font-bold">Opções</Text>
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -554,8 +554,8 @@ export default function DietDetailsScreen() {
                   onPress={() => setSelectedDay(day.id)}
                   className={`px-4 py-2 rounded-full border ${
                     selectedDay === day.id
-                      ? 'bg-cyan-500 border-cyan-400'
-                      : 'bg-zinc-900 border-zinc-800'
+                      ? 'bg-primary-400 border-primary-400'
+                      : 'bg-background-secondary border-zinc-800'
                   }`}
                 >
                   <Text className={`font-bold text-xs ${
@@ -616,7 +616,7 @@ export default function DietDetailsScreen() {
                   }, 0);
 
                   return (
-                    <View key={existingMeal.id} className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+                    <View key={existingMeal.id} className="bg-background-secondary rounded-2xl p-4 border border-zinc-800">
                       <View className="flex-row justify-between items-center mb-3">
                         <TouchableOpacity 
                           className="flex-row items-center flex-1"
@@ -664,10 +664,10 @@ export default function DietDetailsScreen() {
                       
                       <TouchableOpacity 
                         onPress={() => handleAddFoodPress(existingMeal.id)}
-                        className="mt-3 bg-zinc-950 p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
+                        className="mt-3 bg-background-primary p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
                       >
-                         <Ionicons name="add" size={16} color="#00D9FF" style={{ marginRight: 4 }} />
-                         <Text className="text-cyan-400 text-xs font-bold">Adicionar Alimento</Text>
+                         <Ionicons name="add" size={16} color={tailwindColors.primary[400]} style={{ marginRight: 4 }} />
+                         <Text className="text-primary-400 text-xs font-bold">Adicionar Alimento</Text>
                       </TouchableOpacity>
                     </View>
                   );
@@ -687,10 +687,10 @@ export default function DietDetailsScreen() {
                         setMealTime(stdMeal.defaultTime); // Pre-fill time
                         setShowFoodSearch(true);
                       }}
-                      className="bg-zinc-900/50 p-4 rounded-2xl border border-dashed border-zinc-800 flex-row items-center justify-center mb-2"
+                      className="bg-background-secondary/50 p-4 rounded-2xl border border-dashed border-zinc-800 flex-row items-center justify-center mb-2"
                     >
-                      <Ionicons name="add-circle-outline" size={24} color="#00D9FF" style={{ marginRight: 8 }} />
-                      <Text className="text-cyan-400 font-bold text-base">Adicionar {stdMeal.name}</Text>
+                      <Ionicons name="add-circle-outline" size={24} color={tailwindColors.primary[400]} style={{ marginRight: 8 }} />
+                      <Text className="text-primary-400 font-bold text-base">Adicionar {stdMeal.name}</Text>
                     </TouchableOpacity>
                   );
                 }
@@ -793,7 +793,7 @@ export default function DietDetailsScreen() {
 
       <Modal visible={showMealModal} transparent animationType="fade">
         <View className="flex-1 bg-black/80 justify-center items-center p-4">
-          <View className="bg-zinc-900 w-full max-w-sm rounded-3xl p-6 border border-zinc-800">
+          <View className="bg-background-secondary w-full max-w-sm rounded-3xl p-6 border border-zinc-800">
             <Text className="text-xl font-bold text-white font-display mb-4">
               {editingMealId ? 'Editar Refeição' : 'Nova Refeição'}
             </Text>
@@ -816,7 +816,7 @@ export default function DietDetailsScreen() {
                     setMealName(suggestion.name);
                     setMealTime(suggestion.time);
                   }}
-                  className="bg-zinc-800 px-3 py-2 rounded-lg mr-2 border border-zinc-700"
+                  className="bg-background-primary px-3 py-2 rounded-lg mr-2 border border-zinc-700"
                 >
                   <Text className="text-zinc-300 text-xs font-bold">{suggestion.name}</Text>
                 </TouchableOpacity>
@@ -825,7 +825,7 @@ export default function DietDetailsScreen() {
 
             <Text className="text-zinc-400 text-sm font-bold mb-2 ml-1">Nome</Text>
             <TextInput
-              className="bg-zinc-950 text-white p-4 rounded-xl border border-zinc-800 mb-4"
+              className="bg-background-primary text-white p-4 rounded-xl border border-zinc-800 mb-4"
               placeholder="Ex: Lanche da Manhã"
               placeholderTextColor="#52525B"
               value={mealName}
@@ -834,7 +834,7 @@ export default function DietDetailsScreen() {
 
             <Text className="text-zinc-400 text-sm font-bold mb-2 ml-1">Horário</Text>
             <TouchableOpacity
-              className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 mb-6 flex-row items-center justify-between"
+              className="bg-background-primary p-4 rounded-xl border border-zinc-800 mb-6 flex-row items-center justify-between"
               onPress={() => setShowTimePicker(true)}
             >
               <Text className="text-white text-base">
@@ -872,13 +872,13 @@ export default function DietDetailsScreen() {
 
             <View className="flex-row gap-3">
               <TouchableOpacity 
-                className="flex-1 bg-zinc-800 p-4 rounded-xl items-center"
+                className="flex-1 bg-background-primary p-4 rounded-xl items-center"
                 onPress={() => setShowMealModal(false)}
               >
                 <Text className="text-zinc-400 font-bold">Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                className="flex-1 bg-cyan-500 p-4 rounded-xl items-center"
+                className="flex-1 bg-primary-400 p-4 rounded-xl items-center"
                 onPress={handleSaveMeal}
               >
                 <Text className="text-white font-bold">Salvar</Text>

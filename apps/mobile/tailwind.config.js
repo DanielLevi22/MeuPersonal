@@ -13,8 +13,8 @@ module.exports = {
         primary: tailwindColors.primary,
         secondary: tailwindColors.secondary,
         accent: tailwindColors.accent,
+        background: tailwindColors.background,
         // Keep semantic colors from shared theme
-        background: 'var(--color-background)',
         surface: 'var(--color-surface)',
         foreground: 'var(--color-foreground)',
         muted: 'var(--color-muted)',

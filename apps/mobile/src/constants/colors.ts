@@ -116,6 +116,13 @@ export const tailwindColors = {
     800: '#531F7D',
     900: '#3B1357',
   },
+  background: {
+    DEFAULT: colors.background.primary,
+    primary: colors.background.primary,
+    secondary: colors.background.secondary,
+    surface: colors.background.surface,
+    elevated: colors.background.elevated,
+  },
 };
 
 // Legacy theme structure for backward compatibility with Themed.tsx

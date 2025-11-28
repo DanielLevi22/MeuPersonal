@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/Input';
+import { tailwindColors } from '@/constants/colors';
 import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -119,8 +120,35 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
     setLocalItems(localItems.filter(i => i.id !== itemId));
   };
 
+  // Default Meal Times
+  const DEFAULT_TIMES: Record<string, string> = {
+    'Café da Manhã': '08:00',
+    'Lanche da Manhã': '10:00',
+    'Almoço': '12:00',
+    'Lanche da Tarde': '16:00',
+    'Jantar': '20:00',
+    'Ceia': '22:00',
+  };
+
+  // Auto-fill time if empty and name matches
+  useEffect(() => {
+    if (!mealTime && mealName && onTimeChange) {
+      const defaultTime = DEFAULT_TIMES[mealName];
+      if (defaultTime) {
+        onTimeChange(defaultTime);
+      }
+    }
+  }, [mealName]);
+
   const handleSavePress = async () => {
     if (!onSave) return;
+
+    // Validate Time
+    if (onTimeChange && !mealTime) {
+      Alert.alert('Horário Obrigatório', 'Por favor, defina o horário da refeição antes de concluir.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await onSave(localItems);
@@ -231,9 +259,10 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
     const match = calculateMatch(food);
     onSelect(food, match?.isMatch ? match.quantity : undefined);
   };
+
   return (
-    <View className="flex-1 bg-zinc-950">
-      <View style={{ paddingTop: insets.top }} className="bg-zinc-900 pb-4 rounded-b-[32px] border-b border-zinc-800 z-10">
+    <View className="flex-1 bg-background-primary">
+      <View style={{ paddingTop: insets.top }} className="bg-background-secondary pb-4 rounded-b-[32px] border-b border-zinc-800 z-10">
         <View className="px-6 flex-row items-center justify-between mb-4 mt-2">
           <Text className="text-2xl font-extrabold text-white font-display">
             Buscar Alimento
@@ -253,10 +282,10 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
                   <View className="mt-2">
                     <TouchableOpacity 
                       onPress={() => setShowTimePicker(true)}
-                      className="bg-black rounded-lg border-2 border-zinc-800 px-4 py-2 flex-row items-center justify-center shadow-md"
-                      style={{ shadowColor: '#00D9FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
+                      className="bg-background-primary rounded-lg border-2 border-zinc-800 px-4 py-2 flex-row items-center justify-center shadow-md"
+                      style={{ shadowColor: tailwindColors.primary[400], shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
                     >
-                      <Text className="text-cyan-400 font-mono text-xl font-bold tracking-[4px]">
+                      <Text className="text-primary-400 font-mono text-xl font-bold tracking-[4px]">
                         {mealTime || '00:00'}
                       </Text>
                     </TouchableOpacity>
@@ -266,7 +295,7 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
                <TouchableOpacity 
                  onPress={handleSavePress}
                  disabled={isSaving}
-                 className="bg-cyan-500 px-4 py-2 rounded-full"
+                 className="bg-primary-400 px-4 py-2 rounded-full"
                >
                  {isSaving ? (
                    <ActivityIndicator size="small" color="#000" />
@@ -287,11 +316,12 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
            />
          )}
  
-          {/* Meal Macros Summary (Replaces Daily Totals) */}
+          {/* Meal Macros Summary */}
           <View className="px-6 mb-4">
             <View className="bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex-row justify-between items-center">
               <View className="items-center flex-1">
                 <Text className="text-zinc-500 text-[10px] font-bold uppercase">Kcal</Text>
+                <Text className="text-white font-bold">{Math.round(mealMacros.calories)}</Text>
               </View>
               <View className="w-[1px] h-8 bg-zinc-800" />
               <View className="items-center flex-1">
@@ -321,10 +351,10 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
            />
            <TouchableOpacity 
              onPress={() => setShowCalculator(!showCalculator)}
-             className="flex-row items-center justify-between bg-zinc-950 p-3 rounded-xl border border-zinc-800"
+             className="flex-row items-center justify-between bg-background-primary p-3 rounded-xl border border-zinc-800"
            >
              <View className="flex-row items-center gap-2">
-               <Ionicons name="calculator-outline" size={20} color="#00D9FF" />
+               <Ionicons name="calculator-outline" size={20} color={tailwindColors.secondary.DEFAULT} />
                <Text className="text-zinc-300 font-bold text-sm">Calculadora Reversa</Text>
              </View>
              <Ionicons name={showCalculator ? "chevron-up" : "chevron-down"} size={20} color="#71717A" />
@@ -334,14 +364,14 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
             <View className="mt-3 flex-row flex-wrap gap-2">
               {(['protein', 'carbs', 'fat', 'calories'] as const).map((macro) => (
                 <View key={macro} className={`flex-row items-center rounded-lg border overflow-hidden h-12 w-[48%] ${
-                  activeMacros.includes(macro) ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-zinc-950 border-zinc-800'
+                  activeMacros.includes(macro) ? 'bg-primary-400/10 border-primary-400/30' : 'bg-background-primary border-zinc-800'
                 }`}>
                   <TouchableOpacity
-                    className={`h-full px-3 justify-center items-center flex-1 ${activeMacros.includes(macro) ? 'border-r border-cyan-500/30' : ''}`}
+                    className={`h-full px-3 justify-center items-center flex-1 ${activeMacros.includes(macro) ? 'border-r border-primary-400/30' : ''}`}
                     onPress={() => toggleMacro(macro)}
                   >
                     <Text className={`text-xs font-bold ${
-                      activeMacros.includes(macro) ? 'text-cyan-400' : 'text-zinc-500'
+                      activeMacros.includes(macro) ? 'text-primary-400' : 'text-zinc-500'
                     }`}>
                       {macro === 'protein' ? 'PROT' : macro === 'carbs' ? 'CARB' : macro === 'fat' ? 'GORD' : 'KCAL'}
                     </Text>
@@ -366,8 +396,6 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
           )}
         </View>
       </View>
-
-
 
       <FlatList
         data={sortedFoods}
@@ -406,7 +434,7 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
             const match = calculateMatch(item);
             return (
               <TouchableOpacity 
-                className="bg-zinc-900 p-4 rounded-2xl mb-3 border border-zinc-800 flex-row justify-between items-center"
+                className="bg-background-secondary p-4 rounded-2xl mb-3 border border-zinc-800 flex-row justify-between items-center"
                 onPress={() => handleLocalSelect(item)}
               >
                 <View className="flex-1 mr-4">
@@ -414,15 +442,15 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
                   
                   {match?.isMatch ? (
                     <View>
-                      <Text className="text-cyan-400 font-bold text-lg">
+                      <Text className="text-secondary-DEFAULT font-bold text-lg">
                         {Math.round(match.quantity)}{item.serving_unit}
                       </Text>
                       <Text className="text-zinc-500 text-xs">
                         Sugerido para bater metas
                       </Text>
                       {match.score > 80 && (
-                        <View className="bg-cyan-500/20 self-start px-2 py-0.5 rounded-md mt-1">
-                          <Text className="text-cyan-400 text-xs font-bold">COMBINAÇÃO PERFEITA</Text>
+                        <View className="bg-secondary-DEFAULT/20 self-start px-2 py-0.5 rounded-md mt-1">
+                          <Text className="text-secondary-DEFAULT text-xs font-bold">COMBINAÇÃO PERFEITA</Text>
                         </View>
                       )}
                     </View>
@@ -436,7 +464,7 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
                   )}
                 </View>
                 
-                <Ionicons name="add-circle" size={28} color="#00D9FF" />
+                <Ionicons name="add-circle" size={28} color={tailwindColors.primary[400]} />
               </TouchableOpacity>
             );
           }}
@@ -449,7 +477,7 @@ export default function FoodSearchScreen({ mealId, initialData, onSelect, onClos
             </View>
           )}
           ListFooterComponent={() => (
-            isLoading ? <ActivityIndicator size="small" color="#00D9FF" className="mt-4" /> : null
+            isLoading ? <ActivityIndicator size="small" color={tailwindColors.primary[400]} className="mt-4" /> : null
           )}
       />
     </View>
