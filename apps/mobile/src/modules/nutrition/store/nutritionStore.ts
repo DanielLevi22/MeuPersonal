@@ -1,10 +1,10 @@
 import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications, scheduleMealNotifications } from '@/services/notificationService';
 import type {
-    DietMeal,
-    DietMealItem,
-    DietPlan,
-    Food
+  DietMeal,
+  DietMealItem,
+  DietPlan,
+  Food
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
@@ -13,7 +13,7 @@ export type { Food };
 interface NutritionStore {
   // Foods
   foods: Food[];
-  searchFoods: (query: string) => Promise<Food[]>;
+  searchFoods: (query: string, page?: number, pageSize?: number) => Promise<Food[]>;
   createCustomFood: (food: Omit<Food, 'id' | 'is_custom' | 'created_by'>) => Promise<void>;
   
   // Diet Plans
@@ -31,7 +31,7 @@ interface NutritionStore {
   // Meals
   meals: DietMeal[];
   fetchMeals: (dietPlanId: string) => Promise<void>;
-  addMeal: (meal: Omit<DietMeal, 'id'>) => Promise<void>;
+  addMeal: (meal: Omit<DietMeal, 'id'>) => Promise<DietMeal>;
   updateMeal: (id: string, updates: Partial<DietMeal>) => Promise<void>;
   
   // Meal Items
@@ -290,18 +290,23 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
   },
 
-  // Search foods with full-text search
-  searchFoods: async (query: string) => {
+  // Search foods with full-text search and pagination
+  searchFoods: async (query: string, page = 0, pageSize = 10) => {
     try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
       const { data, error } = await supabase
         .from('foods')
         .select('*')
         .or(`name.ilike.%${query}%,search_vector.fts.${query}`)
-        .limit(20);
+        .range(from, to);
 
       if (error) throw error;
       
-      set({ foods: data || [] });
+      set((state) => ({
+        foods: page === 0 ? (data || []) : [...state.foods, ...(data || [])]
+      }));
       return data || [];
     } catch (error) {
       console.error('Error searching foods:', error);
@@ -745,6 +750,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       set((state) => ({
         meals: [...state.meals, data]
       }));
+      return data;
     } catch (error) {
       console.error('Error adding meal:', error);
       throw error;

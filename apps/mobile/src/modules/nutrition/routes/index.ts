@@ -6,13 +6,13 @@ export { useNutritionStore } from '../store/nutritionStore';
 export type { DailyLog } from '../store/nutritionStore';
 
 // Components
-export { DailyNutrition } from '../components/DailyNutrition';
-export { DayOptionsModal } from '../components/DayOptionsModal';
-export { EditFoodModal } from '../components/EditFoodModal';
-export { FoodSearchModal } from '../components/FoodSearchModal';
-export { MacroProgressBar } from '../components/MacroProgressBar';
-export { MealCard } from '../components/MealCard';
-export { TimePickerModal } from '../components/TimePickerModal';
+export {
+  DailyNutrition,
+  DayOptionsModal,
+  FoodSearchModal,
+  MacroProgressBar,
+  MealCard
+} from '../components';
 
 // Screens
 // Screens

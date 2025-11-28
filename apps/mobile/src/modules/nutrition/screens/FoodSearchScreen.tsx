@@ -2,12 +2,26 @@ import { Input } from '@/components/ui/Input';
 import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FoodSearchScreenProps {
+  mealId?: string;
+  initialData?: {
+    name: string;
+    time: string;
+    type: string;
+    order: number;
+  };
   onSelect: (food: any, quantity?: number) => void;
   onClose: () => void;
+  onSave?: (items: any[]) => Promise<void>;
+  dailyTotals?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 type MacroType = 'protein' | 'carbs' | 'fat' | 'calories';
@@ -19,27 +33,110 @@ interface MacroTargets {
   calories?: string;
 }
 
-export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreenProps) {
+export default function FoodSearchScreen({ mealId, initialData, onSelect, onClose, onSave, dailyTotals }: FoodSearchScreenProps) {
   const insets = useSafeAreaInsets();
-  const { searchFoods, foods } = useNutritionStore();
+  const { searchFoods, foods, meals, mealItems, fetchMealItems } = useNutritionStore();
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Local state for items (Draft Mode)
+  const [localItems, setLocalItems] = useState<any[]>([]);
+
+  // Initialize items
+  useEffect(() => {
+    if (mealId) {
+      fetchMealItems(mealId);
+      // Sync local items with store items when they load
+      if (mealItems[mealId]) {
+        setLocalItems(mealItems[mealId]);
+      }
+    }
+  }, [mealId, mealId ? mealItems[mealId]?.length : 0]); // Re-sync if store updates
+
+  // Get meal details (from store or initial data)
+  const mealName = mealId ? meals.find(m => m.id === mealId)?.name : initialData?.name;
+  
+  // Calculate Meal Macros from LOCAL items
+  const mealMacros = useMemo(() => {
+    return localItems.reduce((acc, item) => {
+      const ratio = item.quantity / (item.food?.serving_size || 100);
+      return {
+        calories: acc.calories + (item.food?.calories || 0) * ratio,
+        protein: acc.protein + (item.food?.protein || 0) * ratio,
+        carbs: acc.carbs + (item.food?.carbs || 0) * ratio,
+        fat: acc.fat + (item.food?.fat || 0) * ratio,
+      };
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  }, [localItems]);
+
+  const handleLocalSelect = (food: any) => {
+    // Add to local state
+    const match = calculateMatch(food);
+    const quantity = match?.isMatch ? match.quantity : 100; // Default 100g/ml
+    
+    const newItem = {
+      id: Math.random().toString(), // Temp ID
+      food: food,
+      food_id: food.id,
+      quantity: Math.round(quantity),
+      unit: food.serving_unit,
+      order_index: localItems.length
+    };
+    
+    setLocalItems([...localItems, newItem]);
+    // Clear query to show added items
+    setQuery('');
+  };
+
+  const handleLocalRemove = (itemId: string) => {
+    setLocalItems(localItems.filter(i => i.id !== itemId));
+  };
+
+  const handleSavePress = async () => {
+    if (!onSave) return;
+    setIsSaving(true);
+    try {
+      await onSave(localItems);
+      onClose();
+    } catch (error) {
+      console.error('Error saving meal:', error);
+      Alert.alert('Erro', 'Falha ao salvar refeição');
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
   // Reverse Calculator State
   const [targets, setTargets] = useState<MacroTargets>({});
   const [activeMacros, setActiveMacros] = useState<MacroType[]>([]);
-  const [showCalculator, setShowCalculator] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(true);
+
+  const loadFoods = async (reset = false) => {
+    if (isLoading) return;
+    
+    const nextPage = reset ? 0 : page + 1;
+    setIsLoading(true);
+    
+    try {
+      const results = await searchFoods(query, nextPage, 10);
+      if (reset) {
+        setPage(0);
+        setHasMore(results.length === 10);
+      } else {
+        setPage(nextPage);
+        setHasMore(results.length === 10);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.length >= 2) {
-        setIsLoading(true);
-        searchFoods(query).finally(() => setIsLoading(false));
-      } else if (query.length === 0) {
-        // Load initial foods if needed, or just clear
-        setIsLoading(true);
-        searchFoods('').finally(() => setIsLoading(false));
-      }
+      loadFoods(true);
     }, 500);
 
     return () => clearTimeout(timer);
@@ -110,7 +207,6 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
     const match = calculateMatch(food);
     onSelect(food, match?.isMatch ? match.quantity : undefined);
   };
-
   return (
     <View className="flex-1 bg-zinc-950">
       <View style={{ paddingTop: insets.top }} className="bg-zinc-900 pb-4 rounded-b-[32px] border-b border-zinc-800 z-10">
@@ -122,6 +218,54 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
             <Ionicons name="close" size={24} color="#A1A1AA" />
           </TouchableOpacity>
         </View>
+        
+        {/* Draft Mode Header Actions */}
+        {(localItems.length > 0 || mealId) && (
+          <View className="px-6 mb-4 flex-row justify-between items-center">
+             <View>
+               <Text className="text-zinc-400 text-xs font-bold">REFEIÇÃO</Text>
+               <Text className="text-white font-bold text-lg">{mealName || 'Nova Refeição'}</Text>
+             </View>
+             <TouchableOpacity 
+               onPress={handleSavePress}
+               disabled={isSaving}
+               className="bg-cyan-500 px-4 py-2 rounded-full"
+             >
+               {isSaving ? (
+                 <ActivityIndicator size="small" color="#000" />
+               ) : (
+                 <Text className="text-black font-bold text-sm">Concluir</Text>
+               )}
+             </TouchableOpacity>
+          </View>
+        )}
+
+         {/* Daily Totals Summary */}
+         {dailyTotals && (
+           <View className="px-6 mb-4">
+             <View className="bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex-row justify-between items-center">
+               <View className="items-center flex-1">
+                 <Text className="text-zinc-500 text-[10px] font-bold uppercase">Kcal</Text>
+                 <Text className="text-white font-bold">{Math.round(dailyTotals.calories)}</Text>
+               </View>
+               <View className="w-[1px] h-8 bg-zinc-800" />
+               <View className="items-center flex-1">
+                 <Text className="text-emerald-500 text-[10px] font-bold uppercase">Prot</Text>
+                 <Text className="text-white font-bold">{Math.round(dailyTotals.protein)}g</Text>
+               </View>
+               <View className="w-[1px] h-8 bg-zinc-800" />
+               <View className="items-center flex-1">
+                 <Text className="text-purple-500 text-[10px] font-bold uppercase">Carb</Text>
+                 <Text className="text-white font-bold">{Math.round(dailyTotals.carbs)}g</Text>
+               </View>
+               <View className="w-[1px] h-8 bg-zinc-800" />
+               <View className="items-center flex-1">
+                 <Text className="text-amber-500 text-[10px] font-bold uppercase">Gord</Text>
+                 <Text className="text-white font-bold">{Math.round(dailyTotals.fat)}g</Text>
+               </View>
+             </View>
+           </View>
+         )}
 
         <View className="px-6">
           <Input
@@ -131,7 +275,6 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
             autoFocus
             className="mb-4"
           />
-          
           <TouchableOpacity 
             onPress={() => setShowCalculator(!showCalculator)}
             className="flex-row items-center justify-between bg-zinc-950 p-3 rounded-xl border border-zinc-800"
@@ -161,14 +304,15 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
                   </TouchableOpacity>
                   
                   {activeMacros.includes(macro) && (
-                    <View className="w-16 px-1">
+                    <View className="w-20 justify-center border-l border-cyan-500/30">
                        <Input
-                        className="h-8 text-center text-sm p-0 border-0 bg-transparent"
+                        className="h-9 w-full text-center text-sm p-0 border-0 bg-transparent text-white font-bold"
                         placeholder="0"
+                        placeholderTextColor="rgba(255, 255, 255, 0.3)"
                         keyboardType="numeric"
                         value={targets[macro] || ''}
                         onChangeText={(val) => updateTarget(macro, val)}
-                        style={{ fontSize: 14 }}
+                        style={{ fontSize: 14, textAlignVertical: 'center' }}
                       />
                     </View>
                   )}
@@ -179,22 +323,70 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
         </View>
       </View>
 
-      {isLoading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#00D9FF" />
-          <Text className="text-zinc-500 mt-4 font-bold">Buscando alimentos...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={sortedFoods}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-          renderItem={({ item }) => {
+
+
+      <FlatList
+        data={sortedFoods}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        onEndReached={() => {
+          if (hasMore && !isLoading) {
+            loadFoods();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListHeaderComponent={() => (
+          <View className="mb-6">
+            {/* Meal Summary Card */}
+            <View className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-6">
+              <Text className="text-white font-bold text-lg mb-2">{mealName || 'Refeição'}</Text>
+              <View className="flex-row justify-between">
+                <View className="items-center">
+                  <Text className="text-zinc-500 text-xs font-bold">KCAL</Text>
+                  <Text className="text-white font-bold">{Math.round(mealMacros.calories)}</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-emerald-500 text-xs font-bold">PROT</Text>
+                  <Text className="text-white font-bold">{Math.round(mealMacros.protein)}g</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-purple-500 text-xs font-bold">CARB</Text>
+                  <Text className="text-white font-bold">{Math.round(mealMacros.carbs)}g</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-amber-500 text-xs font-bold">GORD</Text>
+                  <Text className="text-white font-bold">{Math.round(mealMacros.fat)}g</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Added Foods List */}
+            {localItems.length > 0 && (
+              <View className="mb-6">
+                <Text className="text-zinc-400 font-bold text-sm mb-3">ALIMENTOS ADICIONADOS</Text>
+                {localItems.map((item, idx) => (
+                  <View key={idx} className="flex-row justify-between items-center py-2 border-b border-zinc-800">
+                    <View className="flex-1">
+                      <Text className="text-white font-bold">{item.food?.name}</Text>
+                      <Text className="text-zinc-500 text-xs">{item.quantity}{item.unit}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => handleLocalRemove(item.id)}>
+                      <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <Text className="text-zinc-400 font-bold text-sm mb-2">RESULTADOS DA BUSCA</Text>
+          </View>
+        )}
+        renderItem={({ item }) => {
             const match = calculateMatch(item);
             return (
               <TouchableOpacity 
                 className="bg-zinc-900 p-4 rounded-2xl mb-3 border border-zinc-800 flex-row justify-between items-center"
-                onPress={() => handleSelectFood(item)}
+                onPress={() => handleLocalSelect(item)}
               >
                 <View className="flex-1 mr-4">
                   <Text className="text-white font-bold text-base mb-1">{item.name}</Text>
@@ -209,7 +401,7 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
                       </Text>
                       {match.score > 80 && (
                         <View className="bg-cyan-500/20 self-start px-2 py-0.5 rounded-md mt-1">
-                          <Text className="text-cyan-400 text-[10px] font-bold">COMBINAÇÃO PERFEITA</Text>
+                          <Text className="text-cyan-400 text-xs font-bold">COMBINAÇÃO PERFEITA</Text>
                         </View>
                       )}
                     </View>
@@ -228,15 +420,17 @@ export default function FoodSearchScreen({ onSelect, onClose }: FoodSearchScreen
             );
           }}
           ListEmptyComponent={() => (
-            <View className="items-center justify-center mt-20">
+            <View className="items-center justify-center mt-10">
               <Ionicons name="search-outline" size={48} color="#3F3F46" />
               <Text className="text-zinc-500 mt-4 font-bold">
                 {query ? 'Nenhum alimento encontrado' : 'Digite para buscar'}
               </Text>
             </View>
           )}
-        />
-      )}
+          ListFooterComponent={() => (
+            isLoading ? <ActivityIndicator size="small" color="#00D9FF" className="mt-4" /> : null
+          )}
+      />
     </View>
   );
 }
