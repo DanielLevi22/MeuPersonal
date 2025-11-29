@@ -16,16 +16,16 @@ async function fetchRecentActivity(): Promise<Activity[]> {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const { data: workoutSessions } = await supabase
-    .from('workout_sessions')
+    .from('workout_executions')
     .select(`
       id,
       completed_at,
       student_id,
       workout_id,
-      workouts!inner(personal_id, title),
-      profiles!workout_sessions_student_id_fkey(full_name)
+      workouts!inner(professional_id, title),
+      profiles!student_id(full_name)
     `)
-    .eq('workouts.personal_id', user.id)
+    .eq('workouts.professional_id', user.id)
     .not('completed_at', 'is', null)
     .gte('completed_at', oneWeekAgo.toISOString())
     .order('completed_at', { ascending: false })
@@ -45,13 +45,13 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
   // Fetch new students (last 7 days)
   const { data: newStudents } = await supabase
-    .from('students_personals')
+    .from('coachings')
     .select(`
       id,
       created_at,
-      profiles!students_personals_student_id_fkey(full_name)
+      profiles!client_id(full_name)
     `)
-    .eq('personal_id', user.id)
+    .eq('professional_id', user.id)
     .gte('created_at', oneWeekAgo.toISOString())
     .order('created_at', { ascending: false })
     .limit(3);
@@ -70,13 +70,13 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
   // Fetch new diet plans (last 7 days)
   const { data: dietPlans } = await supabase
-    .from('diet_plans')
+    .from('nutrition_plans')
     .select(`
       id,
       created_at,
-      profiles!diet_plans_student_id_fkey(full_name)
+      profiles!student_id(full_name)
     `)
-    .eq('personal_id', user.id)
+    .eq('professional_id', user.id)
     .gte('created_at', oneWeekAgo.toISOString())
     .order('created_at', { ascending: false })
     .limit(3);

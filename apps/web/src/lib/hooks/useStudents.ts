@@ -31,16 +31,16 @@ export function useStudents() {
       if (!userId) return [];
 
       const { data, error } = await supabase
-        .from('students_personals')
+        .from('coachings')
         .select(`
-          student_id,
-          profiles!students_personals_student_id_fkey (
+          client_id,
+          profiles!client_id (
             id,
             full_name,
             email
           )
         `)
-        .eq('personal_id', userId)
+        .eq('professional_id', userId)
         .eq('status', 'active');
 
       if (error) throw error;

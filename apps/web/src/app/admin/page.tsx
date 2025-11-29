@@ -3,6 +3,7 @@
 import { supabase } from '@meupersonal/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { PendingApprovalsList } from './components/PendingApprovalsList';
 
 interface DashboardStats {
   totalUsers: number;
@@ -106,4 +107,41 @@ export default function AdminDashboard() {
     );
   }
 
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">
+          Dashboard Administrativo
+        </h1>
+        <p className="text-muted-foreground">
+          Visão geral do sistema e aprovações pendentes
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-surface border border-border p-6 rounded-xl">
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Total de Usuários</h3>
+          <p className="text-3xl font-bold text-foreground">{stats?.totalUsers || 0}</p>
+        </div>
+        <div className="bg-surface border border-border p-6 rounded-xl">
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Usuários Ativos (7d)</h3>
+          <p className="text-3xl font-bold text-green-400">{stats?.activeUsers || 0}</p>
+        </div>
+        <div className="bg-surface border border-border p-6 rounded-xl">
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Profissionais</h3>
+          <p className="text-3xl font-bold text-orange-400">{stats?.totalProfessionals || 0}</p>
+        </div>
+        <div className="bg-surface border border-border p-6 rounded-xl">
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Alunos</h3>
+          <p className="text-3xl font-bold text-blue-400">{stats?.totalStudents || 0}</p>
+        </div>
+      </div>
+
+      {/* Pending Approvals Section */}
+      <div className="mb-8">
+        <PendingApprovalsList />
+      </div>
+    </div>
+  );
 }
