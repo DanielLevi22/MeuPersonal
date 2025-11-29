@@ -164,6 +164,38 @@ export default function PeriodizationDetailsScreen() {
               <Text className="text-white font-bold font-display">ATIVAR PERIODIZAÇÃO</Text>
             </TouchableOpacity>
           )}
+          
+          {periodization.status === 'active' && (
+            <TouchableOpacity 
+              onPress={() => {
+                Alert.alert(
+                  'Encerrar Periodização',
+                  'Deseja encerrar esta periodização? Esta ação não pode ser desfeita.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { 
+                      text: 'Encerrar',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await useWorkoutStore.getState().updateTrainingPlan(periodization.id, { status: 'completed' });
+                          Alert.alert('Sucesso', 'Periodização encerrada!');
+                          if (user?.id) {
+                            fetchPeriodizations(user.id);
+                          }
+                        } catch (error) {
+                          Alert.alert('Erro', 'Não foi possível encerrar a periodização.');
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+              className="mt-6 bg-red-500 px-6 py-3 rounded-xl w-full items-center"
+            >
+              <Text className="text-white font-bold font-display">ENCERRAR PERIODIZAÇÃO</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Phases List */}
