@@ -111,7 +111,7 @@ export default function CreatePeriodizationScreen() {
         professional_id: user.id,
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
-        status: 'planned',
+        status: 'active',
         notes: notes || null,
       } as any);
 

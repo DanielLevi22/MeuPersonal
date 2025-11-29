@@ -83,8 +83,10 @@ interface WorkoutState {
   fetchExercises: () => Promise<void>;
   createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
   createPeriodization: (periodization: Omit<Periodization, 'id' | 'created_at' | 'student'>) => Promise<Periodization>;
+  updatePeriodization: (id: string, updates: Partial<Periodization>) => Promise<void>;
   createTrainingPlan: (plan: Omit<TrainingPlan, 'id' | 'created_at'>) => Promise<TrainingPlan>;
   updateTrainingPlan: (id: string, updates: Partial<TrainingPlan>) => Promise<void>;
+  deleteTrainingPlan: (id: string) => Promise<void>;
   fetchWorkoutsForPhase: (trainingPlanId: string) => Promise<void>;
   addWorkoutItems: (workoutId: string, items: WorkoutItem[]) => Promise<void>;
   generateWorkoutsForPhase: (trainingPlanId: string, split: string, personalId: string) => Promise<void>;
@@ -323,6 +325,26 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     }
   },
 
+  updatePeriodization: async (id, updates) => {
+    try {
+      const { error } = await supabase
+        .from('periodizations')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set((state) => ({
+        periodizations: state.periodizations.map(p => 
+          p.id === id ? { ...p, ...updates } : p
+        )
+      }));
+    } catch (error) {
+      console.error('Error updating periodization:', error);
+      throw error;
+    }
+  },
+
   activatePeriodization: async (periodizationId: string) => {
     try {
       // 1. Get the periodization to find student_id
@@ -384,6 +406,24 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       }));
     } catch (error) {
       console.error('Error updating training plan:', error);
+      throw error;
+    }
+  },
+
+  deleteTrainingPlan: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('training_plans')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set((state) => ({
+        currentPeriodizationPhases: state.currentPeriodizationPhases.filter(p => p.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting training plan:', error);
       throw error;
     }
   },

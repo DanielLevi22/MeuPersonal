@@ -47,12 +47,21 @@ export default function PeriodizationsScreen() {
 
         <View className="flex-row items-center gap-4 mt-2">
           <View className="flex-row items-center">
-            <Ionicons name="calendar-outline" size={16} color="#00D9FF" style={{ marginRight: 6 }} />
+            <Ionicons name="calendar-outline" size={16} color="#FF6B35" style={{ marginRight: 6 }} />
             <Text className="text-zinc-300 text-xs font-bold">
               {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
             </Text>
           </View>
         </View>
+        
+        {item.student && (
+          <View className="flex-row items-center mt-2">
+            <Ionicons name="person-outline" size={16} color="#71717A" style={{ marginRight: 6 }} />
+            <Text className="text-zinc-400 text-xs font-semibold">
+              {typeof item.student === 'string' ? item.student : item.student.full_name}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -73,10 +82,10 @@ export default function PeriodizationsScreen() {
         <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
           <TouchableOpacity activeOpacity={0.8}>
             <LinearGradient
-              colors={['#00D9FF', '#00B8D9']}
+              colors={['#FF6B35', '#FF2E63']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-cyan-500/20"
+              className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
             >
               <Ionicons name="add" size={28} color="#FFFFFF" />
             </LinearGradient>
@@ -86,7 +95,7 @@ export default function PeriodizationsScreen() {
 
       {/* Content */}
       <FlatList
-        data={periodizations}
+        data={periodizations.filter(p => p.status === 'active')}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
@@ -94,7 +103,7 @@ export default function PeriodizationsScreen() {
           <RefreshControl 
             refreshing={isLoading} 
             onRefresh={() => user?.id && fetchPeriodizations(user.id)} 
-            tintColor="#00D9FF" 
+            tintColor="#FF6B35" 
           />
         }
         showsVerticalScrollIndicator={false}
@@ -105,7 +114,7 @@ export default function PeriodizationsScreen() {
                 <Ionicons name="calendar-outline" size={64} color="#52525B" />
               </View>
               <Text className="text-white text-xl font-bold mb-2 text-center font-display">
-                Nenhuma periodização
+                Nenhuma periodização ativa
               </Text>
               <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
                 Crie um planejamento de longo prazo para seus alunos
@@ -114,10 +123,10 @@ export default function PeriodizationsScreen() {
               <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
                 <TouchableOpacity activeOpacity={0.8}>
                   <LinearGradient
-                    colors={['#00D9FF', '#00B8D9']}
+                    colors={['#FF6B35', '#FF2E63']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="rounded-2xl py-3 px-6 shadow-lg shadow-cyan-500/20"
+                    className="rounded-2xl py-3 px-6 shadow-lg shadow-orange-500/20"
                   >
                     <Text className="text-white text-base font-bold font-display">
                       Criar Periodização
@@ -128,7 +137,7 @@ export default function PeriodizationsScreen() {
             </View>
           ) : (
             <View className="py-20">
-              <ActivityIndicator size="large" color="#00D9FF" />
+              <ActivityIndicator size="large" color="#FF6B35" />
             </View>
           )
         }

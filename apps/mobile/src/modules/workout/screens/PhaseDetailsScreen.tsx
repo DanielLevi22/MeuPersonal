@@ -11,7 +11,7 @@ export default function PhaseDetailsScreen() {
   const { phaseId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { currentPeriodizationPhases, updateTrainingPlan, createWorkout, fetchWorkoutsForPhase, generateWorkoutsForPhase, workouts } = useWorkoutStore();
+  const { currentPeriodizationPhases, updateTrainingPlan, deleteTrainingPlan, createWorkout, fetchWorkoutsForPhase, generateWorkoutsForPhase, workouts } = useWorkoutStore();
   
   const phase = currentPeriodizationPhases.find(p => p.id === phaseId);
 
@@ -90,6 +90,60 @@ export default function PhaseDetailsScreen() {
     }
   };
 
+  const handleToggleStatus = async () => {
+    if (!phase) return;
+    
+    const newStatus = phase.status === 'draft' ? 'active' : 
+                     phase.status === 'active' ? 'completed' : 'draft';
+    
+    const statusLabel = newStatus === 'draft' ? 'Rascunho' :
+                       newStatus === 'active' ? 'Ativo' : 'Concluído';
+    
+    Alert.alert(
+      'Alterar Status',
+      `Deseja alterar o status desta fase para "${statusLabel}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            try {
+              await updateTrainingPlan(phase.id, { status: newStatus });
+              Alert.alert('Sucesso', `Status alterado para ${statusLabel}!`);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível alterar o status.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleDeletePhase = async () => {
+    if (!phase) return;
+    
+    Alert.alert(
+      'Excluir Fase',
+      `Tem certeza que deseja excluir a fase "${phase.name}"? Todos os treinos e exercícios desta fase serão perdidos. Esta ação não pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await useWorkoutStore.getState().deleteTrainingPlan(phase.id);
+              Alert.alert('Sucesso', 'Fase excluída!');
+              router.back();
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível excluir a fase.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleCreateWorkout = async () => {
     if (!phase || !user?.id) return;
     try {
@@ -132,7 +186,24 @@ export default function PhaseDetailsScreen() {
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text className="text-white font-bold text-lg font-display">{phase.name}</Text>
-        <View className="w-10" /> 
+        <View className="flex-row gap-2">
+          <TouchableOpacity 
+            onPress={handleToggleStatus}
+            className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
+          >
+            <Ionicons 
+              name={phase.status === 'draft' ? 'play-circle' : phase.status === 'active' ? 'checkmark-circle' : 'refresh-circle'} 
+              size={24} 
+              color={phase.status === 'draft' ? '#FFB800' : phase.status === 'active' ? '#00C9A7' : '#71717A'} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleDeletePhase}
+            className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
+          >
+            <Ionicons name="trash" size={24} color="#FF2E63" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 100 }}>

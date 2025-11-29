@@ -178,7 +178,7 @@ export default function PeriodizationDetailsScreen() {
                       style: 'destructive',
                       onPress: async () => {
                         try {
-                          await useWorkoutStore.getState().updateTrainingPlan(periodization.id, { status: 'completed' });
+                          await useWorkoutStore.getState().updatePeriodization(periodization.id, { status: 'completed' });
                           Alert.alert('Sucesso', 'Periodização encerrada!');
                           if (user?.id) {
                             fetchPeriodizations(user.id);
@@ -225,23 +225,31 @@ export default function PeriodizationDetailsScreen() {
                   }
                 }}
               >
-                <View className="flex-row justify-between items-center mb-3">
-                  <View className="flex-row items-center">
+                <View className="flex-row justify-between items-start mb-3">
+                  <View className="flex-row items-center flex-1">
                     <View className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center mr-3">
                       <Text className="text-white font-bold">{index + 1}</Text>
                     </View>
-                    <View>
+                    <View className="flex-1">
                       <Text className="text-white font-bold text-base">{phase.name}</Text>
-                      <Text className="text-zinc-500 text-xs">{phase.weekly_frequency}x/semana • {phase.training_split.toUpperCase()}</Text>
+                      <Text className="text-zinc-500 text-xs mt-0.5">
+                        {phase.weekly_frequency}x/semana • {phase.training_split || 'Não definido'}
+                      </Text>
                     </View>
                   </View>
                   <View 
-                    className="px-2 py-1 rounded-md"
-                    style={{ backgroundColor: `${getPhaseColor('hypertrophy')}20` }}
+                    className="px-2 py-1 rounded-md ml-2"
+                    style={{ 
+                      backgroundColor: phase.status === 'draft' ? '#FFB80020' : 
+                                      phase.status === 'active' ? '#00C9A720' : '#71717A20'
+                    }}
                   >
                     <Text 
                       className="text-[10px] font-bold uppercase"
-                      style={{ color: getPhaseColor('hypertrophy') }}
+                      style={{ 
+                        color: phase.status === 'draft' ? '#FFB800' : 
+                              phase.status === 'active' ? '#00C9A7' : '#71717A'
+                      }}
                     >
                       {phase.status === 'draft' ? 'Rascunho' : phase.status === 'active' ? 'Ativo' : 'Concluído'}
                     </Text>
@@ -249,13 +257,21 @@ export default function PeriodizationDetailsScreen() {
                 </View>
                 
                 <View className="flex-row items-center justify-between pl-11">
-                  <Text className={`text-xs font-bold ${
-                    phase.status === 'active' ? 'text-emerald-400' : 
-                    phase.status === 'completed' ? 'text-zinc-500' : 'text-zinc-600'
-                  }`}>
-                    {phase.status === 'active' ? '● Em andamento' : 
-                     phase.status === 'completed' ? '✓ Concluído' : '○ Planejado'}
-                  </Text>
+                  <View className="flex-row items-center gap-3">
+                    <View className="flex-row items-center">
+                      <Ionicons name="calendar-outline" size={12} color="#71717A" />
+                      <Text className="text-zinc-500 text-xs ml-1">
+                        {new Date(phase.start_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      </Text>
+                    </View>
+                    <Text className="text-zinc-600">→</Text>
+                    <View className="flex-row items-center">
+                      <Ionicons name="calendar-outline" size={12} color="#71717A" />
+                      <Text className="text-zinc-500 text-xs ml-1">
+                        {new Date(phase.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      </Text>
+                    </View>
+                  </View>
                   <Ionicons name="chevron-forward" size={16} color="#52525B" />
                 </View>
               </TouchableOpacity>
@@ -278,7 +294,7 @@ export default function PeriodizationDetailsScreen() {
                         await createTrainingPlan({
                           periodization_id: periodization.id,
                           name: `Fase ${currentPeriodizationPhases.length + 1}`,
-                          training_split: 'abc',
+                          training_split: 'ABC',
                           weekly_frequency: 3,
                           start_date: new Date().toISOString().split('T')[0],
                           end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
