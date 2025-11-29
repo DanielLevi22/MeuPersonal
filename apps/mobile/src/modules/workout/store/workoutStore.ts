@@ -52,17 +52,33 @@ export interface Periodization {
   };
 }
 
+export interface TrainingPlan {
+  id: string;
+  periodization_id: string;
+  name: string;
+  description?: string;
+  training_split: string;
+  weekly_frequency: number;
+  start_date: string;
+  end_date: string;
+  status: 'draft' | 'active' | 'completed';
+  notes?: string;
+}
+
 interface WorkoutState {
   workouts: Workout[];
   periodizations: Periodization[];
   exercises: Exercise[];
   selectedExercises: SelectedExercise[];
+  currentPeriodizationPhases: TrainingPlan[];
   isLoading: boolean;
   fetchWorkouts: (personalId: string) => Promise<void>;
   fetchPeriodizations: (personalId: string) => Promise<void>;
+  fetchPeriodizationPhases: (periodizationId: string) => Promise<void>;
   fetchExercises: () => Promise<void>;
   createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
   createPeriodization: (periodization: Omit<Periodization, 'id' | 'created_at' | 'student'>) => Promise<Periodization>;
+  createTrainingPlan: (plan: Omit<TrainingPlan, 'id' | 'created_at'>) => Promise<TrainingPlan>;
   createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
   activatePeriodization: (periodizationId: string) => Promise<any>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
@@ -75,7 +91,47 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   periodizations: [],
   exercises: [],
   selectedExercises: [],
+  currentPeriodizationPhases: [],
   isLoading: false,
+
+  fetchPeriodizationPhases: async (periodizationId) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('training_plans')
+        .select('*')
+        .eq('periodization_id', periodizationId)
+        .order('start_date', { ascending: true });
+
+      if (error) throw error;
+      set({ currentPeriodizationPhases: data || [] });
+    } catch (error) {
+      console.error('Error fetching phases:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  createTrainingPlan: async (plan) => {
+    try {
+      const { data, error } = await supabase
+        .from('training_plans')
+        .insert(plan)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set((state) => ({
+        currentPeriodizationPhases: [...state.currentPeriodizationPhases, data]
+      }));
+
+      return data;
+    } catch (error) {
+      console.error('Error creating training plan:', error);
+      throw error;
+    }
+  },
 
   fetchPeriodizations: async (personalId) => {
     set({ isLoading: true });
@@ -282,6 +338,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       periodizations: [],
       exercises: [],
       selectedExercises: [],
+      currentPeriodizationPhases: [],
       isLoading: false
     });
   }

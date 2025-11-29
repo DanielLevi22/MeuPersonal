@@ -7,13 +7,17 @@ import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } fr
 import { useWorkoutStore } from '../store/workoutStore';
 
 export default function PeriodizationDetailsScreen() {
-  const { id: studentId, periodizationId: paramPeriodizationId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { periodizations, fetchPeriodizations, isLoading, activatePeriodization } = useWorkoutStore();
+  const { periodizations, fetchPeriodizations, isLoading, activatePeriodization, currentPeriodizationPhases, fetchPeriodizationPhases, createTrainingPlan } = useWorkoutStore();
   const [periodization, setPeriodization] = useState<any>(null);
 
-  const periodizationId = Array.isArray(paramPeriodizationId) ? paramPeriodizationId[0] : paramPeriodizationId;
+  // Handle both route patterns:
+  // 1. /students/[id]/workouts/[periodizationId] -> id is student, periodizationId is periodization
+  // 2. /workouts/periodizations/[id] -> id is periodization
+  const rawPeriodizationId = params.periodizationId || params.id;
+  const periodizationId = Array.isArray(rawPeriodizationId) ? rawPeriodizationId[0] : rawPeriodizationId;
 
   useEffect(() => {
     if (user?.id) {
@@ -33,6 +37,7 @@ export default function PeriodizationDetailsScreen() {
       const found = periodizations.find(p => p.id === periodizationId);
       if (found) {
         setPeriodization(found);
+        fetchPeriodizationPhases(periodizationId as string);
       }
     }
   }, [periodizations, periodizationId]);
@@ -66,13 +71,6 @@ export default function PeriodizationDetailsScreen() {
   }
 
   // Mock Phases Data (Replace with real data later)
-  const phases = [
-    { id: '1', name: 'Adaptação', type: 'adaptation', duration: '4 semanas', status: 'completed' },
-    { id: '2', name: 'Hipertrofia I', type: 'hypertrophy', duration: '8 semanas', status: 'active' },
-    { id: '3', name: 'Força', type: 'strength', duration: '4 semanas', status: 'planned' },
-    { id: '4', name: 'Hipertrofia II', type: 'hypertrophy', duration: '8 semanas', status: 'planned' },
-  ];
-
   const getPhaseColor = (type: string) => {
     switch (type) {
       case 'adaptation': return '#00C9A7'; // Emerald
@@ -175,8 +173,26 @@ export default function PeriodizationDetailsScreen() {
           </Text>
           
           <View className="gap-4">
-            {phases.map((phase, index) => (
-              <View key={phase.id} className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+            {currentPeriodizationPhases.map((phase, index) => (
+              <TouchableOpacity 
+                key={phase.id} 
+                className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800"
+                onPress={() => {
+                  // Determine navigation path based on context
+                  const targetStudentId = params.id || periodization?.student_id;
+                  
+                  if (params.id && params.periodizationId) {
+                    // We are in students tab: /students/[id]/workouts/[periodizationId]
+                    router.push(`/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as any);
+                  } else {
+                    // We are in workouts tab: /workouts/periodizations/[id]
+                    // Since we don't have a phases route in workouts tab yet, show alert or redirect to students tab?
+                    // Ideally we should mirror the route, but for now let's alert or try to navigate to student context if possible.
+                    // Actually, let's just use the student route since it exists.
+                    router.push(`/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as any);
+                  }
+                }}
+              >
                 <View className="flex-row justify-between items-center mb-3">
                   <View className="flex-row items-center">
                     <View className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center mr-3">
@@ -184,18 +200,18 @@ export default function PeriodizationDetailsScreen() {
                     </View>
                     <View>
                       <Text className="text-white font-bold text-base">{phase.name}</Text>
-                      <Text className="text-zinc-500 text-xs">{phase.duration}</Text>
+                      <Text className="text-zinc-500 text-xs">{phase.weekly_frequency}x/semana • {phase.training_split.toUpperCase()}</Text>
                     </View>
                   </View>
                   <View 
                     className="px-2 py-1 rounded-md"
-                    style={{ backgroundColor: `${getPhaseColor(phase.type)}20` }}
+                    style={{ backgroundColor: `${getPhaseColor('hypertrophy')}20` }}
                   >
                     <Text 
                       className="text-[10px] font-bold uppercase"
-                      style={{ color: getPhaseColor(phase.type) }}
+                      style={{ color: getPhaseColor('hypertrophy') }}
                     >
-                      {getPhaseLabel(phase.type)}
+                      {phase.status === 'draft' ? 'Rascunho' : phase.status === 'active' ? 'Ativo' : 'Concluído'}
                     </Text>
                   </View>
                 </View>
@@ -210,13 +226,42 @@ export default function PeriodizationDetailsScreen() {
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color="#52525B" />
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
 
           <TouchableOpacity 
             className="mt-6 border-2 border-dashed border-zinc-700 rounded-2xl p-4 items-center justify-center"
-            onPress={() => Alert.alert('Em breve', 'Adicionar fase em desenvolvimento')}
+            onPress={() => {
+              Alert.alert(
+                'Nova Fase',
+                'Criar uma nova fase de treino?',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { 
+                    text: 'Criar', 
+                    onPress: async () => {
+                      if (!periodization) return;
+                      try {
+                        await createTrainingPlan({
+                          periodization_id: periodization.id,
+                          name: `Fase ${currentPeriodizationPhases.length + 1}`,
+                          training_split: 'abc',
+                          weekly_frequency: 3,
+                          start_date: new Date().toISOString().split('T')[0],
+                          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                          status: 'draft',
+                          notes: ''
+                        });
+                        Alert.alert('Sucesso', 'Fase criada!');
+                      } catch (error) {
+                        Alert.alert('Erro', 'Não foi possível criar a fase.');
+                      }
+                    }
+                  }
+                ]
+              );
+            }}
           >
             <Ionicons name="add-circle-outline" size={24} color="#71717A" />
             <Text className="text-zinc-500 font-bold mt-2">Adicionar Fase</Text>

@@ -21,7 +21,7 @@ export default function PeriodizationsScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       activeOpacity={0.8}
-      onPress={() => router.push(`/(tabs)/workouts/periodization/${item.id}` as any)}
+      onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as any)}
       className="mb-4"
     >
       <View className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
