@@ -41,15 +41,23 @@ export default function CreatePeriodizationScreen() {
 
   // Fetch students on mount
   useEffect(() => {
+    console.log('=== CreatePeriodizationScreen mounted ===');
+    console.log('User ID:', user?.id);
+    console.log('User metadata:', user);
     fetchStudents();
   }, [user]);
 
   const fetchStudents = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('⚠️ fetchStudents: No user ID available');
+      return;
+    }
+
+    console.log('📋 Fetching students for professional:', user.id);
 
     try {
-      // 1. Fetch active students
-      const { data: activeData, error: activeError } = await supabase
+      // Fetch all students linked to this professional
+      const { data: studentsData, error: studentsError } = await supabase
         .from('students_personals')
         .select(`
           student:profiles!student_id (
@@ -60,49 +68,66 @@ export default function CreatePeriodizationScreen() {
         .eq('personal_id', user.id)
         .eq('status', 'active');
 
-      // 2. Fetch pending students
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('students')
-        .select('id, full_name')
-        .eq('personal_id', user.id)
-        .not('invite_code', 'is', null);
+      console.log('Students data:', studentsData);
+      console.log('Students error:', studentsError);
 
-      if (!activeError && !pendingError) {
-        const activeList = activeData?.map((item: any) => item.student).filter(Boolean) || [];
-        const pendingList = pendingData || [];
+      if (!studentsError && studentsData) {
+        const studentsList = studentsData
+          .map((item: any) => item.student)
+          .filter(Boolean);
         
-        // Merge and deduplicate
-        const allStudents = [...activeList, ...pendingList];
-        const uniqueStudents = Array.from(new Map(allStudents.map(item => [item.id, item])).values());
-        
-        setStudents(uniqueStudents);
+        console.log('✅ Total students available:', studentsList.length, studentsList);
+        setStudents(studentsList);
       }
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('❌ Error fetching students:', error);
     }
   };
 
   const handleSave = async () => {
+    console.log('\n=== 🚀 STARTING PERIODIZATION CREATION ===');
+    
     if (!name.trim()) {
+      console.log('❌ Validation failed: Name is empty');
       Alert.alert('Erro', 'O nome da periodização é obrigatório.');
       return;
     }
 
     if (!objective.trim()) {
+      console.log('❌ Validation failed: Objective is empty');
       Alert.alert('Erro', 'O objetivo da periodização é obrigatório.');
       return;
     }
 
     if (!studentId) {
+      console.log('❌ Validation failed: No student selected');
       Alert.alert('Erro', 'Selecione um aluno.');
       return;
     }
 
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('❌ Validation failed: No user ID');
+      return;
+    }
+
+    console.log('✅ All validations passed');
+    console.log('📝 Form data:', {
+      name,
+      objective,
+      student_id: studentId,
+      student_name: students.find(s => s.id === studentId)?.full_name,
+      personal_id: user.id,
+      professional_id: user.id,
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      status: 'active',
+      notes: notes || null,
+    });
 
     setLoading(true);
 
     try {
+      console.log('📤 Calling createPeriodization...');
       const data = await createPeriodization({
         name,
         objective,
@@ -115,20 +140,31 @@ export default function CreatePeriodizationScreen() {
         notes: notes || null,
       } as any);
 
+      console.log('✅ Periodization created successfully!');
+      console.log('📦 Response data:', data);
+      console.log('🔑 Periodization ID:', data.id);
+      console.log('👤 Student ID:', data.student_id);
+      console.log('👨‍💼 Professional ID:', data.professional_id);
+
+      const navigationPath = `/(tabs)/students/${studentId}/workouts/${data.id}`;
+      console.log('🧭 Navigation path:', navigationPath);
+
       Alert.alert('Sucesso', 'Periodização criada com sucesso!', [
         {
           text: 'OK',
           onPress: () => {
-             // Navigate to the periodization details/edit screen
-             router.replace(`/(tabs)/students/${studentId}/workouts/${data.id}` as any);
+             console.log('🔄 Navigating to:', navigationPath);
+             router.replace(navigationPath as any);
           },
         },
       ]);
     } catch (error) {
-      console.error('Error creating periodization:', error);
+      console.error('❌ ERROR CREATING PERIODIZATION:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       Alert.alert('Erro', 'Não foi possível criar a periodização.');
     } finally {
       setLoading(false);
+      console.log('=== PERIODIZATION CREATION FLOW ENDED ===\n');
     }
   };
 

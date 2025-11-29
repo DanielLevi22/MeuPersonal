@@ -79,18 +79,20 @@ export default function PeriodizationsScreen() {
           </Text>
         </View>
         
-        <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
-          <TouchableOpacity activeOpacity={0.8}>
-            <LinearGradient
-              colors={['#FF6B35', '#FF2E63']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
-            >
-              <Ionicons name="add" size={28} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </Link>
+        {user?.user_metadata?.account_type === 'professional' && (
+          <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
+            <TouchableOpacity activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#FF6B35', '#FF2E63']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
+              >
+                <Ionicons name="add" size={28} color="#FFFFFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </Link>
+        )}
       </View>
 
       {/* Content */}
@@ -117,23 +119,27 @@ export default function PeriodizationsScreen() {
                 Nenhuma periodização ativa
               </Text>
               <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
-                Crie um planejamento de longo prazo para seus alunos
+                {user?.user_metadata?.account_type === 'professional' 
+                  ? 'Crie um planejamento de longo prazo para seus alunos'
+                  : 'Seu personal ainda não criou uma periodização para você'}
               </Text>
               
-              <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
-                <TouchableOpacity activeOpacity={0.8}>
-                  <LinearGradient
-                    colors={['#FF6B35', '#FF2E63']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="rounded-2xl py-3 px-6 shadow-lg shadow-orange-500/20"
-                  >
-                    <Text className="text-white text-base font-bold font-display">
-                      Criar Periodização
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </Link>
+              {user?.user_metadata?.account_type === 'professional' && (
+                <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
+                  <TouchableOpacity activeOpacity={0.8}>
+                    <LinearGradient
+                      colors={['#FF6B35', '#FF2E63']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      className="rounded-2xl py-3 px-6 shadow-lg shadow-orange-500/20"
+                    >
+                      <Text className="text-white text-base font-bold font-display">
+                        Criar Periodização
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </Link>
+              )}
             </View>
           ) : (
             <View className="py-20">

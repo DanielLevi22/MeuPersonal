@@ -101,7 +101,9 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   fetchStudents: async (personalId) => {
     set({ isLoading: true });
     try {
-      // 1. Fetch linked students
+      console.log('📋 Fetching students for professional:', personalId);
+      
+      // Fetch linked students (now all students are in profiles with auth users)
       const { data: linkedData, error: linkedError } = await supabase
         .from('students_personals')
         .select(`
@@ -118,7 +120,10 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         .eq('personal_id', personalId);
 
       console.log('🔍 Linked Data:', JSON.stringify(linkedData, null, 2));
-      if (linkedError) console.error('❌ Linked Error:', linkedError);
+      if (linkedError) {
+        console.error('❌ Linked Error:', linkedError);
+        throw linkedError;
+      }
 
       // Fetch latest assessment for each student to get weight/height/etc
       let assessmentsMap = new Map();
@@ -143,130 +148,78 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         // Continue without assessments
       }
 
-      const formattedLinkedStudents = (linkedData || []).map((item: any) => {
-        if (!item.student) {
-           console.warn('⚠️ Found link but no student profile:', item);
-           return null;
-        }
-        
-        const assessment = assessmentsMap.get(item.student.id) || {};
-        
-        return {
-          ...item.student,
-          status: item.status,
-          // Merge assessment data
-          weight: assessment.weight,
-          height: assessment.height,
-          notes: assessment.notes, // Assessment notes might override or complement? Let's use assessment notes as the primary "notes" for now if available
-          assessment: assessment // Keep full assessment object
-        };
-      }).filter(Boolean);
+      const formattedStudents = (linkedData || [])
+        .map((item: any) => {
+          if (!item.student) {
+            console.warn('⚠️ Found link but no student profile:', item);
+            return null;
+          }
+          
+          const assessment = assessmentsMap.get(item.student.id) || {};
+          
+          return {
+            ...item.student,
+            status: item.status,
+            // Merge assessment data
+            weight: assessment.weight,
+            height: assessment.height,
+            notes: assessment.notes,
+            assessment: assessment
+          };
+        })
+        .filter(Boolean);
 
-      // 2. Fetch pending invites (from students table)
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('students')
-        .select('*')
-        .eq('personal_id', personalId)
-        .not('invite_code', 'is', null);
-
-      if (pendingError) throw pendingError;
-
-      const formattedInvites = pendingData.map((invite: any) => ({
-        id: invite.id,
-        full_name: invite.full_name,
-        email: invite.email || `Código: ${invite.invite_code}`,
-        avatar_url: null,
-        status: 'invited',
-        is_invite: true,
-        invite_code: invite.invite_code,
-        phone: invite.phone,
-        weight: invite.weight,
-        height: invite.height,
-        notes: invite.notes,
-        assessment: invite.initial_assessment
-      }));
-
-      // 3. Merge lists and deduplicate
-      // Get all invite codes from linked students to filter out those who already joined
-      const linkedInviteCodes = new Set(
-        formattedLinkedStudents
-          .map((s: any) => s.invite_code)
-          .filter(Boolean)
-      );
-
-      // Also get emails to match against generated invite emails
-      const linkedEmails = new Set(
-        formattedLinkedStudents
-          .map((s: any) => s.email?.toLowerCase())
-          .filter(Boolean)
-      );
-
-      // Also get normalized names for matching
-      const linkedNames = new Set(
-        formattedLinkedStudents
-          .map((s: any) => s.full_name?.trim().toLowerCase())
-          .filter(Boolean)
-      );
-
-      // Filter out invites that have already been used or linked
-      const uniqueInvites = formattedInvites.filter((invite: any) => {
-        // Check by invite code
-        if (linkedInviteCodes.has(invite.invite_code)) return false;
-        
-        // Check by generated email (if applicable)
-        if (invite.invite_code) {
-          const generatedEmail = `aluno${invite.invite_code.toLowerCase()}@test.com`;
-          if (linkedEmails.has(generatedEmail)) return false;
-        }
-
-        // Check by name (heuristic)
-        if (invite.full_name && linkedNames.has(invite.full_name.trim().toLowerCase())) {
-          return false;
-        }
-
-        return true;
-      });
-
-      const allStudents = [...uniqueInvites, ...formattedLinkedStudents];
-      
-      // Deduplicate by ID to ensure uniqueness and prevent UI warnings
-      // This handles cases where multiple links might exist for the same student
-      const uniqueStudentsMap = new Map();
-      allStudents.forEach(student => {
-        if (student.id && !uniqueStudentsMap.has(student.id)) {
-          uniqueStudentsMap.set(student.id, student);
-        }
-      });
-      
-      set({ students: Array.from(uniqueStudentsMap.values()) });
+      console.log('✅ Total students:', formattedStudents.length);
+      set({ students: formattedStudents });
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('❌ Error fetching students:', error);
+      set({ students: [] });
     } finally {
       set({ isLoading: false });
     }
   },
   createStudentInvite: async (data: StudentInviteData) => {
     try {
-      // Generate a unique code
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      console.log('🚀 Creating student with auth user...');
+      console.log('📋 Input data:', { name: data.name, phone: data.phone, weight: data.weight, height: data.height });
       
-      const { error } = await supabase
-        .from('students')
-        .insert({
-          personal_id: data.personal_id,
-          invite_code: code,
-          full_name: data.name,
-          phone: data.phone,
-          weight: data.weight ? parseFloat(data.weight) : null,
-          height: data.height ? parseFloat(data.height) : null,
-          notes: data.notes,
-          initial_assessment: data.initial_assessment
-        });
+      // Call the RPC function to create student with auth user
+      const { data: result, error } = await supabase.rpc('create_student_with_auth', {
+        p_professional_id: data.personal_id,
+        p_full_name: data.name,
+        p_phone: data.phone || null,
+        p_weight: data.weight ? parseFloat(data.weight) : null,
+        p_height: data.height ? parseFloat(data.height) : null,
+        p_notes: data.notes || null,
+        p_initial_assessment: data.initial_assessment || null
+      });
 
-      if (error) throw error;
-      return { success: true, code };
+      if (error) {
+        console.error('❌ RPC error:', error);
+        throw error;
+      }
+
+      if (!result || !result.success) {
+        console.error('❌ RPC returned error:', result?.error);
+        throw new Error(result?.error || 'Failed to create student');
+      }
+
+      console.log('✅ Student created successfully!');
+      console.log('📦 Result:', result);
+      console.log('🔑 Student ID:', result.student_id);
+      console.log('🎫 Invite code:', result.invite_code);
+      console.log('📧 Email:', result.email);
+      console.log('🔐 Password:', result.password);
+
+      return { 
+        success: true, 
+        code: result.invite_code,
+        studentId: result.student_id,
+        email: result.email,
+        password: result.password
+      };
     } catch (error: any) {
-      console.error('Error creating student invite:', error);
+      console.error('❌ Error creating student with auth:', error);
       return { success: false, error: error.message };
     }
   },
