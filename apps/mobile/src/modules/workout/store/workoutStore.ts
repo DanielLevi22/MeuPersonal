@@ -163,7 +163,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       
       // 1. Fetch periodizations based on account type
       let query = supabase
-        .from('periodizations')
+        .from('training_periodizations')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -179,7 +179,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
       // Debug: try to fetch all periodizations this user can see
       const { data: allPeriodizations, error: allError } = await supabase
-        .from('periodizations')
+        .from('training_periodizations')
         .select('*');
 
       if (error) throw error;
@@ -207,7 +207,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         .in('id', studentIds);
 
       const { data: pendingStudents } = await supabase
-        .from('students')
+        .from('profiles')
         .select('id, full_name')
         .in('id', studentIds);
 
@@ -323,7 +323,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     try {
       console.log('💾 Inserting into database...');
       const { data, error } = await supabase
-        .from('periodizations')
+        .from('training_periodizations')
         .insert(periodization)
         .select()
         .single();
@@ -356,9 +356,9 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         studentName = profile.full_name;
         console.log('✅ Found student in profiles:', studentName);
       } else {
-        console.log('⚠️ Student not found in profiles, checking students table...');
+        console.log('⚠️ Student not found in profiles, checking profiles (managed)...');
         const { data: pending, error: pendingError } = await supabase
-          .from('students')
+          .from('profiles')
           .select('full_name')
           .eq('id', periodization.student_id)
           .single();
@@ -407,7 +407,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   updatePeriodization: async (id, updates) => {
     try {
       const { error } = await supabase
-        .from('periodizations')
+        .from('training_periodizations')
         .update(updates)
         .eq('id', id);
 
@@ -428,7 +428,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     try {
       // 1. Get the periodization to find student_id
       const { data: periodization, error: fetchError } = await supabase
-        .from('periodizations')
+        .from('training_periodizations')
         .select('student_id')
         .eq('id', periodizationId)
         .single();
@@ -438,7 +438,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       // 2. Deactivate other active periodizations for this student
       if (periodization) {
         await supabase
-          .from('periodizations')
+          .from('training_periodizations')
           .update({ status: 'completed' })
           .eq('student_id', periodization.student_id)
           .eq('status', 'active');
@@ -446,7 +446,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
       // 3. Activate the target periodization
       const { data, error } = await supabase
-        .from('periodizations')
+        .from('training_periodizations')
         .update({ status: 'active' })
         .eq('id', periodizationId)
         .select()
@@ -576,7 +576,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       }));
 
       const { error } = await supabase
-        .from('workout_items')
+        .from('workout_exercises')
         .insert(itemsWithWorkoutId);
 
       if (error) throw error;

@@ -99,7 +99,7 @@ export default function RegisterScreen() {
         while (retries > 0) {
           const { error } = await supabase
             .from('professional_services')
-            .insert(services);
+            .upsert(services, { onConflict: 'user_id, service_category', ignoreDuplicates: true });
 
           if (!error) {
             break; // Sucesso!

@@ -44,7 +44,7 @@ export const useWorkoutLogStore = create<WorkoutLogState>((set, get) => ({
     set({ loading: true });
     try {
       const { data, error } = await supabase
-        .from('workout_logs')
+        .from('workout_executions')
         .select('*')
         .eq('student_id', studentId)
         .order('completed_at', { ascending: false });
@@ -65,12 +65,16 @@ export const useWorkoutLogStore = create<WorkoutLogState>((set, get) => ({
         return { success: false, error: 'Usuário não autenticado' };
       }
 
+      const now = new Date().toISOString();
+
       const { error } = await supabase
-        .from('workout_logs')
+        .from('workout_executions')
         .insert({
           student_id: user.id,
           workout_id: workoutId,
-          feedback: feedback || null,
+          notes: feedback || null,
+          started_at: now,
+          completed_at: now,
         });
 
       if (error) {
@@ -91,7 +95,7 @@ export const useWorkoutLogStore = create<WorkoutLogState>((set, get) => ({
     const today = new Date().toISOString().split('T')[0];
     return get().logs.some(log => 
       log.workout_id === workoutId && 
-      log.completed_at.startsWith(today)
+      log.completed_at?.startsWith(today)
     );
   },
 }));

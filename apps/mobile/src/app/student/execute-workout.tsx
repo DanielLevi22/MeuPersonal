@@ -1,8 +1,8 @@
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -53,7 +53,7 @@ export default function ExecuteWorkoutScreen() {
       setWorkout(workoutData);
 
       const { data: itemsData } = await supabase
-        .from('workout_items')
+        .from('workout_exercises')
         .select(`
           *,
           exercise:exercises(*)
@@ -75,7 +75,7 @@ export default function ExecuteWorkoutScreen() {
       setProgress(initialProgress);
 
       const { data: session } = await supabase
-        .from('workout_sessions')
+        .from('workout_executions')
         .insert({
           workout_id: id,
           student_id: user?.id,
@@ -112,7 +112,7 @@ export default function ExecuteWorkoutScreen() {
   const handleCompleteWorkout = async () => {
     try {
       await supabase
-        .from('workout_sessions')
+        .from('workout_executions')
         .update({ completed_at: new Date().toISOString() })
         .eq('id', sessionId);
 

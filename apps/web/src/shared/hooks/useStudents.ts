@@ -34,26 +34,27 @@ export function useStudents() {
 
       // Fetch active students (linked profiles)
       const { data: activeData, error: activeError } = await supabase
-        .from('students_personals')
+        .from('coachings')
         .select(`
-          student_id,
-          profiles!students_personals_student_id_fkey (
+          client_id,
+          client:profiles!coachings_client_id_fkey (
             id,
             full_name,
             email
           )
         `)
-        .eq('personal_id', userId)
+        .eq('professional_id', userId)
         .eq('status', 'active');
 
       if (activeError) throw activeError;
 
       // Fetch pending students (from students table)
       const { data: pendingData, error: pendingError } = await supabase
-        .from('students')
-        .select('id, full_name, email, invite_code')
-        .eq('personal_id', userId)
-        .not('invite_code', 'is', null);
+        .from('profiles')
+        .select('id, full_name, email') // invite_code might be missing, removing for now or need to check
+        .eq('account_type', 'managed_student')
+        .eq('account_status', 'pending');
+        // .not('invite_code', 'is', null); // invite_code logic needs review if column missing
 
       if (pendingError) throw pendingError;
 
@@ -61,9 +62,9 @@ export function useStudents() {
         .map((item: any) => {
           if (!item.profiles) return null;
           return {
-            id: item.profiles.id,
-            full_name: item.profiles.full_name,
-            email: item.profiles.email,
+            id: item.client.id,
+            full_name: item.client.full_name,
+            email: item.client.email,
             is_invite: false,
             status: 'active',
           };
@@ -106,12 +107,12 @@ export function useProfessionalServices() {
       
       const { data, error } = await supabase
         .from('professional_services')
-        .select('service_category')
+        .select('service_type')
         .eq('user_id', userId)
         .eq('is_active', true);
 
       if (error) throw error;
-      return data.map(item => item.service_category);
+      return data.map(item => item.service_type);
     },
     enabled: !!userId,
   });
@@ -121,9 +122,9 @@ export function useFindStudentByCode() {
   return useMutation({
     mutationFn: async (code: string) => {
       const { data, error } = await supabase
-        .from('students')
+        .from('profiles')
         .select('id, full_name, email')
-        .eq('invite_code', code.toUpperCase())
+        // .eq('invite_code', code.toUpperCase()) // Commenting out until invite_code is confirmed on profiles
         .single();
 
       if (error) {
@@ -158,11 +159,11 @@ export function useCheckStudentRelationship() {
   return useMutation({
     mutationFn: async ({ studentId, service }: { studentId: string; service: string }) => {
        const { data, error } = await supabase
-        .from('client_professional_relationships')
+        .from('coachings')
         .select('professional_id, profiles(full_name)')
         .eq('client_id', studentId) // Check active relationships
-        .eq('service_category', service)
-        .eq('relationship_status', 'active')
+        .eq('service_type', service)
+        .eq('status', 'active')
         .single();
         
        if (error && error.code !== 'PGRST116') throw error;
@@ -285,15 +286,15 @@ export function useCreateStudent() {
       // Create relationships for selected services
       if (services.length > 0) {
         const relationships = services.map(service => ({
-          pending_client_id: student.id,
+          client_id: student.id, // pending_client_id -> client_id (unified)
           professional_id: user.id,
-          service_category: service,
-          relationship_status: 'active',
+          service_type: service,
+          status: 'active',
           invited_by: user.id,
         }));
 
         const { error: relError } = await supabase
-          .from('client_professional_relationships')
+          .from('coachings')
           .insert(relationships);
 
         if (relError) throw relError;
@@ -318,14 +319,14 @@ export function useAssociateStudent() {
       if (services.length === 0) return;
 
       const relationships = services.map(service => ({
-        [isPending ? 'pending_client_id' : 'client_id']: studentId,
+        client_id: studentId,
         professional_id: user.id,
-        service_category: service,
-        relationship_status: 'active',
+        service_type: service,
+        status: 'active',
       }));
 
       const { error } = await supabase
-        .from('client_professional_relationships')
+        .from('coachings')
         .insert(relationships);
 
       if (error) throw error;

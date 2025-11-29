@@ -1,8 +1,8 @@
 import {
-  AccountType,
-  AppAbility,
-  defineAbilitiesFor,
-  getUserContextJWT
+    AccountType,
+    AppAbility,
+    defineAbilitiesFor,
+    getUserContextJWT
 } from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
@@ -197,12 +197,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
              // Fallback for returning user
              // 1. Link
              const { error: linkError } = await supabase
-              .from('client_professional_relationships')
+              .from('coachings')
               .insert({
                 client_id: signInData.session.user.id,
                 professional_id: pendingInvite.personal_id,
-                service_category: 'training', // Default to training for now
-                relationship_status: 'active',
+                service_type: 'personal_training', // Default to training for now
+                status: 'active',
                 invited_by: pendingInvite.personal_id
               });
               
@@ -283,17 +283,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             .single();
             
           // Also create student record
-          await supabase.from('students').insert({
-             id: authData.user.id, // Same ID as profile/user
-             personal_id: invite.personal_id,
-             email: email,
-             full_name: invite.name,
-             phone: invite.phone,
-             weight: invite.weight,
-             height: invite.height,
-             notes: invite.notes,
-             invite_code: cleanCode
-          });
+          // Student table consolidated into profiles, no need to insert here
+          // The profile update above handles the student data
 
           if (!updateError && updatedProfile) {
             profileUpdated = true;
@@ -309,27 +300,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               full_name: invite.name,
             });
             
-           await supabase.from('students').upsert({
-             id: authData.user.id,
-             personal_id: invite.personal_id,
-             email: email,
-             full_name: invite.name,
-             phone: invite.phone,
-             weight: invite.weight,
-             height: invite.height,
-             notes: invite.notes,
-             invite_code: cleanCode
-           });
+           // Student table consolidated into profiles, no need to upsert here
         }
 
         // 2. Link Student
         const { error: linkError } = await supabase
-          .from('client_professional_relationships')
+          .from('coachings')
           .insert({
             client_id: authData.user.id,
             professional_id: invite.personal_id,
-            service_category: 'training',
-            relationship_status: 'active',
+            service_type: 'personal_training',
+            status: 'active',
             invited_by: invite.personal_id
           });
           

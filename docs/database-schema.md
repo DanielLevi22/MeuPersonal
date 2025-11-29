@@ -1,485 +1,374 @@
-# Database Schema - MeuPersonal
+# 🗄️ Database Schema - MeuPersonal (Updated 2025-11-29)
 
-Documentação completa do esquema de banco de dados da aplicação MeuPersonal, incluindo todas as tabelas, relacionamentos e diagramas visuais.
+## Overview
 
----
-
-## 📊 Visão Geral
-
-O banco de dados é estruturado em 4 módulos principais:
-1. **Autenticação e Usuários** (Auth)
-2. **Nutrição** (Nutrition)
-3. **Treinos e Periodização** (Training)
-4. **Dados Corporais** (Body Metrics)
+Complete database schema after restructuring with semantic DDD naming in English.
 
 ---
 
-## 🗺️ Diagrama Geral - Relacionamentos Principais
+## 📊 Core Tables
 
-```mermaid
-erDiagram
-    USERS ||--o{ STUDENTS : "é personal de"
-    USERS ||--o{ DIET_PLANS : "cria"
-    USERS ||--o{ PERIODIZATIONS : "cria"
-    
-    STUDENTS ||--o{ DIET_PLANS : "possui"
-    STUDENTS ||--o{ PERIODIZATIONS : "possui"
-    STUDENTS ||--o{ DIET_LOGS : "registra"
-    STUDENTS ||--o{ BODY_MEASUREMENTS : "possui"
-    
-    DIET_PLANS ||--o{ DIET_MEALS : "contém"
-    DIET_MEALS ||--o{ DIET_MEAL_ITEMS : "contém"
-    FOODS ||--o{ DIET_MEAL_ITEMS : "usado em"
-    
-    PERIODIZATIONS ||--o{ TRAINING_PLANS : "contém"
-    TRAINING_PLANS ||--o{ WORKOUTS : "contém"
-    WORKOUTS ||--o{ WORKOUT_EXERCISES : "contém"
-    EXERCISES ||--o{ WORKOUT_EXERCISES : "usado em"
+### **profiles** (Identity & Access)
+Central table for all users (professionals, students, admins).
+
+```sql
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  email TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  account_type TEXT NOT NULL, -- 'professional' | 'managed_student' | 'autonomous_student' | 'admin'
+  account_status TEXT, -- 'pending' | 'active' | 'rejected' | 'suspended'
+  
+  -- Student fields (consolidated from old 'students' table)
+  weight NUMERIC,
+  height NUMERIC,
+  birth_date DATE,
+  gender TEXT,
+  notes TEXT,
+  
+  -- Professional fields
+  professional_name TEXT,
+  professional_bio TEXT,
+  cref TEXT, -- Personal trainer registration
+  crn TEXT,  -- Nutritionist registration
+  is_verified BOOLEAN DEFAULT false,
+  
+  -- Subscription (for autonomous students)
+  subscription_tier TEXT,
+  subscription_status TEXT,
+  
+  -- Gamification
+  xp INTEGER DEFAULT 0,
+  level INTEGER DEFAULT 1,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ---
 
-## 👥 Módulo de Autenticação e Usuários
+## 🤝 Coaching Context
 
-### Tabela: `users`
+### **coachings** (renamed from `client_professional_relationships`)
+Manages relationships between professionals and students.
 
-Armazena informações dos usuários (Personal Trainers).
-
-```mermaid
-erDiagram
-    USERS {
-        uuid id PK
-        string email UK
-        string full_name
-        string role
-        timestamp created_at
-        timestamp updated_at
-    }
+```sql
+CREATE TABLE coachings (
+  id UUID PRIMARY KEY,
+  client_id UUID REFERENCES profiles(id),
+  professional_id UUID REFERENCES profiles(id),
+  service_type TEXT NOT NULL, -- 'personal_training' | 'nutrition_consulting'
+  status TEXT DEFAULT 'pending', -- 'pending' | 'active' | 'paused' | 'ended'
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  ended_at TIMESTAMPTZ,
+  ended_reason TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-**Campos**:
-- `id`: Identificador único (UUID)
-- `email`: Email do usuário (único)
-- `full_name`: Nome completo
-- `role`: Papel do usuário (`personal`, `admin`)
-- `created_at`: Data de criação
-- `updated_at`: Data de atualização
-
-**Relacionamentos**:
-- 1:N com `students` (um personal tem vários alunos)
-- 1:N com `diet_plans` (um personal cria várias dietas)
-- 1:N com `periodizations` (um personal cria várias periodizações)
-
 ---
 
-### Tabela: `students`
+## 💪 Training Context
 
-Armazena informações dos alunos.
+### **training_periodizations** (renamed from `periodizations`)
+Long-term training plans.
 
-```mermaid
-erDiagram
-    STUDENTS {
-        uuid id PK
-        uuid personal_id FK
-        string email UK
-        string full_name
-        string phone
-        date birth_date
-        string gender
-        timestamp created_at
-        timestamp updated_at
-    }
-    
-    STUDENTS }o--|| USERS : "personal_id"
+```sql
+CREATE TABLE training_periodizations (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  professional_id UUID REFERENCES profiles(id),
+  name TEXT NOT NULL,
+  objective TEXT, -- 'hypertrophy' | 'weight_loss' | 'conditioning'
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  status TEXT DEFAULT 'draft', -- 'draft' | 'active' | 'completed'
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-**Campos**:
-- `id`: Identificador único
-- `personal_id`: Referência ao personal trainer
-- `email`: Email do aluno (único)
-- `full_name`: Nome completo
-- `phone`: Telefone
-- `birth_date`: Data de nascimento
-- `gender`: Gênero (`male`, `female`, `other`)
+### **training_plans**
+Weekly/monthly training plans within a periodization.
 
-**Relacionamentos**:
-- N:1 com `users` (vários alunos para um personal)
-- 1:N com `diet_plans`
-- 1:N com `periodizations`
-- 1:N com `diet_logs`
-- 1:N com `body_measurements`
-
----
-
-## 🥗 Módulo de Nutrição
-
-### Diagrama Completo - Nutrição
-
-```mermaid
-erDiagram
-    STUDENTS ||--o{ DIET_PLANS : "possui"
-    USERS ||--o{ DIET_PLANS : "cria"
-    DIET_PLANS ||--o{ DIET_MEALS : "contém"
-    DIET_MEALS ||--o{ DIET_MEAL_ITEMS : "contém"
-    FOODS ||--o{ DIET_MEAL_ITEMS : "usado em"
-    STUDENTS ||--o{ DIET_LOGS : "registra"
-    
-    DIET_PLANS {
-        uuid id PK
-        uuid student_id FK
-        uuid personal_id FK
-        string name
-        text description
-        date start_date
-        date end_date
-        int target_calories
-        decimal target_protein
-        decimal target_carbs
-        decimal target_fat
-        string plan_type
-        int version
-        boolean is_active
-        string status
-    }
-    
-    DIET_MEALS {
-        uuid id PK
-        uuid diet_plan_id FK
-        int day_of_week
-        string meal_type
-        int meal_order
-        string name
-        int target_calories
-        time meal_time
-    }
-    
-    DIET_MEAL_ITEMS {
-        uuid id PK
-        uuid diet_meal_id FK
-        uuid food_id FK
-        decimal quantity
-        string unit
-        int order_index
-    }
-    
-    FOODS {
-        uuid id PK
-        string name
-        string category
-        decimal calories
-        decimal protein
-        decimal carbs
-        decimal fat
-        string serving_unit
-        decimal serving_size
-    }
-    
-    DIET_LOGS {
-        uuid id PK
-        uuid student_id FK
-        date logged_date
-        int meal_number
-        boolean completed
-        decimal calories_consumed
-        decimal protein_consumed
-        decimal carbs_consumed
-        decimal fat_consumed
-        text notes
-    }
+```sql
+CREATE TABLE training_plans (
+  id UUID PRIMARY KEY,
+  periodization_id UUID REFERENCES training_periodizations(id),
+  name TEXT NOT NULL,
+  training_split TEXT, -- 'abc' | 'abcd' | 'upper_lower' | 'push_pull_legs'
+  weekly_frequency INTEGER,
+  start_date DATE,
+  end_date DATE,
+  status TEXT DEFAULT 'draft',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-### Tabela: `diet_plans`
+### **workouts**
+Individual workout sessions.
 
-Planos de dieta dos alunos.
-
-**Campos Principais**:
-- `plan_type`: `unique` (mesmo todos os dias) ou `cyclic` (varia por dia da semana)
-- `status`: `active`, `inactive`, `completed`
-- `is_active`: Se é o plano ativo atual do aluno
-- `version`: Versão do plano (para histórico)
-
-**Regras de Negócio**:
-- Apenas 1 plano pode estar `active` por aluno
-- `day_of_week`: -1 para plano único, 0-6 para cíclico
-
----
-
-### Tabela: `diet_meals`
-
-Refeições dentro de um plano de dieta.
-
-**Campos Principais**:
-- `day_of_week`: -1 (plano único) ou 0-6 (domingo a sábado)
-- `meal_type`: `breakfast`, `lunch`, `dinner`, `snack`, etc.
-- `meal_order`: Ordem da refeição no dia
-- `meal_time`: Horário sugerido (ex: "07:00")
-
----
-
-### Tabela: `diet_meal_items`
-
-Alimentos dentro de uma refeição.
-
-**Campos Principais**:
-- `quantity`: Quantidade do alimento
-- `unit`: Unidade (`g`, `ml`, `un`, `col`, `xic`)
-- `order_index`: Ordem do item na refeição
-
----
-
-### Tabela: `foods`
-
-Catálogo de alimentos.
-
-**Campos Principais**:
-- `category`: Categoria do alimento
-- Macros por 100g: `calories`, `protein`, `carbs`, `fat`
-- `serving_unit` e `serving_size`: Porção padrão
-
----
-
-### Tabela: `diet_logs`
-
-Registro de refeições completadas pelos alunos.
-
-**Campos Principais**:
-- `logged_date`: Data do registro
-- `meal_number`: Número da refeição (1-6)
-- `completed`: Se foi completada
-- Macros consumidos: `calories_consumed`, `protein_consumed`, etc.
-
----
-
-## 💪 Módulo de Treinos e Periodização
-
-### Diagrama Completo - Treinos
-
-```mermaid
-erDiagram
-    STUDENTS ||--o{ PERIODIZATIONS : "possui"
-    USERS ||--o{ PERIODIZATIONS : "cria"
-    PERIODIZATIONS ||--o{ TRAINING_PLANS : "contém"
-    TRAINING_PLANS ||--o{ WORKOUTS : "contém"
-    WORKOUTS ||--o{ WORKOUT_EXERCISES : "contém"
-    EXERCISES ||--o{ WORKOUT_EXERCISES : "usado em"
-    
-    PERIODIZATIONS {
-        uuid id PK
-        uuid student_id FK
-        uuid personal_id FK
-        string name
-        string objective
-        date start_date
-        date end_date
-        int duration_weeks
-        string status
-        text notes
-    }
-    
-    TRAINING_PLANS {
-        uuid id PK
-        uuid periodization_id FK
-        string name
-        text description
-        int week_number
-        int order_index
-    }
-    
-    WORKOUTS {
-        uuid id PK
-        uuid training_plan_id FK
-        string name
-        text description
-        int order_index
-    }
-    
-    WORKOUT_EXERCISES {
-        uuid id PK
-        uuid workout_id FK
-        uuid exercise_id FK
-        int sets
-        string reps
-        int rest_seconds
-        text notes
-        int order_index
-    }
-    
-    EXERCISES {
-        uuid id PK
-        string name
-        string category
-        string muscle_group
-        string equipment
-        text instructions
-        string difficulty
-    }
+```sql
+CREATE TABLE workouts (
+  id UUID PRIMARY KEY,
+  training_plan_id UUID REFERENCES training_plans(id),
+  professional_id UUID REFERENCES profiles(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  day_of_week INTEGER, -- 0-6 (Sunday-Saturday)
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-### Tabela: `periodizations`
+### **workout_exercises** (renamed from `workout_items`)
+Exercises within a workout.
 
-Periodizações de treino.
-
-**Campos Principais**:
-- `objective`: `hypertrophy`, `strength`, `endurance`, `weight_loss`
-- `status`: `planned`, `active`, `completed`
-- `duration_weeks`: Duração total em semanas
-
----
-
-### Tabela: `training_plans`
-
-Fichas de treino (fases) dentro de uma periodização.
-
-**Campos Principais**:
-- `week_number`: Semana da periodização
-- `order_index`: Ordem da ficha
-
----
-
-### Tabela: `workouts`
-
-Treinos individuais (ex: Treino A, B, C).
-
-**Campos Principais**:
-- `name`: Nome do treino (ex: "Treino A - Peito/Tríceps")
-- `order_index`: Ordem do treino na ficha
-
----
-
-### Tabela: `workout_exercises`
-
-Exercícios dentro de um treino.
-
-**Campos Principais**:
-- `sets`: Número de séries
-- `reps`: Repetições (pode ser range: "8-12")
-- `rest_seconds`: Descanso entre séries
-- `order_index`: Ordem do exercício
-
----
-
-### Tabela: `exercises`
-
-Catálogo de exercícios.
-
-**Campos Principais**:
-- `category`: `strength`, `cardio`, `flexibility`
-- `muscle_group`: Grupo muscular principal
-- `equipment`: Equipamento necessário
-- `difficulty`: `beginner`, `intermediate`, `advanced`
-
----
-
-## 📏 Módulo de Medidas Corporais
-
-### Tabela: `body_measurements`
-
-Medidas corporais e evolução dos alunos.
-
-```mermaid
-erDiagram
-    STUDENTS ||--o{ BODY_MEASUREMENTS : "possui"
-    
-    BODY_MEASUREMENTS {
-        uuid id PK
-        uuid student_id FK
-        date measurement_date
-        decimal weight
-        decimal height
-        decimal body_fat_percentage
-        decimal muscle_mass
-        decimal chest
-        decimal waist
-        decimal hips
-        decimal thigh
-        decimal arm
-        text notes
-    }
+```sql
+CREATE TABLE workout_exercises (
+  id UUID PRIMARY KEY,
+  workout_id UUID REFERENCES workouts(id),
+  exercise_id UUID REFERENCES exercises(id),
+  order_index INTEGER,
+  sets INTEGER,
+  reps TEXT, -- Can be range like "8-12"
+  rest_seconds INTEGER,
+  notes TEXT
+);
 ```
 
-**Campos Principais**:
-- `weight`: Peso em kg
-- `height`: Altura em cm
-- `body_fat_percentage`: Percentual de gordura
-- `muscle_mass`: Massa muscular em kg
-- Circunferências em cm: `chest`, `waist`, `hips`, `thigh`, `arm`
+### **workout_executions** (renamed from `workout_sessions`)
+Records of completed workouts.
 
----
-
-## 🔗 Resumo de Relacionamentos
-
-### Hierarquia Principal
-
-```
-USERS (Personal Trainer)
-├── STUDENTS (Alunos)
-│   ├── DIET_PLANS
-│   │   └── DIET_MEALS
-│   │       └── DIET_MEAL_ITEMS → FOODS
-│   ├── PERIODIZATIONS
-│   │   └── TRAINING_PLANS
-│   │       └── WORKOUTS
-│   │           └── WORKOUT_EXERCISES → EXERCISES
-│   ├── DIET_LOGS
-│   └── BODY_MEASUREMENTS
+```sql
+CREATE TABLE workout_executions (
+  id UUID PRIMARY KEY,
+  workout_id UUID REFERENCES workouts(id),
+  student_id UUID REFERENCES profiles(id),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-### Tabelas de Referência (Catálogos)
+### **executed_sets** (renamed from `workout_set_logs`)
+Individual set records during workout execution.
 
-- `foods`: Catálogo de alimentos
-- `exercises`: Catálogo de exercícios
-
----
-
-## 📋 Convenções e Padrões
-
-### Nomenclatura
-- Tabelas: `snake_case` (plural)
-- Colunas: `snake_case`
-- IDs: `uuid` (v4)
-- Foreign Keys: `[tabela]_id`
-
-### Timestamps
-Todas as tabelas principais incluem:
-- `created_at`: Data de criação
-- `updated_at`: Data de atualização
-
-### Status
-Padrões de status usados:
-- **Diet Plans**: `active`, `inactive`, `completed`
-- **Periodizations**: `planned`, `active`, `completed`
-
-### Soft Delete
-Não implementado. Exclusões são permanentes.
+```sql
+CREATE TABLE executed_sets (
+  id UUID PRIMARY KEY,
+  workout_execution_id UUID REFERENCES workout_executions(id), -- renamed from workout_log_id
+  workout_exercise_id UUID REFERENCES workout_exercises(id),
+  set_number INTEGER,
+  reps_completed INTEGER,
+  weight_kg NUMERIC,
+  rpe INTEGER, -- Rate of Perceived Exertion (1-10)
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
 
 ---
 
-## 🔐 Políticas de Segurança (RLS)
+## 🍎 Nutrition Context
 
-### Row Level Security (Supabase)
+### **nutrition_plans** (renamed from `diet_plans`)
+Nutrition/diet plans for students.
 
-Todas as tabelas implementam RLS para garantir que:
-- Personals só acessam dados de seus próprios alunos
-- Alunos só acessam seus próprios dados
-- Catálogos (`foods`, `exercises`) são públicos para leitura
+```sql
+CREATE TABLE nutrition_plans (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  professional_id UUID REFERENCES profiles(id),
+  name TEXT NOT NULL,
+  plan_type TEXT, -- 'unique' | 'cyclic'
+  start_date DATE,
+  end_date DATE,
+  target_calories INTEGER,
+  target_protein INTEGER,
+```sql
+CREATE TABLE meal_logs (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  meal_id UUID REFERENCES meals(id),
+  logged_date DATE,
+  logged_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
 
 ---
 
-## 📊 Índices Importantes
+## 🎮 Gamification Context
 
-### Performance
-- `diet_plans(student_id, is_active)`
-- `diet_meals(diet_plan_id, day_of_week)`
-- `periodizations(student_id, status)`
-- `body_measurements(student_id, measurement_date)`
+### **daily_goals**
+Daily goals for students.
+
+```sql
+CREATE TABLE daily_goals (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  goal_date DATE NOT NULL,
+  goal_type TEXT, -- 'workout' | 'nutrition' | 'water' | 'steps'
+  target_value INTEGER,
+  current_value INTEGER DEFAULT 0,
+  completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### **achievements**
+Unlocked achievements.
+
+```sql
+CREATE TABLE achievements (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  achievement_key TEXT NOT NULL,
+  achievement_type TEXT, -- 'bronze' | 'silver' | 'gold' | 'platinum'
+  unlocked_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### **streaks** (renamed from `student_streaks`)
+Consecutive days streaks.
+
+```sql
+CREATE TABLE streaks (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  streak_type TEXT, -- 'workout' | 'nutrition'
+  current_streak INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
+  last_updated DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### **ranking_scores** (renamed from `leaderboard_scores`)
+Leaderboard/ranking scores.
+
+```sql
+CREATE TABLE ranking_scores (
+  id UUID PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id),
+  score INTEGER DEFAULT 0,
+  rank INTEGER,
+  period TEXT, -- 'weekly' | 'monthly' | 'all_time'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
 
 ---
 
-## 🚀 Próximas Expansões
+## 💬 Communication Context
 
-Tabelas planejadas para futuras implementações:
-- `notifications`: Sistema de notificações
-- `payments`: Controle financeiro
-- `messages`: Chat entre personal e aluno
-- `workout_logs`: Registro de treinos completados
-- `progress_photos`: Fotos de evolução
+### **conversations**
+Chat conversations between professionals and students.
+
+```sql
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY,
+  professional_id UUID REFERENCES profiles(id),
+  student_id UUID REFERENCES profiles(id),
+  last_message_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(professional_id, student_id)
+);
+```
+
+### **messages** (renamed from `chat_messages`)
+Individual chat messages.
+
+```sql
+CREATE TABLE messages (
+  id UUID PRIMARY KEY,
+  conversation_id UUID REFERENCES conversations(id),
+  sender_id UUID REFERENCES profiles(id),
+  receiver_id UUID REFERENCES profiles(id),
+  content TEXT NOT NULL,
+  message_type TEXT DEFAULT 'text', -- 'text' | 'image' | 'audio' | 'file'
+  media_url TEXT,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## 🔧 Supporting Tables
+
+### **exercises**
+Exercise library.
+
+```sql
+CREATE TABLE exercises (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT,
+  muscle_group TEXT,
+  equipment TEXT,
+  difficulty TEXT,
+  video_url TEXT,
+  is_verified BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### **foods**
+Food/ingredient library.
+
+```sql
+CREATE TABLE foods (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT,
+  calories NUMERIC,
+  protein NUMERIC,
+  carbs NUMERIC,
+  fat NUMERIC,
+  serving_size NUMERIC,
+  serving_unit TEXT,
+  is_verified BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## 📋 Summary of Changes
+
+### **Removed Tables:**
+- ❌ `students` (consolidated into `profiles`)
+- ❌ `students_personals` (duplicate of `coachings`)
+- ❌ `relationship_transfers` (over-engineering)
+
+### **Renamed Tables:**
+- ✅ `client_professional_relationships` → `coachings`
+- ✅ `periodizations` → `training_periodizations`
+- ✅ `workout_sessions` → `workout_executions`
+- ✅ `workout_set_logs` → `executed_sets`
+- ✅ `workout_items` → `workout_exercises`
+- ✅ `diet_plans` → `nutrition_plans`
+- ✅ `diet_meal_items` → `meal_foods`
+- ✅ `diet_logs` → `meal_logs`
+- ✅ `student_streaks` → `streaks`
+- ✅ `leaderboard_scores` → `ranking_scores`
+- ✅ `chat_messages` → `messages`
+
+### **Column Renames:**
+- ✅ `coachings.relationship_status` → `status`
+- ✅ `coachings.service_category` → `service_type`
+- ✅ `executed_sets.workout_log_id` → `workout_execution_id`
+
+---
+
+## 🎯 Benefits
+
+1. **Semantic Clarity**: Table names reflect domain concepts
+2. **Reduced Redundancy**: No duplicate tables
+3. **Better Performance**: Fewer JOINs needed
+4. **Easier Maintenance**: Clear, consistent naming
+5. **DDD Alignment**: Follows Domain-Driven Design principles

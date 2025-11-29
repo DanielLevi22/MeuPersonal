@@ -46,7 +46,7 @@ export default function StudentWorkoutDetailScreen() {
       setWorkout(workoutData);
 
       const { data: itemsData, error: itemsError } = await supabase
-        .from('workout_items')
+        .from('workout_exercises')
         .select(`
           *,
           exercise:exercises(*)

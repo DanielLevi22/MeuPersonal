@@ -11,13 +11,19 @@ export type AccountType = 'admin' | 'professional' | 'managed_student' | 'autono
 
 export type AccountStatus = 'pending' | 'active' | 'rejected' | 'suspended';
 
-export type ServiceCategory = 'personal_training' | 'nutrition_consulting' | 'physiotherapy' | 'sports_psychology';
+export type ServiceType = 'personal_training' | 'nutrition_consulting' | 'physiotherapy' | 'sports_psychology';
+
+/** @deprecated Use ServiceType instead */
+export type ServiceCategory = ServiceType;
 
 export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
 
 export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing';
 
-export type RelationshipStatus = 'pending' | 'active' | 'paused' | 'ended';
+export type CoachingStatus = 'pending' | 'active' | 'paused' | 'ended';
+
+/** @deprecated Use CoachingStatus instead */
+export type RelationshipStatus = CoachingStatus;
 
 export type FeatureKey =
   // Workouts
@@ -52,8 +58,16 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
+  phone?: string | null;
   account_type: AccountType;
   account_status: AccountStatus;
+  
+  // Student fields (consolidated from old Student table)
+  weight?: number | null;
+  height?: number | null;
+  birth_date?: string | null;
+  gender?: 'male' | 'female' | 'other' | null;
+  notes?: string | null;
   
   // Admin metadata
   is_super_admin?: boolean;
@@ -76,15 +90,21 @@ export interface User {
   is_verified: boolean;
   verified_at?: string | null;
   
+  // Gamification
+  xp?: number;
+  level?: number;
+  
   // Timestamps
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface ProfessionalService {
   id: string;
   user_id: string;
-  service_category: ServiceCategory;
+  service_type: ServiceType;
+  /** @deprecated Use service_type instead */
+  service_category?: ServiceCategory;
   is_active: boolean;
   certification_number?: string | null;
   certification_expires_at?: string | null;
@@ -92,19 +112,25 @@ export interface ProfessionalService {
   updated_at: string;
 }
 
-export interface ClientProfessionalRelationship {
+export interface Coaching {
   id: string;
   client_id: string;
   professional_id: string;
-  service_category: ServiceCategory;
-  relationship_status: RelationshipStatus;
+  service_type: ServiceType;
+  status: CoachingStatus;
   invited_by?: string | null;
   started_at: string;
   ended_at?: string | null;
   ended_reason?: string | null;
   notes?: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+}
+
+/** @deprecated Use Coaching instead */
+export interface ClientProfessionalRelationship extends Coaching {
+  service_category: ServiceCategory;
+  relationship_status: RelationshipStatus;
 }
 
 export interface FeatureAccess {
@@ -116,28 +142,21 @@ export interface FeatureAccess {
   created_at: string;
 }
 
-export interface Student {
-  id: string;
+/**
+ * @deprecated Student table has been consolidated into User/profiles table.
+ * Use User interface instead and filter by account_type = 'managed_student' or 'autonomous_student'
+ */
+export interface Student extends User {
   personal_id?: string | null;
-  email: string;
-  full_name: string;
-  phone?: string | null;
-  birth_date?: string | null;
-  gender?: 'male' | 'female' | 'other' | null;
-  weight?: number | null;
-  height?: number | null;
-  notes?: string | null;
   created_by?: string | null;
   invite_code?: string | null;
-  created_at: string;
-  updated_at: string;
 }
 
 // ============================================================================
 // CHAT TYPES
 // ============================================================================
 
-export interface ChatMessage {
+export interface Message {
   id: string;
   conversation_id: string;
   sender_id: string;
@@ -147,8 +166,11 @@ export interface ChatMessage {
   media_url?: string;
   read_at?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
+
+/** @deprecated Use Message instead */
+export type ChatMessage = Message;
 
 export interface Conversation {
   id: string;
@@ -164,7 +186,7 @@ export interface ConversationWithDetails extends Conversation {
     full_name: string;
     email: string;
   };
-  last_message?: ChatMessage;
+  last_message?: Message;
   unread_count?: number;
 }
 
@@ -248,20 +270,20 @@ export interface UserWithServices extends User {
 }
 
 export interface UserWithRelationships extends User {
-  client_relationships?: ClientProfessionalRelationship[];
-  professional_relationships?: ClientProfessionalRelationship[];
+  client_relationships?: Coaching[];
+  professional_relationships?: Coaching[];
 }
 
 export interface ClientWithProfessionals extends User {
   professionals?: Array<{
     professional: User;
-    relationship: ClientProfessionalRelationship;
+    relationship: Coaching;
   }>;
 }
 
 export interface ProfessionalWithClients extends User {
   clients?: Array<{
     client: User;
-    relationship: ClientProfessionalRelationship;
+    relationship: Coaching;
   }>;
 }

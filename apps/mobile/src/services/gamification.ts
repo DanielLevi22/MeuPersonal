@@ -45,7 +45,7 @@ export const gamificationService = {
 
   async getStreak() {
     const { data, error } = await supabase
-      .from('student_streaks')
+      .from('streaks')
       .select('*')
       .single();
 

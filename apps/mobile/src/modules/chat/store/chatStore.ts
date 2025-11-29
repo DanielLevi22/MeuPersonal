@@ -37,13 +37,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   fetchStudents: async (userId: string) => {
     try {
       const { data: relationships, error } = await supabase
-        .from('client_professional_relationships')
+        .from('coachings')
         .select(`
           client_id,
-          client:profiles!client_professional_relationships_client_id_fkey(id, full_name, email)
+          client:profiles!coachings_client_id_fkey(id, full_name, email)
         `)
         .eq('professional_id', userId)
-        .eq('relationship_status', 'active');
+        .eq('status', 'active');
 
       if (error) throw error;
 
@@ -127,7 +127,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   fetchMessages: async (conversationId: string) => {
     try {
       const { data: messages, error } = await supabase
-        .from('chat_messages')
+        .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
@@ -151,7 +151,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!user) throw new Error('Not authenticated');
 
       const { data: message, error } = await supabase
-        .from('chat_messages')
+        .from('messages')
         .insert({
           conversation_id: conversationId,
           sender_id: user.id,
@@ -180,7 +180,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   markAsRead: async (messageId: string) => {
     try {
       const { error } = await supabase
-        .from('chat_messages')
+        .from('messages')
         .update({ read_at: new Date().toISOString() })
         .eq('id', messageId);
 
@@ -211,7 +211,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'chat_messages',
+          table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {

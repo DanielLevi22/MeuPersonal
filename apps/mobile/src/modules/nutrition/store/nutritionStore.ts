@@ -1,10 +1,10 @@
 import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications, scheduleMealNotifications } from '@/services/notificationService';
 import type {
-  DietMeal,
-  DietMealItem,
-  DietPlan,
-  Food
+    DietMeal,
+    DietMealItem,
+    DietPlan,
+    Food
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
@@ -88,7 +88,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchDailyLogs: async (studentId: string, date: string) => {
     try {
       const { data, error } = await supabase
-        .from('diet_logs')
+        .from('meal_logs')
         .select('*')
         .eq('student_id', studentId)
         .eq('logged_date', date);
@@ -136,7 +136,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (existingLog?.id) {
         // Update
         const { error } = await supabase
-          .from('diet_logs')
+          .from('meal_logs')
           .update({ completed: isCompleted })
           .eq('id', existingLog.id);
 
@@ -210,7 +210,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       for (const sourceMeal of copiedDay.meals) {
         // Create meal
         const { data: newMeal, error: mealError } = await supabase
-          .from('diet_meals')
+          .from('meals')
           .insert({
             diet_plan_id: targetPlanId,
             day_of_week: targetDay,
@@ -237,7 +237,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           }));
 
           const { error: itemsError } = await supabase
-            .from('diet_meal_items')
+            .from('meal_foods')
             .insert(itemsToInsert);
 
           if (itemsError) throw itemsError;
@@ -249,7 +249,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       
       // Refresh items for the new meals
       const { data: newMeals } = await supabase
-        .from('diet_meals')
+        .from('meals')
         .select('id')
         .eq('diet_plan_id', targetPlanId)
         .eq('day_of_week', targetDay);
@@ -280,7 +280,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     try {
       // Delete all meals for this day (Cascade should handle items)
       const { error } = await supabase
-        .from('diet_meals')
+        .from('meals')
         .delete()
         .eq('diet_plan_id', targetPlanId)
         .eq('day_of_week', dayOfWeek);
@@ -353,7 +353,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     try {
       // 1. Fetch diet plans
       const { data: plans, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .select('*')
         .eq('personal_id', professionalId)
         .order('created_at', { ascending: false });
@@ -375,7 +375,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         .in('id', studentIds);
 
       const { data: pendingStudents } = await supabase
-        .from('students')
+        .from('profiles')
         .select('id, full_name')
         .in('id', studentIds);
 
@@ -432,13 +432,13 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         set({ lastNotificationSchedule: now } as any);
 
         const { data: mealsWithTimes } = await supabase
-          .from('diet_meals')
+          .from('meals')
           .select(`
             id, 
             name, 
             meal_time, 
             day_of_week,
-            diet_meal_items (
+            meal_foods (
               food:foods (
                 name
               )
@@ -450,7 +450,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         if (mealsWithTimes && mealsWithTimes.length > 0) {
           const mealNotifications = mealsWithTimes.map(meal => {
             // Extract food names safely
-            const foodNames = meal.diet_meal_items
+            const foodNames = meal.meal_foods
               ?.map((item: any) => item.food?.name)
               .filter((name: any) => !!name) || [];
 
@@ -498,7 +498,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     try {
       // Check if there's already an active plan
       const { data: existingActive } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .select('id')
         .eq('student_id', plan.student_id)
         .eq('status', 'active')
@@ -510,7 +510,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
 
       // Create new plan
       const { data: newPlan, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .insert({
           ...plan,
           version: 1,
@@ -527,7 +527,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (sourcePlanId) {
         // 1. Fetch source meals
         const { data: sourceMeals, error: mealsError } = await supabase
-          .from('diet_meals')
+          .from('meals')
           .select('*')
           .eq('diet_plan_id', sourcePlanId);
 
@@ -537,7 +537,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           for (const sourceMeal of sourceMeals) {
             // 2. Create new meal
             const { data: newMeal, error: newMealError } = await supabase
-              .from('diet_meals')
+              .from('meals')
               .insert({
                 diet_plan_id: newPlan.id,
                 day_of_week: sourceMeal.day_of_week,
@@ -554,7 +554,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
 
             // 3. Fetch source items for this meal
             const { data: sourceItems, error: itemsError } = await supabase
-              .from('diet_meal_items')
+              .from('meal_foods')
               .select('*')
               .eq('diet_meal_id', sourceMeal.id);
 
@@ -571,7 +571,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
               }));
 
               const { error: insertItemsError } = await supabase
-                .from('diet_meal_items')
+                .from('meal_foods')
                 .insert(itemsToInsert);
 
               if (insertItemsError) throw insertItemsError;
@@ -595,7 +595,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         studentName = profile.full_name;
       } else {
         const { data: pending } = await supabase
-          .from('students')
+          .from('profiles')
           .select('full_name')
           .eq('id', plan.student_id)
           .single();
@@ -627,7 +627,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       const today = new Date().toISOString().split('T')[0];
       
       const { data, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .update({ 
           status: 'finished',
           is_active: false,
@@ -655,7 +655,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       const today = new Date().toISOString().split('T')[0];
       
       const { data: expiredPlans, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .select('id')
         .eq('student_id', studentId)
         .eq('status', 'active')
@@ -665,7 +665,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
 
       if (expiredPlans && expiredPlans.length > 0) {
         const { error: updateError } = await supabase
-          .from('diet_plans')
+          .from('nutrition_plans')
           .update({ 
             status: 'completed',
             is_active: false
@@ -685,7 +685,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   updateDietPlan: async (id, updates) => {
     try {
       const { data, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .update(updates)
         .eq('id', id)
         .select()
@@ -704,7 +704,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchMeals: async (dietPlanId: string) => {
     try {
       const { data, error } = await supabase
-        .from('diet_meals')
+        .from('meals')
         .select('*')
         .eq('diet_plan_id', dietPlanId)
         .order('day_of_week', { ascending: true })
@@ -722,7 +722,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   updateMeal: async (id, updates) => {
     try {
       const { data, error } = await supabase
-        .from('diet_meals')
+        .from('meals')
         .update(updates)
         .eq('id', id)
         .select()
@@ -748,7 +748,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   addMeal: async (meal) => {
     try {
       const { data, error } = await supabase
-        .from('diet_meals')
+        .from('meals')
         .insert(meal)
         .select()
         .single();
@@ -769,7 +769,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchMealItems: async (mealId: string) => {
     try {
       const { data, error } = await supabase
-        .from('diet_meal_items')
+        .from('meal_foods')
         .select(`
           *,
           food:foods (*)
@@ -797,7 +797,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       const nextOrder = currentItems.length;
 
       const { data, error } = await supabase
-        .from('diet_meal_items')
+        .from('meal_foods')
         .insert({
           diet_meal_id: mealId,
           food_id: foodId,

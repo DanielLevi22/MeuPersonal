@@ -30,7 +30,7 @@ export default function LeaderboardScreen() {
       const monday = new Date(today.setDate(diff)).toISOString().split('T')[0];
 
       const { data: scores, error } = await supabase
-        .from('leaderboard_scores')
+        .from('ranking_scores')
         .select(`
           points,
           student:profiles (

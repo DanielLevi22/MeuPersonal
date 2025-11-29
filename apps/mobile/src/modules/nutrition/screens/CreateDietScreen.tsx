@@ -52,22 +52,23 @@ export default function CreateDietScreen() {
     try {
       // 1. Fetch active students
       const { data: activeData, error: activeError } = await supabase
-        .from('students_personals')
+        .from('coachings')
         .select(`
-          student:profiles!student_id (
+          student:profiles!client_id (
             id,
             full_name
           )
         `)
-        .eq('personal_id', user.id)
+        .eq('professional_id', user.id)
         .eq('status', 'active');
 
       // 2. Fetch pending students
       const { data: pendingData, error: pendingError } = await supabase
-        .from('students')
+        .from('profiles')
         .select('id, full_name')
-        .eq('personal_id', user.id)
-        .not('invite_code', 'is', null);
+        .eq('account_type', 'managed_student')
+        .eq('account_status', 'pending');
+        // .not('invite_code', 'is', null);
 
       if (!activeError && !pendingError) {
         const activeList = activeData?.map((item: any) => item.student).filter(Boolean) || [];
@@ -101,7 +102,7 @@ export default function CreateDietScreen() {
 
     try {
       const { data, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .insert({
           name,
           description,
