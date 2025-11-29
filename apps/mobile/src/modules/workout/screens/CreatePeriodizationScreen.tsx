@@ -8,9 +8,17 @@ import { supabase } from '@meupersonal/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useWorkoutStore } from '../store/workoutStore';
+
+const OBJECTIVE_OPTIONS = [
+  { label: 'Hipertrofia', value: 'hypertrophy' },
+  { label: 'Força', value: 'strength' },
+  { label: 'Resistência', value: 'endurance' },
+  { label: 'Emagrecimento', value: 'weight_loss' },
+  { label: 'Condicionamento', value: 'conditioning' },
+];
 
 export default function CreatePeriodizationScreen() {
   const router = useRouter();
@@ -18,6 +26,7 @@ export default function CreatePeriodizationScreen() {
   const { createPeriodization } = useWorkoutStore();
 
   const [name, setName] = useState('');
+  const [objective, setObjective] = useState('');
   const [studentId, setStudentId] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
@@ -28,6 +37,7 @@ export default function CreatePeriodizationScreen() {
 
   const [students, setStudents] = useState<any[]>([]);
   const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [showObjectivePicker, setShowObjectivePicker] = useState(false);
 
   // Fetch students on mount
   useEffect(() => {
@@ -78,6 +88,11 @@ export default function CreatePeriodizationScreen() {
       return;
     }
 
+    if (!objective.trim()) {
+      Alert.alert('Erro', 'O objetivo da periodização é obrigatório.');
+      return;
+    }
+
     if (!studentId) {
       Alert.alert('Erro', 'Selecione um aluno.');
       return;
@@ -90,8 +105,10 @@ export default function CreatePeriodizationScreen() {
     try {
       const data = await createPeriodization({
         name,
+        objective,
         student_id: studentId,
         personal_id: user.id,
+        professional_id: user.id,
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
         status: 'planned',
@@ -116,6 +133,7 @@ export default function CreatePeriodizationScreen() {
   };
 
   const selectedStudent = students.find(s => s.id === studentId);
+  const selectedObjective = OBJECTIVE_OPTIONS.find(o => o.value === objective);
 
   return (
     <ScreenLayout>
@@ -149,6 +167,62 @@ export default function CreatePeriodizationScreen() {
             />
           </View>
 
+          {/* Objetivo */}
+          <View className="mb-4">
+            <Text className="text-foreground text-sm font-semibold mb-2 font-sans">
+              Objetivo *
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowObjectivePicker(true)}
+              className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
+            >
+              <Text className={selectedObjective ? 'text-foreground text-base' : 'text-zinc-500 text-base'}>
+                {selectedObjective ? selectedObjective.label : 'Selecione um objetivo'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#71717A" />
+            </TouchableOpacity>
+
+            <Modal
+              visible={showObjectivePicker}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowObjectivePicker(false)}
+            >
+              <TouchableOpacity 
+                className="flex-1 bg-black/80 justify-center px-6"
+                activeOpacity={1}
+                onPress={() => setShowObjectivePicker(false)}
+              >
+                <View className="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800">
+                  <View className="p-4 border-b border-zinc-800 flex-row justify-between items-center">
+                    <Text className="text-white font-bold text-lg font-display">Selecione o Objetivo</Text>
+                    <TouchableOpacity onPress={() => setShowObjectivePicker(false)}>
+                      <Ionicons name="close" size={24} color="#A1A1AA" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {OBJECTIVE_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      className={`p-4 border-b border-zinc-800 flex-row items-center justify-between ${objective === option.value ? 'bg-zinc-800' : ''}`}
+                      onPress={() => {
+                        setObjective(option.value);
+                        setShowObjectivePicker(false);
+                      }}
+                    >
+                      <Text className={`text-base ${objective === option.value ? 'text-orange-500 font-bold' : 'text-zinc-300'}`}>
+                        {option.label}
+                      </Text>
+                      {objective === option.value && (
+                        <Ionicons name="checkmark" size={20} color="#F97316" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          </View>
+
           {/* Student Selector */}
           <View className="mb-4">
             <Text className="text-foreground text-sm font-semibold mb-2 font-sans">
@@ -163,20 +237,6 @@ export default function CreatePeriodizationScreen() {
               </Text>
               <Ionicons
                 name={showStudentPicker ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#71717A"
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowStudentPicker(true)}
-              className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
-            >
-              <Text className={selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'}>
-                {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
-              </Text>
-              <Ionicons
-                name="chevron-down"
                 size={20}
                 color="#71717A"
               />

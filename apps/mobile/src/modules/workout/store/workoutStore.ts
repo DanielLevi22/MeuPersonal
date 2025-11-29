@@ -42,6 +42,7 @@ export interface Periodization {
   name: string;
   student_id: string;
   personal_id: string;
+  professional_id?: string;
   start_date: string;
   end_date: string;
   status: 'planned' | 'active' | 'completed';
@@ -63,6 +64,7 @@ interface WorkoutState {
   createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
   createPeriodization: (periodization: Omit<Periodization, 'id' | 'created_at' | 'student'>) => Promise<Periodization>;
   createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
+  activatePeriodization: (periodizationId: string) => Promise<any>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
   reset: () => void; // Clear all state on logout
@@ -213,6 +215,52 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       return data;
     } catch (error) {
       console.error('Error creating periodization:', error);
+      throw error;
+    }
+  },
+
+  activatePeriodization: async (periodizationId: string) => {
+    try {
+      // 1. Get the periodization to find student_id
+      const { data: periodization, error: fetchError } = await supabase
+        .from('periodizations')
+        .select('student_id')
+        .eq('id', periodizationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. Deactivate other active periodizations for this student
+      if (periodization) {
+        await supabase
+          .from('periodizations')
+          .update({ status: 'completed' })
+          .eq('student_id', periodization.student_id)
+          .eq('status', 'active');
+      }
+
+      // 3. Activate the target periodization
+      const { data, error } = await supabase
+        .from('periodizations')
+        .update({ status: 'active' })
+        .eq('id', periodizationId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 4. Update local state
+      set((state) => ({
+        periodizations: state.periodizations.map(p => 
+          p.id === periodizationId 
+            ? { ...p, status: 'active' }
+            : (p.student_id === periodization.student_id && p.status === 'active' ? { ...p, status: 'completed' } : p)
+        )
+      }));
+
+      return data;
+    } catch (error) {
+      console.error('Error activating periodization:', error);
       throw error;
     }
   },

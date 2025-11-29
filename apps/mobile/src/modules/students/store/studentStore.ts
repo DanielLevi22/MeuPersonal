@@ -411,55 +411,102 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   },
   updateStudent: async (studentId, data) => {
     try {
-      // 1. Update Profile (Basic Info)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: data.name,
-          phone: data.phone,
-        })
-        .eq('id', studentId);
+      const student = get().students.find(s => s.id === studentId);
+      if (!student) throw new Error('Student not found');
 
-      if (profileError) throw profileError;
-
-      // 2. Update or Insert Physical Assessment
-      const { data: session } = await supabase.auth.getSession();
-      const personalId = session.session?.user.id;
-
-      if (personalId) {
-        const { error: assessmentError } = await supabase
-          .from('physical_assessments')
-          .insert({
-            student_id: studentId,
-            personal_id: personalId,
+      // Check if it's a pending invite
+      if (student.is_invite || student.status === 'invited') {
+        // Update 'students' table directly
+        const { error: updateError } = await supabase
+          .from('students')
+          .update({
+            full_name: data.name,
+            phone: data.phone,
             weight: data.weight ? parseFloat(data.weight) : null,
             height: data.height ? parseFloat(data.height) : null,
             notes: data.notes,
-            // Add other fields
-            neck: data.neck ? parseFloat(data.neck) : null,
-            shoulder: data.shoulder ? parseFloat(data.shoulder) : null,
-            chest: data.chest ? parseFloat(data.chest) : null,
-            arm_right_relaxed: data.arm_right_relaxed ? parseFloat(data.arm_right_relaxed) : null,
-            arm_left_relaxed: data.arm_left_relaxed ? parseFloat(data.arm_left_relaxed) : null,
-            arm_right_contracted: data.arm_right_contracted ? parseFloat(data.arm_right_contracted) : null,
-            arm_left_contracted: data.arm_left_contracted ? parseFloat(data.arm_left_contracted) : null,
-            forearm: data.forearm ? parseFloat(data.forearm) : null,
-            waist: data.waist ? parseFloat(data.waist) : null,
-            abdomen: data.abdomen ? parseFloat(data.abdomen) : null,
-            hips: data.hips ? parseFloat(data.hips) : null,
-            thigh_proximal: data.thigh_proximal ? parseFloat(data.thigh_proximal) : null,
-            thigh_distal: data.thigh_distal ? parseFloat(data.thigh_distal) : null,
-            calf: data.calf ? parseFloat(data.calf) : null,
-            skinfold_chest: data.skinfold_chest ? parseFloat(data.skinfold_chest) : null,
-            skinfold_abdominal: data.skinfold_abdominal ? parseFloat(data.skinfold_abdominal) : null,
-            skinfold_thigh: data.skinfold_thigh ? parseFloat(data.skinfold_thigh) : null,
-            skinfold_triceps: data.skinfold_triceps ? parseFloat(data.skinfold_triceps) : null,
-            skinfold_suprailiac: data.skinfold_suprailiac ? parseFloat(data.skinfold_suprailiac) : null,
-            skinfold_subscapular: data.skinfold_subscapular ? parseFloat(data.skinfold_subscapular) : null,
-            skinfold_midaxillary: data.skinfold_midaxillary ? parseFloat(data.skinfold_midaxillary) : null,
-          });
-          
-         if (assessmentError) console.error('Error updating assessment:', assessmentError);
+            initial_assessment: {
+              ...student.assessment, // Keep existing assessment data if any
+              neck: data.neck,
+              shoulder: data.shoulder,
+              chest: data.chest,
+              arm_right_relaxed: data.arm_right_relaxed,
+              arm_left_relaxed: data.arm_left_relaxed,
+              arm_right_contracted: data.arm_right_contracted,
+              arm_left_contracted: data.arm_left_contracted,
+              forearm: data.forearm,
+              waist: data.waist,
+              abdomen: data.abdomen,
+              hips: data.hips,
+              thigh_proximal: data.thigh_proximal,
+              thigh_distal: data.thigh_distal,
+              calf: data.calf,
+              skinfold_chest: data.skinfold_chest,
+              skinfold_abdominal: data.skinfold_abdominal,
+              skinfold_thigh: data.skinfold_thigh,
+              skinfold_triceps: data.skinfold_triceps,
+              skinfold_suprailiac: data.skinfold_suprailiac,
+              skinfold_subscapular: data.skinfold_subscapular,
+              skinfold_midaxillary: data.skinfold_midaxillary,
+            }
+          })
+          .eq('id', studentId);
+
+        if (updateError) throw updateError;
+
+      } else {
+        // It's a linked profile - Update Profile and Insert Assessment
+        
+        // 1. Update Profile (Basic Info)
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: data.name,
+            phone: data.phone,
+          })
+          .eq('id', studentId);
+
+        if (profileError) throw profileError;
+
+        // 2. Update or Insert Physical Assessment
+        const { data: session } = await supabase.auth.getSession();
+        const personalId = session.session?.user.id;
+
+        if (personalId) {
+          const { error: assessmentError } = await supabase
+            .from('physical_assessments')
+            .insert({
+              student_id: studentId,
+              personal_id: personalId,
+              weight: data.weight ? parseFloat(data.weight) : null,
+              height: data.height ? parseFloat(data.height) : null,
+              notes: data.notes,
+              // Add other fields
+              neck: data.neck ? parseFloat(data.neck) : null,
+              shoulder: data.shoulder ? parseFloat(data.shoulder) : null,
+              chest: data.chest ? parseFloat(data.chest) : null,
+              arm_right_relaxed: data.arm_right_relaxed ? parseFloat(data.arm_right_relaxed) : null,
+              arm_left_relaxed: data.arm_left_relaxed ? parseFloat(data.arm_left_relaxed) : null,
+              arm_right_contracted: data.arm_right_contracted ? parseFloat(data.arm_right_contracted) : null,
+              arm_left_contracted: data.arm_left_contracted ? parseFloat(data.arm_left_contracted) : null,
+              forearm: data.forearm ? parseFloat(data.forearm) : null,
+              waist: data.waist ? parseFloat(data.waist) : null,
+              abdomen: data.abdomen ? parseFloat(data.abdomen) : null,
+              hips: data.hips ? parseFloat(data.hips) : null,
+              thigh_proximal: data.thigh_proximal ? parseFloat(data.thigh_proximal) : null,
+              thigh_distal: data.thigh_distal ? parseFloat(data.thigh_distal) : null,
+              calf: data.calf ? parseFloat(data.calf) : null,
+              skinfold_chest: data.skinfold_chest ? parseFloat(data.skinfold_chest) : null,
+              skinfold_abdominal: data.skinfold_abdominal ? parseFloat(data.skinfold_abdominal) : null,
+              skinfold_thigh: data.skinfold_thigh ? parseFloat(data.skinfold_thigh) : null,
+              skinfold_triceps: data.skinfold_triceps ? parseFloat(data.skinfold_triceps) : null,
+              skinfold_suprailiac: data.skinfold_suprailiac ? parseFloat(data.skinfold_suprailiac) : null,
+              skinfold_subscapular: data.skinfold_subscapular ? parseFloat(data.skinfold_subscapular) : null,
+              skinfold_midaxillary: data.skinfold_midaxillary ? parseFloat(data.skinfold_midaxillary) : null,
+            });
+            
+           if (assessmentError) console.error('Error updating assessment:', assessmentError);
+        }
       }
 
       // Update local state

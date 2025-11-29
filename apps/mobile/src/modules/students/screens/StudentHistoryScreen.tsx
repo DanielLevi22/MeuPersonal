@@ -48,7 +48,7 @@ export default function StudentHistoryScreen() {
       <View className="items-center mr-4">
         <View className={`w-3 h-3 rounded-full ${
           item.type === 'workout' ? 'bg-orange-500' : 
-          item.type === 'diet' ? 'bg-cyan-400' : 'bg-emerald-400'
+          item.type === 'diet' ? 'bg-emerald-500' : 'bg-zinc-500'
         }`} />
         <View className="w-0.5 flex-1 bg-zinc-800 my-1" />
       </View>
@@ -65,7 +65,7 @@ export default function StudentHistoryScreen() {
               size={16} 
               color={
                 item.type === 'workout' ? '#FF6B35' : 
-                item.type === 'diet' ? '#00D9FF' : '#00C9A7'
+                item.type === 'diet' ? '#10B981' : '#A1A1AA'
               } 
               style={{ marginRight: 8 }}
             />
@@ -84,10 +84,10 @@ export default function StudentHistoryScreen() {
         
         <View className="flex-row items-center mt-2">
           <View className={`px-2 py-1 rounded-lg ${
-            item.status === 'completed' ? 'bg-emerald-500/15' : 'bg-cyan-400/15'
+            item.status === 'completed' ? 'bg-emerald-500/15' : 'bg-zinc-800'
           }`}>
             <Text className={`text-xs font-bold ${
-              item.status === 'completed' ? 'text-emerald-400' : 'text-cyan-400'
+              item.status === 'completed' ? 'text-emerald-400' : 'text-zinc-400'
             }`}>
               {item.status === 'completed' ? 'Concluído' : 'Atualizado'}
             </Text>

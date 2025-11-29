@@ -54,18 +54,16 @@ export default function StudentsScreen() {
   };
 
   const handleEdit = (student: any) => {
-    if (student.status === 'active') {
-      setSelectedStudent(student);
-      setIsEditModalVisible(true);
-    }
+    setSelectedStudent(student);
+    setIsEditModalVisible(true);
   };
 
   const handlePressStudent = (student: any) => {
-    if (student.status === 'active') {
-      router.push(`/(tabs)/students/${student.id}` as any);
-    } else {
-      handleEdit(student);
-    }
+    handleEdit(student);
+  };
+
+  const handleEnterStudent = (student: any) => {
+    router.push(`/(tabs)/students/${student.id}` as any);
   };
 
   const handleSaveEdit = async (data: any) => {
@@ -87,14 +85,14 @@ export default function StudentsScreen() {
       disabled={false}
       className="mb-3"
     >
-      <View className={`p-4 rounded-2xl border flex-row items-center justify-between bg-zinc-900 ${item.status === 'invited' ? 'border-orange-500/30' : 'border-zinc-800'}`}>
+      <View className="p-4 rounded-2xl border border-zinc-800 flex-row items-center justify-between bg-zinc-900">
         <View className="flex-row items-center flex-1">
           {/* Avatar */}
-          <View className={`h-14 w-14 rounded-full items-center justify-center mr-4 ${item.status === 'invited' ? 'bg-orange-500/15' : 'bg-cyan-400/15'}`}>
+          <View className="h-14 w-14 rounded-full items-center justify-center mr-4 bg-zinc-800">
             <Ionicons 
-              name={item.status === 'invited' ? "mail-outline" : "person"} 
+              name="person" 
               size={28} 
-              color={item.status === 'invited' ? "#FF6B35" : "#00D9FF"} 
+              color="#A1A1AA" 
             />
           </View>
 
@@ -104,40 +102,19 @@ export default function StudentsScreen() {
               {item.full_name || 'Aluno sem nome'}
             </Text>
             <Text className="text-zinc-400 text-sm font-sans" numberOfLines={1}>
-              {item.status === 'invited' ? item.email : `Código: ${item.invite_code || 'N/A'}`}
+              {item.email || 'Sem email'}
             </Text>
           </View>
         </View>
 
-        <View className="flex-row items-center">
-          {/* Status Badge */}
-          <View className={`px-2.5 py-1.5 rounded-xl mr-3 ${
-            item.status === 'active' 
-              ? 'bg-emerald-500/15' 
-              : item.status === 'invited'
-                ? 'bg-orange-500/15'
-                : 'bg-zinc-800'
-          }`}>
-            <Text className={`text-xs font-bold font-display ${
-              item.status === 'active' 
-                ? 'text-emerald-400' 
-                : item.status === 'invited'
-                  ? 'text-orange-500'
-                  : 'text-zinc-400'
-            }`}>
-              {item.status === 'active' ? 'Ativo' : item.status === 'invited' ? 'Convite' : 'Pendente'}
-            </Text>
-          </View>
-
-          {/* Edit Button (New) */}
-          {item.status === 'active' && (
-             <TouchableOpacity 
-             onPress={() => handleEdit(item)}
-             className="p-2 mr-1"
-           >
-             <Ionicons name="pencil-outline" size={20} color="#FFFFFF" />
-           </TouchableOpacity>
-          )}
+        <View className="flex-row items-center gap-2">
+          {/* Enter Button */}
+          <TouchableOpacity 
+            onPress={() => handleEnterStudent(item)}
+            className="p-2 bg-zinc-800 rounded-xl"
+          >
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
 
           {/* Remove Button */}
           <TouchableOpacity 

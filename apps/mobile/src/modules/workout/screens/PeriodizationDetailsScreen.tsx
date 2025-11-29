@@ -7,29 +7,60 @@ import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } fr
 import { useWorkoutStore } from '../store/workoutStore';
 
 export default function PeriodizationDetailsScreen() {
-  const { id } = useLocalSearchParams();
+  const { id: studentId, periodizationId: paramPeriodizationId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { periodizations, fetchPeriodizations, isLoading } = useWorkoutStore();
+  const { periodizations, fetchPeriodizations, isLoading, activatePeriodization } = useWorkoutStore();
   const [periodization, setPeriodization] = useState<any>(null);
 
-  useEffect(() => {
-    if (user?.id && !periodizations.length) {
-      fetchPeriodizations(user.id);
-    }
-  }, [user]);
+  const periodizationId = Array.isArray(paramPeriodizationId) ? paramPeriodizationId[0] : paramPeriodizationId;
 
   useEffect(() => {
-    if (periodizations.length > 0 && id) {
-      const found = periodizations.find(p => p.id === id);
-      setPeriodization(found);
+    if (user?.id) {
+      // Always fetch if we don't have the specific periodization, even if we have others
+      // This ensures we get the latest data if we navigated from creation
+      const found = periodizations.find(p => p.id === periodizationId);
+      if (!found) {
+        fetchPeriodizations(user.id);
+      } else {
+        setPeriodization(found);
+      }
     }
-  }, [periodizations, id]);
+  }, [user, periodizationId, periodizations.length]); // Depend on length to re-run if fetch completes
 
-  if (isLoading || !periodization) {
+  useEffect(() => {
+    if (periodizations.length > 0 && periodizationId) {
+      const found = periodizations.find(p => p.id === periodizationId);
+      if (found) {
+        setPeriodization(found);
+      }
+    }
+  }, [periodizations, periodizationId]);
+
+  if (isLoading) {
     return (
       <ScreenLayout className="justify-center items-center">
         <ActivityIndicator size="large" color="#00D9FF" />
+      </ScreenLayout>
+    );
+  }
+
+  if (!periodization) {
+    return (
+      <ScreenLayout className="justify-center items-center px-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#71717A" />
+        <Text className="text-white text-xl font-bold mt-4 text-center font-display">
+          Periodização não encontrada
+        </Text>
+        <Text className="text-zinc-400 text-center mt-2 mb-6">
+          Não foi possível carregar os detalhes desta periodização.
+        </Text>
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          className="bg-zinc-800 px-6 py-3 rounded-xl"
+        >
+          <Text className="text-white font-bold">Voltar</Text>
+        </TouchableOpacity>
       </ScreenLayout>
     );
   }
@@ -107,6 +138,34 @@ export default function PeriodizationDetailsScreen() {
               </Text>
             </View>
           </View>
+          
+          {periodization.status === 'planned' && (
+            <TouchableOpacity 
+              onPress={() => {
+                Alert.alert(
+                  'Ativar Periodização',
+                  'Deseja ativar esta periodização? Outras periodizações ativas deste aluno serão concluídas.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { 
+                      text: 'Ativar', 
+                      onPress: async () => {
+                        try {
+                          await activatePeriodization(periodization.id);
+                          Alert.alert('Sucesso', 'Periodização ativada!');
+                        } catch (error) {
+                          Alert.alert('Erro', 'Não foi possível ativar a periodização.');
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+              className="mt-6 bg-orange-500 px-6 py-3 rounded-xl w-full items-center"
+            >
+              <Text className="text-white font-bold font-display">ATIVAR PERIODIZAÇÃO</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Phases List */}
