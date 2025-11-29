@@ -10,6 +10,8 @@ export { default as CreatePeriodizationScreen } from './screens/CreatePeriodizat
 export { default as CreateTrainingPlanScreen } from './screens/CreateTrainingPlanScreen';
 export { default as PeriodizationDetailsScreen } from './screens/PeriodizationDetailsScreen';
 export { default as PeriodizationsScreen } from './screens/PeriodizationsScreen';
+export { default as SelectExercisesScreen } from './screens/SelectExercisesScreen';
+export { default as WorkoutDetailsScreen } from './screens/WorkoutDetailsScreen';
 
 // Types (re-export from stores for now)
 export { useWorkoutLogStore } from './store/workoutLogStore';

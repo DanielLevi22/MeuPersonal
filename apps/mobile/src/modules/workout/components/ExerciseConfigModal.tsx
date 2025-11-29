@@ -83,7 +83,7 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
         <TouchableOpacity 
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
-          className="bg-card rounded-t-3xl p-6 max-h-[90%]"
+          className="bg-zinc-950 rounded-t-3xl p-6 max-h-[90%] border-t border-zinc-800"
           style={{ paddingBottom: Math.max(insets.bottom, 24) + 16 }}
         >
           <ScrollView showsVerticalScrollIndicator={false}>

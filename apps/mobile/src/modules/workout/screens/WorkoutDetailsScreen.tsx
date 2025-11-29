@@ -1,39 +1,73 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 
 export default function WorkoutDetailsScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, workoutId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { workouts, fetchWorkouts, isLoading } = useWorkoutStore();
+  const { workouts, fetchWorkoutsForPhase, isLoading, selectedExercises, addWorkoutItems, clearSelectedExercises, fetchWorkoutById } = useWorkoutStore();
   const [workout, setWorkout] = useState<any>(null);
+  const [notFound, setNotFound] = useState(false);
 
-  useEffect(() => {
-    if (user?.id && !workouts.length) {
-      fetchWorkouts(user.id);
-    }
-  }, [user]);
+  // Use workoutId if available (nested route), otherwise id (direct route)
+  const targetId = (workoutId || id) as string;
 
+  // Find workout from store or fetch it
   useEffect(() => {
-    if (workouts.length > 0 && id) {
-      const found = workouts.find(w => w.id === id);
+    if (!targetId) return;
+
+    const found = workouts.find(w => w.id === targetId);
+    if (found) {
       setWorkout(found);
+    } else {
+      // If not found in current list, fetch it specifically
+      fetchWorkoutById(targetId).then(data => {
+        if (data) {
+          setWorkout(data);
+        } else {
+          setNotFound(true);
+        }
+      });
     }
-  }, [workouts, id]);
+  }, [workouts, targetId]);
 
-  if (isLoading || !workout) {
+  // Handle returning from SelectExercisesScreen
+  // Removed useFocusEffect for adding exercises - moved to SelectExercisesScreen
+
+  if (notFound) {
+    return (
+      <ScreenLayout className="justify-center items-center px-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#71717A" />
+        <Text className="text-white text-xl font-bold mt-4 text-center font-display">
+          Treino não encontrado
+        </Text>
+        <Text className="text-zinc-500 text-center mt-2 mb-6">
+          O treino que você está procurando não existe ou foi removido.
+        </Text>
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          className="bg-zinc-800 px-6 py-3 rounded-xl"
+        >
+          <Text className="text-white font-bold">Voltar</Text>
+        </TouchableOpacity>
+      </ScreenLayout>
+    );
+  }
+
+  if (!workout && isLoading) {
     return (
       <ScreenLayout className="justify-center items-center">
         <ActivityIndicator size="large" color="#FF6B35" />
       </ScreenLayout>
     );
   }
+
+  if (!workout) return null; // Should be handled by notFound, but just in case
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -106,10 +140,13 @@ export default function WorkoutDetailsScreen() {
             </TouchableOpacity>
             <View className="flex-row gap-2">
               <TouchableOpacity 
-                onPress={() => Alert.alert('Em breve', 'Edição em desenvolvimento')}
+                onPress={() => router.push({
+                  pathname: '/(tabs)/workouts/select-exercises',
+                  params: { workoutId: workout.id, studentId: id }
+                })}
                 className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
               >
-                <Ionicons name="pencil" size={20} color="#FFFFFF" />
+                <Ionicons name="add" size={20} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -141,43 +178,42 @@ export default function WorkoutDetailsScreen() {
 
         {/* Exercises List */}
         <View className="flex-1 px-6">
-          <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
-            EXERCÍCIOS
-          </Text>
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-white text-lg font-bold font-display tracking-wide">
+              EXERCÍCIOS
+            </Text>
+            <TouchableOpacity onPress={() => router.push({
+              pathname: '/(tabs)/workouts/select-exercises',
+              params: { workoutId: workout.id, studentId: id }
+            })}>
+              <Text className="text-orange-500 font-bold text-sm">Adicionar</Text>
+            </TouchableOpacity>
+          </View>
           
           <FlatList
-            data={workout.items || []} // Assuming items are populated
+            data={workout.items || []}
             renderItem={renderExerciseItem}
             keyExtractor={(item, index) => item.id || `exercise-${index}`}
             contentContainerStyle={{ paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View className="items-center justify-center py-10">
-                <Text className="text-zinc-500 font-sans">Nenhum exercício cadastrado.</Text>
+                <Text className="text-zinc-500 font-sans mb-4">Nenhum exercício cadastrado.</Text>
+                <TouchableOpacity 
+                  onPress={() => router.push({
+                    pathname: '/(tabs)/workouts/select-exercises',
+                    params: { workoutId: workout.id, studentId: id }
+                  })}
+                  className="bg-zinc-800 px-6 py-3 rounded-xl"
+                >
+                  <Text className="text-white font-bold">Adicionar Exercícios</Text>
+                </TouchableOpacity>
               </View>
             }
           />
         </View>
 
-        {/* Start Workout Button (Floating) */}
-        <View className="absolute bottom-8 left-6 right-6">
-          <TouchableOpacity 
-            activeOpacity={0.8}
-            onPress={() => router.push(`/(tabs)/workouts/execute/${workout.id}` as any)}
-          >
-            <LinearGradient
-              colors={['#FF6B35', '#FF2E63']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="rounded-2xl py-4 flex-row items-center justify-center shadow-lg shadow-orange-500/40"
-            >
-              <Ionicons name="play" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text className="text-white text-lg font-bold font-display">
-                Iniciar Treino
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+
       </View>
     </ScreenLayout>
   );

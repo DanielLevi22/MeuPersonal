@@ -2,7 +2,7 @@ import { useCreateExercise } from '@/hooks/useExerciseMutations';
 import { useExercises } from '@/hooks/useExercises';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,15 +15,39 @@ export default function SelectExercisesScreen() {
   const createExerciseMutation = useCreateExercise();
   const insets = useSafeAreaInsets();
   
-  // Filtrar exercícios inválidos - remover "Adicionar Exercício" e outros inválidos
-  const exercises = useMemo(() => {
-    return exercisesData.filter(
-      (ex) => ex.name && 
-      ex.name.trim() !== '' &&
-      !ex.name.toLowerCase().includes('adicionar exercício') &&
-      !ex.name.toLowerCase().includes('adicionar exercicios')
-    );
+  // State for filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string | null>(null);
+
+  // Extract unique muscle groups
+  const muscleGroups = useMemo(() => {
+    const groups = new Set(exercisesData.map(ex => ex.muscle_group).filter((g): g is string => !!g));
+    return Array.from(groups).sort();
   }, [exercisesData]);
+
+  // Filter exercises
+  const exercises = useMemo(() => {
+    return exercisesData.filter((ex) => {
+      // Basic validation
+      if (!ex.name || ex.name.trim() === '' || 
+          ex.name.toLowerCase().includes('adicionar exercício') || 
+          ex.name.toLowerCase().includes('adicionar exercicios')) {
+        return false;
+      }
+
+      // Search filter
+      if (searchQuery && !ex.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Muscle group filter
+      if (selectedMuscleGroup && ex.muscle_group !== selectedMuscleGroup) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [exercisesData, searchQuery, selectedMuscleGroup]);
 
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
@@ -76,15 +100,54 @@ export default function SelectExercisesScreen() {
     setEditingIndex(null);
   }, [editingIndex, selected, selectedExercises]);
 
-  const handleConfirm = useCallback(() => {
+  const { workoutId, studentId } = useLocalSearchParams();
+  const { addWorkoutItems, clearSelectedExercises } = useWorkoutStore();
+
+  const handleConfirm = useCallback(async () => {
     if (selectedExercises.length === 0) {
       Alert.alert('Atenção', 'Selecione pelo menos um exercício.');
       return;
     }
-    const { setSelectedExercises } = useWorkoutStore.getState();
-    setSelectedExercises(selectedExercises);
-    router.back();
-  }, [selectedExercises, router]);
+
+    if (workoutId) {
+      try {
+        const items = selectedExercises.map(ex => ({
+          exercise_id: ex.id,
+          sets: ex.sets || 3,
+          reps: ex.reps?.toString() || '10',
+          weight: ex.weight || '0',
+          rest_time: ex.rest_seconds || 60,
+          notes: ''
+        }));
+
+        await addWorkoutItems(workoutId as string, items);
+        clearSelectedExercises();
+        
+        if (studentId) {
+          router.replace({
+            pathname: `/(tabs)/students/${studentId}/workouts/details/${workoutId}`,
+          } as any);
+        } else if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)/workouts');
+        }
+      } catch (error) {
+        Alert.alert('Erro', 'Falha ao adicionar exercícios.');
+      }
+    } else {
+      // Fallback for creation flow (no ID yet)
+      const { setSelectedExercises } = useWorkoutStore.getState();
+      setSelectedExercises(selectedExercises);
+      
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        console.warn('Cannot go back from SelectExercisesScreen');
+        router.replace('/(tabs)/workouts'); 
+      }
+    }
+  }, [selectedExercises, router, workoutId, addWorkoutItems, clearSelectedExercises]);
 
   const handleCreateExercise = useCallback(async () => {
     if (!newExerciseName.trim() || !newExerciseMuscle.trim()) {
@@ -128,12 +191,12 @@ export default function SelectExercisesScreen() {
         activeOpacity={0.7}
         onPress={() => toggleSelection(item)}
         style={{
-          backgroundColor: isSelected ? 'rgba(255, 107, 53, 0.1)' : '#141B2D',
+          backgroundColor: isSelected ? 'rgba(255, 107, 53, 0.1)' : '#18181B',
           borderRadius: 16,
           padding: 16,
           marginBottom: 12,
-          borderWidth: 2,
-          borderColor: isSelected ? '#FF6B35' : '#1E2A42',
+          borderWidth: 1,
+          borderColor: isSelected ? '#FF6B35' : '#27272A',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -164,53 +227,101 @@ export default function SelectExercisesScreen() {
   }, [selected, toggleSelection, editSelectedExercise]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
+    <View className="flex-1 bg-zinc-950">
       {/* Header */}
-      <View style={{ 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 24, 
-        paddingTop: insets.top + 16, 
-        paddingBottom: 24,
-        backgroundColor: '#0A0E1A'
-      }}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={{ 
-            backgroundColor: '#141B2D', 
-            padding: 10, 
-            borderRadius: 12, 
-            marginRight: 16 
-          }}
-        >
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 28, fontWeight: '800', color: '#FFFFFF' }}>Selecionar Exercícios</Text>
-          <Text style={{ fontSize: 14, color: '#8B92A8', marginTop: 2 }}>
-            {selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}
-          </Text>
+      <View className="px-6 pt-4 pb-4 bg-zinc-950 border-b border-zinc-800" style={{ paddingTop: insets.top + 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={{ 
+              backgroundColor: '#141B2D', 
+              padding: 10, 
+              borderRadius: 12, 
+              marginRight: 16 
+            }}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF' }}>Selecionar Exercícios</Text>
+            <Text style={{ fontSize: 14, color: '#8B92A8', marginTop: 2 }}>
+              {selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            onPress={() => setShowCreateModal(true)} 
+            style={{ 
+              backgroundColor: 'rgba(255, 107, 53, 0.15)', 
+              padding: 10, 
+              borderRadius: 12 
+            }}
+          >
+            <Ionicons name="add" size={24} color="#FF6B35" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          onPress={() => setShowCreateModal(true)} 
-          style={{ 
-            backgroundColor: 'rgba(255, 107, 53, 0.15)', 
-            padding: 10, 
-            borderRadius: 12 
-          }}
-        >
-          <Ionicons name="add" size={24} color="#FF6B35" />
-        </TouchableOpacity>
+
+        {/* Search Bar */}
+        <View className="bg-zinc-900 rounded-xl flex-row items-center px-3 mb-3 border border-zinc-800">
+          <Ionicons name="search" size={20} color="#8B92A8" />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Buscar exercício..."
+            placeholderTextColor="#5A6178"
+            style={{
+              flex: 1,
+              color: '#FFFFFF',
+              fontSize: 16,
+              paddingVertical: 12,
+              paddingHorizontal: 12
+            }}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#8B92A8" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Muscle Group Filter */}
+        <View>
+          <FlatList
+            horizontal
+            data={['Todos', ...muscleGroups]}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+            renderItem={({ item }) => {
+              const isActive = item === 'Todos' ? selectedMuscleGroup === null : selectedMuscleGroup === item;
+              return (
+                <TouchableOpacity
+                  onPress={() => setSelectedMuscleGroup(item === 'Todos' ? null : item)}
+                  style={{
+                    backgroundColor: isActive ? '#FF6B35' : '#18181B',
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: isActive ? '#FF6B35' : '#27272A'
+                  }}
+                >
+                  <Text style={{ 
+                    color: isActive ? '#FFFFFF' : '#8B92A8', 
+                    fontWeight: '600',
+                    fontSize: 13
+                  }}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
       </View>
 
       {/* Content */}
       {isLoading ? (
-        <View style={{ 
-          flex: 1, 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          backgroundColor: '#0A0E1A' 
-        }}>
+        <View className="flex-1 justify-center items-center bg-zinc-950">
           <ActivityIndicator size="large" color="#FF6B35" />
           <Text style={{ color: '#8B92A8', marginTop: 16, fontSize: 15 }}>Carregando exercícios...</Text>
         </View>
@@ -221,11 +332,18 @@ export default function SelectExercisesScreen() {
           keyExtractor={(item) => item.id} 
           contentContainerStyle={{ 
             paddingHorizontal: 24, 
+            paddingTop: 16,
             paddingBottom: insets.bottom + 100, 
-            backgroundColor: '#0A0E1A' 
           }}
-          style={{ flex: 1, backgroundColor: '#0A0E1A' }}
+          className="flex-1 bg-zinc-950"
           showsVerticalScrollIndicator={false} 
+          ListEmptyComponent={
+            <View style={{ alignItems: 'center', padding: 32 }}>
+              <Text style={{ color: '#8B92A8', textAlign: 'center' }}>
+                Nenhum exercício encontrado.
+              </Text>
+            </View>
+          }
         />
       )}
 
@@ -238,13 +356,13 @@ export default function SelectExercisesScreen() {
           right: 0, 
           padding: 24, 
           paddingBottom: Math.max(insets.bottom, 24), 
-          backgroundColor: '#0A0E1A', 
-          borderTopWidth: 2, 
-          borderTopColor: '#1E2A42' 
+          backgroundColor: '#09090B', // zinc-950
+          borderTopWidth: 1, 
+          borderTopColor: '#27272A' // zinc-800
         }}>
           <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
             <LinearGradient 
-              colors={['#00FF88', '#00CC6E']} 
+              colors={['#FF6B35', '#FF2E63']} 
               start={{ x: 0, y: 0 }} 
               end={{ x: 1, y: 1 }} 
               style={{ 
@@ -255,8 +373,8 @@ export default function SelectExercisesScreen() {
                 flexDirection: 'row' 
               }}
             >
-              <Ionicons name="checkmark-circle" size={22} color="#0A0E1A" style={{ marginRight: 8 }} />
-              <Text style={{ color: '#0A0E1A', fontSize: 18, fontWeight: '700' }}>
+              <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
                 Adicionar {selected.length} {selected.length === 1 ? 'Exercício' : 'Exercícios'}
               </Text>
             </LinearGradient>

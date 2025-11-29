@@ -21,10 +21,14 @@ export interface WorkoutItem {
 
 export interface Workout {
   id: string;
+  training_plan_id: string;
   title: string;
   description: string | null;
   created_at: string;
+  items?: WorkoutItem[];
 }
+
+
 
 export interface SelectedExercise {
   id: string;
@@ -73,13 +77,18 @@ interface WorkoutState {
   currentPeriodizationPhases: TrainingPlan[];
   isLoading: boolean;
   fetchWorkouts: (personalId: string) => Promise<void>;
+  fetchWorkoutById: (id: string) => Promise<Workout | null>;
   fetchPeriodizations: (personalId: string) => Promise<void>;
   fetchPeriodizationPhases: (periodizationId: string) => Promise<void>;
   fetchExercises: () => Promise<void>;
   createExercise: (exercise: { name: string; muscle_group: string; video_url?: string }) => Promise<void>;
   createPeriodization: (periodization: Omit<Periodization, 'id' | 'created_at' | 'student'>) => Promise<Periodization>;
   createTrainingPlan: (plan: Omit<TrainingPlan, 'id' | 'created_at'>) => Promise<TrainingPlan>;
-  createWorkout: (workout: { title: string; description: string; items: WorkoutItem[] }) => Promise<void>;
+  updateTrainingPlan: (id: string, updates: Partial<TrainingPlan>) => Promise<void>;
+  fetchWorkoutsForPhase: (trainingPlanId: string) => Promise<void>;
+  addWorkoutItems: (workoutId: string, items: WorkoutItem[]) => Promise<void>;
+  generateWorkoutsForPhase: (trainingPlanId: string, split: string, personalId: string) => Promise<void>;
+  createWorkout: (workout: { training_plan_id: string; title: string; description?: string; personal_id: string }) => Promise<void>;
   activatePeriodization: (periodizationId: string) => Promise<any>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
@@ -196,6 +205,45 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       set({ workouts: data });
     } catch (error) {
       console.error('Error fetching workouts:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  fetchWorkoutById: async (id) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select(`
+          *,
+          items:workout_items(
+            *,
+            exercise:exercises(*)
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      
+      // Update local state
+      set((state) => {
+        const exists = state.workouts.find(w => w.id === id);
+        if (exists) {
+          return {
+            workouts: state.workouts.map(w => w.id === id ? data : w)
+          };
+        } else {
+          return {
+            workouts: [...state.workouts, data]
+          };
+        }
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching workout by id:', error);
+      return null;
     } finally {
       set({ isLoading: false });
     }
@@ -320,9 +368,139 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       throw error;
     }
   },
+  updateTrainingPlan: async (id, updates) => {
+    try {
+      const { error } = await supabase
+        .from('training_plans')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set((state) => ({
+        currentPeriodizationPhases: state.currentPeriodizationPhases.map(p => 
+          p.id === id ? { ...p, ...updates } : p
+        )
+      }));
+    } catch (error) {
+      console.error('Error updating training plan:', error);
+      throw error;
+    }
+  },
+
+  fetchWorkoutsForPhase: async (trainingPlanId) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select(`
+          *,
+          items:workout_items(
+            *,
+            exercise:exercises(*)
+          )
+        `)
+        .eq('training_plan_id', trainingPlanId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      set({ workouts: data || [] });
+    } catch (error) {
+      console.error('Error fetching workouts for phase:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  generateWorkoutsForPhase: async (trainingPlanId, split, personalId) => {
+    try {
+      // Delete all existing workouts for this phase to avoid inconsistencies
+      const { error: deleteError } = await supabase
+        .from('workouts')
+        .delete()
+        .eq('training_plan_id', trainingPlanId);
+
+      if (deleteError) throw deleteError;
+
+      // Generate new workouts based on the split
+      const letters = split.split('');
+      const workoutsToCreate = letters.map(letter => ({
+        training_plan_id: trainingPlanId,
+        title: `Treino ${letter}`,
+        description: '',
+        personal_id: personalId
+      }));
+
+      const { error: insertError } = await supabase
+        .from('workouts')
+        .insert(workoutsToCreate);
+
+      if (insertError) throw insertError;
+
+      // Refresh workouts
+      await get().fetchWorkoutsForPhase(trainingPlanId);
+      
+      // Also update the phase training_split
+      await get().updateTrainingPlan(trainingPlanId, { training_split: split });
+
+    } catch (error) {
+      console.error('Error generating workouts:', error);
+      throw error;
+    }
+  },
+
+  addWorkoutItems: async (workoutId, items) => {
+    try {
+      const itemsWithWorkoutId = items.map(item => ({
+        ...item,
+        workout_id: workoutId
+      }));
+
+      const { error } = await supabase
+        .from('workout_items')
+        .insert(itemsWithWorkoutId);
+
+      if (error) throw error;
+
+      // Update local state
+      set((state) => ({
+        workouts: state.workouts.map(w => {
+          if (w.id === workoutId) {
+            // We need to fetch the exercises to have the full object locally or just append
+            // For simplicity, we might want to refetch the workout or phase
+            return w; 
+          }
+          return w;
+        })
+      }));
+      
+      // Refetch to get full data with relations (items and exercises)
+      await get().fetchWorkoutById(workoutId);
+
+    } catch (error) {
+      console.error('Error adding workout items:', error);
+      throw error;
+    }
+  },
+
   createWorkout: async (workout) => {
-    // Implementation for creating workout and items
-    console.log("Creating workout", workout);
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(workout)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("Workout created", data);
+      
+      // Refresh workouts list
+      await get().fetchWorkoutsForPhase(workout.training_plan_id);
+    } catch (error) {
+      console.error('Error creating workout:', error);
+      throw error;
+    }
   },
   setSelectedExercises: (exercises) => {
     set({ selectedExercises: exercises });
