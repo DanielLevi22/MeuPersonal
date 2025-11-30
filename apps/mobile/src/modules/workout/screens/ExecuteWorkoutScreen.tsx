@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,6 +27,15 @@ export default function ExecuteWorkoutScreen() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const { updateWorkoutProgress } = useGamificationStore();
   const { saveWorkoutSession } = useWorkoutStore();
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareStats, setShareStats] = useState({
+    title: '',
+    duration: '',
+    calories: '',
+    date: '',
+    exerciseName: ''
+  });
 
   useEffect(() => {
     if (user?.id && !workouts.length) {
@@ -129,13 +139,34 @@ export default function ExecuteWorkoutScreen() {
         await updateWorkoutProgress(1);
 
         Alert.alert(
-          'Parabéns!',
+          'Parabéns! 🎉',
           'Treino concluído e salvo com sucesso!',
           [
             {
-              text: 'Finalizar',
+              text: 'Sair',
               onPress: () => {
                 router.back();
+              }
+            },
+            {
+              text: 'Compartilhar 📸',
+              onPress: () => {
+                // Calculate total duration
+                const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+                const durationFormatted = formatTime(Math.floor(durationSeconds));
+                
+                // Estimate calories (very rough estimate for weight training: ~3-4 METs)
+                // 3.5 METs * 70kg * hours
+                const estimatedCalories = Math.round(3.5 * 70 * (durationSeconds / 3600));
+
+                setShareStats({
+                  title: 'Treino Concluído',
+                  duration: durationFormatted,
+                  calories: `${estimatedCalories} kcal`,
+                  date: new Date().toLocaleDateString('pt-BR'),
+                  exerciseName: workout.title
+                });
+                setShowShareModal(true);
               }
             }
           ]
@@ -405,6 +436,15 @@ export default function ExecuteWorkoutScreen() {
           </View>
         </View>
       )}
+
+      <ShareWorkoutModal
+        visible={showShareModal}
+        onClose={() => {
+          setShowShareModal(false);
+          router.back();
+        }}
+        stats={shareStats}
+      />
     </ScreenLayout>
   );
 }

@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,6 +32,15 @@ export default function CardioSessionScreen() {
   const [calories, setCalories] = useState(0);
   const [intensity, setIntensity] = useState<'Baixa' | 'Moderada' | 'Alta'>('Moderada');
   const [startTime, setStartTime] = useState<Date | null>(null);
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareStats, setShareStats] = useState({
+    title: '',
+    duration: '',
+    calories: '',
+    date: '',
+    exerciseName: ''
+  });
 
   // User weight fallback (70kg if not found)
   // In a real app, we should fetch this from the profile/assessment
@@ -82,12 +92,15 @@ export default function CardioSessionScreen() {
     if (!user?.id || !startTime) return;
 
     const endTime = new Date();
+    const finalCalories = Math.round(calories);
+    const finalTime = formatTime(seconds);
+    const finalExerciseName = (exerciseName as string) || 'Cardio Livre';
 
     try {
       // Save session
       await saveCardioSession({
         studentId: user.id,
-        exerciseName: (exerciseName as string) || 'Cardio Livre',
+        exerciseName: finalExerciseName,
         durationSeconds: seconds,
         calories: calories,
         startedAt: startTime.toISOString(),
@@ -98,13 +111,25 @@ export default function CardioSessionScreen() {
       await updateWorkoutProgress(1);
 
       Alert.alert(
-        'Treino Salvo!',
-        `Tempo: ${formatTime(seconds)}\nCalorias: ${Math.round(calories)} kcal`,
+        'Treino Salvo! 🎉',
+        `Tempo: ${finalTime}\nCalorias: ${finalCalories} kcal`,
         [
           {
-            text: 'OK',
+            text: 'Sair',
+            style: 'cancel',
+            onPress: () => router.back()
+          },
+          {
+            text: 'Compartilhar 📸',
             onPress: () => {
-              router.back();
+              setShareStats({
+                title: 'Cardio Finalizado',
+                duration: finalTime,
+                calories: `${finalCalories} kcal`,
+                date: new Date().toLocaleDateString('pt-BR'),
+                exerciseName: finalExerciseName
+              });
+              setShowShareModal(true);
             }
           }
         ]
@@ -217,6 +242,15 @@ export default function CardioSessionScreen() {
             </View>
           )}
         </View>
+
+        <ShareWorkoutModal
+          visible={showShareModal}
+          onClose={() => {
+            setShowShareModal(false);
+            router.back();
+          }}
+          stats={shareStats}
+        />
       </View>
     </ScreenLayout>
   );
