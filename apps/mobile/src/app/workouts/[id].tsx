@@ -1,9 +1,9 @@
-import { ExerciseConfigModal } from '@/components/ExerciseConfigModal';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { SelectedExercise, useWorkoutStore } from '@/store/workoutStore';
+import { useAuthStore } from '@/modules/auth';
+import { ExerciseConfigModal, useWorkoutStore } from '@/modules/workout';
+import type { SelectedExercise } from '@/modules/workout/store/workoutStore';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -257,26 +257,26 @@ export default function WorkoutDetailScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B35" />
-        <Text style={{ color: '#8B92A8', marginTop: 16, fontSize: 15 }}>Carregando treino...</Text>
+      <View className="flex-1 bg-background justify-center items-center">
+        <ActivityIndicator size="large" color="#F97316" />
+        <Text className="text-muted-foreground mt-4 text-base">Carregando treino...</Text>
       </View>
     );
   }
 
   if (!workout) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-        <Ionicons name="alert-circle-outline" size={64} color="#5A6178" />
-        <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700', marginTop: 16 }}>Treino não encontrado</Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 24 }}>
+      <View className="flex-1 bg-background justify-center items-center p-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#A1A1AA" />
+        <Text className="text-foreground text-xl font-bold mt-4">Treino não encontrado</Text>
+        <TouchableOpacity onPress={() => router.back()} className="mt-6">
           <LinearGradient
             colors={['#FF6B35', '#E85A2A']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32 }}
+            className="rounded-2xl py-3.5 px-8"
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Voltar</Text>
+            <Text className="text-white text-base font-bold">Voltar</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -284,29 +284,29 @@ export default function WorkoutDetailScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
+    <View className="flex-1 bg-background">
+      <SafeAreaView className="flex-1">
         {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#141B2D', padding: 10, borderRadius: 12, marginRight: 16 }}>
+        <View className="flex-row items-center px-6 pt-4 pb-6">
+          <TouchableOpacity onPress={() => router.back()} className="bg-card p-2.5 rounded-xl mr-4">
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF', flex: 1 }} numberOfLines={1}>
+          <Text className="text-2xl font-extrabold text-foreground flex-1" numberOfLines={1}>
             {workout.title}
           </Text>
-          <TouchableOpacity onPress={handleEditWorkout} style={{ backgroundColor: 'rgba(0, 217, 255, 0.15)', padding: 10, borderRadius: 12, marginRight: 8 }}>
-            <Ionicons name="pencil" size={24} color="#00D9FF" />
+          <TouchableOpacity onPress={handleEditWorkout} className="bg-cyan-400/15 p-2.5 rounded-xl mr-2">
+            <Ionicons name="pencil" size={24} color="#22D3EE" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDeleteWorkout} disabled={deleting} style={{ backgroundColor: 'rgba(255, 59, 59, 0.15)', padding: 10, borderRadius: 12, marginRight: 8 }}>
-            <Ionicons name="trash-outline" size={24} color="#FF3B3B" />
+          <TouchableOpacity onPress={handleDeleteWorkout} disabled={deleting} className="bg-red-500/15 p-2.5 rounded-xl mr-2">
+            <Ionicons name="trash-outline" size={24} color="#EF4444" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
           {/* Description */}
           {workout.description && (
-            <View style={{ backgroundColor: '#141B2D', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 2, borderColor: '#1E2A42' }}>
-              <Text style={{ color: '#8B92A8', fontSize: 15, lineHeight: 22 }}>{workout.description}</Text>
+            <View className="bg-card p-4 rounded-2xl mb-4 border-2 border-border">
+              <Text className="text-muted-foreground text-base leading-6">{workout.description}</Text>
             </View>
           )}
 
@@ -314,30 +314,15 @@ export default function WorkoutDetailScreen() {
           <TouchableOpacity 
             onPress={() => router.push(`/workouts/${id}/assignments`)}
             activeOpacity={0.8}
-            style={{ 
-              backgroundColor: '#141B2D', 
-              padding: 16, 
-              borderRadius: 16, 
-              marginBottom: 24, 
-              borderWidth: 1, 
-              borderColor: '#1E2A42',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
+            className="bg-card p-4 rounded-2xl mb-6 border border-border flex-row items-center justify-between"
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ 
-                backgroundColor: 'rgba(0, 217, 255, 0.1)', 
-                padding: 10, 
-                borderRadius: 10,
-                marginRight: 12
-              }}>
-                <Ionicons name="people" size={24} color="#00D9FF" />
+            <View className="flex-row items-center">
+              <View className="bg-cyan-400/10 p-2.5 rounded-xl mr-3">
+                <Ionicons name="people" size={24} color="#22D3EE" />
               </View>
               <View>
-                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Gerenciar Alunos</Text>
-                <Text style={{ color: '#8B92A8', fontSize: 13 }}>Atribuir ou remover alunos</Text>
+                <Text className="text-foreground text-base font-bold">Gerenciar Alunos</Text>
+                <Text className="text-muted-foreground text-xs">Atribuir ou remover alunos</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#5A6178" />
@@ -345,28 +330,28 @@ export default function WorkoutDetailScreen() {
 
           {/* Exercises Section */}
           <View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFFFFF' }}>Exercícios</Text>
-              <Text style={{ fontSize: 14, color: '#8B92A8' }}>{workoutItems.length} {workoutItems.length === 1 ? 'exercício' : 'exercícios'}</Text>
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-extrabold text-foreground">Exercícios</Text>
+              <Text className="text-sm text-muted-foreground">{workoutItems.length} {workoutItems.length === 1 ? 'exercício' : 'exercícios'}</Text>
             </View>
 
             {workoutItems.length > 0 ? (
               <View>
                 {workoutItems.map((item, index) => (
-                  <View key={item.id} style={{ backgroundColor: '#141B2D', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 2, borderColor: '#1E2A42' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <View style={{ backgroundColor: '#FF6B35', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>{index + 1}</Text>
+                  <View key={item.id} className="bg-card p-4 rounded-2xl mb-3 border-2 border-border">
+                    <View className="flex-row items-center mb-2">
+                      <View className="bg-orange-500 w-7 h-7 rounded-full items-center justify-center mr-3">
+                        <Text className="text-white text-sm font-bold">{index + 1}</Text>
                       </View>
                       <TouchableOpacity 
-                        style={{ flex: 1 }}
+                        className="flex-1"
                         onPress={() => handleEditExercise(item)}
                         activeOpacity={0.7}
                       >
-                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.exercise.name}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                          <View style={{ backgroundColor: 'rgba(0, 217, 255, 0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                            <Text style={{ color: '#00D9FF', fontSize: 11, fontWeight: '600' }}>{item.exercise.muscle_group}</Text>
+                        <Text className="text-foreground text-base font-bold">{item.exercise.name}</Text>
+                        <View className="flex-row items-center mt-1">
+                          <View className="bg-cyan-400/15 px-2 py-1 rounded-md">
+                            <Text className="text-cyan-400 text-[11px] font-semibold">{item.exercise.muscle_group}</Text>
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -374,33 +359,33 @@ export default function WorkoutDetailScreen() {
                         onPress={() => handleDeleteExercise(item.id)}
                         onPressIn={(e) => e.stopPropagation()}
                       >
-                        <Ionicons name="trash" size={24} color="#FF3B3B" />
+                        <Ionicons name="trash" size={24} color="#EF4444" />
                       </TouchableOpacity>
                     </View>
 
                     {item.exercise.video_url && (
-                      <View style={{ marginTop: 12, marginBottom: 12 }}>
+                      <View className="mt-3 mb-3">
                         <VideoPlayer videoUrl={item.exercise.video_url} height={200} />
                       </View>
                     )}
 
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-                        <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Séries</Text>
-                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.sets}</Text>
+                    <View className="flex-row gap-3">
+                      <View className="flex-1 bg-background p-2.5 rounded-xl">
+                        <Text className="text-muted-foreground text-[11px] mb-0.5">Séries</Text>
+                        <Text className="text-foreground text-base font-bold">{item.sets}</Text>
                       </View>
-                      <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-                        <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Reps</Text>
-                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.reps}</Text>
+                      <View className="flex-1 bg-background p-2.5 rounded-xl">
+                        <Text className="text-muted-foreground text-[11px] mb-0.5">Reps</Text>
+                        <Text className="text-foreground text-base font-bold">{item.reps}</Text>
                       </View>
-                      <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-                        <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Descanso</Text>
-                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.rest_time}s</Text>
+                      <View className="flex-1 bg-background p-2.5 rounded-xl">
+                        <Text className="text-muted-foreground text-[11px] mb-0.5">Descanso</Text>
+                        <Text className="text-foreground text-base font-bold">{item.rest_time}s</Text>
                       </View>
                       {item.weight ? (
-                        <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 10, borderRadius: 10 }}>
-                          <Text style={{ color: '#8B92A8', fontSize: 11, marginBottom: 2 }}>Carga</Text>
-                          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{item.weight}kg</Text>
+                        <View className="flex-1 bg-background p-2.5 rounded-xl">
+                          <Text className="text-muted-foreground text-[11px] mb-0.5">Carga</Text>
+                          <Text className="text-foreground text-base font-bold">{item.weight}kg</Text>
                         </View>
                       ) : null}
                     </View>
@@ -408,21 +393,21 @@ export default function WorkoutDetailScreen() {
                 ))}
               </View>
             ) : (
-              <View style={{ backgroundColor: '#141B2D', borderRadius: 16, padding: 32, borderWidth: 2, borderColor: '#1E2A42', borderStyle: 'dashed', alignItems: 'center' }}>
-                <View style={{ backgroundColor: 'rgba(90, 97, 120, 0.2)', padding: 16, borderRadius: 50, marginBottom: 16 }}>
+              <View className="bg-card rounded-2xl p-8 border-2 border-border border-dashed items-center">
+                <View className="bg-muted/20 p-4 rounded-full mb-4">
                   <Ionicons name="barbell-outline" size={48} color="#5A6178" />
                 </View>
-                <Text style={{ color: '#8B92A8', fontSize: 15, textAlign: 'center', marginBottom: 20 }}>Nenhum exercício adicionado.</Text>
-                <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} style={{ backgroundColor: 'rgba(0, 255, 136, 0.1)', borderWidth: 2, borderColor: '#00FF88', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 }}>
-                  <Text style={{ color: '#00FF88', fontSize: 15, fontWeight: '700' }}>Adicionar Exercício</Text>
+                <Text className="text-muted-foreground text-base text-center mb-5">Nenhum exercício adicionado.</Text>
+                <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} className="bg-lime-400/10 border-2 border-lime-400 rounded-xl py-3 px-6">
+                  <Text className="text-lime-400 text-base font-bold">Adicionar Exercício</Text>
                 </TouchableOpacity>
               </View>
             )}
 
             {/* Add More Button */}
-            <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} style={{ backgroundColor: 'rgba(0, 255, 136, 0.1)', borderWidth: 2, borderColor: '#00FF88', borderRadius: 16, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', marginTop: 4 }}>
-              <Ionicons name="add-circle-outline" size={20} color="#00FF88" style={{ marginRight: 8 }} />
-              <Text style={{ color: '#00FF88', fontSize: 15, fontWeight: '700' }}>Adicionar Mais Exercícios</Text>
+            <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} className="bg-lime-400/10 border-2 border-lime-400 rounded-2xl py-3.5 items-center flex-row justify-center mt-1">
+              <Ionicons name="add-circle-outline" size={20} color="#A3E635" style={{ marginRight: 8 }} />
+              <Text className="text-lime-400 text-base font-bold">Adicionar Mais Exercícios</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -432,58 +417,31 @@ export default function WorkoutDetailScreen() {
       {showWorkoutEditModal && (
         <>
           <TouchableOpacity 
-            style={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0, 
-              backgroundColor: 'rgba(0, 0, 0, 0.8)' 
-            }}
+            className="absolute inset-0 bg-black/80"
             activeOpacity={1}
             onPress={() => setShowWorkoutEditModal(false)}
           />
-          <View style={{ 
-            position: 'absolute', 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
-            backgroundColor: '#141B2D', 
-            borderTopLeftRadius: 24, 
-            borderTopRightRadius: 24, 
-            padding: 24,
-            borderTopWidth: 2, 
-            borderTopColor: '#1E2A42',
-            maxHeight: '70%' 
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Editar Treino</Text>
+          <View className="absolute bottom-0 left-0 right-0 bg-card rounded-t-3xl p-6 border-t-2 border-border max-h-[70%]">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-2xl font-extrabold text-foreground">Editar Treino</Text>
               <TouchableOpacity onPress={() => setShowWorkoutEditModal(false)}>
-                <Ionicons name="close" size={28} color="#8B92A8" />
+                <Ionicons name="close" size={28} color="#A1A1AA" />
               </TouchableOpacity>
             </View>
             
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Título</Text>
+            <View className="mb-4">
+              <Text className="text-muted-foreground text-xs mb-2 font-semibold">Título</Text>
               <TextInput 
                 value={editTitle} 
                 onChangeText={setEditTitle} 
                 placeholder="Nome do treino" 
                 placeholderTextColor="#5A6178" 
-                style={{ 
-                  backgroundColor: '#0A0E1A', 
-                  borderWidth: 2, 
-                  borderColor: '#1E2A42', 
-                  borderRadius: 12, 
-                  padding: 16, 
-                  color: '#FFFFFF', 
-                  fontSize: 16 
-                }}
+                className="bg-background border-2 border-border rounded-xl p-4 text-foreground text-base"
               />
             </View>
             
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Descrição</Text>
+            <View className="mb-6">
+              <Text className="text-muted-foreground text-xs mb-2 font-semibold">Descrição</Text>
               <TextInput 
                 value={editDescription} 
                 onChangeText={setEditDescription} 
@@ -492,30 +450,16 @@ export default function WorkoutDetailScreen() {
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
-                style={{ 
-                  backgroundColor: '#0A0E1A', 
-                  borderWidth: 2, 
-                  borderColor: '#1E2A42', 
-                  borderRadius: 12, 
-                  padding: 16, 
-                  color: '#FFFFFF', 
-                  fontSize: 16,
-                  minHeight: 100
-                }}
+                className="bg-background border-2 border-border rounded-xl p-4 text-foreground text-base min-h-[100px]"
               />
             </View>
             
             <TouchableOpacity 
               onPress={handleSaveWorkout}
               activeOpacity={0.8} 
-              style={{ 
-                backgroundColor: '#00D9FF', 
-                padding: 16, 
-                borderRadius: 12, 
-                alignItems: 'center'
-              }}
+              className="bg-cyan-400 p-4 rounded-xl items-center"
             >
-              <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>Salvar Alterações</Text>
+              <Text className="text-background text-base font-bold">Salvar Alterações</Text>
             </TouchableOpacity>
           </View>
         </>

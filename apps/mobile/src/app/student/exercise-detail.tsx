@@ -1,13 +1,15 @@
-import { RestTimer } from '@/components/RestTimer';
+import { RestTimer } from '@/workout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ExerciseDetailScreen() {
   const { exerciseId, sessionId, workoutId } = useLocalSearchParams();
@@ -185,222 +187,185 @@ export default function ExerciseDetailScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B35" />
-      </View>
+      <ScreenLayout className="justify-center items-center">
+        <ActivityIndicator size="large" color="#CCFF00" />
+      </ScreenLayout>
     );
   }
 
   if (!exercise) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 20 }}>Exercício não encontrado</Text>
-      </View>
+      <ScreenLayout className="justify-center items-center px-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#5A6178" />
+        <Text className="text-foreground text-xl font-bold mt-4 mb-6 font-display">Exercício não encontrado</Text>
+        <Button
+          onPress={() => router.back()}
+          variant="outline"
+          label="Voltar"
+        />
+      </ScreenLayout>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16 }}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ backgroundColor: '#141B2D', padding: 10, borderRadius: 12, marginRight: 16 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF' }}>
-              {exercise.exercise.name}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <View style={{
-                backgroundColor: 'rgba(0, 217, 255, 0.15)',
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 6
-              }}>
-                <Text style={{ color: '#00D9FF', fontSize: 12, fontWeight: '600' }}>
-                  {exercise.exercise.muscle_group}
-                </Text>
-              </View>
+    <ScreenLayout>
+      {/* Header */}
+      <View className="flex-row items-center px-6 pt-2 pb-4">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="bg-surface p-2.5 rounded-xl mr-4 border border-border"
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+        <View className="flex-1">
+          <Text className="text-2xl font-bold text-foreground font-display">
+            {exercise.exercise.name}
+          </Text>
+          <View className="flex-row items-center mt-1">
+            <View className="bg-secondary/15 px-2 py-1 rounded-md">
+              <Text className="text-secondary text-xs font-bold font-display uppercase">
+                {exercise.exercise.muscle_group}
+              </Text>
             </View>
           </View>
         </View>
+      </View>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Video */}
-          {exercise.exercise.video_url && (
-            <View style={{ marginBottom: 24 }}>
-              <VideoPlayer videoUrl={exercise.exercise.video_url} height={220} />
-            </View>
-          )}
-
-          {/* Exercise Info */}
-          <View style={{ backgroundColor: '#141B2D', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 2, borderColor: '#1E2A42' }}>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 12, borderRadius: 10 }}>
-                <Text style={{ color: '#8B92A8', fontSize: 12, marginBottom: 4 }}>Séries</Text>
-                <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>{exercise.sets}</Text>
-              </View>
-              <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 12, borderRadius: 10 }}>
-                <Text style={{ color: '#8B92A8', fontSize: 12, marginBottom: 4 }}>Repetições</Text>
-                <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>{exercise.reps}</Text>
-              </View>
-              {exercise.weight && (
-                <View style={{ flex: 1, backgroundColor: '#0A0E1A', padding: 12, borderRadius: 10 }}>
-                  <Text style={{ color: '#8B92A8', fontSize: 12, marginBottom: 4 }}>Carga</Text>
-                  <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>{exercise.weight}kg</Text>
-                </View>
-              )}
-            </View>
+      <ScrollView
+        className="flex-1 px-6"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Video */}
+        {exercise.exercise.video_url && (
+          <View className="mb-6 rounded-2xl overflow-hidden border border-border">
+            <VideoPlayer videoUrl={exercise.exercise.video_url} height={220} />
           </View>
+        )}
 
-          {/* Sets Tracking */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 12 }}>
-              Marcar Séries
-            </Text>
-            {Array.from({ length: exercise.sets }).map((_, index) => {
-              const isCompleted = completedSets.has(index);
-              const isNext = index === completedSets.size;
-              const isLocked = index > completedSets.size || isRestingBetweenSets;
+        {/* Exercise Info */}
+        <Card className="p-4 mb-6 border border-border">
+          <View className="flex-row gap-3">
+            <View className="flex-1 bg-background p-3 rounded-lg border border-border">
+              <Text className="text-muted-foreground text-xs mb-1 font-sans">Séries</Text>
+              <Text className="text-foreground text-xl font-bold font-display">{exercise.sets}</Text>
+            </View>
+            <View className="flex-1 bg-background p-3 rounded-lg border border-border">
+              <Text className="text-muted-foreground text-xs mb-1 font-sans">Repetições</Text>
+              <Text className="text-foreground text-xl font-bold font-display">{exercise.reps}</Text>
+            </View>
+            {exercise.weight && (
+              <View className="flex-1 bg-background p-3 rounded-lg border border-border">
+                <Text className="text-muted-foreground text-xs mb-1 font-sans">Carga</Text>
+                <Text className="text-foreground text-xl font-bold font-display">{exercise.weight}kg</Text>
+              </View>
+            )}
+          </View>
+        </Card>
 
-              return (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => toggleSetCompletion(index)}
-                  disabled={!isNext || isRestingBetweenSets}
-                  style={{
-                    backgroundColor: isCompleted ? 'rgba(0, 255, 136, 0.1)' : '#141B2D',
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 8,
-                    borderWidth: 2,
-                    borderColor: isCompleted ? '#00FF88' : isNext ? '#FF6B35' : '#1E2A42',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    opacity: isCompleted ? 0.6 : 1
-                  }}
+        {/* Sets Tracking */}
+        <View className="mb-6">
+          <Text className="text-lg font-bold text-foreground mb-3 font-display">
+            Marcar Séries
+          </Text>
+          {Array.from({ length: exercise.sets }).map((_, index) => {
+            const isCompleted = completedSets.has(index);
+            const isNext = index === completedSets.size;
+            const isLocked = index > completedSets.size || isRestingBetweenSets;
+
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={() => toggleSetCompletion(index)}
+                disabled={!isNext || isRestingBetweenSets}
+                activeOpacity={0.8}
+              >
+                <Card 
+                  className={`mb-2 p-4 border-2 flex-row items-center justify-between ${
+                    isCompleted ? 'border-primary bg-primary/10 opacity-60' : 
+                    isNext ? 'border-secondary' : 'border-border'
+                  }`}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <View style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: isCompleted ? '#00FF88' : isNext ? '#FF6B35' : '#5A6178',
-                      backgroundColor: isCompleted ? '#00FF88' : 'transparent',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12
-                    }}>
+                  <View className="flex-row items-center flex-1">
+                    <View className={`w-6 h-6 rounded-full border-2 items-center justify-center mr-3 ${
+                      isCompleted ? 'border-primary bg-primary' : 
+                      isNext ? 'border-secondary' : 'border-muted-foreground'
+                    }`}>
                       {isCompleted && (
-                        <Ionicons name="checkmark" size={16} color="#0A0E1A" />
+                        <Ionicons name="checkmark" size={16} color="#000000" />
                       )}
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>
+                    <View className="flex-1">
+                      <View className="flex-row items-center gap-2">
+                        <Text className="text-foreground text-base font-bold font-display">
                           Série {index + 1}
                         </Text>
                         {isCompleted && (
-                          <View style={{
-                            backgroundColor: '#00FF88',
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 6
-                          }}>
-                            <Text style={{ color: '#0A0E1A', fontSize: 10, fontWeight: '700' }}>
+                          <View className="bg-primary px-2 py-0.5 rounded-md">
+                            <Text className="text-black text-[10px] font-bold font-display">
                               CONCLUÍDA
                             </Text>
                           </View>
                         )}
                         {isNext && !isRestingBetweenSets && (
-                          <View style={{
-                            backgroundColor: 'rgba(255, 107, 53, 0.2)',
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 6
-                          }}>
-                            <Text style={{ color: '#FF6B35', fontSize: 10, fontWeight: '700' }}>
+                          <View className="bg-secondary/20 px-2 py-0.5 rounded-md">
+                            <Text className="text-secondary text-[10px] font-bold font-display">
                               PRÓXIMA
                             </Text>
                           </View>
                         )}
                       </View>
-                      <Text style={{ color: '#8B92A8', fontSize: 12, marginTop: 2 }}>
+                      <Text className="text-muted-foreground text-xs mt-0.5 font-sans">
                         {exercise.reps} reps {exercise.weight && `• ${exercise.weight}kg`}
                       </Text>
                     </View>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Rest Timer */}
-          {showTimer && (
-            <View style={{ backgroundColor: '#141B2D', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 2, borderColor: '#1E2A42' }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 8, textAlign: 'center' }}>
-                Tempo de Descanso
-              </Text>
-              <RestTimer
-                restSeconds={exercise.rest_time}
-                onComplete={handleTimerComplete}
-                autoStart={true}
-              />
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Complete Button */}
-        <View style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: 24,
-          backgroundColor: '#0A0E1A',
-          borderTopWidth: 2,
-          borderTopColor: '#1E2A42'
-        }}>
-          <TouchableOpacity
-            onPress={handleMarkComplete}
-            disabled={isCompleted}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={isCompleted ? ['#5A6178', '#5A6178'] : ['#00FF88', '#00CC6E']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                borderRadius: 16,
-                paddingVertical: 18,
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'center'
-              }}
-            >
-              <Ionicons
-                name={isCompleted ? "checkmark-done" : "checkmark-circle"}
-                size={22}
-                color={isCompleted ? '#8B92A8' : '#0A0E1A'}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={{ color: isCompleted ? '#8B92A8' : '#0A0E1A', fontSize: 18, fontWeight: '700' }}>
-                {isCompleted ? 'Exercício Concluído' : 'Marcar como Concluído'}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+                </Card>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      </SafeAreaView>
-    </View>
+
+        {/* Rest Timer */}
+        {showTimer && (
+          <Card className="p-4 mb-6 border-2 border-border bg-surface">
+            <Text className="text-lg font-bold text-foreground mb-2 text-center font-display">
+              Tempo de Descanso
+            </Text>
+            <RestTimer
+              restSeconds={exercise.rest_time}
+              onComplete={handleTimerComplete}
+              autoStart={true}
+            />
+          </Card>
+        )}
+      </ScrollView>
+
+      {/* Complete Button */}
+      <View className="absolute bottom-0 left-0 right-0 p-6 bg-background/95 border-t border-border">
+        <TouchableOpacity
+          onPress={handleMarkComplete}
+          disabled={isCompleted}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={isCompleted ? ['#5A6178', '#5A6178'] : ['#CCFF00', '#99CC00']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="rounded-xl py-4 items-center flex-row justify-center shadow-lg shadow-black/20"
+          >
+            <Ionicons
+              name={isCompleted ? "checkmark-done" : "checkmark-circle"}
+              size={22}
+              color={isCompleted ? '#8B92A8' : '#000000'}
+              style={{ marginRight: 8 }}
+            />
+            <Text className={`text-lg font-bold font-display ${isCompleted ? 'text-muted-foreground' : 'text-black'}`}>
+              {isCompleted ? 'Exercício Concluído' : 'Marcar como Concluído'}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </ScreenLayout>
   );
 }

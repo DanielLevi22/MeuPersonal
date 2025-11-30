@@ -1,7 +1,5 @@
-import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { useNutritionStore } from '@/store/nutritionStore';
-import { useStudentStore } from '@/store/studentStore';
+import { useAuthStore } from '@/auth';
+import { cn } from '@/lib/utils';
 import {
   ActivityLevel,
   Goal,
@@ -9,8 +7,11 @@ import {
   calculateTDEE,
   calculateTMB,
   calculateTargetCalories,
-} from '@/utils/nutrition';
+  useNutritionStore
+} from '@/modules/nutrition/routes/index';
+import { useStudentStore } from '@/students';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,7 +20,6 @@ import {
   Alert,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -32,6 +32,7 @@ export default function CreateDietPlanScreen() {
   const { preselectedStudentId } = useLocalSearchParams();
   const { user } = useAuthStore();
   const { students, fetchStudents } = useStudentStore();
+
   const { createDietPlan } = useNutritionStore();
 
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -197,46 +198,49 @@ export default function CreateDietPlanScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <View className="flex-1 bg-[#0A0A0A]">
+      <SafeAreaView className="flex-1">
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <View className="flex-row items-center px-6 py-4">
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            className="bg-zinc-900 p-2.5 rounded-xl mr-4"
+          >
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Novo Plano de Dieta</Text>
-            <Text style={styles.headerSubtitle}>Configure os macros do aluno</Text>
+          <View className="flex-1">
+            <Text className="text-2xl font-extrabold text-white">Novo Plano de Dieta</Text>
+            <Text className="text-sm text-zinc-400 mt-1">Configure os macros do aluno</Text>
           </View>
         </View>
 
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          className="flex-1"
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Student Selection */}
           {!preselectedStudentId ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Selecionar Aluno</Text>
+            <View className="mb-6">
+              <Text className="text-base font-bold text-white mb-3">Selecionar Aluno</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.studentsScroll}
+                contentContainerStyle={{ gap: 12 }}
               >
                 {activeStudents.map((student) => (
                   <TouchableOpacity
                     key={student.id}
-                    style={[
-                      styles.studentCard,
-                      selectedStudent?.id === student.id && styles.studentCardSelected,
-                    ]}
+                    className={cn(
+                      "bg-zinc-900 rounded-xl p-4 border-2 border-zinc-800 items-center w-[120px]",
+                      selectedStudent?.id === student.id && "border-emerald-400 bg-emerald-400/10"
+                    )}
                     onPress={() => setSelectedStudent(student)}
                   >
-                    <View style={styles.studentAvatar}>
+                    <View className="w-12 h-12 rounded-full bg-cyan-400/15 items-center justify-center mb-2">
                       <Ionicons name="person" size={24} color="#00D9FF" />
                     </View>
-                    <Text style={styles.studentName} numberOfLines={1}>
+                    <Text className="text-sm font-semibold text-white text-center mb-1" numberOfLines={1}>
                       {student.full_name}
                     </Text>
                     {selectedStudent?.id === student.id && (
@@ -247,17 +251,17 @@ export default function CreateDietPlanScreen() {
               </ScrollView>
             </View>
           ) : selectedStudent ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Aluno Selecionado</Text>
-              <View style={[styles.studentCard, styles.studentCardSelected, { width: '100%', flexDirection: 'row', paddingHorizontal: 24 }]}>
-                <View style={[styles.studentAvatar, { marginRight: 16, marginBottom: 0 }]}>
+            <View className="mb-6">
+              <Text className="text-base font-bold text-white mb-3">Aluno Selecionado</Text>
+              <View className="bg-zinc-900 rounded-xl p-4 border-2 border-emerald-400 bg-emerald-400/10 w-full flex-row items-center px-6">
+                <View className="w-12 h-12 rounded-full bg-cyan-400/15 items-center justify-center mr-4">
                   <Ionicons name="person" size={24} color="#00D9FF" />
                 </View>
-                <View style={{ flex: 1, alignItems: 'flex-start' }}>
-                  <Text style={[styles.studentName, { fontSize: 18, marginBottom: 4 }]}>
+                <View className="flex-1 items-start">
+                  <Text className="text-lg font-semibold text-white mb-1">
                     {selectedStudent.full_name}
                   </Text>
-                  <Text style={{ color: '#8B92A8', fontSize: 14 }}>
+                  <Text className="text-sm text-zinc-400">
                     {selectedStudent.email}
                   </Text>
                 </View>
@@ -268,25 +272,25 @@ export default function CreateDietPlanScreen() {
 
           {/* Import Option */}
           {selectedStudent && !sourcePlanId && (
-            <View style={styles.section}>
+            <View className="mb-6">
               <TouchableOpacity 
-                style={styles.importButton}
+                className="flex-row items-center justify-center bg-cyan-400/10 p-4 rounded-xl border border-dashed border-cyan-400/30"
                 onPress={() => setShowImportModal(true)}
               >
                 <Ionicons name="download-outline" size={20} color="#00D9FF" />
-                <Text style={styles.importButtonText}>Importar de outro aluno</Text>
+                <Text className="text-cyan-400 text-sm font-semibold ml-2">Importar de outro aluno</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {/* Selected Source Student Display */}
           {sourceStudent && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Importando de</Text>
-              <View style={styles.sourceStudentCard}>
-                <View style={styles.sourceStudentInfo}>
+            <View className="mb-6">
+              <Text className="text-base font-bold text-white mb-3">Importando de</Text>
+              <View className="flex-row items-center justify-between bg-zinc-900 p-3 rounded-xl border border-cyan-400">
+                <View className="flex-row items-center gap-2">
                   <Ionicons name="person-circle-outline" size={24} color="#00D9FF" />
-                  <Text style={styles.sourceStudentName}>{sourceStudent.full_name}</Text>
+                  <Text className="text-white text-sm font-semibold">{sourceStudent.full_name}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
                   setSourceStudent(null);
@@ -300,27 +304,27 @@ export default function CreateDietPlanScreen() {
 
           {/* Import Modal */}
           {showImportModal && (
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Selecione um Aluno</Text>
+            <View className="absolute inset-0 bg-black/80 justify-center items-center p-6 z-50">
+              <View className="bg-zinc-900 rounded-2xl w-full max-h-[400px] border border-zinc-800">
+                <View className="flex-row items-center justify-between p-4 border-b border-zinc-800">
+                  <Text className="text-lg font-bold text-white">Selecione um Aluno</Text>
                   <TouchableOpacity onPress={() => setShowImportModal(false)}>
                     <Ionicons name="close" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
-                <ScrollView style={styles.modalScroll}>
+                <ScrollView className="p-4">
                   {activeStudents
                     .filter(s => s.id !== selectedStudent?.id) // Don't show current student
                     .map((student) => (
                     <TouchableOpacity
                       key={student.id}
-                      style={styles.modalStudentItem}
+                      className="flex-row items-center p-3 bg-zinc-950 rounded-xl mb-2"
                       onPress={() => handleSelectSourceStudent(student)}
                     >
-                      <View style={styles.studentAvatarSmall}>
+                      <View className="w-8 h-8 rounded-full bg-cyan-400/15 items-center justify-center mr-3">
                         <Ionicons name="person" size={16} color="#00D9FF" />
                       </View>
-                      <Text style={styles.modalStudentName}>{student.full_name}</Text>
+                      <Text className="flex-1 text-sm font-medium text-white">{student.full_name}</Text>
                       <Ionicons name="chevron-forward" size={20} color="#5A6178" />
                     </TouchableOpacity>
                   ))}
@@ -332,10 +336,10 @@ export default function CreateDietPlanScreen() {
           {selectedStudent && (
             <>
               {/* Diet Name */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Nome do Plano</Text>
+              <View className="mb-6">
+                <Text className="text-base font-bold text-white mb-3">Nome do Plano</Text>
                 <TextInput
-                  style={styles.input}
+                  className="bg-zinc-900 rounded-xl p-4 text-white text-base border-2 border-zinc-800"
                   placeholder="Ex: Dieta de Cutting"
                   placeholderTextColor="#5A6178"
                   value={dietName}
@@ -344,20 +348,19 @@ export default function CreateDietPlanScreen() {
               </View>
 
               {/* Plan Type Selection */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Tipo de Dieta</Text>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View className="mb-6">
+                <Text className="text-base font-bold text-white mb-3">Tipo de Dieta</Text>
+                <View className="flex-row gap-3">
                   <TouchableOpacity
-                    style={[
-                      styles.optionCard,
-                      { flex: 1, marginBottom: 0 },
-                      planType === 'unique' && styles.optionCardSelected
-                    ]}
+                    className={cn(
+                      "flex-1 bg-zinc-900 rounded-xl p-4 border-2 border-zinc-800 flex-row items-center justify-between",
+                      planType === 'unique' && "border-emerald-400 bg-emerald-400/10"
+                    )}
                     onPress={() => setPlanType('unique')}
                   >
-                    <View style={styles.optionContent}>
-                      <Text style={styles.optionLabel}>Dieta Única</Text>
-                      <Text style={styles.optionDescription}>Mesma dieta todos os dias</Text>
+                    <View className="flex-1">
+                      <Text className="text-base font-semibold text-white mb-0.5">Dieta Única</Text>
+                      <Text className="text-xs text-zinc-400">Mesma dieta todos os dias</Text>
                     </View>
                     {planType === 'unique' && (
                       <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
@@ -365,16 +368,15 @@ export default function CreateDietPlanScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[
-                      styles.optionCard,
-                      { flex: 1, marginBottom: 0 },
-                      planType === 'cyclic' && styles.optionCardSelected
-                    ]}
+                    className={cn(
+                      "flex-1 bg-zinc-900 rounded-xl p-4 border-2 border-zinc-800 flex-row items-center justify-between",
+                      planType === 'cyclic' && "border-emerald-400 bg-emerald-400/10"
+                    )}
                     onPress={() => setPlanType('cyclic')}
                   >
-                    <View style={styles.optionContent}>
-                      <Text style={styles.optionLabel}>Dieta Cíclica</Text>
-                      <Text style={styles.optionDescription}>Dietas diferentes por dia</Text>
+                    <View className="flex-1">
+                      <Text className="text-base font-semibold text-white mb-0.5">Dieta Cíclica</Text>
+                      <Text className="text-xs text-zinc-400">Dietas diferentes por dia</Text>
                     </View>
                     {planType === 'cyclic' && (
                       <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
@@ -384,10 +386,10 @@ export default function CreateDietPlanScreen() {
               </View>
 
                {/* Start Date */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Data de Início</Text>
+              <View className="mb-6">
+                <Text className="text-base font-bold text-white mb-3">Data de Início</Text>
                 <TouchableOpacity 
-                  style={styles.dateButton}
+                  className="flex-row items-center justify-between bg-zinc-900 border-2 border-zinc-800 rounded-xl p-4"
                   onPress={() => {
                     console.log('📅 BOTÃO CLICADO! showStartPicker antes:', showStartPicker);
                     setShowStartPicker(true);
@@ -395,7 +397,7 @@ export default function CreateDietPlanScreen() {
                   }}
                 >
                   <Ionicons name="calendar-outline" size={20} color="#00D9FF" />
-                  <Text style={styles.dateButtonText}>
+                  <Text className="flex-1 text-base font-semibold text-white ml-3">
                     {startDate.toLocaleDateString('pt-BR')}
                   </Text>
                   <Ionicons name="chevron-down" size={20} color="#8B92A8" />
@@ -419,19 +421,19 @@ export default function CreateDietPlanScreen() {
                 )}
               </View>
  {/* End Date */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Data de Término</Text>
+              <View className="mb-6">
+                <Text className="text-base font-bold text-white mb-3">Data de Término</Text>
                 <TouchableOpacity 
-                  style={styles.dateButton}
+                  className="flex-row items-center justify-between bg-zinc-900 border-2 border-zinc-800 rounded-xl p-4"
                   onPress={() => setShowEndPicker(true)}
                 >
                   <Ionicons name="calendar-outline" size={20} color="#00D9FF" />
-                  <Text style={styles.dateButtonText}>
+                  <Text className="flex-1 text-base font-semibold text-white ml-3">
                     {endDate.toLocaleDateString('pt-BR')}
                   </Text>
                   <Ionicons name="chevron-down" size={20} color="#8B92A8" />
                 </TouchableOpacity>
-                <Text style={styles.helperText}>
+                <Text className="text-xs text-zinc-400 mt-1">
                   Duração: {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} dias
                 </Text>
                 {showEndPicker && (
@@ -450,17 +452,20 @@ export default function CreateDietPlanScreen() {
                 )}
               </View>
               {/* Goal Selection */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Objetivo</Text>
+              <View className="mb-6">
+                <Text className="text-base font-bold text-white mb-3">Objetivo</Text>
                 {GOALS.map((g) => (
                   <TouchableOpacity
                     key={g.value}
-                    style={[styles.optionCard, goal === g.value && styles.optionCardSelected]}
+                    className={cn(
+                      "bg-zinc-900 rounded-xl p-4 mb-2 border-2 border-zinc-800 flex-row items-center justify-between",
+                      goal === g.value && "border-emerald-400 bg-emerald-400/10"
+                    )}
                     onPress={() => setGoal(g.value)}
                   >
-                    <View style={styles.optionContent}>
-                      <Text style={styles.optionLabel}>{g.label}</Text>
-                      <Text style={styles.optionDescription}>{g.description}</Text>
+                    <View className="flex-1">
+                      <Text className="text-base font-semibold text-white mb-0.5">{g.label}</Text>
+                      <Text className="text-xs text-zinc-400">{g.description}</Text>
                     </View>
                     {goal === g.value && (
                       <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
@@ -470,18 +475,18 @@ export default function CreateDietPlanScreen() {
               </View>
 
               {/* Activity Level */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Nível de Atividade</Text>
+              <View className="mb-6">
+                <Text className="text-base font-bold text-white mb-3">Nível de Atividade</Text>
                 {ACTIVITY_LEVELS.map((level) => (
                   <TouchableOpacity
                     key={level.value}
-                    style={[
-                      styles.optionCard,
-                      activityLevel === level.value && styles.optionCardSelected,
-                    ]}
+                    className={cn(
+                      "bg-zinc-900 rounded-xl p-4 mb-2 border-2 border-zinc-800 flex-row items-center justify-between",
+                      activityLevel === level.value && "border-emerald-400 bg-emerald-400/10"
+                    )}
                     onPress={() => setActivityLevel(level.value)}
                   >
-                    <Text style={styles.optionLabel}>{level.label}</Text>
+                    <Text className="text-base font-semibold text-white mb-0.5">{level.label}</Text>
                     {activityLevel === level.value && (
                       <Ionicons name="checkmark-circle" size={24} color="#00FF88" />
                     )}
@@ -491,39 +496,39 @@ export default function CreateDietPlanScreen() {
 
               {/* Calculated Macros */}
               {macros.calories > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Macros Calculados</Text>
-                  <View style={styles.macrosCard}>
-                    <View style={styles.macroRow}>
-                      <Text style={styles.macroLabel}>TMB (Taxa Metabólica Basal)</Text>
-                      <Text style={styles.macroValue}>{tmb.toFixed(0)} kcal</Text>
+                <View className="mb-6">
+                  <Text className="text-base font-bold text-white mb-3">Macros Calculados</Text>
+                  <View className="bg-zinc-900 rounded-2xl p-5 border-2 border-zinc-800">
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-sm text-zinc-400">TMB (Taxa Metabólica Basal)</Text>
+                      <Text className="text-base font-bold text-white">{tmb.toFixed(0)} kcal</Text>
                     </View>
-                    <View style={styles.macroRow}>
-                      <Text style={styles.macroLabel}>TDEE (Gasto Diário Total)</Text>
-                      <Text style={styles.macroValue}>{tdee.toFixed(0)} kcal</Text>
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-sm text-zinc-400">TDEE (Gasto Diário Total)</Text>
+                      <Text className="text-base font-bold text-white">{tdee.toFixed(0)} kcal</Text>
                     </View>
-                    <View style={[styles.macroRow, styles.macroRowHighlight]}>
-                      <Text style={styles.macroLabelHighlight}>Calorias Alvo</Text>
-                      <Text style={styles.macroValueHighlight}>
+                    <View className="flex-row justify-between items-center mb-3 bg-emerald-400/10 -mx-3 px-3 py-2 rounded-lg">
+                      <Text className="text-base font-bold text-white">Calorias Alvo</Text>
+                      <Text className="text-lg font-extrabold text-emerald-400">
                         {macros.calories.toFixed(0)} kcal
                       </Text>
                     </View>
-                    <View style={styles.divider} />
-                    <View style={styles.macroRow}>
-                      <Text style={[styles.macroLabel, { color: '#00ff9d' }]}>Proteína</Text>
-                      <Text style={[styles.macroValue, { color: '#00ff9d' }]}>
+                    <View className="h-px bg-zinc-800 my-3" />
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-sm text-emerald-400">Proteína</Text>
+                      <Text className="text-base font-bold text-emerald-400">
                         {macros.protein.toFixed(0)}g
                       </Text>
                     </View>
-                    <View style={styles.macroRow}>
-                      <Text style={[styles.macroLabel, { color: '#7f5aff' }]}>Carboidratos</Text>
-                      <Text style={[styles.macroValue, { color: '#7f5aff' }]}>
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-sm text-purple-500">Carboidratos</Text>
+                      <Text className="text-base font-bold text-purple-500">
                         {macros.carbs.toFixed(0)}g
                       </Text>
                     </View>
-                    <View style={styles.macroRow}>
-                      <Text style={[styles.macroLabel, { color: '#ffde59' }]}>Gordura</Text>
-                      <Text style={[styles.macroValue, { color: '#ffde59' }]}>
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-sm text-amber-400">Gordura</Text>
+                      <Text className="text-base font-bold text-amber-400">
                         {macros.fat.toFixed(0)}g
                       </Text>
                     </View>
@@ -536,15 +541,15 @@ export default function CreateDietPlanScreen() {
 
         {/* Create Button */}
         {selectedStudent && dietName && (
-          <View style={styles.footer}>
+          <View className="px-6 py-4 border-t border-zinc-800">
             <TouchableOpacity onPress={handleCreatePlan} activeOpacity={0.8}>
               <LinearGradient
-                colors={['#00FF88', '#00CC6E']}
+                colors={['#00C9A7', '#00A389']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.createButton}
+                className="rounded-2xl py-4.5 items-center"
               >
-                <Text style={styles.createButtonText}>Criar Plano de Dieta</Text>
+                <Text className="text-zinc-950 text-base font-bold">Criar Plano de Dieta</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -553,302 +558,3 @@ export default function CreateDietPlanScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0E1A',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  backButton: {
-    backgroundColor: '#141B2D',
-    padding: 10,
-    borderRadius: 12,
-    marginRight: 16,
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#8B92A8',
-    marginTop: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 12,
-  },
-  studentsScroll: {
-    gap: 12,
-  },
-  studentCard: {
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    alignItems: 'center',
-    width: 120,
-  },
-  studentCardSelected: {
-    borderColor: '#00FF88',
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-  },
-  studentAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 217, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  studentName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    padding: 16,
-    color: '#FFFFFF',
-    fontSize: 16,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-  },
-  optionCard: {
-    backgroundColor: '#141B2D',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  optionCardSelected: {
-    borderColor: '#00FF88',
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-  },
-  optionContent: {
-    flex: 1,
-  },
-  optionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  optionDescription: {
-    fontSize: 13,
-    color: '#8B92A8',
-  },
-  macrosCard: {
-    backgroundColor: '#141B2D',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-  },
-  macroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  macroRowHighlight: {
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    marginHorizontal: -12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  macroLabel: {
-    fontSize: 14,
-    color: '#8B92A8',
-  },
-  macroLabelHighlight: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  macroValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  macroValueHighlight: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#00FF88',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#1E2A42',
-    marginVertical: 12,
-  },
-  footer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#1E2A42',
-  },
-  createButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-  },
-  createButtonText: {
-    color: '#0A0E1A',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-   dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#141B2D',
-    borderWidth: 2,
-    borderColor: '#1E2A42',
-    borderRadius: 12,
-    padding: 16,
-  },
-  dateButtonText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#8B92A8',
-    marginTop: 4,
-  },
-  importButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 217, 255, 0.3)',
-    borderStyle: 'dashed',
-  },
-  importButtonText: {
-    color: '#00D9FF',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  sourceStudentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#141B2D',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#00D9FF',
-  },
-  sourceStudentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sourceStudentName: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: '#141B2D',
-    borderRadius: 16,
-    width: '100%',
-    maxHeight: 400,
-    borderWidth: 1,
-    borderColor: '#1E2A42',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E2A42',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  modalScroll: {
-    padding: 16,
-  },
-  modalStudentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#0A0E1A',
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  studentAvatarSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 217, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  modalStudentName: {
-    flex: 1,
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-});

@@ -1,232 +1,137 @@
-import { supabase } from '@meupersonal/supabase';
+import { useAuthStore } from '@/auth';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { signIn } = useAuthStore();
 
   async function handleLogin() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const result = await signIn(email, password);
 
-    if (error) {
-      Alert.alert('Erro no Login', error.message);
+    if (!result.success) {
+      Alert.alert('Erro no Login', result.error || 'Erro desconhecido');
+    } else {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Check account status
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('account_status')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.account_status === 'pending') {
+          router.replace('/(auth)/pending-approval' as any);
+          setLoading(false);
+          return;
+        } else if (profile?.account_status === 'rejected' || profile?.account_status === 'suspended') {
+          await supabase.auth.signOut();
+          Alert.alert(
+            'Acesso Negado',
+            'Sua conta foi suspensa ou rejeitada. Entre em contato com o suporte.'
+          );
+        }
+      }
     }
     setLoading(false);
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView 
-          contentContainerStyle={{ flexGrow: 1, padding: 24 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Header with Gradient Icon */}
-          <View style={{ alignItems: 'center', marginTop: 40, marginBottom: 50 }}>
-            <View style={{ 
-              width: 100, 
-              height: 100, 
-              borderRadius: 50, 
-              backgroundColor: 'rgba(255, 107, 53, 0.15)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 24
-            }}>
-              <Ionicons name="barbell" size={56} color="#FF6B35" />
-            </View>
-            
-            <Text style={{ 
-              fontSize: 48, 
-              fontWeight: '800', 
-              color: '#FFFFFF',
-              marginBottom: 12,
-              letterSpacing: -1
-            }}>
-              MeuPersonal
-            </Text>
-            
-            <Text style={{ 
-              fontSize: 16, 
-              color: '#8B92A8',
-              textAlign: 'center',
-              paddingHorizontal: 32,
-              lineHeight: 24
-            }}>
-              Transforme seu corpo,{'\n'}transforme sua vida 💪
-            </Text>
+    <ScreenLayout>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header with Icon */}
+        <View className="items-center mt-16 mb-12">
+          <View className="w-28 h-28 rounded-full bg-primary/15 items-center justify-center mb-8 border-2 border-primary/30 shadow-lg shadow-primary/20">
+            <Ionicons name="barbell" size={56} color="#A3E635" />
           </View>
-
-          {/* Login Form */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{ marginBottom: 20 }}>
-              <Text style={{ 
-                color: '#FFFFFF', 
-                fontSize: 14, 
-                fontWeight: '600',
-                marginBottom: 8
-              }}>
-                E-mail
-              </Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="seu@email.com"
-                placeholderTextColor="#5A6178"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={{
-                  backgroundColor: '#141B2D',
-                  borderWidth: 2,
-                  borderColor: '#1E2A42',
-                  borderRadius: 16,
-                  paddingHorizontal: 16,
-                  paddingVertical: 16,
-                  color: '#FFFFFF',
-                  fontSize: 16,
-                  height: 56
-                }}
-              />
-            </View>
-            
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ 
-                color: '#FFFFFF', 
-                fontSize: 14, 
-                fontWeight: '600',
-                marginBottom: 8
-              }}>
-                Senha
-              </Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor="#5A6178"
-                secureTextEntry
-                style={{
-                  backgroundColor: '#141B2D',
-                  borderWidth: 2,
-                  borderColor: '#1E2A42',
-                  borderRadius: 16,
-                  paddingHorizontal: 16,
-                  paddingVertical: 16,
-                  color: '#FFFFFF',
-                  fontSize: 16,
-                  height: 56
-                }}
-              />
-            </View>
-
-            {/* Login Button */}
-            <TouchableOpacity 
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={['#FF6B35', '#E85A2A']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 16,
-                  paddingVertical: 18,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  shadowColor: '#FF6B35',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8
-                }}
-              >
-                <Text style={{ 
-                  color: '#FFFFFF', 
-                  fontSize: 18, 
-                  fontWeight: '700'
-                }}>
-                  {loading ? 'Entrando...' : 'Entrar'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <Link href={'/(auth)/forgot-password' as any} asChild>
-              <TouchableOpacity style={{ marginTop: 16, alignItems: 'center' }}>
-                <Text style={{ color: '#00D9FF', fontSize: 15, fontWeight: '600' }}>
-                  Esqueci minha senha
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-
-          {/* Divider */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 32 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: '#1E2A42' }} />
-            <Text style={{ color: '#5A6178', paddingHorizontal: 16, fontSize: 14 }}>ou</Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: '#1E2A42' }} />
-          </View>
-
-          {/* Student Login Button */}
-          <View style={{ marginBottom: 32 }}>
-            <TouchableOpacity 
-              onPress={() => router.push('/(auth)/student-login' as any)}
-              activeOpacity={0.8}
-              style={{
-                backgroundColor: 'rgba(0, 217, 255, 0.1)',
-                borderWidth: 1,
-                borderColor: 'rgba(0, 217, 255, 0.3)',
-                borderRadius: 16,
-                paddingVertical: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row'
-              }}
-            >
-              <Ionicons name="school-outline" size={20} color="#00D9FF" style={{ marginRight: 8 }} />
-              <Text style={{ color: '#00D9FF', fontSize: 16, fontWeight: '600' }}>
-                Sou Aluno (Entrar com Código)
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Register Link */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: '#8B92A8', fontSize: 15 }}>Personal Trainer? </Text>
-            <Link href={'/(auth)/register' as any} asChild>
-              <TouchableOpacity>
-                <Text style={{ color: '#FF6B35', fontSize: 15, fontWeight: '700' }}>
-                  Cadastre-se grátis
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-
-          {/* Footer */}
-          <Text style={{ 
-            color: '#5A6178', 
-            textAlign: 'center', 
-            fontSize: 12,
-            marginTop: 40,
-            lineHeight: 18
-          }}>
-            Junte-se a milhares de pessoas{'\n'}alcançando seus objetivos
+          
+          <Text className="text-5xl font-extrabold text-foreground mb-4 tracking-tight">
+            MeuPersonal
           </Text>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+          
+          <Text className="text-lg text-zinc-400 text-center px-4 leading-7">
+            Transforme seu corpo,{'\n'}transforme sua vida
+          </Text>
+          <Text className="text-4xl mt-2">💪</Text>
+        </View>
+
+        {/* Login Form */}
+        <View className="mb-6 gap-y-5">
+          <Input
+            label="E-mail"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="seu@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          
+          <Input
+            label="Senha"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            secureTextEntry
+          />
+
+          <Button 
+            label="Entrar"
+            onPress={handleLogin}
+            isLoading={loading}
+            className="mt-3"
+            size="lg"
+          />
+
+          <Link href={'/(auth)/forgot-password' as any} asChild>
+            <TouchableOpacity className="items-center py-2">
+              <Text className="text-cyan-400 text-base font-semibold">
+                Esqueci minha senha
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
+        {/* Divider */}
+        <View className="flex-row items-center my-8">
+          <View className="flex-1 h-[1px] bg-white/10" />
+          <Text className="text-zinc-500 px-4 text-sm font-medium">ou</Text>
+          <View className="flex-1 h-[1px] bg-white/10" />
+        </View>
+
+
+        {/* Student Login Button */}
+
+
+
+        {/* Register Link */}
+        <View className="flex-row justify-center items-center mt-auto mb-8">
+          <Text className="text-zinc-400 text-base">Personal Trainer? </Text>
+          <Link href={'/(auth)/register' as any} asChild>
+            <TouchableOpacity>
+              <Text className="text-primary text-base font-bold">
+                Cadastre-se grátis
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </ScrollView>
+    </ScreenLayout>
   );
 }
-
-// Temporary TextInput import
-import { TextInput } from 'react-native';

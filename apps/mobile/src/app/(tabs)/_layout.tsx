@@ -1,101 +1,38 @@
-import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '@/auth';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-  const { user } = useAuthStore();
-  const [userRole, setUserRole] = useState<'personal' | 'student' | null>(null);
+  const { accountType, abilities } = useAuthStore();
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    async function fetchUserRole() {
-      if (!user?.id) return;
-      
-      // Try direct query first
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      
-      console.log('🔍 Query result:', { data, error, userId: user.id });
-      
-      if (data?.role) {
-        console.log('✅ User Role:', data.role);
-        setUserRole(data.role as 'personal' | 'student');
-      } else {
-        // Fallback: check if user is in students_personals table
-        const { data: studentLink } = await supabase
-          .from('students_personals')
-          .select('student_id')
-          .eq('student_id', user.id)
-          .single();
-        
-        if (studentLink) {
-          console.log('✅ User is student (from students_personals)');
-          setUserRole('student');
-        } else {
-          console.log('✅ User is personal (default)');
-          setUserRole('personal');
-        }
-      }
-    }
-    
-    fetchUserRole();
 
-    // Subscribe to profile changes
-    if (user?.id) {
-      const channel = supabase
-        .channel('profile-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('🔄 Profile updated:', payload.new);
-            const newRole = (payload.new as any).role;
-            if (newRole) {
-              setUserRole(newRole as 'personal' | 'student');
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
-
-  const isStudent = userRole === 'student';
+  // If accountType is null (loading), default to student to avoid flashing restricted tabs
+  const isStudent = !accountType || accountType === 'managed_student' || accountType === 'autonomous_student';
   
-  console.log('🎯 Tab Layout - Role:', userRole, 'Is Student:', isStudent);
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0A0E1A',
+          backgroundColor: '#0A0A0A', // bg-background (Deep Black)
           borderTopWidth: 1,
-          borderTopColor: '#1E2A42',
+          borderTopColor: '#27272A', // border-dark
           height: Platform.OS === 'ios' ? 85 : 65 + insets.bottom,
           paddingBottom: Platform.OS === 'ios' ? 25 : 10 + insets.bottom,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#00D9FF',
-        tabBarInactiveTintColor: '#5A6178',
+        tabBarActiveTintColor: '#FF6B35', // text-primary (Vibrant Orange)
+        tabBarInactiveTintColor: '#71717A', // text-muted
+        tabBarItemStyle: {
+          padding: 0,
+        },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 9,
           fontWeight: '600',
+          fontFamily: 'Orbitron_600SemiBold', // Use custom font if available, else default
         },
       }}
     >
@@ -117,6 +54,7 @@ export default function TabLayout() {
         name="workouts"
         options={{
           title: 'Treinos',
+          href: (isStudent || abilities?.can('manage', 'Workout')) ? '/workouts' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'barbell' : 'barbell-outline'} 
@@ -126,7 +64,51 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progresso',
+          href: isStudent ? '/progress' : null,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'stats-chart' : 'stats-chart-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
       
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'chatbubbles' : 'chatbubbles-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="ranking"
+        options={{
+          title: 'Ranking',
+          href: isStudent ? '/ranking' : null,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'trophy' : 'trophy-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="profile"
         options={{
@@ -146,7 +128,7 @@ export default function TabLayout() {
         name="students"
         options={{
           title: 'Alunos',
-          tabBarButton: isStudent ? () => null : undefined,
+          href: (accountType === 'professional' && abilities?.can('manage', 'Workout')) ? '/students' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'people' : 'people-outline'} 
@@ -157,12 +139,12 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Personal Trainer only - Nutrition */}
+      {/* Nutritionist only */}
       <Tabs.Screen
         name="nutrition"
         options={{
           title: 'Nutrição',
-          tabBarButton: isStudent ? () => null : undefined,
+          href: (isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))) ? '/nutrition' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'restaurant' : 'restaurant-outline'} 
@@ -173,13 +155,22 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hide unused tabs */}
       <Tabs.Screen
-        name="two"
+        name="cardio/index"
         options={{
-          href: null,
+          title: 'Cardio',
+          href: isStudent ? undefined : null,
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialIcons 
+              name="directions-run" 
+              size={24} 
+              color={color} 
+            />
+          ),
         }}
       />
+
+
     </Tabs>
   );
 }

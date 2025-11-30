@@ -14,7 +14,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Precisamos acessar seus dados de saúde para sincronizar passos e calorias.",
+        "NSHealthUpdateUsageDescription": "Precisamos acessar seus dados de saúde para salvar seus treinos."
+      },
+      "bundleIdentifier": "com.anonymous.MeuPersonal"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +30,11 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.MeuPersonal",
       "permissions": [
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.WRITE_STEPS",
+        "android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"
       ]
     },
     "web": {
@@ -34,7 +43,27 @@
       "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-health",
+        {
+          "isClinicalDataEnabled": false
+        }
+      ],
+      [
+        "react-native-health-connect",
+        {
+          "rationaleActivityName": "com.anonymous.MeuPersonal.RationaleActivity"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

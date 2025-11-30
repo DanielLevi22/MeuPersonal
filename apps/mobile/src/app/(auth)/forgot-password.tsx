@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { supabase } from '@meupersonal/supabase';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -41,53 +42,55 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background p-6">
-      <View className="flex-row items-center mb-8">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-white">Esqueci minha senha</Text>
-      </View>
+    <ScreenLayout>
+      <View className="flex-1 p-6">
+        <View className="flex-row items-center mb-8">
+          <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 -ml-2">
+            <Ionicons name="arrow-back" size={24} color="#F4F4F5" />
+          </TouchableOpacity>
+          <Text className="text-2xl font-bold text-foreground font-display">Esqueci minha senha</Text>
+        </View>
 
-      <View className="flex-1 justify-center">
-        <View className="bg-surface p-6 rounded-2xl border border-border">
-          <View className="items-center mb-6">
-            <View className="bg-primary/20 p-4 rounded-full mb-4">
-              <Ionicons name="lock-closed-outline" size={48} color="#3b82f6" />
-            </View>
-            <Text className="text-white text-lg font-bold mb-2">Recuperar Senha</Text>
-            <Text className="text-muted text-center text-sm">
-              Digite seu e-mail e enviaremos um link para redefinir sua senha.
-            </Text>
-          </View>
-
-          <Input
-            label="E-mail"
-            placeholder="seu@email.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!sent}
-          />
-
-          <Button
-            label={sent ? 'E-mail Enviado' : 'Enviar Link'}
-            onPress={handleResetPassword}
-            isLoading={loading}
-            disabled={sent}
-            className="mt-6"
-          />
-
-          {sent && (
-            <View className="mt-4 p-3 bg-green-500/20 rounded-lg border border-green-500/30">
-              <Text className="text-green-400 text-sm text-center">
-                ✓ Verifique seu e-mail para continuar
+        <View className="flex-1 justify-center">
+          <Card className="p-6">
+            <View className="items-center mb-6">
+              <View className="bg-primary/10 p-4 rounded-full mb-4 border border-primary/20">
+                <Ionicons name="lock-closed-outline" size={48} color="#CCFF00" />
+              </View>
+              <Text className="text-foreground text-xl font-bold mb-2 font-display">Recuperar Senha</Text>
+              <Text className="text-zinc-400 text-center text-sm font-sans">
+                Digite seu e-mail e enviaremos um link para redefinir sua senha.
               </Text>
             </View>
-          )}
+
+            <Input
+              label="E-mail"
+              placeholder="seu@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!sent}
+            />
+
+            <Button
+              label={sent ? 'E-mail Enviado' : 'Enviar Link'}
+              onPress={handleResetPassword}
+              isLoading={loading}
+              disabled={sent}
+              className="mt-6"
+            />
+
+            {sent && (
+              <View className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                <Text className="text-green-400 text-sm text-center font-sans">
+                  ✓ Verifique seu e-mail para continuar
+                </Text>
+              </View>
+            )}
+          </Card>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

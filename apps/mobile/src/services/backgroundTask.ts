@@ -1,5 +1,5 @@
+import { useNutritionStore } from '@/modules/nutrition/routes/index';
 import { supabase } from '@meupersonal/supabase';
-import { useNutritionStore } from '@/store/nutritionStore';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 

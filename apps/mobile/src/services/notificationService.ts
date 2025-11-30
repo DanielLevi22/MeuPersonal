@@ -217,3 +217,57 @@ export async function cancelAllNotifications(): Promise<void> {
     console.error('Error cancelling all notifications:', error);
   }
 }
+
+export async function schedulePostWorkoutReminder(): Promise<void> {
+  try {
+    // Schedule for 30 minutes from now
+    const triggerSeconds = 30 * 60; 
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: 'post-workout-meal-reminder',
+      content: {
+        title: '💪 Treino finalizado!',
+        body: 'Não esqueça de registrar sua refeição pós-treino para garantir seus ganhos.',
+        sound: true,
+        data: { type: 'post-workout' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: triggerSeconds,
+        repeats: false,
+      },
+    });
+    console.log('Scheduled post-workout reminder for 30 minutes from now');
+  } catch (error) {
+    console.error('Error scheduling post-workout reminder:', error);
+  }
+}
+
+export async function scheduleStreakReminder(): Promise<void> {
+  try {
+    // Schedule for 8:00 PM (20:00) every day
+    // We want to remind the user if they haven't completed their goals yet
+    // This is a "dumb" reminder that just fires every day, 
+    // ideally we would check if they already completed it before showing,
+    // but background tasks are complex. For now, a gentle nudge is fine.
+    
+    const trigger: any = {
+      hour: 20,
+      minute: 0,
+      repeats: true,
+    };
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: 'daily-streak-reminder',
+      content: {
+        title: '🔥 Mantenha sua ofensiva!',
+        body: 'Não deixe de bater suas metas hoje. Entre e registre seu progresso!',
+        sound: true,
+      },
+      trigger,
+    });
+    console.log('Scheduled daily streak reminder for 20:00');
+  } catch (error) {
+    console.error('Error scheduling streak reminder:', error);
+  }
+}

@@ -1,222 +1,77 @@
-import { DailyNutrition } from '@/components/nutrition/DailyNutrition';
-import { supabase } from '@meupersonal/supabase';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/auth';
+import { AchievementBadge } from '@/components/gamification/AchievementBadge';
+import { ConfettiOverlay } from '@/components/gamification/ConfettiOverlay';
+import { ProgressCard } from '@/components/gamification/ProgressCard';
+import { StatCard } from '@/components/gamification/StatCard';
+import { StreakCounter } from '@/components/gamification/StreakCounter';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useHealthData } from '@/hooks/useHealthData';
+import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function DashboardScreen() {
-  const { user } = useAuthStore();
+  const { user, abilities } = useAuthStore();
+  const { dailyGoal, weeklyGoals, streak, achievements, showConfetti, fetchDailyData, isLoading } = useGamificationStore();
+  const { steps, calories, refetch: refetchHealth, loading: healthLoading } = useHealthData();
   const [profile, setProfile] = useState<any>(null);
-  const [workouts, setWorkouts] = useState<any[]>([]);
-  const [hasPersonal, setHasPersonal] = useState(false);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    fetchProfile();
+    loadData();
   }, [user]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchProfile();
+      loadData();
     }, [user])
   );
 
-  const fetchProfile = async () => {
+  const loadData = async () => {
     if (!user?.id) return;
     
-    setLoading(true);
-    try {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+    // Fetch profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    setProfile(profileData);
 
-      setProfile(profileData);
-
-      if (profileData?.role === 'student') {
-        // Check if student has a personal
-        const { data: personalLink } = await supabase
-          .from('students_personals')
-          .select('id')
-          .eq('student_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-        
-        setHasPersonal(!!personalLink);
-
-        const { data: workoutData } = await supabase
-          .from('workouts')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        setWorkouts(workoutData || []);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Fetch gamification data
+    const today = new Date().toISOString().split('T')[0];
+    await fetchDailyData(today);
+    refetchHealth();
   };
 
-  const renderWorkoutItem = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      onPress={() => router.push(`/student/workout-detail?id=${item.id}` as any)}
-      activeOpacity={0.8}
-      style={{ marginBottom: 16 }}
-    >
-      <LinearGradient
-        colors={['#FF6B35', '#E85A2A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          borderRadius: 20,
-          padding: 20,
-          shadowColor: '#FF6B35',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700', marginBottom: 4 }}>
-              {item.title}
-            </Text>
-            {item.description && (
-              <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 14 }} numberOfLines={1}>
-                {item.description}
-              </Text>
-            )}
-          </View>
-          <View style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-            padding: 10, 
-            borderRadius: 12 
-          }}>
-            <Ionicons name="chevron-forward" size={24} color="white" />
-          </View>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-
-  if (loading) {
+  if (isLoading && !profile) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ 
-          backgroundColor: 'rgba(255, 107, 53, 0.15)', 
-          padding: 20, 
-          borderRadius: 50,
-          marginBottom: 16
-        }}>
+      <ScreenLayout className="justify-center items-center">
+        <View className="bg-zinc-900 p-5 rounded-full mb-4 border border-zinc-800">
           <Ionicons name="barbell" size={48} color="#FF6B35" />
         </View>
-        <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '600' }}>Carregando...</Text>
-      </View>
+        <Text className="text-white text-lg font-semibold font-display">Carregando...</Text>
+      </ScreenLayout>
     );
   }
 
-  // Student Dashboard
-  if (profile?.role === 'student') {
+  // Personal Trainer Dashboard (Legacy View)
+  if (profile?.account_type === 'professional') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <FlatList
-            data={workouts}
-            renderItem={renderWorkoutItem}
-            keyExtractor={(item) => item.id}
-            refreshControl={
-              <RefreshControl refreshing={loading} onRefresh={fetchProfile} tintColor="#FF6B35" />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: 24 }}
-            ListHeaderComponent={
-              <View style={{ marginBottom: 24 }}>
-                {/* Nutrition Section */}
-                <DailyNutrition />
-
-                {/* Workouts Section Header */}
-                <View style={{ marginTop: 8, marginBottom: 16 }}>
-                  <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 }}>
-                    Seus Treinos 💪
-                  </Text>
-                  <Text style={{ fontSize: 16, color: '#8B92A8' }}>
-                    Vamos treinar hoje?
-                  </Text>
-                </View>
-
-                {workouts.length === 0 && (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
-                    <View style={{ 
-                      backgroundColor: '#141B2D', 
-                      padding: 32, 
-                      borderRadius: 50,
-                      marginBottom: 24
-                    }}>
-                      <Ionicons name={hasPersonal ? "barbell-outline" : "person-add-outline"} size={80} color="#5A6178" />
-                    </View>
-                    <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
-                      {hasPersonal ? 'Nenhum treino ainda' : 'Sem Personal Trainer'}
-                    </Text>
-                    <Text style={{ color: '#8B92A8', textAlign: 'center', paddingHorizontal: 32, fontSize: 15, marginBottom: 32 }}>
-                      {hasPersonal 
-                        ? 'Aguarde seu personal criar treinos personalizados para você' 
-                        : 'Vincule-se a um personal para receber seus treinos personalizados'}
-                    </Text>
-
-                    {!hasPersonal && (
-                      <TouchableOpacity 
-                        onPress={() => router.push('/student/join-personal' as any)}
-                        activeOpacity={0.8}
-                      >
-                        <LinearGradient
-                          colors={['#FF6B35', '#E85A2A']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={{
-                            borderRadius: 16,
-                            paddingVertical: 16,
-                            paddingHorizontal: 32,
-                            flexDirection: 'row',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <Ionicons name="link" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
-                            Vincular Personal
-                          </Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-              </View>
-            }
-          />
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  // Personal Trainer Dashboard
-  return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ padding: 24 }}>
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{ fontSize: 36, fontWeight: '800', color: '#FFFFFF', marginBottom: 8 }}>
+      <ScreenLayout>
+        <View className="p-6">
+          <View className="mb-8">
+            <Text className="text-4xl font-extrabold text-white mb-2 font-display">
               Dashboard 🔥
             </Text>
-            <Text style={{ fontSize: 16, color: '#8B92A8' }}>
+            <Text className="text-base text-zinc-400 font-sans">
               Gerencie seus alunos e treinos
             </Text>
           </View>
@@ -226,36 +81,24 @@ export default function DashboardScreen() {
             <TouchableOpacity 
               onPress={() => router.push('/(tabs)/students')}
               activeOpacity={0.8}
-              style={{ marginBottom: 16 }}
+              className="mb-4"
             >
               <LinearGradient
                 colors={['#00D9FF', '#00B8D9']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 20,
-                  padding: 24,
-                  shadowColor: '#00D9FF',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8
-                }}
+                className="rounded-2xl p-6 shadow-lg shadow-cyan-500/20"
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View className="flex-row items-center justify-between">
                   <View>
-                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>
+                    <Text className="text-white/80 text-xs font-bold tracking-widest mb-2 font-sans">
                       ALUNOS ATIVOS
                     </Text>
-                    <Text style={{ color: '#FFFFFF', fontSize: 48, fontWeight: '800' }}>
+                    <Text className="text-white text-5xl font-bold font-display">
                       0
                     </Text>
                   </View>
-                  <View style={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                    padding: 16, 
-                    borderRadius: 20 
-                  }}>
+                  <View className="bg-white/20 p-4 rounded-2xl">
                     <Ionicons name="people" size={40} color="white" />
                   </View>
                 </View>
@@ -263,69 +106,247 @@ export default function DashboardScreen() {
             </TouchableOpacity>
 
             {/* Stats Card - Workouts */}
-            <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/workouts')}
-              activeOpacity={0.8}
-              style={{ marginBottom: 24 }}
-            >
-              <LinearGradient
-                colors={['#00FF88', '#00CC6E']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 20,
-                  padding: 24,
-                  shadowColor: '#00FF88',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8
-                }}
+            {abilities?.can('manage', 'Workout') && (
+              <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/workouts')}
+                activeOpacity={0.8}
+                className="mb-6"
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View>
-                    <Text style={{ color: 'rgba(10, 14, 26, 0.8)', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>
-                      TREINOS CRIADOS
-                    </Text>
-                    <Text style={{ color: '#0A0E1A', fontSize: 48, fontWeight: '800' }}>
-                      0
-                    </Text>
+                <LinearGradient
+                  colors={['#FF6B35', '#FF2E63']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  className="rounded-2xl p-6 shadow-lg shadow-orange-500/20"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View>
+                      <Text className="text-white/80 text-xs font-bold tracking-widest mb-2 font-sans">
+                        TREINOS CRIADOS
+                      </Text>
+                      <Text className="text-white text-5xl font-bold font-display">
+                        0
+                      </Text>
+                    </View>
+                    <View className="bg-white/20 p-4 rounded-2xl">
+                      <Ionicons name="barbell" size={40} color="white" />
+                    </View>
                   </View>
-                  <View style={{ 
-                    backgroundColor: 'rgba(10, 14, 26, 0.2)', 
-                    padding: 16, 
-                    borderRadius: 20 
-                  }}>
-                    <Ionicons name="barbell" size={40} color="#0A0E1A" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
             {/* Quick Action */}
             <TouchableOpacity 
               onPress={() => router.push('/(tabs)/students')}
               activeOpacity={0.8}
             >
-              <View style={{
-                backgroundColor: '#141B2D',
-                borderWidth: 2,
-                borderColor: '#FF6B35',
-                borderRadius: 20,
-                padding: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <View className="bg-zinc-900 border-2 border-orange-500 rounded-2xl p-5 flex-row items-center justify-center">
                 <Ionicons name="add-circle" size={28} color="#FF6B35" />
-                <Text style={{ color: '#FF6B35', fontSize: 18, fontWeight: '700', marginLeft: 12 }}>
+                <Text className="text-orange-500 text-lg font-bold ml-3 font-display">
                   Adicionar Novo Aluno
                 </Text>
               </View>
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
-    </View>
+      </ScreenLayout>
+    );
+  }
+
+  // Student Dashboard (Gamified)
+  return (
+    <ScreenLayout>
+      <ScrollView
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#FF6B35" />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <Animated.View 
+          entering={FadeInDown.delay(100).springify()}
+          className="flex-row justify-between items-end mb-8 mt-2"
+        >
+          <View>
+            <Text className="text-zinc-400 text-[15px] font-medium mb-1 font-sans tracking-wide uppercase">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </Text>
+            <Text className="text-white text-[34px] font-bold font-display tracking-tight leading-tight">
+              Olá, {profile?.full_name?.split(' ')[0] || 'Aluno'}
+            </Text>
+          </View>
+          <View className="mb-1 flex-row items-center gap-2">
+            {streak?.freeze_available > 0 && (
+              <View className="bg-blue-500/20 px-2 py-1 rounded-full">
+                <Ionicons name="snow" size={12} color="#3B82F6" />
+              </View>
+            )}
+            <StreakCounter 
+              streak={streak?.current_streak || 0} 
+              frozen={streak?.last_freeze_date === new Date().toISOString().split('T')[0]} 
+            />
+          </View>
+        </Animated.View>
+
+        {/* Daily Progress Section */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-8">
+          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+            Hoje
+          </Text>
+          <View className="gap-y-3">
+            <ProgressCard
+              title="Dieta"
+              current={dailyGoal?.meals_completed || 0}
+              target={dailyGoal?.meals_target || 4}
+              icon="restaurant"
+              color="success"
+              unit="ref."
+            />
+            <ProgressCard
+              title="Treino"
+              current={dailyGoal?.workout_completed || 0}
+              target={dailyGoal?.workout_target || 1}
+              icon="barbell"
+              color="warning"
+              unit="treino"
+            />
+          </View>
+        </Animated.View>
+
+        {/* Health Data Section */}
+        <Animated.View entering={FadeInDown.delay(300).springify()} className="mb-8">
+          <View className="flex-row justify-between items-center mb-3 ml-1">
+            <Text className="text-zinc-500 text-[13px] font-bold font-sans uppercase tracking-widest">
+              Atividade
+            </Text>
+            {steps > 0 && (
+              <View className="bg-zinc-800/50 px-2.5 py-1 rounded-full">
+                <Text className="text-zinc-400 text-[10px] font-bold font-sans uppercase tracking-wider">
+                  Sincronizado
+                </Text>
+              </View>
+            )}
+          </View>
+          <View className="flex-row gap-x-3">
+            <View className="flex-1">
+              <StatCard
+                label="Passos"
+                value={steps.toLocaleString()}
+                trend={steps >= 10000 ? 'up' : 'neutral'}
+                change={steps >= 10000 ? 'Meta!' : `${Math.round((steps / 10000) * 100)}%`}
+                icon="walk"
+              />
+            </View>
+            <View className="flex-1">
+              <StatCard
+                label="Calorias"
+                value={`${calories}`}
+                trend="up"
+                change="Kcal"
+                icon="flame"
+              />
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Weekly Goals Section */}
+        <Animated.View entering={FadeInDown.delay(400).springify()} className="mb-8">
+          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+            Semana
+          </Text>
+          <View className="flex-row gap-x-3">
+            <View className="flex-1">
+              <StatCard
+                label="Refeições"
+                value={(() => {
+                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
+                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
+                  return targetMeals > 0 ? `${Math.round((totalMeals / targetMeals) * 100)}%` : '0%';
+                })()}
+                trend={(() => {
+                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
+                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
+                  const percentage = targetMeals > 0 ? (totalMeals / targetMeals) * 100 : 0;
+                  return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
+                })()}
+                change="Meta"
+                icon="restaurant"
+              />
+            </View>
+            <View className="flex-1">
+              <StatCard
+                label="Treinos"
+                value={(() => {
+                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
+                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
+                  return `${totalWorkouts}/${targetWorkouts}`;
+                })()}
+                trend={(() => {
+                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
+                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
+                  const percentage = targetWorkouts > 0 ? (totalWorkouts / targetWorkouts) * 100 : 0;
+                  return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
+                })()}
+                change="Treinos"
+                icon="barbell"
+              />
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Recent Achievements */}
+        <Animated.View entering={FadeInDown.delay(500).springify()}>
+          <View className="flex-row justify-between items-center mb-3 ml-1">
+            <Text className="text-zinc-500 text-[13px] font-bold font-sans uppercase tracking-widest">
+              Conquistas
+            </Text>
+            <TouchableOpacity>
+              <Text className="text-[#FF6B35] text-[13px] font-bold font-sans tracking-wide">VER TODAS</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+            {achievements.length > 0 ? (
+              achievements.map((achievement) => (
+                <AchievementBadge
+                  key={achievement.id}
+                  title={achievement.title}
+                  subtitle={new Date(achievement.earned_at).toLocaleDateString()}
+                  icon={achievement.icon}
+                  earned={true}
+                />
+              ))
+            ) : (
+              // Placeholder achievements
+              <>
+                <AchievementBadge
+                  title="Início"
+                  subtitle="Jornada"
+                  icon="🚀"
+                  earned={true}
+                />
+                <AchievementBadge
+                  title="7 Dias"
+                  subtitle="Sequência"
+                  icon="🔥"
+                  earned={false}
+                />
+                <AchievementBadge
+                  title="Foco"
+                  subtitle="Total"
+                  icon="🎯"
+                  earned={false}
+                />
+              </>
+            )}
+          </ScrollView>
+        </Animated.View>
+
+      </ScrollView>
+      
+      {/* Confetti Overlay */}
+      <ConfettiOverlay show={showConfetti} />
+    </ScreenLayout>
   );
 }
