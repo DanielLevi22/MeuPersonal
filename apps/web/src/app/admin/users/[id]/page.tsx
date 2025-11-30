@@ -166,7 +166,12 @@ export default function UserDetailsPage() {
   };
 
   const getStatusBadge = (status: string | null) => {
-    const s = status || 'active';
+    // Treat null status as 'pending' for professionals, 'active' for others (legacy)
+    let s = status;
+    if (!s) {
+      s = user?.account_type === 'professional' ? 'pending' : 'active';
+    }
+
     const badges = {
       active: { label: 'Ativo', color: 'bg-green-500/10 text-green-400 border-green-500/20' },
       pending: { label: 'Pendente', color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
@@ -249,7 +254,7 @@ export default function UserDetailsPage() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Approval Action Banner */}
-          {user.account_status === 'pending' && (
+          {(user.account_status === 'pending' || (user.account_type === 'professional' && !user.account_status)) && (
             <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-bold text-yellow-400">Aprovação Pendente</h3>

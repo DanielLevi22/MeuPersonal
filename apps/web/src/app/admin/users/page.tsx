@@ -49,6 +49,24 @@ export default function UsersPage() {
     }
   }
 
+  async function updateStatus(userId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ account_status: newStatus })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, account_status: newStatus } : u))
+      );
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Erro ao atualizar status do usuário');
+    }
+  }
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -223,15 +241,29 @@ export default function UsersPage() {
                     {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Nunca'}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/admin/users/${user.id}`);
-                      }}
-                      className="text-primary hover:text-primary/80 font-medium text-sm"
-                    >
-                      Ver →
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      {(user.account_status === 'pending' || (user.account_type === 'professional' && !user.account_status)) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateStatus(user.id, 'active');
+                          }}
+                          className="text-green-500 hover:text-green-400 font-medium text-sm px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-md transition-colors"
+                          title="Aprovar Acesso"
+                        >
+                          Aprovar
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/admin/users/${user.id}`);
+                        }}
+                        className="text-primary hover:text-primary/80 font-medium text-sm"
+                      >
+                        Ver →
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
