@@ -102,6 +102,14 @@ interface WorkoutState {
       setsCompleted: number;
     }[];
   }) => Promise<string>;
+  saveCardioSession: (sessionData: {
+    studentId: string;
+    exerciseName: string;
+    durationSeconds: number;
+    calories: number;
+    startedAt: string;
+    completedAt: string;
+  }) => Promise<void>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
   reset: () => void; // Clear all state on logout
@@ -666,6 +674,82 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       return session.id;
     } catch (error) {
       console.error('Error saving workout session:', error);
+      throw error;
+    }
+  },
+
+  saveCardioSession: async (sessionData: {
+    studentId: string;
+    exerciseName: string;
+    durationSeconds: number;
+    calories: number;
+    startedAt: string;
+    completedAt: string;
+  }) => {
+    try {
+      // For now, we'll store cardio sessions in a separate table or reuse workout_sessions with null workout_id if allowed.
+      // However, workout_sessions.workout_id is NOT NULL in schema.
+      // So we should probably create a specific table for cardio logs or ad-hoc workouts.
+      // Given the constraints and current schema, let's create a "Cardio" workout on the fly or use a specific table.
+      // Checking schema... we don't have a 'cardio_logs' table.
+      // Let's use 'diet_logs' for calories? No, that's for food.
+      // Let's assume we need to create a `cardio_logs` table.
+      // OR, we can insert into `workout_sessions` if we make workout_id nullable, but that's a schema change.
+      
+      // ALTERNATIVE: Create a "General Cardio" workout for the user if it doesn't exist, and log against it.
+      // This keeps schema intact.
+      
+      // 1. Find or Create "Standalone Cardio" workout for this user
+      let { data: cardioWorkout } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('title', 'Treino Cardio Livre')
+        .eq('student_id', sessionData.studentId)
+        .single();
+
+      if (!cardioWorkout) {
+        // Create it
+        // We need a personal_id. If student is autonomous, maybe they are their own personal? 
+        // Or we use a system ID? Or just use the student's ID if the schema allows (it references profiles).
+        // Let's use the student's ID as personal_id for self-created workouts if allowed.
+        
+        const { data: newWorkout, error: createError } = await supabase
+          .from('workouts')
+          .insert({
+            title: 'Treino Cardio Livre',
+            student_id: sessionData.studentId,
+            personal_id: sessionData.studentId, // Assuming student can be personal of themselves for this purpose
+            description: 'Sessões de cardio avulsas',
+          })
+          .select()
+          .single();
+          
+        if (createError) {
+            // If FK fails (student not a personal), we might need a fallback.
+            // But for now let's try this.
+            console.error('Error creating cardio workout container:', createError);
+            throw createError;
+        }
+        cardioWorkout = newWorkout;
+      }
+
+      // 2. Log the session
+      if (!cardioWorkout) throw new Error('Failed to find or create cardio workout');
+
+      const { error: sessionError } = await supabase
+        .from('workout_sessions')
+        .insert({
+          workout_id: cardioWorkout.id,
+          student_id: sessionData.studentId,
+          started_at: sessionData.startedAt,
+          completed_at: sessionData.completedAt,
+          notes: `${sessionData.exerciseName} - ${Math.floor(sessionData.durationSeconds / 60)}min - ${Math.round(sessionData.calories)}kcal`
+        });
+
+      if (sessionError) throw sessionError;
+
+    } catch (error) {
+      console.error('Error saving cardio session:', error);
       throw error;
     }
   },

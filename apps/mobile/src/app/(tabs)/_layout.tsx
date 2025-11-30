@@ -151,6 +151,21 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="cardio"
+        options={{
+          title: 'Cardio',
+          href: isStudent ? undefined : null,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'walk' : 'walk-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+
 
     </Tabs>
   );

@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useHealthData } from '@/hooks/useHealthData';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
 import { useNutritionStore } from '@/modules/nutrition/routes';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +32,8 @@ export function StudentNutritionScreen() {
     fetchDailyLogs,
     toggleMealCompletion
   } = useNutritionStore();
+
+  const { calories: burnedCalories } = useHealthData();
 
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [refreshing, setRefreshing] = useState(false);
@@ -189,29 +192,47 @@ export function StudentNutritionScreen() {
         <View className="px-6 mb-6">
           <View className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
             <Text className="text-white font-bold mb-4">Resumo do Dia</Text>
-            <View className="flex-row justify-between mb-4">
-              <View className="items-center">
-                <Text className="text-zinc-400 text-xs mb-1">Calorias</Text>
+            
+            {/* Calories Row */}
+            <View className="flex-row justify-between mb-6 bg-zinc-950/50 p-3 rounded-xl">
+              <View className="items-center flex-1 border-r border-zinc-800">
+                <Text className="text-zinc-400 text-xs mb-1">Meta</Text>
                 <Text className="text-white font-bold text-lg">
-                  {Math.round(consumedMacros.calories)} <Text className="text-zinc-500 text-xs">/ {Math.round(dayTotalMacros.calories)}</Text>
+                  {Math.round(dayTotalMacros.calories)}
                 </Text>
               </View>
+              <View className="items-center flex-1 border-r border-zinc-800">
+                <Text className="text-zinc-400 text-xs mb-1">Consumidas</Text>
+                <Text className="text-orange-500 font-bold text-lg">
+                  {Math.round(consumedMacros.calories)}
+                </Text>
+              </View>
+              <View className="items-center flex-1">
+                <Text className="text-zinc-400 text-xs mb-1">Gastas</Text>
+                <Text className="text-emerald-500 font-bold text-lg">
+                  {burnedCalories}
+                </Text>
+              </View>
+            </View>
+
+            {/* Macros Row */}
+            <View className="flex-row justify-between mb-4 px-2">
               <View className="items-center">
                 <Text className="text-zinc-400 text-xs mb-1">Proteína</Text>
-                <Text className="text-emerald-400 font-bold text-lg">
-                  {Math.round(consumedMacros.protein)} <Text className="text-zinc-500 text-xs">/ {Math.round(dayTotalMacros.protein)}g</Text>
+                <Text className="text-emerald-400 font-bold text-base">
+                  {Math.round(consumedMacros.protein)} <Text className="text-zinc-500 text-[10px]">/ {Math.round(dayTotalMacros.protein)}g</Text>
                 </Text>
               </View>
               <View className="items-center">
                 <Text className="text-zinc-400 text-xs mb-1">Carbo</Text>
-                <Text className="text-purple-400 font-bold text-lg">
-                  {Math.round(consumedMacros.carbs)} <Text className="text-zinc-500 text-xs">/ {Math.round(dayTotalMacros.carbs)}g</Text>
+                <Text className="text-purple-400 font-bold text-base">
+                  {Math.round(consumedMacros.carbs)} <Text className="text-zinc-500 text-[10px]">/ {Math.round(dayTotalMacros.carbs)}g</Text>
                 </Text>
               </View>
               <View className="items-center">
                 <Text className="text-zinc-400 text-xs mb-1">Gordura</Text>
-                <Text className="text-amber-400 font-bold text-lg">
-                  {Math.round(consumedMacros.fat)} <Text className="text-zinc-500 text-xs">/ {Math.round(dayTotalMacros.fat)}g</Text>
+                <Text className="text-amber-400 font-bold text-base">
+                  {Math.round(consumedMacros.fat)} <Text className="text-zinc-500 text-[10px]">/ {Math.round(dayTotalMacros.fat)}g</Text>
                 </Text>
               </View>
             </View>
