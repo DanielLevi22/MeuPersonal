@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
@@ -9,7 +9,10 @@ import { useWorkoutStore } from '../store/workoutStore';
 export default function PeriodizationDetailsScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+
+  const { user, accountType } = useAuthStore();
+  const pathname = usePathname();
+  const isStudentView = pathname.includes('/students/') || accountType === 'managed_student' || accountType === 'autonomous_student';
   const { periodizations, fetchPeriodizations, isLoading, activatePeriodization, currentPeriodizationPhases, fetchPeriodizationPhases, createTrainingPlan } = useWorkoutStore();
   const [periodization, setPeriodization] = useState<any>(null);
 
@@ -102,12 +105,14 @@ export default function PeriodizationDetailsScreen() {
               <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <View className="flex-row gap-2">
-              <TouchableOpacity 
-                onPress={() => Alert.alert('Em breve', 'Edição em desenvolvimento')}
-                className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
-              >
-                <Ionicons name="pencil" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
+              {!isStudentView && (
+                <TouchableOpacity 
+                  onPress={() => Alert.alert('Em breve', 'Edição em desenvolvimento')}
+                  className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
+                >
+                  <Ionicons name="pencil" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -137,7 +142,7 @@ export default function PeriodizationDetailsScreen() {
             </View>
           </View>
           
-          {periodization.status === 'planned' && (
+          {!isStudentView && periodization.status === 'planned' && (
             <TouchableOpacity 
               onPress={() => {
                 Alert.alert(
@@ -165,7 +170,7 @@ export default function PeriodizationDetailsScreen() {
             </TouchableOpacity>
           )}
           
-          {periodization.status === 'active' && (
+          {!isStudentView && periodization.status === 'active' && (
             <TouchableOpacity 
               onPress={() => {
                 Alert.alert(
@@ -218,10 +223,8 @@ export default function PeriodizationDetailsScreen() {
                     router.push(`/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as any);
                   } else {
                     // We are in workouts tab: /workouts/periodizations/[id]
-                    // Since we don't have a phases route in workouts tab yet, show alert or redirect to students tab?
-                    // Ideally we should mirror the route, but for now let's alert or try to navigate to student context if possible.
-                    // Actually, let's just use the student route since it exists.
-                    router.push(`/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as any);
+                    // Now we have the route!
+                    router.push(`/(tabs)/workouts/periodizations/${periodizationId}/phases/${phase.id}` as any);
                   }
                 }}
               >
@@ -278,42 +281,44 @@ export default function PeriodizationDetailsScreen() {
             ))}
           </View>
 
-          <TouchableOpacity 
-            className="mt-6 border-2 border-dashed border-zinc-700 rounded-2xl p-4 items-center justify-center"
-            onPress={() => {
-              Alert.alert(
-                'Nova Fase',
-                'Criar uma nova fase de treino?',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { 
-                    text: 'Criar', 
-                    onPress: async () => {
-                      if (!periodization) return;
-                      try {
-                        await createTrainingPlan({
-                          periodization_id: periodization.id,
-                          name: `Fase ${currentPeriodizationPhases.length + 1}`,
-                          training_split: 'ABC',
-                          weekly_frequency: 3,
-                          start_date: new Date().toISOString().split('T')[0],
-                          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                          status: 'draft',
-                          notes: ''
-                        });
-                        Alert.alert('Sucesso', 'Fase criada!');
-                      } catch (error) {
-                        Alert.alert('Erro', 'Não foi possível criar a fase.');
+          {!isStudentView && (
+            <TouchableOpacity 
+              className="mt-6 border-2 border-dashed border-zinc-700 rounded-2xl p-4 items-center justify-center"
+              onPress={() => {
+                Alert.alert(
+                  'Nova Fase',
+                  'Criar uma nova fase de treino?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { 
+                      text: 'Criar', 
+                      onPress: async () => {
+                        if (!periodization) return;
+                        try {
+                          await createTrainingPlan({
+                            periodization_id: periodization.id,
+                            name: `Fase ${currentPeriodizationPhases.length + 1}`,
+                            training_split: 'ABC',
+                            weekly_frequency: 3,
+                            start_date: new Date().toISOString().split('T')[0],
+                            end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            status: 'draft',
+                            notes: ''
+                          });
+                          Alert.alert('Sucesso', 'Fase criada!');
+                        } catch (error) {
+                          Alert.alert('Erro', 'Não foi possível criar a fase.');
+                        }
                       }
                     }
-                  }
-                ]
-              );
-            }}
-          >
-            <Ionicons name="add-circle-outline" size={24} color="#71717A" />
-            <Text className="text-zinc-500 font-bold mt-2">Adicionar Fase</Text>
-          </TouchableOpacity>
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="add-circle-outline" size={24} color="#71717A" />
+              <Text className="text-zinc-500 font-bold mt-2">Adicionar Fase</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </ScreenLayout>

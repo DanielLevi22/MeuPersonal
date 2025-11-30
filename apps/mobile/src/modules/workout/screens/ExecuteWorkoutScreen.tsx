@@ -4,21 +4,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 
 export default function ExecuteWorkoutScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, workoutId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
   const { workouts, fetchWorkouts, isLoading } = useWorkoutStore();
   
   const [workout, setWorkout] = useState<any>(null);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [currentSet, setCurrentSet] = useState(1);
+  // Track completed sets for each exercise: { [exerciseId]: numberOfCompletedSets }
+  const [completedSets, setCompletedSets] = useState<Record<string, number>>({});
   const [isResting, setIsResting] = useState(false);
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const [currentRestExercise, setCurrentRestExercise] = useState<string | null>(null);
+  const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
 
   useEffect(() => {
     if (user?.id && !workouts.length) {
@@ -27,14 +29,24 @@ export default function ExecuteWorkoutScreen() {
   }, [user]);
 
   useEffect(() => {
-    if (workouts.length > 0 && id) {
-      const found = workouts.find(w => w.id === id);
+    const targetId = (workoutId || id) as string;
+    if (workouts.length > 0 && targetId) {
+      const found = workouts.find(w => w.id === targetId);
       setWorkout(found);
+      
+      // Initialize completed sets if needed (optional, could just rely on empty object)
+      if (found) {
+        const initialSets: Record<string, number> = {};
+        found.items?.forEach((item: any) => {
+          initialSets[item.id] = 0;
+        });
+        setCompletedSets(initialSets);
+      }
     }
-  }, [workouts, id]);
+  }, [workouts, id, workoutId]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isActive && timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -42,6 +54,7 @@ export default function ExecuteWorkoutScreen() {
     } else if (timer === 0 && isResting) {
       setIsResting(false);
       setIsActive(false);
+      setCurrentRestExercise(null);
       Alert.alert('Tempo esgotado!', 'Hora da próxima série!');
     }
     return () => clearInterval(interval);
@@ -55,37 +68,67 @@ export default function ExecuteWorkoutScreen() {
     );
   }
 
-  const currentExercise = workout.items?.[currentExerciseIndex];
-  const isLastExercise = currentExerciseIndex === (workout.items?.length || 0) - 1;
-  const isLastSet = currentSet === currentExercise?.sets;
+  const handleLogSet = (exerciseItem: any) => {
+    if (isResting) {
+      Alert.alert('Descanso', 'Aguarde o tempo de descanso terminar ou pule o descanso.');
+      return;
+    }
 
-  const handleNextSet = () => {
-    if (isLastSet) {
-      if (isLastExercise) {
-        Alert.alert(
-          'Parabéns!',
-          'Treino concluído com sucesso!',
-          [
-            {
-              text: 'Finalizar',
-              onPress: () => router.back(),
-            },
-          ]
-        );
-      } else {
-        setCurrentExerciseIndex((prev) => prev + 1);
-        setCurrentSet(1);
+    const currentCompleted = completedSets[exerciseItem.id] || 0;
+    
+    if (currentCompleted < exerciseItem.sets) {
+      setCompletedSets(prev => ({
+        ...prev,
+        [exerciseItem.id]: currentCompleted + 1
+      }));
+
+      // Start rest timer if not the last set
+      if (currentCompleted + 1 < exerciseItem.sets) {
+        setTimer(exerciseItem.rest_time || 60);
+        setIsResting(true);
+        setIsActive(true);
+        setCurrentRestExercise(exerciseItem.exercise.name);
       }
-    } else {
-      setCurrentSet((prev) => prev + 1);
-      startRest();
     }
   };
 
-  const startRest = () => {
-    setTimer(currentExercise.rest_time || 60);
-    setIsResting(true);
-    setIsActive(true);
+  const handleFinishWorkout = () => {
+    // Check if all sets are completed
+    const totalSets = workout.items?.reduce((acc: number, item: any) => acc + item.sets, 0) || 0;
+    const completedTotal = Object.values(completedSets).reduce((acc, val) => acc + val, 0);
+
+    if (completedTotal < totalSets) {
+      Alert.alert(
+        'Treino Incompleto',
+        `Você completou ${completedTotal} de ${totalSets} séries. Deseja finalizar mesmo assim?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Finalizar', 
+            style: 'destructive',
+            onPress: () => {
+              // TODO: Save workout log
+              Alert.alert('Sucesso', 'Treino finalizado!');
+              router.back();
+            }
+          }
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Parabéns!',
+        'Treino concluído com sucesso!',
+        [
+          {
+            text: 'Finalizar',
+            onPress: () => {
+              // TODO: Save workout log
+              router.back();
+            }
+          }
+        ]
+      );
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -96,100 +139,206 @@ export default function ExecuteWorkoutScreen() {
 
   return (
     <ScreenLayout>
-      <View className="flex-1 p-6">
-        {/* Header */}
-        <View className="flex-row justify-between items-center mb-8">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            className="bg-zinc-900 p-3 rounded-xl border border-zinc-800"
-          >
-            <Ionicons name="close" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View className="items-center">
-            <Text className="text-zinc-400 text-sm font-sans uppercase tracking-wider">
-              Exercício {currentExerciseIndex + 1}/{workout.items?.length}
-            </Text>
-            <Text className="text-white text-lg font-bold font-display">
-              {workout.title}
-            </Text>
+      {!isWorkoutStarted ? (
+        <View className="flex-1 justify-center items-center p-6">
+          <View className="w-32 h-32 rounded-full bg-orange-500/10 items-center justify-center mb-8 border-4 border-orange-500/20">
+            <Ionicons name="barbell" size={64} color="#FF6B35" />
           </View>
-          <View className="w-12" />
+          
+          <Text className="text-3xl font-extrabold text-white text-center mb-2 font-display">
+            {workout.title}
+          </Text>
+          <Text className="text-zinc-400 text-lg font-sans mb-12 text-center">
+            {workout.items?.length} exercícios • {workout.items?.reduce((acc: number, item: any) => acc + item.sets, 0)} séries totais
+          </Text>
+
+          <TouchableOpacity 
+            onPress={() => setIsWorkoutStarted(true)}
+            className="w-full"
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#FF6B35', '#FF2E63']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-2xl py-5 items-center justify-center shadow-lg shadow-orange-500/40"
+            >
+              <Text className="text-white text-xl font-bold font-display tracking-wide">
+                INICIAR TREINO
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            className="mt-6 py-3"
+          >
+            <Text className="text-zinc-500 font-bold">Voltar</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Exercise Card */}
-        <View className="flex-1 justify-center items-center">
-          <View className="w-full bg-zinc-900 rounded-[32px] p-8 border border-zinc-800 items-center shadow-2xl shadow-black/50">
-            <View className="w-24 h-24 rounded-full bg-orange-500/10 items-center justify-center mb-6 border-2 border-orange-500/20">
-              <Ionicons name="barbell" size={48} color="#FF6B35" />
+      ) : (
+        <View className="flex-1">
+          {/* Header */}
+          <View className="flex-row justify-between items-center p-6 pb-4 bg-zinc-900 border-b border-zinc-800">
+            <TouchableOpacity 
+              onPress={() => {
+                Alert.alert(
+                  'Sair do Treino',
+                  'Deseja realmente sair? O progresso não salvo será perdido.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Sair', style: 'destructive', onPress: () => router.back() }
+                  ]
+                );
+              }} 
+              className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
+            >
+              <Ionicons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View className="items-center flex-1 mx-4">
+              <Text className="text-white text-lg font-bold font-display text-center" numberOfLines={1}>
+                {workout.title}
+              </Text>
+              <Text className="text-zinc-400 text-xs font-sans">
+                {workout.items?.length} exercícios
+              </Text>
             </View>
+            <View className="w-10" />
+          </View>
 
-            <Text className="text-3xl font-extrabold text-white text-center mb-2 font-display">
-              {currentExercise?.exercise?.name}
-            </Text>
-            <Text className="text-zinc-400 text-lg font-sans mb-8">
-              {currentExercise?.exercise?.muscle_group}
-            </Text>
+          {/* Exercises List */}
+          <FlatList
+            data={workout.items}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+            renderItem={({ item }) => {
+              const completed = completedSets[item.id] || 0;
+              const isCompleted = completed >= item.sets;
+              
+              return (
+                <View className={`mb-4 rounded-2xl border ${isCompleted ? 'bg-emerald-900/10 border-emerald-500/30' : 'bg-zinc-900 border-zinc-800'} overflow-hidden`}>
+                  <View className="p-4">
+                    <View className="flex-row justify-between items-start mb-3">
+                      <View className="flex-1 mr-4">
+                        <Text className={`text-lg font-bold font-display ${isCompleted ? 'text-emerald-400' : 'text-white'}`}>
+                          {item.exercise.name}
+                        </Text>
+                        <Text className="text-zinc-400 text-sm">
+                          {item.exercise.muscle_group}
+                        </Text>
+                      </View>
+                      {isCompleted && (
+                        <View className="bg-emerald-500/20 p-1 rounded-full">
+                          <Ionicons name="checkmark" size={16} color="#34D399" />
+                        </View>
+                      )}
+                    </View>
 
-            {/* Stats Grid */}
-            <View className="flex-row gap-4 w-full mb-8">
-              <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
-                <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase">Série</Text>
-                <Text className="text-white text-2xl font-bold">
-                  {currentSet}<Text className="text-zinc-500 text-base">/{currentExercise?.sets}</Text>
-                </Text>
-              </View>
-              <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
-                <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase">Reps</Text>
-                <Text className="text-white text-2xl font-bold">{currentExercise?.reps}</Text>
-              </View>
-              <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
-                <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase">Carga</Text>
-                <Text className="text-white text-2xl font-bold">{currentExercise?.weight || '-'}kg</Text>
-              </View>
-            </View>
+                    <View className="flex-row gap-4 mb-4">
+                      <View className="items-center">
+                        <Text className="text-zinc-500 text-xs uppercase font-bold">Séries</Text>
+                        <Text className="text-white font-bold text-lg">{item.sets}</Text>
+                      </View>
+                      <View className="items-center">
+                        <Text className="text-zinc-500 text-xs uppercase font-bold">Reps</Text>
+                        <Text className="text-white font-bold text-lg">{item.reps}</Text>
+                      </View>
+                      <View className="items-center">
+                        <Text className="text-zinc-500 text-xs uppercase font-bold">Carga</Text>
+                        <Text className="text-white font-bold text-lg">{item.weight || '-'}kg</Text>
+                      </View>
+                      <View className="items-center">
+                        <Text className="text-zinc-500 text-xs uppercase font-bold">Descanso</Text>
+                        <Text className="text-white font-bold text-lg">{item.rest_time}s</Text>
+                      </View>
+                    </View>
 
-            {/* Timer */}
+                    <View className="flex-row items-center justify-between bg-zinc-950/50 rounded-xl p-3">
+                      <Text className="text-zinc-400 font-bold">
+                        Progresso: <Text className="text-white">{completed}/{item.sets}</Text>
+                      </Text>
+                      
+                      {!isCompleted && (
+                        <TouchableOpacity
+                          onPress={() => handleLogSet(item)}
+                          activeOpacity={isResting ? 1 : 0.7}
+                          className={`px-4 py-2 rounded-lg border flex-row items-center ${
+                            isResting 
+                              ? 'bg-zinc-800 border-zinc-700 opacity-50' 
+                              : 'bg-zinc-800 border-zinc-700'
+                          }`}
+                        >
+                          {isResting ? (
+                            <Ionicons name="hourglass-outline" size={18} color="#71717A" style={{ marginRight: 6 }} />
+                          ) : (
+                            <Ionicons name="checkmark-circle-outline" size={18} color="#FF6B35" style={{ marginRight: 6 }} />
+                          )}
+                          <Text className={`font-bold text-sm ${isResting ? 'text-zinc-500' : 'text-white'}`}>
+                            {isResting ? 'Descanso...' : 'Registrar Série'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                  
+                  {/* Progress Bar */}
+                  <View className="h-1 bg-zinc-800 w-full">
+                    <View 
+                      className={`h-full ${isCompleted ? 'bg-emerald-500' : 'bg-orange-500'}`} 
+                      style={{ width: `${(completed / item.sets) * 100}%` }} 
+                    />
+                  </View>
+                </View>
+              );
+            }}
+          />
+
+          {/* Footer / Timer Overlay */}
+          <View className="absolute bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 p-4 pb-8 shadow-lg shadow-black">
             {isResting ? (
-              <View className="items-center mb-8">
-                <Text className="text-zinc-400 text-sm font-bold uppercase mb-2">Descanso</Text>
-                <Text className="text-5xl font-mono font-bold text-cyan-400">
-                  {formatTime(timer)}
-                </Text>
+              <View className="flex-row items-center justify-between bg-zinc-800 p-4 rounded-2xl border border-zinc-700 mb-2">
+                <View>
+                  <Text className="text-zinc-400 text-xs font-bold uppercase">Descanso</Text>
+                  <Text className="text-white font-bold text-sm" numberOfLines={1}>
+                    {currentRestExercise}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-4">
+                  <Text className="text-3xl font-mono font-bold text-cyan-400">
+                    {formatTime(timer)}
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setIsResting(false);
+                      setIsActive(false);
+                      setTimer(0);
+                    }}
+                    className="bg-zinc-700 p-2 rounded-full"
+                  >
+                    <Ionicons name="play-skip-forward" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <TouchableOpacity 
-                onPress={handleNextSet}
-                activeOpacity={0.8}
+                onPress={handleFinishWorkout}
                 className="w-full"
               >
                 <LinearGradient
                   colors={['#FF6B35', '#FF2E63']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  className="rounded-2xl py-5 items-center justify-center shadow-lg shadow-orange-500/40"
+                  className="rounded-2xl py-4 items-center justify-center shadow-lg shadow-orange-500/20"
                 >
-                  <Text className="text-white text-xl font-bold font-display">
-                    {isLastSet && isLastExercise ? 'Finalizar Treino' : 'Próxima Série'}
+                  <Text className="text-white text-lg font-bold font-display">
+                    FINALIZAR TREINO
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
             )}
-
-            {isResting && (
-              <TouchableOpacity 
-                onPress={() => {
-                  setIsResting(false);
-                  setIsActive(false);
-                  setTimer(0);
-                }}
-                className="bg-zinc-800 py-3 px-6 rounded-xl"
-              >
-                <Text className="text-white font-bold">Pular Descanso</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
-      </View>
+      )}
     </ScreenLayout>
   );
 }

@@ -9,7 +9,7 @@ import { useWorkoutStore } from '../store/workoutStore';
 
 export default function PeriodizationsScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, accountType } = useAuthStore();
   const { periodizations, isLoading, fetchPeriodizations } = useWorkoutStore();
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function PeriodizationsScreen() {
           </Text>
         </View>
         
-        {user?.user_metadata?.account_type === 'professional' && (
+        {accountType === 'professional' && (
           <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
             <TouchableOpacity activeOpacity={0.8}>
               <LinearGradient
@@ -119,12 +119,12 @@ export default function PeriodizationsScreen() {
                 Nenhuma periodização ativa
               </Text>
               <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
-                {user?.user_metadata?.account_type === 'professional' 
+                {accountType === 'professional' 
                   ? 'Crie um planejamento de longo prazo para seus alunos'
                   : 'Seu personal ainda não criou uma periodização para você'}
               </Text>
               
-              {user?.user_metadata?.account_type === 'professional' && (
+              {accountType === 'professional' && (
                 <Link href={'/(tabs)/workouts/create-periodization' as any} asChild>
                   <TouchableOpacity activeOpacity={0.8}>
                     <LinearGradient

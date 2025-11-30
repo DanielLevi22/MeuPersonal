@@ -117,26 +117,7 @@ export default function LoginScreen() {
 
 
         {/* Student Login Button */}
-        <View className="mb-8">
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/student-login' as any)}
-            activeOpacity={0.7}
-            className="bg-cyan-400/10 border-2 border-cyan-400/40 rounded-2xl p-4 flex-row items-center justify-center shadow-lg shadow-cyan-400/10"
-          >
-            <View className="bg-cyan-400/20 p-3 rounded-xl mr-3 border border-cyan-400/30">
-              <Ionicons name="school" size={28} color="#22D3EE" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-cyan-400 text-base font-bold">
-                Sou Aluno
-              </Text>
-              <Text className="text-cyan-400/70 text-xs font-medium mt-0.5">
-                Entrar com Código
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#22D3EE" />
-          </TouchableOpacity>
-        </View>
+
 
 
         {/* Register Link */}

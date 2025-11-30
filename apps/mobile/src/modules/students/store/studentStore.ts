@@ -65,6 +65,8 @@ interface StudentState {
 export interface StudentInviteData {
   personal_id: string;
   name: string;
+  email?: string;
+  password?: string;
   phone?: string;
   weight?: string;
   height?: string;
@@ -181,12 +183,15 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   createStudentInvite: async (data: StudentInviteData) => {
     try {
       console.log('🚀 Creating student with auth user...');
-      console.log('📋 Input data:', { name: data.name, phone: data.phone, weight: data.weight, height: data.height });
+      console.log('📋 Input data:', { name: data.name, email: data.email, phone: data.phone });
       
       // Call the RPC function to create student with auth user
+      // Now accepts email and password
       const { data: result, error } = await supabase.rpc('create_student_with_auth', {
         p_professional_id: data.personal_id,
         p_full_name: data.name,
+        p_email: data.email,
+        p_password: data.password,
         p_phone: data.phone || null,
         p_weight: data.weight ? parseFloat(data.weight) : null,
         p_height: data.height ? parseFloat(data.height) : null,
@@ -206,10 +211,6 @@ export const useStudentStore = create<StudentState>((set, get) => ({
 
       console.log('✅ Student created successfully!');
       console.log('📦 Result:', result);
-      console.log('🔑 Student ID:', result.student_id);
-      console.log('🎫 Invite code:', result.invite_code);
-      console.log('📧 Email:', result.email);
-      console.log('🔐 Password:', result.password);
 
       const newStudent = {
         id: result.student_id,
@@ -234,7 +235,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         code: result.invite_code,
         studentId: result.student_id,
         email: result.email,
-        password: result.password
+        password: data.password // Return the password used
       };
     } catch (error: any) {
       console.error('❌ Error creating student with auth:', error);

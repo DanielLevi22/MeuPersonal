@@ -77,11 +77,18 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
 
   // STEP 3: Fetch additional context based on account type
   if (user.account_type === 'professional') {
-    const { data: services } = await supabase
+    console.log('🔍 Fetching services for professional:', userId);
+    const { data: services, error: servicesError } = await supabase
       .from('professional_services')
       .select('service_category')
       .eq('user_id', userId)
       .eq('is_active', true);
+
+    if (servicesError) {
+      console.error('❌ Error fetching services:', servicesError);
+    } else {
+      console.log('✅ Services found:', services);
+    }
 
     context.services = (services?.map(s => s.service_category) || []) as ServiceCategory[];
   }

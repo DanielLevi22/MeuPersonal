@@ -1,5 +1,5 @@
-import { WorkoutDetailsScreen } from '@/workout';
+import { ExecuteWorkoutScreen } from '@/workout';
 
 export default function WorkoutDetailsRoute() {
-  return <WorkoutDetailsScreen />;
+  return <ExecuteWorkoutScreen />;
 }

@@ -3,7 +3,7 @@ import { useExercises } from '@/hooks/useExercises';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExerciseConfigModal } from '../components/ExerciseConfigModal';
@@ -18,6 +18,8 @@ export default function SelectExercisesScreen() {
   // State for filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string | null>(null);
+
+
 
   // Extract unique muscle groups
   const muscleGroups = useMemo(() => {
@@ -102,6 +104,13 @@ export default function SelectExercisesScreen() {
 
   const { workoutId, studentId } = useLocalSearchParams();
   const { addWorkoutItems, clearSelectedExercises } = useWorkoutStore();
+
+  // Clear selected exercises on unmount
+  useEffect(() => {
+    return () => {
+      clearSelectedExercises();
+    };
+  }, []);
 
   const handleConfirm = useCallback(async () => {
     if (selectedExercises.length === 0) {

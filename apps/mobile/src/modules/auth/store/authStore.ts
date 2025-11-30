@@ -1,8 +1,8 @@
 import {
-    AccountType,
-    AppAbility,
-    defineAbilitiesFor,
-    getUserContextJWT
+  AccountType,
+  AppAbility,
+  defineAbilitiesFor,
+  getUserContextJWT
 } from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
@@ -169,164 +169,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Use a simple, deterministic email format
       const email = `aluno${cleanCode.toLowerCase()}@test.com`;
-      const password = `senha${cleanCode}2024`;
+      const password = cleanCode;
 
-      // 1. Try to login first (Returning Student)
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // 1. Try to login
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInData?.session) {
-        // Check if there's a pending invite for this code (recovery flow)
-        const { data: pendingInvite } = await supabase
-          .from('student_invites')
-          .select('*')
-          .eq('invite_code', cleanCode)
-          .single();
-
-        if (pendingInvite) {
-          console.log('🔄 Found pending invite for existing user, consuming via RPC...');
-          
-          const { data: rpcResult, error: rpcError } = await supabase
-            .rpc('consume_invite', { p_invite_code: cleanCode });
-            
-          if (rpcError || (rpcResult && !rpcResult.success)) {
-             console.error('❌ Error consuming invite (returning user - RPC failed):', rpcError || rpcResult?.error);
-             
-             // Fallback for returning user
-             // 1. Link
-             const { error: linkError } = await supabase
-              .from('coachings')
-              .insert({
-                client_id: signInData.session.user.id,
-                professional_id: pendingInvite.personal_id,
-                service_type: 'personal_training', // Default to training for now
-                status: 'active',
-                invited_by: pendingInvite.personal_id
-              });
-              
-             // 2. Delete Invite (only if link succeeded or was duplicate)
-             if (!linkError || linkError.code === '23505') {
-               await supabase
-                .from('student_invites')
-                .delete()
-                .eq('id', pendingInvite.id);
-                
-               console.log('✅ Invite consumed via Fallback (Returning User)');
-             }
-          }
-        }
-        
-        return { success: true };
-      }
-
-      // 2. If login fails, check invite and register
-      const { data: inviteData, error: inviteError } = await supabase
-        .rpc('get_student_invite_by_code', { p_code: cleanCode });
-
-      if (inviteError || !inviteData || inviteData.length === 0) {
+      if (error) {
+        console.error('SignInWithCode error:', error);
         return { success: false, error: 'Código inválido ou não encontrado.' };
-      }
-
-      const invite = inviteData[0];
-
-      // 3. Register new user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: invite.name,
-            account_type: 'managed_student',
-            phone: invite.phone,
-            invite_code: cleanCode
-          }
-        }
-      });
-
-      if (authError || !authData.user) {
-        console.error('Auth error:', authError);
-        return { success: false, error: 'Erro ao criar acesso. Verifique se a confirmação de email está desabilitada no Supabase.' };
-      }
-
-      // 4. Update Profile with Invite Data
-      // 4. Consume Invite (Atomic RPC)
-      // This handles profile update, linking, and invite deletion safely on the server
-      const { data: rpcResult, error: rpcError } = await supabase
-        .rpc('consume_invite', { p_invite_code: cleanCode });
-
-      if (rpcError || (rpcResult && !rpcResult.success)) {
-        console.error('❌ Error consuming invite (RPC failed, using fallback):', rpcError || rpcResult?.error);
-        
-        // Fallback: Manual execution
-        // 1. Update Profile
-        let profileUpdated = false;
-        let attempts = 0;
-        while (!profileUpdated && attempts < 3) {
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          const { data: updatedProfile, error: updateError } = await supabase
-            .from('profiles')
-            .update({ 
-              account_type: 'managed_student',
-              full_name: invite.name,
-              // phone: invite.phone, // Add these columns to profiles if needed or keep in students
-              // weight: invite.weight,
-              // height: invite.height,
-              // notes: invite.notes,
-              // invite_code: cleanCode
-            })
-            .eq('id', authData.user.id)
-            .select()
-            .single();
-            
-          // Also create student record
-          // Student table consolidated into profiles, no need to insert here
-          // The profile update above handles the student data
-
-          if (!updateError && updatedProfile) {
-            profileUpdated = true;
-          }
-        }
-
-        if (!profileUpdated) {
-           // Try upsert as last resort
-           await supabase.from('profiles').upsert({ 
-              id: authData.user.id,
-              email: email,
-              account_type: 'managed_student',
-              full_name: invite.name,
-            });
-            
-           // Student table consolidated into profiles, no need to upsert here
-        }
-
-        // 2. Link Student
-        const { error: linkError } = await supabase
-          .from('coachings')
-          .insert({
-            client_id: authData.user.id,
-            professional_id: invite.personal_id,
-            service_type: 'personal_training',
-            status: 'active',
-            invited_by: invite.personal_id
-          });
-          
-        if (linkError && linkError.code !== '23505') {
-             console.error('Link error (fallback):', linkError);
-        }
-
-        // 3. Delete Invite
-        await supabase
-          .from('student_invites')
-          .delete()
-          .eq('id', invite.id);
-          
-        console.log('✅ Invite consumed successfully via Fallback');
-      } else {
-        console.log('✅ Invite consumed successfully via RPC');
       }
 
       return { success: true };
@@ -335,4 +188,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: false, error: 'Erro inesperado ao entrar.' };
     }
   }
+
 }));

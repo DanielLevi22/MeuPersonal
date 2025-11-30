@@ -254,7 +254,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         .from('workouts')
         .select(`
           *,
-          items:workout_items(
+          items:workout_exercises(
             *,
             exercise:exercises(*)
           )
@@ -514,7 +514,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         .from('workouts')
         .select(`
           *,
-          items:workout_items(
+          items:workout_exercises(
             *,
             exercise:exercises(*)
           )

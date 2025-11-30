@@ -2,7 +2,7 @@ import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
@@ -10,7 +10,12 @@ import { useWorkoutStore } from '../store/workoutStore';
 export default function PhaseDetailsScreen() {
   const { phaseId } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, accountType } = useAuthStore();
+  const pathname = usePathname();
+  const isStudentView = pathname.includes('/students/') || accountType === 'managed_student' || accountType === 'autonomous_student';
+  
+
+
   const { currentPeriodizationPhases, updateTrainingPlan, deleteTrainingPlan, createWorkout, fetchWorkoutsForPhase, generateWorkoutsForPhase, workouts } = useWorkoutStore();
   
   const phase = currentPeriodizationPhases.find(p => p.id === phaseId);
@@ -186,37 +191,40 @@ export default function PhaseDetailsScreen() {
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text className="text-white font-bold text-lg font-display">{phase.name}</Text>
-        <View className="flex-row gap-2">
-          <TouchableOpacity 
-            onPress={handleToggleStatus}
-            className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
-          >
-            <Ionicons 
-              name={phase.status === 'draft' ? 'play-circle' : phase.status === 'active' ? 'checkmark-circle' : 'refresh-circle'} 
-              size={24} 
-              color={phase.status === 'draft' ? '#FFB800' : phase.status === 'active' ? '#00C9A7' : '#71717A'} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleDeletePhase}
-            className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
-          >
-            <Ionicons name="trash" size={24} color="#FF2E63" />
-          </TouchableOpacity>
-        </View>
+        {!isStudentView && (
+          <View className="flex-row gap-2">
+            <TouchableOpacity 
+              onPress={handleToggleStatus}
+              className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
+            >
+              <Ionicons 
+                name={phase.status === 'draft' ? 'play-circle' : phase.status === 'active' ? 'checkmark-circle' : 'refresh-circle'} 
+                size={24} 
+                color={phase.status === 'draft' ? '#FFB800' : phase.status === 'active' ? '#00C9A7' : '#71717A'} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={handleDeletePhase}
+              className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
+            >
+              <Ionicons name="trash" size={24} color="#FF2E63" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 100 }}>
         <View className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-6">
           <Text className="text-zinc-400 text-sm mb-1">Divisão de Treino</Text>
           <TouchableOpacity 
-            onPress={() => setShowSplitModal(true)}
+            onPress={() => !isStudentView && setShowSplitModal(true)}
+            activeOpacity={isStudentView ? 1 : 0.7}
             className="bg-zinc-800 p-3 rounded-xl border border-zinc-700 flex-row items-center justify-between mt-1"
           >
             <Text className="text-white font-bold text-lg uppercase">
               {phase.training_split || 'Selecionar'}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#71717A" />
+            {!isStudentView && <Ionicons name="chevron-down" size={20} color="#71717A" />}
           </TouchableOpacity>
           
           <View className="flex-row gap-4 mt-4">
@@ -230,13 +238,14 @@ export default function PhaseDetailsScreen() {
             <View className="flex-1">
               <Text className="text-zinc-400 text-xs mb-1">Início</Text>
               <TouchableOpacity 
-                onPress={() => setShowStartPicker(true)}
+                onPress={() => !isStudentView && setShowStartPicker(true)}
+                activeOpacity={isStudentView ? 1 : 0.7}
                 className="bg-zinc-800 p-2 rounded-lg border border-zinc-700 flex-row items-center justify-between"
               >
                 <Text className="text-white font-bold text-sm">
                   {new Date(phase.start_date).toLocaleDateString('pt-BR')}
                 </Text>
-                <Ionicons name="calendar-outline" size={14} color="#71717A" />
+                {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#71717A" />}
               </TouchableOpacity>
               {showStartPicker && (
                 <DateTimePicker
@@ -255,13 +264,14 @@ export default function PhaseDetailsScreen() {
             <View className="flex-1">
               <Text className="text-zinc-400 text-xs mb-1">Término</Text>
               <TouchableOpacity 
-                onPress={() => setShowEndPicker(true)}
+                onPress={() => !isStudentView && setShowEndPicker(true)}
+                activeOpacity={isStudentView ? 1 : 0.7}
                 className="bg-zinc-800 p-2 rounded-lg border border-zinc-700 flex-row items-center justify-between"
               >
                 <Text className="text-white font-bold text-sm">
                   {new Date(phase.end_date).toLocaleDateString('pt-BR')}
                 </Text>
-                <Ionicons name="calendar-outline" size={14} color="#71717A" />
+                {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#71717A" />}
               </TouchableOpacity>
               {showEndPicker && (
                 <DateTimePicker
@@ -287,7 +297,17 @@ export default function PhaseDetailsScreen() {
           <TouchableOpacity
             key={workout.id}
             className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-4 flex-row justify-between items-center"
-            onPress={() => router.push(`/(tabs)/students/${user?.id}/workouts/details/${workout.id}` as any)}
+            onPress={() => {
+              // Check if we are in the students tab or workouts tab
+              // If we are in students tab, params usually has 'id' (studentId) and 'periodizationId'
+              // If we are in workouts tab, we might just have 'id' (periodizationId) or 'phaseId'
+              
+              if (isStudentView) {
+                 router.push(`/(tabs)/students/${user?.id}/workouts/details/${workout.id}` as any);
+              } else {
+                 router.push(`/(tabs)/workouts/details/${workout.id}` as any);
+              }
+            }}
           >
             <View>
               <Text className="text-white font-bold text-lg">{workout.title}</Text>

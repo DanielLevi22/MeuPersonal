@@ -8,6 +8,7 @@ export { StudentAssignmentModal } from './components/StudentAssignmentModal';
 // Screens
 export { default as CreatePeriodizationScreen } from './screens/CreatePeriodizationScreen';
 export { default as CreateTrainingPlanScreen } from './screens/CreateTrainingPlanScreen';
+export { default as ExecuteWorkoutScreen } from './screens/ExecuteWorkoutScreen';
 export { default as PeriodizationDetailsScreen } from './screens/PeriodizationDetailsScreen';
 export { default as PeriodizationsScreen } from './screens/PeriodizationsScreen';
 export { default as SelectExercisesScreen } from './screens/SelectExercisesScreen';

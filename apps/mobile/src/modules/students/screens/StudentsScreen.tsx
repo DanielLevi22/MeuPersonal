@@ -102,7 +102,7 @@ export default function StudentsScreen() {
               {item.full_name || 'Aluno sem nome'}
             </Text>
             <Text className="text-zinc-400 text-sm font-sans" numberOfLines={1}>
-              {item.email || 'Sem email'}
+              {item.invite_code ? `Código: ${item.invite_code}` : (item.email || 'Sem código')}
             </Text>
           </View>
         </View>

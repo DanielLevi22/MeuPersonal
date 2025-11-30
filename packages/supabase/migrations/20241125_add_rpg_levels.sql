@@ -76,9 +76,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS on_workout_xp ON workout_sessions;
+-- Updated table name: workout_sessions -> workout_executions
+DROP TRIGGER IF EXISTS on_workout_xp ON workout_executions;
 CREATE TRIGGER on_workout_xp
-  AFTER UPDATE OF completed_at ON workout_sessions
+  AFTER UPDATE OF completed_at ON workout_executions
   FOR EACH ROW
   EXECUTE FUNCTION trigger_award_xp_workout();
 
@@ -101,8 +102,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS on_meal_xp ON diet_logs;
+-- Updated table name: diet_logs -> meal_logs
+DROP TRIGGER IF EXISTS on_meal_xp ON meal_logs;
 CREATE TRIGGER on_meal_xp
-  AFTER INSERT OR UPDATE OF completed ON diet_logs
+  AFTER INSERT OR UPDATE OF completed ON meal_logs
   FOR EACH ROW
   EXECUTE FUNCTION trigger_award_xp_meal();

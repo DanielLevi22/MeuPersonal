@@ -19,6 +19,8 @@ export default function CreateStudentScreen() {
 
   // Personal
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
@@ -60,6 +62,16 @@ export default function CreateStudentScreen() {
       return;
     }
 
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Erro', 'Por favor, informe e-mail e senha para o aluno.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
     if (!user?.id) {
       Alert.alert('Erro', 'Usuário não autenticado');
       return;
@@ -70,6 +82,8 @@ export default function CreateStudentScreen() {
     const result = await createStudentInvite({
       personal_id: user.id,
       name: fullName,
+      email: email.trim(),
+      password: password.trim(),
       phone: phone,
       weight: weight,
       height: height,
@@ -205,6 +219,37 @@ export default function CreateStudentScreen() {
                     </View>
                   </View>
 
+                  <View className="mb-4">
+                    <Text className="text-white font-medium mb-2 ml-1">E-mail de Acesso</Text>
+                    <View className="bg-zinc-900 rounded-xl border border-zinc-800 focus:border-orange-500 flex-row items-center px-4 h-12">
+                      <Ionicons name="mail-outline" size={20} color="#71717A" style={{ marginRight: 10 }} />
+                      <TextInput
+                        className="flex-1 text-white text-base font-sans"
+                        placeholder="email@exemplo.com"
+                        placeholderTextColor="#52525B"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </View>
+
+                  <View className="mb-4">
+                    <Text className="text-white font-medium mb-2 ml-1">Senha de Acesso</Text>
+                    <View className="bg-zinc-900 rounded-xl border border-zinc-800 focus:border-orange-500 flex-row items-center px-4 h-12">
+                      <Ionicons name="lock-closed-outline" size={20} color="#71717A" style={{ marginRight: 10 }} />
+                      <TextInput
+                        className="flex-1 text-white text-base font-sans"
+                        placeholder="Mínimo 6 caracteres"
+                        placeholderTextColor="#52525B"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                      />
+                    </View>
+                  </View>
+
                   <View className="flex-row gap-4">
                     {renderInput('Idade', age, setAge, '0', undefined, 'min-w-[28%]')}
                     {renderInput('Peso (kg)', weight, setWeight, '0.0', undefined, 'min-w-[28%]')}
@@ -273,7 +318,7 @@ export default function CreateStudentScreen() {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text className="text-white text-lg font-bold font-display">
-                    Gerar Código de Convite
+                    Cadastrar Aluno
                   </Text>
                 )}
               </LinearGradient>

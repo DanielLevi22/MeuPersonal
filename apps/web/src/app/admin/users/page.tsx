@@ -13,6 +13,7 @@ interface User {
   created_at: string;
   last_login_at: string | null;
   is_super_admin: boolean;
+  invite_code: string | null;
 }
 
 export default function UsersPage() {
@@ -33,7 +34,7 @@ export default function UsersPage() {
 
       let query = supabase
         .from('profiles')
-        .select('id, email, full_name, account_type, account_status, created_at, last_login_at, is_super_admin')
+        .select('id, email, full_name, account_type, account_status, created_at, last_login_at, is_super_admin, invite_code')
         .order('created_at', { ascending: false });
 
       const { data, error } = await query;
@@ -174,6 +175,7 @@ export default function UsersPage() {
             <thead className="bg-muted border-b border-border">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Usuário</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Código</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Tipo</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Criado em</th>
@@ -198,6 +200,15 @@ export default function UsersPage() {
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {user.invite_code ? (
+                      <span className="font-mono text-xs bg-muted px-2 py-1 rounded border border-border">
+                        {user.invite_code}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     {getAccountTypeBadge(user.account_type, user.is_super_admin)}
@@ -227,7 +238,7 @@ export default function UsersPage() {
 
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                     Nenhum usuário encontrado
                   </td>
                 </tr>
