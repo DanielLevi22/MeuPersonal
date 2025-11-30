@@ -101,6 +101,8 @@ interface WorkoutState {
       workoutItemId: string;
       setsCompleted: number;
     }[];
+    intensity?: number;
+    notes?: string;
   }) => Promise<string>;
   saveCardioSession: (sessionData: {
     studentId: string;
@@ -109,6 +111,8 @@ interface WorkoutState {
     calories: number;
     startedAt: string;
     completedAt: string;
+    intensity?: number;
+    notes?: string;
   }) => Promise<void>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
@@ -650,6 +654,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           student_id: sessionData.studentId,
           started_at: sessionData.startedAt,
           completed_at: sessionData.completedAt,
+          intensity: sessionData.intensity,
+          notes: sessionData.notes,
         })
         .select()
         .single();
@@ -685,6 +691,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     calories: number;
     startedAt: string;
     completedAt: string;
+    intensity?: number;
+    notes?: string;
   }) => {
     try {
       // For now, we'll store cardio sessions in a separate table or reuse workout_sessions with null workout_id if allowed.
@@ -743,7 +751,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           student_id: sessionData.studentId,
           started_at: sessionData.startedAt,
           completed_at: sessionData.completedAt,
-          notes: `${sessionData.exerciseName} - ${Math.floor(sessionData.durationSeconds / 60)}min - ${Math.round(sessionData.calories)}kcal`
+          intensity: sessionData.intensity,
+          notes: sessionData.notes || `${sessionData.exerciseName} - ${Math.floor(sessionData.durationSeconds / 60)}min - ${Math.round(sessionData.calories)}kcal`
         });
 
       if (sessionError) throw sessionError;

@@ -1,23 +1,26 @@
-import { usePulseAnimation } from '@/hooks/useGamificationAnimations';
-import { Ionicons } from '@expo/vector-icons';
-import { Animated, Text } from 'react-native';
+import { Text, View } from 'react-native';
+import { FireAnimation } from './FireAnimation';
 
 interface StreakCounterProps {
   streak: number;
+  frozen?: boolean;
 }
 
-export function StreakCounter({ streak }: StreakCounterProps) {
-  const scale = usePulseAnimation(streak > 0);
-
+export function StreakCounter({ streak, frozen = false }: StreakCounterProps) {
   return (
-    <Animated.View 
-      className="bg-orange-500/10 px-3 py-2 rounded-full flex-row items-center gap-x-2 border border-orange-500/20"
-      style={{ transform: [{ scale }] }}
+    <View 
+      className={`px-3 py-2 rounded-full flex-row items-center gap-x-2 border ${
+        frozen 
+          ? 'bg-blue-500/10 border-blue-500/20' 
+          : 'bg-orange-500/10 border-orange-500/20'
+      }`}
     >
-      <Ionicons name="flame" size={20} color="#F97316" />
-      <Text className="text-orange-500 font-bold text-base font-display">
+      <FireAnimation active={streak > 0} frozen={frozen} size={20} />
+      <Text className={`font-bold text-base font-display ${
+        frozen ? 'text-blue-500' : 'text-orange-500'
+      }`}>
         {streak}
       </Text>
-    </Animated.View>
+    </View>
   );
 }

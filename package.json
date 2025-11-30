@@ -26,5 +26,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "expo-sharing": "~14.0.7",
+    "react-native-view-shot": "4.0.3"
   }
 }

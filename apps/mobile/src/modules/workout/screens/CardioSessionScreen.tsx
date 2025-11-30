@@ -1,13 +1,15 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
+import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Accelerometer } from 'expo-sensors';
 import * as Speech from 'expo-speech';
 import { useEffect, useState } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 
 // METs aproximados
@@ -32,6 +34,8 @@ export default function CardioSessionScreen() {
   const [calories, setCalories] = useState(0);
   const [intensity, setIntensity] = useState<'Baixa' | 'Moderada' | 'Alta'>('Moderada');
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [targetMinutes, setTargetMinutes] = useState<number | null>(null);
+  const [customMinutes, setCustomMinutes] = useState('');
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareStats, setShareStats] = useState({
@@ -42,11 +46,40 @@ export default function CardioSessionScreen() {
     exerciseName: ''
   });
 
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
   // User weight fallback (70kg if not found)
   // In a real app, we should fetch this from the profile/assessment
   const userWeight = 70; 
 
   const met = METS[exerciseName as string] || METS['Cardio'] || 5.0;
+
+  // Accelerometer logic
+  useEffect(() => {
+    let subscription: any;
+    if (isActive) {
+      Accelerometer.setUpdateInterval(1000); // Check every second
+      subscription = Accelerometer.addListener(data => {
+        const { x, y, z } = data;
+        const magnitude = Math.sqrt(x * x + y * y + z * z);
+        
+        // Simple heuristic for intensity based on movement magnitude
+        // 1.0 is gravity (standing still)
+        let newIntensity: 'Baixa' | 'Moderada' | 'Alta' = 'Baixa';
+        if (magnitude > 1.8) {
+          newIntensity = 'Alta';
+        } else if (magnitude > 1.2) {
+          newIntensity = 'Moderada';
+        }
+
+        if (newIntensity !== intensity) {
+          setIntensity(newIntensity);
+          Speech.speak(`Intensidade ${newIntensity}`, { language: 'pt-BR' });
+        }
+      });
+    }
+    return () => subscription && subscription.remove();
+  }, [isActive, intensity]);
 
   useEffect(() => {
     let interval: any;
@@ -60,6 +93,13 @@ export default function CardioSessionScreen() {
           // Calories per second = (MET * Weight) / 3600
           const calsPerSec = (met * userWeight) / 3600;
           setCalories((prevCals) => prevCals + calsPerSec);
+
+          // Target Time Feedback
+          if (targetMinutes && newSeconds === targetMinutes * 60) {
+            Speech.speak(`Parabéns! Você atingiu sua meta de ${targetMinutes} minutos.`, {
+              language: 'pt-BR',
+            });
+          }
 
           // Voice Feedback every 5 minutes (300 seconds)
           if (newSeconds % 300 === 0) {
@@ -75,7 +115,7 @@ export default function CardioSessionScreen() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, met, userWeight, calories]);
+  }, [isActive, met, userWeight, calories, targetMinutes]);
 
   const handleStart = () => {
     setIsActive(true);
@@ -86,8 +126,28 @@ export default function CardioSessionScreen() {
     setIsActive(false);
   };
 
-  const handleFinish = async () => {
-    setIsActive(false);
+  const handlePresetSelect = (min: number) => {
+    if (targetMinutes === min) {
+      setTargetMinutes(null);
+      setCustomMinutes('');
+    } else {
+      setTargetMinutes(min);
+      setCustomMinutes(min.toString());
+    }
+  };
+
+  const handleCustomChange = (text: string) => {
+    setCustomMinutes(text);
+    const val = parseInt(text);
+    if (!isNaN(val) && val > 0) {
+      setTargetMinutes(val);
+    } else {
+      setTargetMinutes(null);
+    }
+  };
+
+  const onFeedbackSubmit = async (intensity: number, notes: string) => {
+    setShowFeedbackModal(false);
     
     if (!user?.id || !startTime) return;
 
@@ -104,7 +164,9 @@ export default function CardioSessionScreen() {
         durationSeconds: seconds,
         calories: calories,
         startedAt: startTime.toISOString(),
-        completedAt: endTime.toISOString()
+        completedAt: endTime.toISOString(),
+        intensity,
+        notes
       });
 
       // Update gamification
@@ -117,7 +179,7 @@ export default function CardioSessionScreen() {
           {
             text: 'Sair',
             style: 'cancel',
-            onPress: () => router.back()
+            onPress: () => router.navigate('/(tabs)/cardio')
           },
           {
             text: 'Compartilhar 📸',
@@ -139,6 +201,11 @@ export default function CardioSessionScreen() {
       console.error(error);
       Alert.alert('Erro', 'Erro ao salvar treino.');
     }
+  };
+
+  const handleFinish = () => {
+    setIsActive(false);
+    setShowFeedbackModal(true);
   };
 
   const formatTime = (totalSeconds: number) => {
@@ -175,7 +242,7 @@ export default function CardioSessionScreen() {
               {formatTime(seconds)}
             </Text>
             <Text className="text-zinc-500 text-sm font-bold uppercase mt-2">
-              Duração
+              {targetMinutes ? `Meta: ${targetMinutes} min` : 'Duração'}
             </Text>
           </View>
 
@@ -193,6 +260,50 @@ export default function CardioSessionScreen() {
           </Text>
         </View>
 
+        {/* Target Time Selection (Only when not active and 0 seconds) */}
+        {!isActive && seconds === 0 && (
+          <View className="mb-4 w-full">
+            <Text className="text-zinc-400 text-xs font-bold uppercase mb-3 text-center">
+              Definir Meta de Tempo
+            </Text>
+            
+            {/* Presets */}
+            <View className="flex-row flex-wrap justify-center gap-3 mb-4">
+              {[15, 30, 45, 60].map((min) => (
+                <TouchableOpacity
+                  key={min}
+                  onPress={() => handlePresetSelect(min)}
+                  className={`px-5 py-2 rounded-xl border ${
+                    targetMinutes === min 
+                      ? 'bg-orange-500 border-orange-500' 
+                      : 'bg-zinc-800 border-zinc-700'
+                  }`}
+                >
+                  <Text className={`font-bold ${targetMinutes === min ? 'text-white' : 'text-zinc-400'}`}>
+                    {min} min
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Custom Input - Integrated Design */}
+            <View className="flex-row items-center justify-center mt-2">
+               <View className={`flex-row items-center bg-zinc-800 rounded-xl border ${customMinutes ? 'border-orange-500' : 'border-zinc-700'} px-5 py-3`}>
+                 <TextInput 
+                    keyboardType="number-pad"
+                    className="text-white font-bold text-2xl w-20 text-center p-0"
+                    placeholder="00"
+                    placeholderTextColor="#52525B"
+                    value={customMinutes}
+                    onChangeText={handleCustomChange}
+                    maxLength={3}
+                 />
+                 <Text className="text-zinc-500 font-bold text-base ml-2">min</Text>
+               </View>
+            </View>
+          </View>
+        )}
+
         {/* Controls */}
         <View className="mb-8">
           {!isActive && seconds === 0 ? (
@@ -204,12 +315,14 @@ export default function CardioSessionScreen() {
                 colors={['#FF6B35', '#FF2E63']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="rounded-2xl py-5 items-center justify-center shadow-lg shadow-orange-500/40"
+                className="rounded-xl py-4 items-center justify-center"
               >
-                <Ionicons name="play" size={32} color="white" />
-                <Text className="text-white text-lg font-bold font-display mt-1">
-                  INICIAR
-                </Text>
+                <View className="flex-row items-center gap-2">
+                  <Ionicons name="play" size={24} color="white" />
+                  <Text className="text-white text-lg font-bold font-display">
+                    INICIAR
+                  </Text>
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           ) : (
@@ -247,9 +360,15 @@ export default function CardioSessionScreen() {
           visible={showShareModal}
           onClose={() => {
             setShowShareModal(false);
-            router.back();
+            router.navigate('/(tabs)/cardio');
           }}
           stats={shareStats}
+        />
+
+        <WorkoutFeedbackModal
+          visible={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          onSubmit={onFeedbackSubmit}
         />
       </View>
     </ScreenLayout>

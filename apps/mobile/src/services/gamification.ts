@@ -29,6 +29,8 @@ export interface StudentStreak {
   current_streak: number;
   longest_streak: number;
   last_activity_date: string;
+  freeze_available: number;
+  last_freeze_date: string | null;
 }
 
 export const gamificationService = {
@@ -59,7 +61,6 @@ export const gamificationService = {
       .select('*')
       .order('earned_at', { ascending: false });
 
-    if (error) throw error;
     if (error) throw error;
     return data as Achievement[];
   },
@@ -99,6 +100,32 @@ export const gamificationService = {
       p_student_id: studentId,
       p_date: date
     });
+
+    if (error) throw error;
+  },
+
+  async useStreakFreeze(studentId: string) {
+    // This logic should ideally be server-side (RPC) to ensure consistency
+    // But for now we'll implement a client-side check + update
+    const { data: streak } = await supabase
+      .from('streaks')
+      .select('*')
+      .eq('student_id', studentId)
+      .single();
+
+    if (!streak || streak.freeze_available <= 0) {
+      throw new Error('No freeze available');
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { error } = await supabase
+      .from('streaks')
+      .update({ 
+        freeze_available: streak.freeze_available - 1,
+        last_freeze_date: today
+      })
+      .eq('id', streak.id);
 
     if (error) throw error;
   }

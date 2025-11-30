@@ -15,6 +15,7 @@ interface GamificationState {
   updateMealProgress: (completed: number) => Promise<void>;
   updateWorkoutProgress: (completed: number) => Promise<void>;
   setShowConfetti: (show: boolean) => void;
+  useStreakFreeze: () => Promise<void>;
 }
 
 export const useGamificationStore = create<GamificationState>((set, get) => ({
@@ -96,4 +97,27 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
   },
 
   setShowConfetti: (show: boolean) => set({ showConfetti: show }),
+
+  useStreakFreeze: async () => {
+    const { streak } = get();
+    if (!streak || streak.freeze_available <= 0) return;
+
+    try {
+      await gamificationService.useStreakFreeze(streak.student_id);
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      set((state) => ({
+        streak: state.streak 
+          ? { 
+              ...state.streak, 
+              freeze_available: state.streak.freeze_available - 1,
+              last_freeze_date: today
+            }
+          : null
+      }));
+    } catch (error) {
+      console.error('Error using streak freeze:', error);
+    }
+  },
 }));

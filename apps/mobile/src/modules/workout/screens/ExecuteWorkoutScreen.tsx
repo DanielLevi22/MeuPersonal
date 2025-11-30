@@ -1,6 +1,8 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
+import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal';
+import { useVoiceCoach } from '@/hooks/useVoiceCoach';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,6 +39,17 @@ export default function ExecuteWorkoutScreen() {
     exerciseName: ''
   });
 
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  const { 
+    isMuted, 
+    toggleMute, 
+    motivateStart, 
+    motivateRest, 
+    motivateResume, 
+    motivateFinish 
+  } = useVoiceCoach();
+
   useEffect(() => {
     if (user?.id && !workouts.length) {
       fetchWorkouts(user.id);
@@ -70,6 +83,7 @@ export default function ExecuteWorkoutScreen() {
       setIsResting(false);
       setIsActive(false);
       setCurrentRestExercise(null);
+      motivateResume();
       Alert.alert('Tempo esgotado!', 'Hora da próxima série!');
     }
     return () => clearInterval(interval);
@@ -102,8 +116,77 @@ export default function ExecuteWorkoutScreen() {
         setTimer(exerciseItem.rest_time || 60);
         setIsResting(true);
         setIsActive(true);
+
         setCurrentRestExercise(exerciseItem.exercise.name);
+        motivateRest(exerciseItem.rest_time || 60);
       }
+    }
+  };
+
+  const onFeedbackSubmit = async (intensity: number, notes: string) => {
+    setShowFeedbackModal(false);
+    motivateFinish();
+    try {
+      if (!user?.id || !startTime) return;
+
+      const endTime = new Date();
+      
+      // Prepare items data
+      const sessionItems = Object.entries(completedSets).map(([itemId, sets]) => ({
+        workoutItemId: itemId,
+        setsCompleted: sets
+      }));
+
+      // Save session
+      await saveWorkoutSession({
+        workoutId: workout.id,
+        studentId: user.id,
+        startedAt: startTime.toISOString(),
+        completedAt: endTime.toISOString(),
+        items: sessionItems,
+        intensity,
+        notes
+      });
+
+      // Update gamification
+      await updateWorkoutProgress(1);
+
+      Alert.alert(
+        'Parabéns! 🎉',
+        'Treino concluído e salvo com sucesso!',
+        [
+          {
+            text: 'Sair',
+            onPress: () => {
+              router.back();
+            }
+          },
+          {
+            text: 'Compartilhar 📸',
+            onPress: () => {
+              // Calculate total duration
+              const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+              const durationFormatted = formatTime(Math.floor(durationSeconds));
+              
+              // Estimate calories (very rough estimate for weight training: ~3-4 METs)
+              // 3.5 METs * 70kg * hours
+              const estimatedCalories = Math.round(3.5 * 70 * (durationSeconds / 3600));
+
+              setShareStats({
+                title: 'Treino Concluído',
+                duration: durationFormatted,
+                calories: `${estimatedCalories} kcal`,
+                date: new Date().toLocaleDateString('pt-BR'),
+                exerciseName: workout.title
+              });
+              setShowShareModal(true);
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      Alert.alert('Erro', 'Não foi possível salvar o treino. Tente novamente.');
     }
   };
 
@@ -111,71 +194,6 @@ export default function ExecuteWorkoutScreen() {
     // Check if all sets are completed
     const totalSets = workout.items?.reduce((acc: number, item: any) => acc + item.sets, 0) || 0;
     const completedTotal = Object.values(completedSets).reduce((acc, val) => acc + val, 0);
-
-    const finish = async () => {
-      try {
-        if (!user?.id || !startTime) return;
-
-        const endTime = new Date();
-        
-        // Prepare items data
-        const sessionItems = Object.entries(completedSets).map(([itemId, sets]) => ({
-          workoutItemId: itemId,
-          setsCompleted: sets
-        }));
-
-        // Save session
-        await saveWorkoutSession({
-          workoutId: workout.id,
-          studentId: user.id,
-          startedAt: startTime.toISOString(),
-          completedAt: endTime.toISOString(),
-          items: sessionItems
-        });
-
-        // Update gamification
-        // Calculate percentage completed for gamification (or just passed 1 if completed)
-        // For now, let's assume 1 workout completed = 1 point/unit in gamification
-        await updateWorkoutProgress(1);
-
-        Alert.alert(
-          'Parabéns! 🎉',
-          'Treino concluído e salvo com sucesso!',
-          [
-            {
-              text: 'Sair',
-              onPress: () => {
-                router.back();
-              }
-            },
-            {
-              text: 'Compartilhar 📸',
-              onPress: () => {
-                // Calculate total duration
-                const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
-                const durationFormatted = formatTime(Math.floor(durationSeconds));
-                
-                // Estimate calories (very rough estimate for weight training: ~3-4 METs)
-                // 3.5 METs * 70kg * hours
-                const estimatedCalories = Math.round(3.5 * 70 * (durationSeconds / 3600));
-
-                setShareStats({
-                  title: 'Treino Concluído',
-                  duration: durationFormatted,
-                  calories: `${estimatedCalories} kcal`,
-                  date: new Date().toLocaleDateString('pt-BR'),
-                  exerciseName: workout.title
-                });
-                setShowShareModal(true);
-              }
-            }
-          ]
-        );
-      } catch (error) {
-        console.error('Error saving workout:', error);
-        Alert.alert('Erro', 'Não foi possível salvar o treino. Tente novamente.');
-      }
-    };
 
     if (completedTotal < totalSets) {
       Alert.alert(
@@ -186,12 +204,12 @@ export default function ExecuteWorkoutScreen() {
           { 
             text: 'Finalizar', 
             style: 'destructive',
-            onPress: finish
+            onPress: () => setShowFeedbackModal(true)
           }
         ]
       );
     } else {
-      finish();
+      setShowFeedbackModal(true);
     }
   };
 
@@ -203,6 +221,19 @@ export default function ExecuteWorkoutScreen() {
 
   return (
     <ScreenLayout>
+      <View className="absolute top-12 right-6 z-50">
+        <TouchableOpacity 
+          onPress={toggleMute}
+          className="bg-zinc-800/80 p-3 rounded-full border border-zinc-700 backdrop-blur-md"
+        >
+          <Ionicons 
+            name={isMuted ? "volume-mute" : "volume-high"} 
+            size={24} 
+            color={isMuted ? "#71717A" : "#FF6B35"} 
+          />
+        </TouchableOpacity>
+      </View>
+
       {!isWorkoutStarted ? (
         <View className="flex-1 justify-center items-center p-6">
           <View className="w-32 h-32 rounded-full bg-orange-500/10 items-center justify-center mb-8 border-4 border-orange-500/20">
@@ -220,6 +251,7 @@ export default function ExecuteWorkoutScreen() {
             onPress={() => {
               setIsWorkoutStarted(true);
               setStartTime(new Date());
+              motivateStart(user?.user_metadata?.full_name);
             }}
             className="w-full"
             activeOpacity={0.8}
@@ -409,6 +441,7 @@ export default function ExecuteWorkoutScreen() {
                       setIsResting(false);
                       setIsActive(false);
                       setTimer(0);
+                      motivateResume();
                     }}
                     className="bg-zinc-700 p-2 rounded-full"
                   >
@@ -444,6 +477,12 @@ export default function ExecuteWorkoutScreen() {
           router.back();
         }}
         stats={shareStats}
+      />
+
+      <WorkoutFeedbackModal
+        visible={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onSubmit={onFeedbackSubmit}
       />
     </ScreenLayout>
   );

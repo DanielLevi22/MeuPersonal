@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/auth';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function TabLayout() {
   const { accountType, abilities } = useAuthStore();
   const insets = useSafeAreaInsets();
+
 
   // If accountType is null (loading), default to student to avoid flashing restricted tabs
   const isStudent = !accountType || accountType === 'managed_student' || accountType === 'autonomous_student';
@@ -25,8 +26,11 @@ export default function TabLayout() {
         },
         tabBarActiveTintColor: '#FF6B35', // text-primary (Vibrant Orange)
         tabBarInactiveTintColor: '#71717A', // text-muted
+        tabBarItemStyle: {
+          padding: 0,
+        },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 9,
           fontWeight: '600',
           fontFamily: 'Orbitron_600SemiBold', // Use custom font if available, else default
         },
@@ -152,13 +156,13 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="cardio"
+        name="cardio/index"
         options={{
           title: 'Cardio',
           href: isStudent ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'walk' : 'walk-outline'} 
+            <MaterialIcons 
+              name="directions-run" 
               size={24} 
               color={color} 
             />

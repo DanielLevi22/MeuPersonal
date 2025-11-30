@@ -176,8 +176,16 @@ export default function DashboardScreen() {
               Olá, {profile?.full_name?.split(' ')[0] || 'Aluno'}
             </Text>
           </View>
-          <View className="mb-1">
-            <StreakCounter streak={streak?.current_streak || 0} />
+          <View className="mb-1 flex-row items-center gap-2">
+            {streak?.freeze_available > 0 && (
+              <View className="bg-blue-500/20 px-2 py-1 rounded-full">
+                <Ionicons name="snow" size={12} color="#3B82F6" />
+              </View>
+            )}
+            <StreakCounter 
+              streak={streak?.current_streak || 0} 
+              frozen={streak?.last_freeze_date === new Date().toISOString().split('T')[0]} 
+            />
           </View>
         </Animated.View>
 

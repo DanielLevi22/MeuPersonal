@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const userRoles = pgEnum('user_role', ['personal', 'student']);
 export const inviteStatus = pgEnum('invite_status', ['active', 'pending', 'inactive']);
@@ -89,6 +89,7 @@ export const workoutSessions = pgTable('workout_sessions', {
   startedAt: timestamp('started_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'),
   notes: text('notes'),
+  intensity: integer('intensity'),
 });
 
 export const workoutSessionItems = pgTable('workout_session_items', {
@@ -106,4 +107,39 @@ export const workoutAssignments = pgTable('workout_assignments', {
   workoutId: uuid('workout_id').references(() => workouts.id).notNull(),
   studentId: uuid('student_id').references(() => profiles.id).notNull(),
   assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+});
+
+export const dailyGoals = pgTable('daily_goals', {
+  id: uuid('id').defaultRandom().primaryKey().notNull(),
+  studentId: uuid('student_id').references(() => profiles.id).notNull(),
+  date: timestamp('date', { mode: 'string' }).notNull(), // Using string for date to match service usage
+  mealsTarget: integer('meals_target').default(4),
+  mealsCompleted: integer('meals_completed').default(0),
+  workoutTarget: integer('workout_target').default(1),
+  workoutCompleted: integer('workout_completed').default(0),
+  completed: boolean('completed').default(false),
+  completionPercentage: integer('completion_percentage').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const achievements = pgTable('achievements', {
+  id: uuid('id').defaultRandom().primaryKey().notNull(),
+  studentId: uuid('student_id').references(() => profiles.id).notNull(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  icon: text('icon'),
+  earnedAt: timestamp('earned_at').defaultNow(),
+  points: integer('points').default(0),
+});
+
+export const streaks = pgTable('streaks', {
+  id: uuid('id').defaultRandom().primaryKey().notNull(),
+  studentId: uuid('student_id').references(() => profiles.id).notNull(),
+  currentStreak: integer('current_streak').default(0),
+  longestStreak: integer('longest_streak').default(0),
+  lastActivityDate: timestamp('last_activity_date', { mode: 'string' }),
+  freezeAvailable: integer('freeze_available').default(0),
+  lastFreezeDate: timestamp('last_freeze_date', { mode: 'string' }),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });

@@ -147,6 +147,17 @@ interface StudentStreak {
    - 🏋️ Mês do guerreiro (20 treinos)
    - 🥗 Nutrição impecável (7 dias 100%)
 
+### 2.1 Mecânicas de Retenção (Novo)
+
+#### 🔥 Sistema de Ofensiva (Duolingo Style)
+- **Visual**: Ícone de fogo que muda de estado (aceso, apagando, congelado).
+- **Congelamento de Ofensiva (Streak Freeze)**:
+  - Permite "pular" um dia sem perder a sequência.
+  - Pode ser ganho ao completar 7 dias perfeitos ou comprado com "pontos".
+- **Recuperação**: Se perder a ofensiva, tem 24h para fazer um treino "hard" e recuperar.
+
+
+
 ---
 
 ## 3. Notificações Inteligentes

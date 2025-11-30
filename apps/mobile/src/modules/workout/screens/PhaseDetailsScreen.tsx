@@ -293,7 +293,17 @@ export default function PhaseDetailsScreen() {
 
         <Text className="text-white font-bold text-lg mb-4 font-display">Treinos</Text>
         
-        {workouts.map((workout) => (
+        {workouts.length === 0 ? (
+          <View className="items-center justify-center py-10">
+            <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
+              <Ionicons name="walk" size={64} color="#52525B" />
+            </View>
+            <Text className="text-zinc-500 font-sans text-center">
+              Nenhum treino cadastrado nesta fase.
+            </Text>
+          </View>
+        ) : (
+          workouts.map((workout) => (
           <TouchableOpacity
             key={workout.id}
             className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-4 flex-row justify-between items-center"
@@ -317,7 +327,8 @@ export default function PhaseDetailsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#71717A" />
           </TouchableOpacity>
-        ))}
+        ))
+        )}
       </ScrollView>
 
       {/* Split Selection Modal */}
