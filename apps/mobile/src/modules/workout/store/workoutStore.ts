@@ -92,6 +92,16 @@ interface WorkoutState {
   generateWorkoutsForPhase: (trainingPlanId: string, split: string, personalId: string) => Promise<void>;
   createWorkout: (workout: { training_plan_id: string; title: string; description?: string; personal_id: string }) => Promise<void>;
   activatePeriodization: (periodizationId: string) => Promise<any>;
+  saveWorkoutSession: (sessionData: {
+    workoutId: string;
+    studentId: string;
+    startedAt: string;
+    completedAt: string;
+    items: {
+      workoutItemId: string;
+      setsCompleted: number;
+    }[];
+  }) => Promise<string>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
   reset: () => void; // Clear all state on logout
@@ -618,6 +628,44 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       await get().fetchWorkoutsForPhase(workout.training_plan_id);
     } catch (error) {
       console.error('Error creating workout:', error);
+      throw error;
+    }
+  },
+
+  saveWorkoutSession: async (sessionData) => {
+    try {
+      // 1. Create Workout Session
+      const { data: session, error: sessionError } = await supabase
+        .from('workout_sessions')
+        .insert({
+          workout_id: sessionData.workoutId,
+          student_id: sessionData.studentId,
+          started_at: sessionData.startedAt,
+          completed_at: sessionData.completedAt,
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // 2. Create Session Items
+      if (sessionData.items.length > 0) {
+        const sessionItems = sessionData.items.map(item => ({
+          session_id: session.id,
+          workout_item_id: item.workoutItemId,
+          sets_completed: item.setsCompleted,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('workout_session_items')
+          .insert(sessionItems);
+
+        if (itemsError) throw itemsError;
+      }
+
+      return session.id;
+    } catch (error) {
+      console.error('Error saving workout session:', error);
       throw error;
     }
   },

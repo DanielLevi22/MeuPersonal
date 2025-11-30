@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -20,7 +21,11 @@ export default function ExecuteWorkoutScreen() {
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [currentRestExercise, setCurrentRestExercise] = useState<string | null>(null);
+
   const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const { updateWorkoutProgress } = useGamificationStore();
+  const { saveWorkoutSession } = useWorkoutStore();
 
   useEffect(() => {
     if (user?.id && !workouts.length) {
@@ -97,6 +102,50 @@ export default function ExecuteWorkoutScreen() {
     const totalSets = workout.items?.reduce((acc: number, item: any) => acc + item.sets, 0) || 0;
     const completedTotal = Object.values(completedSets).reduce((acc, val) => acc + val, 0);
 
+    const finish = async () => {
+      try {
+        if (!user?.id || !startTime) return;
+
+        const endTime = new Date();
+        
+        // Prepare items data
+        const sessionItems = Object.entries(completedSets).map(([itemId, sets]) => ({
+          workoutItemId: itemId,
+          setsCompleted: sets
+        }));
+
+        // Save session
+        await saveWorkoutSession({
+          workoutId: workout.id,
+          studentId: user.id,
+          startedAt: startTime.toISOString(),
+          completedAt: endTime.toISOString(),
+          items: sessionItems
+        });
+
+        // Update gamification
+        // Calculate percentage completed for gamification (or just passed 1 if completed)
+        // For now, let's assume 1 workout completed = 1 point/unit in gamification
+        await updateWorkoutProgress(1);
+
+        Alert.alert(
+          'Parabéns!',
+          'Treino concluído e salvo com sucesso!',
+          [
+            {
+              text: 'Finalizar',
+              onPress: () => {
+                router.back();
+              }
+            }
+          ]
+        );
+      } catch (error) {
+        console.error('Error saving workout:', error);
+        Alert.alert('Erro', 'Não foi possível salvar o treino. Tente novamente.');
+      }
+    };
+
     if (completedTotal < totalSets) {
       Alert.alert(
         'Treino Incompleto',
@@ -106,28 +155,12 @@ export default function ExecuteWorkoutScreen() {
           { 
             text: 'Finalizar', 
             style: 'destructive',
-            onPress: () => {
-              // TODO: Save workout log
-              Alert.alert('Sucesso', 'Treino finalizado!');
-              router.back();
-            }
+            onPress: finish
           }
         ]
       );
     } else {
-      Alert.alert(
-        'Parabéns!',
-        'Treino concluído com sucesso!',
-        [
-          {
-            text: 'Finalizar',
-            onPress: () => {
-              // TODO: Save workout log
-              router.back();
-            }
-          }
-        ]
-      );
+      finish();
     }
   };
 
@@ -153,7 +186,10 @@ export default function ExecuteWorkoutScreen() {
           </Text>
 
           <TouchableOpacity 
-            onPress={() => setIsWorkoutStarted(true)}
+            onPress={() => {
+              setIsWorkoutStarted(true);
+              setStartTime(new Date());
+            }}
             className="w-full"
             activeOpacity={0.8}
           >
