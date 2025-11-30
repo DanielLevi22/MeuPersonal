@@ -88,7 +88,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchDailyLogs: async (studentId: string, date: string) => {
     try {
       const { data, error } = await supabase
-        .from('meal_logs')
+        .from('diet_logs')
         .select('*')
         .eq('student_id', studentId)
         .eq('logged_date', date);
@@ -136,7 +136,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (existingLog?.id) {
         // Update
         const { error } = await supabase
-          .from('meal_logs')
+          .from('diet_logs')
           .update({ completed: isCompleted })
           .eq('id', existingLog.id);
 
@@ -403,7 +403,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchDietPlan: async (studentId: string) => {
     try {
       const { data, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .select('*')
         .eq('student_id', studentId)
         .eq('status', 'active')
@@ -477,7 +477,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchDietPlanHistory: async (studentId: string) => {
     try {
       const { data, error } = await supabase
-        .from('diet_plans')
+        .from('nutrition_plans')
         .select('*')
         .eq('student_id', studentId)
         .neq('status', 'active')

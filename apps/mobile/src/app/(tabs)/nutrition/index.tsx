@@ -1,5 +1,12 @@
-import { NutritionScreen } from '@/modules/nutrition/routes/index';
+import { useAuthStore } from '@/auth';
+import { NutritionScreen, StudentNutritionScreen } from '@/modules/nutrition/routes/index';
 
 export default function NutritionRoute() {
-  return <NutritionScreen />;
+  const { accountType } = useAuthStore();
+
+  if (accountType === 'professional') {
+    return <NutritionScreen />;
+  }
+
+  return <StudentNutritionScreen />;
 }

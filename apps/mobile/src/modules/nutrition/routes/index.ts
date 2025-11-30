@@ -7,11 +7,11 @@ export type { DailyLog } from '../store/nutritionStore';
 
 // Components
 export {
-  DailyNutrition,
-  DayOptionsModal,
-  FoodSearchModal,
-  MacroProgressBar,
-  MealCard
+    DailyNutrition,
+    DayOptionsModal,
+    FoodSearchModal,
+    MacroProgressBar,
+    MealCard
 } from '../components';
 
 // Screens
@@ -19,6 +19,7 @@ export {
 export { default as CreateDietScreen } from '../screens/CreateDietScreen';
 export { default as DietDetailsScreen } from '../screens/DietDetailsScreen';
 export { default as NutritionScreen } from '../screens/NutritionScreen';
+export { StudentNutritionScreen } from '../screens/StudentNutritionScreen';
 
 // Routes
 export { NutritionNavigator } from './routes';

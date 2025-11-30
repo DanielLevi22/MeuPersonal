@@ -140,7 +140,7 @@ export default function TabLayout() {
         name="nutrition"
         options={{
           title: 'Nutrição',
-          href: (accountType === 'professional' && abilities?.can('manage', 'Diet')) ? '/nutrition' : null,
+          href: (isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))) ? '/nutrition' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'restaurant' : 'restaurant-outline'} 

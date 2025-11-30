@@ -9,6 +9,8 @@ interface MealCardProps {
   onUpdateMealTime: (mealId: string, time: string) => void;
   onUpdateFood: (itemId: string, quantity: number) => void;
   isEditable?: boolean;
+  isChecked?: boolean;
+  onToggleCheck?: () => void;
 }
 
 export function MealCard({
@@ -19,6 +21,8 @@ export function MealCard({
   onUpdateMealTime,
   onUpdateFood,
   isEditable = false,
+  isChecked = false,
+  onToggleCheck,
 }: MealCardProps) {
   const totalCals = items.reduce((acc, item) => {
     const ratio = item.quantity / (item.food?.serving_size || 100);
@@ -26,15 +30,27 @@ export function MealCard({
   }, 0);
 
   return (
-    <View className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800 mb-4">
+    <View className={`bg-zinc-900 rounded-2xl p-4 border mb-4 ${isChecked ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-zinc-800'}`}>
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center flex-1">
+          {onToggleCheck && (
+            <TouchableOpacity 
+              onPress={onToggleCheck}
+              className={`mr-3 w-6 h-6 rounded-full border-2 items-center justify-center ${
+                isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600'
+              }`}
+            >
+              {isChecked && <Ionicons name="checkmark" size={14} color="#000" />}
+            </TouchableOpacity>
+          )}
           <View className="bg-zinc-800 px-2 py-1 rounded-md mr-3">
             <Text className="text-zinc-400 text-xs font-bold">
               {meal.meal_time || '00:00'}
             </Text>
           </View>
-          <Text className="text-white font-bold text-base mr-2">{meal.name}</Text>
+          <Text className={`font-bold text-base mr-2 ${isChecked ? 'text-zinc-400 line-through' : 'text-white'}`}>
+            {meal.name}
+          </Text>
           {isEditable && (
              <TouchableOpacity onPress={() => {/* Handle edit meal name/time if needed */}}>
                  <Ionicons name="pencil" size={12} color="#52525B" />
@@ -42,7 +58,7 @@ export function MealCard({
           )}
         </View>
         <View className="flex-row items-center gap-2">
-          <Text className="text-orange-500 font-bold text-sm">
+          <Text className={`${isChecked ? 'text-zinc-500' : 'text-orange-500'} font-bold text-sm`}>
             {Math.round(totalCals)} kcal
           </Text>
           {isEditable && (
