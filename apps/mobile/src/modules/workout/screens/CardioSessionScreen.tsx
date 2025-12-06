@@ -2,6 +2,7 @@ import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
 import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal';
+import { supabase } from '@/lib/supabase';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -53,9 +54,44 @@ export default function CardioSessionScreen() {
 
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
-  // User weight fallback (70kg if not found)
-  // In a real app, we should fetch this from the profile/assessment
-  const userWeight = 70; 
+  // User weight state (default 70kg)
+  const [userWeight, setUserWeight] = useState(70);
+
+  useEffect(() => {
+    async function fetchUserWeight() {
+        if (!user?.id) return;
+
+        try {
+            // First try to get from profile
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('weight')
+                .eq('id', user.id)
+                .single();
+            
+            if (data?.weight) {
+                setUserWeight(data.weight);
+            } else {
+                // If not in profile, try to get from latest assessment
+                const { data: assessment } = await supabase
+                    .from('physical_assessments')
+                    .select('weight')
+                    .eq('student_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (assessment?.weight) {
+                    setUserWeight(assessment.weight);
+                }
+            }
+        } catch (error) {
+            console.log('Error fetching weight:', error);
+        }
+    }
+
+    fetchUserWeight();
+  }, [user?.id]);
 
   const met = METS[exerciseName as string] || METS['Cardio'] || 5.0;
 
