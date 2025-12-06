@@ -6,7 +6,7 @@ import { useNutritionStore } from '@/modules/nutrition/routes';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const DAYS = [
   { id: 0, label: 'DOM' },
@@ -281,6 +281,18 @@ export function StudentNutritionScreen() {
                 isEditable={false}
                 isChecked={dailyLogs[meal.id]?.completed}
                 onToggleCheck={() => handleToggleCheck(meal.id)}
+                onCook={() => {
+                   const items = mealItems[meal.id] || [];
+                   if (items.length === 0) {
+                       Alert.alert("Vazio", "Esta refeição não tem alimentos.");
+                       return;
+                   }
+                   const ingredients = JSON.stringify(items.map(i => i.food?.name || "Item sem nome"));
+                   router.push({
+                       pathname: '/(tabs)/nutrition/cooking',
+                       params: { mealName: meal.name, ingredients }
+                   });
+                }}
               />
             ))
           ) : (

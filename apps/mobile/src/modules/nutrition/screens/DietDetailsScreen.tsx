@@ -9,14 +9,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, {
-    Extrapolation,
-    interpolate,
-    runOnUI,
-    scrollTo,
-    useAnimatedRef,
-    useAnimatedScrollHandler,
-    useAnimatedStyle,
-    useSharedValue
+  Extrapolation,
+  interpolate,
+  runOnUI,
+  scrollTo,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue
 } from 'react-native-reanimated';
 import { FoodSearchModal, useNutritionStore } from '../routes';
 
@@ -404,6 +404,8 @@ export default function DietDetailsScreen() {
 
 
 
+
+
   if (isLoading || !plan) {
     return (
       <ScreenLayout className="justify-center items-center">
@@ -662,13 +664,17 @@ export default function DietDetailsScreen() {
                         <Text className="text-zinc-600 text-xs italic ml-6">Sem alimentos</Text>
                       )}
                       
-                      <TouchableOpacity 
-                        onPress={() => handleAddFoodPress(existingMeal.id)}
-                        className="mt-3 bg-background-primary p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
-                      >
-                         <Ionicons name="add" size={16} color={tailwindColors.primary[400]} style={{ marginRight: 4 }} />
-                         <Text className="text-primary-400 text-xs font-bold">Adicionar Alimento</Text>
-                      </TouchableOpacity>
+                      <View className="flex-row gap-2 mt-3">
+                        <TouchableOpacity 
+                            onPress={() => handleAddFoodPress(existingMeal.id)}
+                            className="flex-1 bg-background-primary p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
+                        >
+                             <Ionicons name="add" size={16} color={tailwindColors.primary[400]} style={{ marginRight: 4 }} />
+                             <Text className="text-primary-400 text-xs font-bold">Adicionar</Text>
+                        </TouchableOpacity>
+
+
+                      </View>
                     </View>
                   );
                 } else {

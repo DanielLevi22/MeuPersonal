@@ -23,7 +23,8 @@ export function MealCard({
   isEditable = false,
   isChecked = false,
   onToggleCheck,
-}: MealCardProps) {
+  onCook,
+}: MealCardProps & { onCook?: () => void }) {
   const totalCals = items.reduce((acc, item) => {
     const ratio = item.quantity / (item.food?.serving_size || 100);
     return acc + (item.food?.calories || 0) * ratio;
@@ -73,29 +74,35 @@ export function MealCard({
       </View>
 
       {items.length > 0 ? (
-        <View className="gap-2 pl-2 border-l-2 border-zinc-800 ml-2">
-          {items.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              className="flex-row justify-between items-center py-1"
-              onPress={() => {
-                  // If we want to support editing quantity, we might need to expose that via props or a modal
-                  // For now, let's assume tapping might trigger an edit action if we had the UI for it
-                  // The original DietDetailsScreen passed handleEditItemPress
-                  // dieta-completa.tsx passes onUpdateFood but doesn't seem to have a UI to trigger it easily from here without a modal
-                  // For now, I'll just leave it as a touchable
-              }}
-              onLongPress={() => isEditable && onRemoveFood(item.id)}
-            >
-              <Text className="text-zinc-400 text-sm flex-1 mr-2">
-                {item.food?.name}
-              </Text>
-              <Text className="text-zinc-500 text-sm">
-                {item.quantity}
-                {item.unit || 'g'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View>
+            <View className="gap-2 pl-2 border-l-2 border-zinc-800 ml-2 mb-3">
+            {items.map((item, idx) => (
+                <TouchableOpacity
+                key={idx}
+                className="flex-row justify-between items-center py-1"
+                onPress={() => {}}
+                onLongPress={() => isEditable && onRemoveFood(item.id)}
+                >
+                <Text className="text-zinc-400 text-sm flex-1 mr-2">
+                    {item.food?.name}
+                </Text>
+                <Text className="text-zinc-500 text-sm">
+                    {item.quantity}
+                    {item.unit || 'g'}
+                </Text>
+                </TouchableOpacity>
+            ))}
+            </View>
+
+            {onCook && !isChecked && (
+                <TouchableOpacity 
+                    onPress={onCook}
+                    className="flex-row items-center justify-center bg-orange-500/10 py-2 rounded-xl border border-orange-500/20"
+                >
+                     <Ionicons name="flame-outline" size={16} color="#FF6B35" style={{ marginRight: 6 }} />
+                     <Text className="text-[#FF6B35] text-xs font-bold">Cozinhar Agora</Text>
+                </TouchableOpacity>
+            )}
         </View>
       ) : (
         <Text className="text-zinc-600 text-xs italic ml-11">Sem alimentos</Text>

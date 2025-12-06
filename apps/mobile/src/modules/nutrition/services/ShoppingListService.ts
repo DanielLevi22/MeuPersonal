@@ -12,6 +12,12 @@ export interface ShoppingCategory {
   icon?: string; // Optional for UI mapping if we wanted to pass it from here, but we'll map in UI
 }
 
+export interface CookingStep {
+  step: number;
+  instruction: string;
+  timerSeconds?: number;
+}
+
 // Simple keyword matcher for categorization
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Hortifruti': ['banana', 'maçã', 'alface', 'tomate', 'batata', 'cenoura', 'fruta', 'legume', 'verdura', 'uva', 'morango', 'abacate', 'limão', 'mamão', 'laranja', 'cebola', 'alho'],
@@ -93,7 +99,46 @@ export const ShoppingListService = {
     return 'Outros';
   },
 
-  askAssistant: async (categories: ShoppingCategory[], promptType: 'recipes' | 'analysis' | 'tips'): Promise<string> => {
+  generateCookingSteps: async (mealName: string, ingredients: string[]): Promise<CookingStep[]> => {
+      const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("API Key missing");
+
+      const prompt = `
+          You are a culinary instructor. Create a step-by-step cooking guide for a meal named "${mealName}" using these ingredients: ${ingredients.join(', ')}.
+          Return ONLY a JSON array where each object has:
+          - "step": number
+          - "instruction": string (max 150 chars, clear and direct)
+          - "timerSeconds": number (optional, only if a specific time is mentioned like "cook for 5 mins", convert to seconds).
+          Example: [{"step": 1, "instruction": "Chop the onions.", "timerSeconds": null}]
+      `;
+
+      try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  contents: [{ parts: [{ text: prompt }] }]
+              })
+          });
+
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (!text) return [];
+          
+          // Clean markdown code blocks if present
+          const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          return JSON.parse(jsonStr);
+      } catch (error) {
+          console.error("Error generating cooking steps:", error);
+          return [
+              { step: 1, instruction: "Prepare os ingredientes.", timerSeconds: 0 },
+              { step: 2, instruction: "Cozinhe conforme sua preferência.", timerSeconds: 0 }
+          ];
+      }
+  },
+
+  askAssistant: async (categories: ShoppingCategory[], promptType: 'recipes' | 'analysis' | 'tips' | 'meal_prep' | 'cooking_guide'): Promise<string> => {
       const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) return "Erro: Chave de API não configurada.";
 
@@ -108,6 +153,10 @@ export const ShoppingListService = {
           systemPrompt = "You are a nutritionist. Analyze this shopping list. Is it balanced? Are there missing essential nutrients (fiber, protein, vitamins)? Be concise.";
       } else if (promptType === 'tips') {
           systemPrompt = "You are a proactive shopper. specific tips on how to choose the quality of fresh items (fruits/vegetables/meat) present in this list. Short bullet points.";
+      } else if (promptType === 'meal_prep') {
+          systemPrompt = "You are a meal prep expert. Create a step-by-step guide to cook/prepare these ingredients efficiently for the week. Group tasks (e.g., 'Chop vegetables', 'Cook protein'). Be practical.";
+      } else if (promptType === 'cooking_guide') {
+          systemPrompt = "You are a culinary instructor. Choose the main meal components (protein + specific side) from this list and teach step-by-step how to cook them perfectly for immediate consumption. Focus on technique (searing, seasoning, timing).";
       }
 
       try {
