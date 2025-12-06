@@ -33,7 +33,12 @@ export default function CardioSessionScreen() {
   const [isActive, setIsActive] = useState(false);
   const [calories, setCalories] = useState(0);
   const [intensity, setIntensity] = useState<'Baixa' | 'Moderada' | 'Alta'>('Moderada');
-  const [startTime, setStartTime] = useState<Date | null>(null);
+  
+  // Timestamp-based tracking
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [accumulatedSeconds, setAccumulatedSeconds] = useState(0);
+  const [lastFeedbackTime, setLastFeedbackTime] = useState(0);
+
   const [targetMinutes, setTargetMinutes] = useState<number | null>(null);
   const [customMinutes, setCustomMinutes] = useState('');
 
@@ -83,47 +88,63 @@ export default function CardioSessionScreen() {
 
   useEffect(() => {
     let interval: any;
-    if (isActive) {
+    if (isActive && startTime) {
       interval = setInterval(() => {
-        setSeconds((prev) => {
-          const newSeconds = prev + 1;
+        const now = Date.now();
+        const diffSeconds = Math.floor((now - startTime) / 1000);
+        const totalSeconds = accumulatedSeconds + diffSeconds;
+        
+        setSeconds(totalSeconds);
+
+        // Calculate calories: MET * Weight(kg) * Time(hours)
+        const calsPerSec = (met * userWeight) / 3600;
+        setCalories(totalSeconds * calsPerSec);
+
+        // Target Time Feedback
+        if (targetMinutes && totalSeconds === targetMinutes * 60) {
+          Speech.speak(`Parabéns! Você atingiu sua meta de ${targetMinutes} minutos.`, {
+            language: 'pt-BR',
+          });
+        }
+
+        // Voice Feedback every 5 minutes (300 seconds)
+        // Check if we crossed a 5-minute threshold since the last feedback
+        if (totalSeconds >= lastFeedbackTime + 300) {
+          const mins = Math.floor(totalSeconds / 60);
+          const cals = Math.round(totalSeconds * calsPerSec);
           
-          // Calculate calories: MET * Weight(kg) * Time(hours)
-          // Time in hours = 1 / 3600
-          // Calories per second = (MET * Weight) / 3600
-          const calsPerSec = (met * userWeight) / 3600;
-          setCalories((prevCals) => prevCals + calsPerSec);
+          Speech.speak(`Você já treinou ${mins} minutos e gastou ${cals} calorias. Continue assim!`, {
+            language: 'pt-BR',
+          });
+          
+          // Update last feedback time to the current 5-minute mark
+          // This prevents spamming if the app was in background for a long time
+          const nextFeedbackMark = Math.floor(totalSeconds / 300) * 300;
+          setLastFeedbackTime(nextFeedbackMark);
+        }
 
-          // Target Time Feedback
-          if (targetMinutes && newSeconds === targetMinutes * 60) {
-            Speech.speak(`Parabéns! Você atingiu sua meta de ${targetMinutes} minutos.`, {
-              language: 'pt-BR',
-            });
-          }
-
-          // Voice Feedback every 5 minutes (300 seconds)
-          if (newSeconds % 300 === 0) {
-            const mins = newSeconds / 60;
-            const cals = Math.round(calories + calsPerSec); // Current estimate
-            Speech.speak(`Você já treinou ${mins} minutos e gastou ${cals} calorias. Continue assim!`, {
-              language: 'pt-BR',
-            });
-          }
-
-          return newSeconds;
-        });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, met, userWeight, calories, targetMinutes]);
+  }, [isActive, startTime, accumulatedSeconds, met, userWeight, targetMinutes, lastFeedbackTime]);
+
+  // Track the absolute start time of the session for the API
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
   const handleStart = () => {
     setIsActive(true);
-    if (!startTime) setStartTime(new Date());
+    setStartTime(Date.now());
+    if (!sessionStartTime) setSessionStartTime(new Date());
   };
 
   const handlePause = () => {
     setIsActive(false);
+    if (startTime) {
+      const now = Date.now();
+      const diffSeconds = Math.floor((now - startTime) / 1000);
+      setAccumulatedSeconds(prev => prev + diffSeconds);
+      setStartTime(null);
+    }
   };
 
   const handlePresetSelect = (min: number) => {
@@ -149,7 +170,7 @@ export default function CardioSessionScreen() {
   const onFeedbackSubmit = async (intensity: number, notes: string) => {
     setShowFeedbackModal(false);
     
-    if (!user?.id || !startTime) return;
+    if (!user?.id || !sessionStartTime) return;
 
     const endTime = new Date();
     const finalCalories = Math.round(calories);
@@ -163,7 +184,7 @@ export default function CardioSessionScreen() {
         exerciseName: finalExerciseName,
         durationSeconds: seconds,
         calories: calories,
-        startedAt: startTime.toISOString(),
+        startedAt: sessionStartTime.toISOString(),
         completedAt: endTime.toISOString(),
         intensity,
         notes
@@ -204,7 +225,7 @@ export default function CardioSessionScreen() {
   };
 
   const handleFinish = () => {
-    setIsActive(false);
+    handlePause();
     setShowFeedbackModal(true);
   };
 

@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/auth';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,11 +53,26 @@ export default function TabLayout() {
       <Tabs.Screen
         name="workouts"
         options={{
-          title: 'Treinos',
+          title: 'Treino',
           href: (isStudent || abilities?.can('manage', 'Workout')) ? '/workouts' : null,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'barbell' : 'barbell-outline'} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="nutrition"
+        options={{
+          title: 'Nutrição',
+          href: (isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))) ? '/nutrition' : null,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? 'restaurant' : 'restaurant-outline'} 
               size={24} 
               color={color} 
             />
@@ -79,47 +94,47 @@ export default function TabLayout() {
           ),
         }}
       />
-      
-      <Tabs.Screen
-        name="chat"
+
+       <Tabs.Screen
+        name="menu"
         options={{
-          title: 'Chat',
+          title: 'Menu',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
-              name={focused ? 'chatbubbles' : 'chatbubbles-outline'} 
+              name={focused ? 'grid' : 'grid-outline'} 
               size={24} 
               color={color} 
             />
           ),
+        }}
+      />
+      
+      {/* Hidden Tabs (Accessible via Menu or sub-navigation) */}
+      <Tabs.Screen
+        name="chat"
+        options={{
+          href: null,
         }}
       />
 
       <Tabs.Screen
         name="ranking"
         options={{
-          title: 'Ranking',
-          href: isStudent ? '/ranking' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'trophy' : 'trophy-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          href: null,
         }}
       />
 
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'person' : 'person-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="cardio/index"
+        options={{
+          href: null,
         }}
       />
       
@@ -138,38 +153,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      
-      {/* Nutritionist only */}
-      <Tabs.Screen
-        name="nutrition"
-        options={{
-          title: 'Nutrição',
-          href: (isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))) ? '/nutrition' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'restaurant' : 'restaurant-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="cardio/index"
-        options={{
-          title: 'Cardio',
-          href: isStudent ? undefined : null,
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons 
-              name="directions-run" 
-              size={24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-
 
     </Tabs>
   );

@@ -4,7 +4,7 @@ import { useHealthData } from '@/hooks/useHealthData';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
 import { useNutritionStore } from '@/modules/nutrition/routes';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -119,6 +119,8 @@ export function StudentNutritionScreen() {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
+  const router = useRouter();
+
   if (isLoading && !refreshing && !currentDietPlan) {
     return (
       <ScreenLayout className="justify-center items-center">
@@ -150,13 +152,21 @@ export function StudentNutritionScreen() {
 
   return (
     <ScreenLayout>
-      <View className="px-6 pt-8 pb-4">
-        <Text className="text-3xl font-extrabold text-white font-display tracking-tight">
-          Minha Dieta
-        </Text>
-        <Text className="text-zinc-400 font-sans font-medium mt-1">
-          {currentDietPlan.name}
-        </Text>
+      <View className="px-6 pt-8 pb-4 flex-row justify-between items-center">
+        <View>
+            <Text className="text-3xl font-extrabold text-white font-display tracking-tight">
+            Minha Dieta
+            </Text>
+            <Text className="text-zinc-400 font-sans font-medium mt-1">
+            {currentDietPlan.name}
+            </Text>
+        </View>
+        <TouchableOpacity 
+            onPress={() => router.push('/(tabs)/nutrition/scan' as any)}
+            className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
+        >
+            <Ionicons name="camera" size={24} color="#FF6B35" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView 

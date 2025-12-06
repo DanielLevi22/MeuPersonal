@@ -8,6 +8,7 @@ import type {
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
+import { StrategyResult } from '../utils/dietStrategies';
 export type { Food };
 
 interface NutritionStore {
@@ -27,6 +28,10 @@ interface NutritionStore {
   finishDietPlan: (planId: string) => Promise<void>;
   checkPlanExpiration: (studentId: string) => Promise<void>;
   updateDietPlan: (id: string, updates: Partial<DietPlan>) => Promise<void>;
+  createDietPlanWithStrategy: (
+    planData: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>,
+    strategyData: StrategyResult
+  ) => Promise<void>;
   
   // Meals
   meals: DietMeal[];
@@ -696,6 +701,94 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       set({ currentDietPlan: data });
     } catch (error) {
       console.error('Error updating diet plan:', error);
+      throw error;
+    }
+  },
+
+  createDietPlanWithStrategy: async (plan, strategyData) => {
+    const { dietPlans } = get();
+    try {
+      // 1. Create the plan using existing logic
+      
+      // Check active
+      const { data: existingActive } = await supabase
+        .from('nutrition_plans')
+        .select('id')
+        .eq('student_id', plan.student_id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingActive) {
+        throw new Error('Já existe um plano ativo para este aluno. Finalize o plano atual antes de criar um novo.');
+      }
+
+      // Insert Plan
+      const { data: newPlan, error } = await supabase
+        .from('nutrition_plans')
+        .insert({
+          ...plan,
+          version: 1,
+          is_active: true,
+          status: 'active',
+          plan_type: plan.plan_type || 'cyclic'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 2. Generate Meals from Strategy
+      const { weeklySchedule } = strategyData;
+      
+      for (const day of weeklySchedule) {
+        for (const mealTemplate of day.meals) {
+             const { error: mealError } = await supabase
+              .from('meals')
+              .insert({
+                diet_plan_id: newPlan.id,
+                day_of_week: day.dayOfWeek,
+                meal_type: mealTemplate.type,
+                meal_order: day.meals.indexOf(mealTemplate),
+                name: mealTemplate.name,
+                target_calories: 0, 
+                meal_time: mealTemplate.time
+              });
+
+            if (mealError) throw mealError;
+        }
+      }
+
+       // Fetch student name for the local state update
+      let studentName = '';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', plan.student_id)
+        .single();
+        
+      if (profile) {
+        studentName = profile.full_name;
+      } else {
+        const { data: pending } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', plan.student_id)
+          .single();
+        if (pending) studentName = pending.full_name;
+      }
+
+      const newPlanWithStudent = {
+        ...newPlan,
+        student: { full_name: studentName }
+      };
+      
+      set((state) => ({
+        currentDietPlan: newPlan,
+        dietPlans: [newPlanWithStudent, ...state.dietPlans]
+      }));
+
+    } catch (error) {
+      console.error('Error creating strategy diet plan:', error);
       throw error;
     }
   },

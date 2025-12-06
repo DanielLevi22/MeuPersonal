@@ -9,6 +9,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useNutritionStore } from '../routes';
+import { calculateDietStrategy, DIET_STRATEGIES, DietStrategyType } from '../utils/dietStrategies';
 
 export default function CreateDietScreen() {
   const router = useRouter();
@@ -25,19 +27,52 @@ export default function CreateDietScreen() {
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [calories, setCalories] = useState('');
+  
+  // Strategy
+  const [selectedStrategy, setSelectedStrategy] = useState<DietStrategyType>('standard');
+  const [targetCalories, setTargetCalories] = useState('2000'); // Base calories for strategy
 
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [showStudentPicker, setShowStudentPicker] = useState(false);
+  
+  const { createDietPlanWithStrategy } = useNutritionStore();
 
-  // Auto-calculate calories
+  // Auto-calculate macros based on strategy and target calories
   useEffect(() => {
+    if (targetCalories) {
+      const result = calculateDietStrategy(selectedStrategy, parseFloat(targetCalories) || 0);
+      setCalories(result.averageMacros.calories.toString());
+      setProtein(result.averageMacros.protein.toString());
+      setCarbs(result.averageMacros.carbs.toString());
+      setFat(result.averageMacros.fat.toString());
+    }
+  }, [selectedStrategy, targetCalories]);
+  
+  // Previous auto-calculate (Manually disabled to prefer strategy calculation, or we keep it for manual overrides?)
+  // Let's comment out the old effect that listened to P/C/F changes for now, 
+  // or better, make it only run if we aren't using the strategy calculator loop.
+  // Actually, the previous effect calculated Total Calories from P/C/F. 
+  // The new flow drives P/C/F from Total Calories + Strategy.
+  // If the user manually edits P/C/F, we should update Total Calories.
+  
+  useEffect(() => {
+     // This effect ensures if user manually types P/C/F, the total updates.
+     // But we need to avoid an infinite loop if we also set P/C/F from strategy.
+     // The strategy effect runs on [selectedStrategy, targetCalories].
+     // This one runs on [protein, carbs, fat].
+     // It should be fine as long as we don't set targetCalories here.
     const p = parseFloat(protein) || 0;
     const c = parseFloat(carbs) || 0;
     const f = parseFloat(fat) || 0;
-    if (p || c || f) {
-      const total = (p * 4) + (c * 4) + (f * 9);
-      setCalories(Math.round(total).toString());
+    
+    // Only update if the values differ significantly to avoid rounding loops
+    const calculated = (p * 4) + (c * 4) + (f * 9);
+    const current = parseFloat(calories) || 0;
+    
+    if (Math.abs(calculated - current) > 5 && (p || c || f)) {
+        // If user manually changed macros, update total.
+        setCalories(Math.round(calculated).toString());
     }
   }, [protein, carbs, fat]);
 
@@ -101,31 +136,31 @@ export default function CreateDietScreen() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('nutrition_plans')
-        .insert({
+      // Calculate final strategy data to ensure freshness
+      const strategyResult = calculateDietStrategy(selectedStrategy, parseFloat(targetCalories) || 0);
+
+      const planData = {
           name,
-          description,
+          description: description || strategyResult.description, // Use strategy desc if empty
           student_id: studentId,
           personal_id: user.id,
           start_date: startDate.toISOString().split('T')[0],
           status: 'active',
+          // These global targets are averages now, helpful for quick ref
           target_protein: parseFloat(protein) || 0,
           target_carbs: parseFloat(carbs) || 0,
           target_fat: parseFloat(fat) || 0,
           target_calories: parseFloat(calories) || 0,
-        })
-        .select()
-        .single();
+          plan_type: selectedStrategy
+      };
 
-      if (error) throw error;
+      await createDietPlanWithStrategy(planData as any, strategyResult);
 
       Alert.alert('Sucesso', 'Plano alimentar criado com sucesso!', [
         {
           text: 'OK',
           onPress: () => {
-            // Navigate to the plan details/edit screen
-            router.replace(`/(tabs)/students/${studentId}/nutrition/${data.id}` as any);
+             router.back();
           },
         },
       ]);
@@ -159,6 +194,104 @@ export default function CreateDietScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 0 }}>
+          
+          {/* Strategy Selector */}
+          <View className="mb-6">
+            <Text className="text-foreground text-sm font-semibold mb-3 font-sans">
+              Estratégia Nutricional
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+              <View className="flex-row gap-3">
+                {(Object.keys(DIET_STRATEGIES) as DietStrategyType[]).map((strategy) => (
+                  <TouchableOpacity
+                    key={strategy}
+                    onPress={() => setSelectedStrategy(strategy)}
+                    className={`p-4 rounded-2xl border w-40 h-48 justify-between ${
+                      selectedStrategy === strategy
+                        ? 'bg-primary-900/20 border-primary-500'
+                        : 'bg-zinc-900/80 border-zinc-800'
+                    }`}
+                  >
+                    <View>
+                      <Ionicons 
+                        name={DIET_STRATEGIES[strategy].icon as any} 
+                        size={32} 
+                        color={selectedStrategy === strategy ? '#00D9FF' : '#71717A'} 
+                      />
+                      <Text className={`mt-3 font-bold text-base ${
+                        selectedStrategy === strategy ? 'text-white' : 'text-zinc-400'
+                      }`}>
+                        {DIET_STRATEGIES[strategy].label}
+                      </Text>
+                    </View>
+                    <Text className="text-zinc-500 text-xs mt-2" numberOfLines={3}>
+                      {DIET_STRATEGIES[strategy].description}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* Target Calories Input (Primary Driver) */}
+            <View className="bg-zinc-900/80 p-4 rounded-2xl border border-zinc-700 mb-4">
+               <Text className="text-zinc-400 text-xs mb-1">Meta Calórica Média (Base)</Text>
+               <Input
+                  value={targetCalories}
+                  onChangeText={setTargetCalories}
+                  placeholder="2000"
+                  keyboardType="numeric"
+                  className="text-xl font-bold text-white h-12"
+               />
+               <Text className="text-zinc-600 text-xs mt-1">
+                 Isso definirá a base para os cálculos da semana.
+               </Text>
+            </View>
+
+            {/* Strategy Preview */}
+            <View className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50">
+              <Text className="text-zinc-400 text-xs font-bold mb-3 uppercase tracking-wider">
+                Resumo da Semana
+              </Text>
+              
+              {(() => {
+                const preview = calculateDietStrategy(selectedStrategy, parseFloat(targetCalories) || 0);
+                // Group days by label for cleaner display
+                 const groupedDays = preview.weeklySchedule.reduce((acc, day) => {
+                    if (!acc[day.label]) acc[day.label] = [];
+                    acc[day.label].push(day);
+                    return acc;
+                 }, {} as Record<string, typeof preview.weeklySchedule>);
+
+                return (
+                  <View className="gap-2">
+                    {Object.entries(groupedDays).map(([label, days]) => {
+                         const representative = days[0];
+                         const dayNames = days.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.dayOfWeek]).join(', ');
+                         
+                         return (
+                           <View key={label} className="flex-row items-center justify-between py-2 border-b border-zinc-800/50">
+                              <View className="flex-1">
+                                <Text className="text-white font-bold text-sm">{label}</Text>
+                                <Text className="text-zinc-500 text-xs">{dayNames}</Text>
+                              </View>
+                              <View className="items-end">
+                                <Text className="text-primary-400 font-bold text-sm">
+                                  {representative.macros.calories} kcal
+                                </Text>
+                                <Text className="text-zinc-600 text-[10px]">
+                                   P:{representative.macros.protein}g  C:{representative.macros.carbs}g  G:{representative.macros.fat}g
+                                </Text>
+                              </View>
+                           </View>
+                         );
+                    })}
+                  </View>
+                );
+              })()}
+            </View>
+
+          </View>
+
           {/* Nome */}
           <View className="mb-4">
             <Text className="text-foreground text-sm font-semibold mb-2 font-sans">
