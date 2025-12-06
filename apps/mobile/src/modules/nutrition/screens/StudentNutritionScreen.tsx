@@ -290,7 +290,7 @@ export function StudentNutritionScreen() {
                    const ingredients = JSON.stringify(items.map(i => i.food?.name || "Item sem nome"));
                    router.push({
                        pathname: '/(tabs)/nutrition/cooking',
-                       params: { mealName: meal.name, ingredients }
+                       params: { mealName: meal.name, ingredients, mealId: meal.id }
                    });
                 }}
               />

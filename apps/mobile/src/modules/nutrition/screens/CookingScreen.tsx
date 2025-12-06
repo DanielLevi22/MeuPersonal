@@ -1,16 +1,25 @@
 import { Button } from '@/components/ui/Button';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { useAuthStore } from '@/modules/auth/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Speech from 'expo-speech';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { CookingStep, ShoppingListService } from '../services/ShoppingListService';
+import { useNutritionStore } from '../store/nutritionStore';
 
 export default function CookingScreen() {
+  useKeepAwake(); // Keep screen on!
   const router = useRouter();
   const params = useLocalSearchParams();
   const mealName = params.mealName as string;
+  const mealId = params.mealId as string;
   const ingredients = params.ingredients ? JSON.parse(params.ingredients as string) : [];
+
+  const { toggleMealCompletion } = useNutritionStore();
+  const { user } = useAuthStore();
 
   const [steps, setSteps] = useState<CookingStep[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,9 +28,13 @@ export default function CookingScreen() {
   // Timer State
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
     loadSteps();
+    return () => {
+       Speech.stop();
+    };
   }, []);
 
   useEffect(() => {
@@ -48,7 +61,26 @@ export default function CookingScreen() {
     }
   };
 
-  const handleNext = () => {
+  const speakStep = (text: string) => {
+    if (isSpeaking) {
+        Speech.stop();
+        setIsSpeaking(false);
+        return;
+    }
+
+    setIsSpeaking(true);
+    Speech.speak(text, {
+        language: 'pt-BR',
+        onDone: () => setIsSpeaking(false),
+        onStopped: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false)
+    });
+  };
+
+  const handleNext = async () => {
+    Speech.stop();
+    setIsSpeaking(false);
+
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
       // Construct timer for next step if exists
@@ -60,6 +92,12 @@ export default function CookingScreen() {
         setTimeLeft(0);
       }
     } else {
+      // Finish
+      if (mealId && user?.id) {
+          const today = new Date().toISOString().split('T')[0];
+          await toggleMealCompletion(mealId, today, true);
+      }
+
       Alert.alert("Parabéns!", "Refeição pronta! Bom apetite.", [
         { text: "Concluir", onPress: () => router.back() }
       ]);
@@ -67,6 +105,9 @@ export default function CookingScreen() {
   };
 
   const handlePrev = () => {
+    Speech.stop();
+    setIsSpeaking(false);
+    
     if (currentStepIndex > 0) {
       setCurrentStepIndex(prev => prev - 1);
       const prevStep = steps[currentStepIndex - 1];
@@ -146,9 +187,17 @@ export default function CookingScreen() {
                     <Ionicons name="flame" size={32} color="#FF6B35" />
                 </View>
 
-                <Text className="text-white text-2xl font-bold text-center leading-9 mb-8 font-display">
-                    {currentStep.instruction}
-                </Text>
+                <View className="flex-row items-center justify-center gap-3 mb-8">
+                     <Text className="text-white text-2xl font-bold text-center leading-9 font-display flex-1">
+                        {currentStep.instruction}
+                    </Text>
+                    <TouchableOpacity 
+                        onPress={() => speakStep(currentStep.instruction)}
+                        className={`p-3 rounded-full ${isSpeaking ? 'bg-orange-500' : 'bg-zinc-800'}`}
+                    >
+                        <Ionicons name={isSpeaking ? "volume-high" : "volume-medium"} size={24} color={isSpeaking ? "white" : "#A1A1AA"} />
+                    </TouchableOpacity>
+                </View>
 
                 {/* Timer */}
                 {(currentStep.timerSeconds || 0) > 0 && (
