@@ -63,6 +63,20 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Permitir acesso ao microfone para comandos de voz?",
+          "speechRecognitionPermission": "Permitir reconhecimento de voz para comandos?"
+        }
+      ],
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Permitir acesso ao microfone para comandos de voz?",
+          "speechRecognitionPermission": "Permitir reconhecimento de voz para comandos?"
+        }
       ]
     ],
     "experiments": {

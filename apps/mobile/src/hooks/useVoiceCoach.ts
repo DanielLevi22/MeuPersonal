@@ -1,85 +1,68 @@
 import * as Speech from 'expo-speech';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const MOTIVATIONAL_PHRASES = {
-  start: [
-    "Vamos começar! Foco total hoje.",
-    "Hora de treinar! Dê o seu melhor.",
-    "Prepare-se para superar seus limites.",
-    "Vamos construir essa força! Começando agora."
-  ],
-  rest: [
-    "Respire fundo. Recupere o fôlego.",
-    "Aproveite o descanso. A próxima série vai ser intensa.",
-    "Relaxe os músculos. Foco na recuperação.",
-    "Mantenha o foco. Quase na hora de voltar."
-  ],
-  finish: [
-    "Parabéns! Mais um treino pra conta.",
-    "Excelente trabalho! Você se superou hoje.",
-    "Treino finalizado com sucesso. Orgulho de você!",
-    "Missão cumprida! Descanse bem agora."
-  ],
-  resume: [
-    "Vamos lá! Hora de voltar.",
-    "Acabou o descanso. Vamos com tudo!",
-    "Prepare-se! 3, 2, 1, valendo.",
-    "Foco na técnica. Vamos esmagar!"
-  ]
-};
-
-export function useVoiceCoach() {
+export const useVoiceCoach = () => {
   const [isMuted, setIsMuted] = useState(false);
 
-  const speak = useCallback((text: string) => {
+  const [lastInstruction, setLastInstruction] = useState<string>('');
+
+  const speak = (text: string, priority = false) => {
     if (isMuted) return;
     
+    if (priority) {
+        Speech.stop();
+    }
+    
+    setLastInstruction(text); // Memorize for repetition
     Speech.speak(text, {
-      language: 'pt-BR',
-      pitch: 1.0,
-      rate: 1.0,
+        language: 'pt-BR',
+        pitch: 1.0,
+        rate: 0.9, 
     });
-  }, [isMuted]);
-
-  const getRandomPhrase = (category: keyof typeof MOTIVATIONAL_PHRASES) => {
-    const phrases = MOTIVATIONAL_PHRASES[category];
-    return phrases[Math.floor(Math.random() * phrases.length)];
   };
 
-  const motivateStart = useCallback((userName?: string) => {
-    const phrase = getRandomPhrase('start');
-    const text = userName ? `Olá ${userName.split(' ')[0]}! ${phrase}` : phrase;
-    speak(text);
-  }, [speak]);
+  const repeatLastInstruction = () => {
+    if (lastInstruction) {
+        speak(lastInstruction, true);
+    } else {
+        speak("Ainda não tenho instruções para repetir.");
+    }
+  };
 
-  const motivateRest = useCallback((seconds: number) => {
-    const phrase = getRandomPhrase('rest');
-    speak(`Descanso de ${seconds} segundos. ${phrase}`);
-  }, [speak]);
+  const announceExercise = (name: string, sets: number, reps: string | number, weight?: string | number) => {
+    const w = weight ? `com ${weight} quilos` : '';
+    speak(`Próximo exercício: ${name}. ${sets} séries de ${reps} repetições ${w}.`);
+  };
 
-  const motivateResume = useCallback(() => {
-    const phrase = getRandomPhrase('resume');
-    speak(phrase);
-  }, [speak]);
+  const announceSetStart = (setNumber: number, reps: string | number, weight?: string | number) => {
+    const w = weight ? `com ${weight} quilos` : '';
+    speak(`Vamos para a ${setNumber}ª série. ${reps} repetições ${w}. Prepare-se... Valendo!`, true);
+  };
 
-  const motivateFinish = useCallback(() => {
-    const phrase = getRandomPhrase('finish');
-    speak(phrase);
-  }, [speak]);
+  const announceRest = (seconds: number) => {
+    speak(`Descanso de ${seconds} segundos iniciado. Respire e recupere o fôlego.`);
+  };
 
-  const toggleMute = useCallback(() => {
-    setIsMuted(prev => {
-      if (!prev) {
+  const announceFinish = () => {
+    speak('Treino finalizado. Excelente trabalho! Não esqueça de se hidratar.');
+  };
+
+  const announceResume = () => {
+    speak('Voltando ao treino. Vamos lá!');
+  };
+
+  const toggleMute = () => {
+    if (!isMuted) {
         Speech.stop();
-      }
-      return !prev;
-    });
-  }, []);
+    } else {
+        Speech.speak("Voz ativada.");
+    }
+    setIsMuted(!isMuted);
+  };
 
-  // Stop speech when unmounting
   useEffect(() => {
     return () => {
-      Speech.stop();
+        Speech.stop();
     };
   }, []);
 
@@ -87,9 +70,11 @@ export function useVoiceCoach() {
     isMuted,
     toggleMute,
     speak,
-    motivateStart,
-    motivateRest,
-    motivateResume,
-    motivateFinish
+    repeatLastInstruction,
+    announceExercise,
+    announceSetStart,
+    announceRest,
+    announceFinish,
+    announceResume
   };
-}
+};

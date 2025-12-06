@@ -3,6 +3,7 @@ import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
 import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal';
 import { useVoiceCoach } from '@/hooks/useVoiceCoach';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +24,7 @@ export default function ExecuteWorkoutScreen() {
   const [isResting, setIsResting] = useState(false);
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [currentRestExercise, setCurrentRestExercise] = useState<string | null>(null);
+  const [currentRestItemId, setCurrentRestItemId] = useState<string | null>(null);
 
   const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -44,11 +45,63 @@ export default function ExecuteWorkoutScreen() {
   const { 
     isMuted, 
     toggleMute, 
-    motivateStart, 
-    motivateRest, 
-    motivateResume, 
-    motivateFinish 
+    announceExercise,
+    announceSetStart, 
+    announceRest, 
+    announceFinish,
+    announceResume,
+    repeatLastInstruction
   } = useVoiceCoach();
+
+  // Forward declaration for the hook
+  const handleVoiceCommand = async (action: any) => {
+    console.log('Voice Command Received:', action);
+    
+    if (action === 'next_set') {
+        const nextItem = workout.items.find((item: any) => {
+            const completed = completedSets[item.id] || 0;
+            return completed < item.sets;
+        });
+
+        if (nextItem) {
+            handleLogSet(nextItem);
+        } else {
+            announceFinish();
+        }
+    } else if (action === 'finish_workout') {
+        handleFinishWorkout();
+    } else if (action === 'pause_timer') {
+         // Pause logic if implemented
+         setIsActive(false); 
+         // Optional: announce "Timer Paused"
+    } else if (action === 'resume_timer') {
+         setIsActive(true);
+         if (announceResume) announceResume();
+    } else if (action === 'repeat_instruction') {
+        repeatLastInstruction();
+    }
+  };
+
+  const { 
+    isRecording, 
+    startListening, 
+    stopListening 
+  } = useVoiceInput({ 
+      onCommand: handleVoiceCommand,
+      continuous: true 
+  });
+
+  // Auto-start listening when workout starts
+  useEffect(() => {
+     if (isWorkoutStarted) {
+         startListening();
+     } else {
+         stopListening();
+     }
+     return () => {
+         stopListening();
+     }
+  }, [isWorkoutStarted]);
 
   useEffect(() => {
     if (user?.id && !workouts.length) {
@@ -82,12 +135,18 @@ export default function ExecuteWorkoutScreen() {
     } else if (timer === 0 && isResting) {
       setIsResting(false);
       setIsActive(false);
-      setCurrentRestExercise(null);
-      motivateResume();
-      Alert.alert('Tempo esgotado!', 'Hora da próxima série!');
+      
+      if (currentRestItemId) {
+          const item = workout?.items?.find((i: any) => i.id === currentRestItemId);
+          if (item) {
+              const nextSet = (completedSets[item.id] || 0) + 1;
+              announceSetStart(nextSet, item.reps, item.weight);
+          }
+      }
+      setCurrentRestItemId(null);
     }
     return () => clearInterval(interval);
-  }, [isActive, timer, isResting]);
+  }, [isActive, timer, isResting, currentRestItemId]);
 
   if (isLoading || !workout) {
     return (
@@ -117,15 +176,27 @@ export default function ExecuteWorkoutScreen() {
         setIsResting(true);
         setIsActive(true);
 
-        setCurrentRestExercise(exerciseItem.exercise.name);
-        motivateRest(exerciseItem.rest_time || 60);
+        setCurrentRestItemId(exerciseItem.id);
+        announceRest(exerciseItem.rest_time || 60);
+      } else {
+        // Exercise finished, find next one?
+        // Or generic finish?
+        // Let's check if there is a next exercise
+        const myIndex = workout.items.indexOf(exerciseItem);
+        if (myIndex < workout.items.length - 1) {
+             const nextItem = workout.items[myIndex + 1];
+             // Announce next exercise? 
+             // Ideally we should wait a bit or user triggers it?
+             // User wants proactive.
+             announceExercise(nextItem.exercise.name, nextItem.sets, nextItem.reps, nextItem.weight);
+        }
       }
     }
   };
 
   const onFeedbackSubmit = async (intensity: number, notes: string) => {
     setShowFeedbackModal(false);
-    motivateFinish();
+    announceFinish();
     try {
       if (!user?.id || !startTime) return;
 
@@ -219,9 +290,34 @@ export default function ExecuteWorkoutScreen() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  // Removed old handleVoiceCommand definition
+
+
+  const currentRestExercise = currentRestItemId 
+    ? workout?.items?.find((i: any) => i.id === currentRestItemId)?.exercise?.name 
+    : '';
+
   return (
     <ScreenLayout>
-      <View className="absolute top-12 right-6 z-50">
+      <View className="absolute top-12 right-6 z-50 gap-4">
+        {/* Voice Command Button */}
+        {/* Voice Status Indicator (Hands-Free) */}
+        {isWorkoutStarted && (
+            <View 
+              className={`p-3 rounded-full border backdrop-blur-md ${isRecording ? 'bg-emerald-500/20 border-emerald-500' : 'bg-zinc-800/80 border-zinc-700'}`}
+            >
+               <Ionicons 
+                 name={isRecording ? "mic" : "mic-off"} 
+                 size={24} 
+                 color={isRecording ? "#34D399" : "#71717A"} 
+               />
+               {isRecording && (
+                <View className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
+               )}
+            </View>
+        )}
+
+        {/* Mute Button */}
         <TouchableOpacity 
           onPress={toggleMute}
           className="bg-zinc-800/80 p-3 rounded-full border border-zinc-700 backdrop-blur-md"
@@ -251,7 +347,10 @@ export default function ExecuteWorkoutScreen() {
             onPress={() => {
               setIsWorkoutStarted(true);
               setStartTime(new Date());
-              motivateStart(user?.user_metadata?.full_name);
+              const firstItem = workout.items?.[0];
+              if (firstItem) {
+                announceExercise(firstItem.exercise.name, firstItem.sets, firstItem.reps, firstItem.weight);
+              }
             }}
             className="w-full"
             activeOpacity={0.8}
@@ -441,7 +540,7 @@ export default function ExecuteWorkoutScreen() {
                       setIsResting(false);
                       setIsActive(false);
                       setTimer(0);
-                      motivateResume();
+                      if (announceResume) announceResume();
                     }}
                     className="bg-zinc-700 p-2 rounded-full"
                   >

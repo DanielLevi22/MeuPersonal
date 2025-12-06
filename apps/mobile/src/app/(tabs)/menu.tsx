@@ -28,9 +28,15 @@ export default function MenuScreen() {
         color: '#FFFFFF'
     },
     {
+      label: 'Comandos de Voz',
+      icon: 'mic-outline',
+      route: '/help/voice-commands',
+      color: '#FFFFFF'
+    },
+    {
       label: 'Configurações',
       icon: 'settings-outline',
-      route: '/settings', // Assuming settings exists or placeholder
+      route: '/settings',
       color: '#FFFFFF'
     },
   ];

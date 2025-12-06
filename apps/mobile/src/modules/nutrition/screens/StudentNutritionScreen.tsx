@@ -161,12 +161,21 @@ export function StudentNutritionScreen() {
             {currentDietPlan.name}
             </Text>
         </View>
-        <TouchableOpacity 
-            onPress={() => router.push('/(tabs)/nutrition/scan' as any)}
-            className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
-        >
-            <Ionicons name="camera" size={24} color="#FF6B35" />
-        </TouchableOpacity>
+        <View className="flex-row gap-3">
+             <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/nutrition/shopping-list' as any)}
+                className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
+            >
+                <Ionicons name="cart-outline" size={24} color="#FFF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/nutrition/scan' as any)}
+                className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
+            >
+                <Ionicons name="camera" size={24} color="#FF6B35" />
+            </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView 
@@ -281,6 +290,15 @@ export function StudentNutritionScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* NutriBot FAB */}
+      <TouchableOpacity 
+        onPress={() => router.push('/(tabs)/nutrition/bot' as any)}
+        className="absolute bottom-6 right-6 bg-orange-500 w-14 h-14 rounded-full items-center justify-center shadow-lg z-50"
+        style={{ shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 }}
+      >
+        <Ionicons name="chatbubbles" size={28} color="white" />
+      </TouchableOpacity>
     </ScreenLayout>
   );
 }
