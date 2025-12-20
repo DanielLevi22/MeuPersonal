@@ -177,7 +177,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <View className="mb-1 flex-row items-center gap-2">
-            {streak?.freeze_available > 0 && (
+            {streak?.freeze_available && streak.freeze_available > 0 && (
               <View className="bg-blue-500/20 px-2 py-1 rounded-full">
                 <Ionicons name="snow" size={12} color="#3B82F6" />
               </View>
@@ -250,52 +250,7 @@ export default function DashboardScreen() {
           </View>
         </Animated.View>
 
-        {/* Weekly Goals Section */}
-        <Animated.View entering={FadeInDown.delay(400).springify()} className="mb-8">
-          <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
-            Semana
-          </Text>
-          <View className="flex-row gap-x-3">
-            <View className="flex-1">
-              <StatCard
-                label="Refeições"
-                value={(() => {
-                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
-                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
-                  return targetMeals > 0 ? `${Math.round((totalMeals / targetMeals) * 100)}%` : '0%';
-                })()}
-                trend={(() => {
-                  const totalMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_completed, 0);
-                  const targetMeals = weeklyGoals.reduce((sum, goal) => sum + goal.meals_target, 0);
-                  const percentage = targetMeals > 0 ? (totalMeals / targetMeals) * 100 : 0;
-                  return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
-                })()}
-                change="Meta"
-                icon="restaurant"
-              />
-            </View>
-            <View className="flex-1">
-              <StatCard
-                label="Treinos"
-                value={(() => {
-                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
-                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
-                  return `${totalWorkouts}/${targetWorkouts}`;
-                })()}
-                trend={(() => {
-                  const totalWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_completed, 0);
-                  const targetWorkouts = weeklyGoals.reduce((sum, goal) => sum + goal.workout_target, 0);
-                  const percentage = targetWorkouts > 0 ? (totalWorkouts / targetWorkouts) * 100 : 0;
-                  return percentage >= 80 ? 'up' : percentage >= 50 ? 'neutral' : 'down';
-                })()}
-                change="Treinos"
-                icon="barbell"
-              />
-            </View>
-          </View>
-        </Animated.View>
 
-        {/* Recent Achievements */}
         <Animated.View entering={FadeInDown.delay(500).springify()}>
           <View className="flex-row justify-between items-center mb-3 ml-1">
             <Text className="text-zinc-500 text-[13px] font-bold font-sans uppercase tracking-widest">

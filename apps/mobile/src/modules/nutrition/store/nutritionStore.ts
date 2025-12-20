@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/auth';
-import { cancelPlanNotifications, scheduleMealNotifications } from '@/services/notificationService';
+import { cancelPlanNotifications } from '@/services/notificationService';
 import type {
   DietMeal,
   DietMealItem,
@@ -424,25 +424,27 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           .eq('diet_plan_id', data.id)
           .not('meal_time', 'is', null);
 
-        if (mealsWithTimes && mealsWithTimes.length > 0) {
-          const mealNotifications = mealsWithTimes.map(meal => {
-            // Extract food names safely
-            const foodNames = meal.meal_foods
-              ?.map((item: any) => item.food?.name)
-              .filter((name: any) => !!name) || [];
+          // DISABLE NOTIFICATIONS - User Request (Kill Switch)
+          // const mealNotifications = mealsWithTimes.map(meal => {
+          //   // Extract food names safely
+          //   const foodNames = meal.meal_foods
+          //     ?.map((item: any) => item.food?.name)
+          //     .filter((name: any) => !!name) || [];
 
-            return {
-              mealId: meal.id,
-              mealName: meal.name || 'Refeição',
-              mealTime: meal.meal_time,
-              dayOfWeek: Number(meal.day_of_week),
-              foodNames
-            };
-          });
+          //   return {
+          //     mealId: meal.id,
+          //     mealName: meal.name || 'Refeição',
+          //     mealTime: meal.meal_time,
+          //     dayOfWeek: Number(meal.day_of_week),
+          //     foodNames
+          //   };
+          // });
 
-          await scheduleMealNotifications(data.id, mealNotifications);
-          console.log(`✅ Scheduled ${mealNotifications.length} notifications for student's diet plan ${data.id}`);
-        }
+          // await scheduleMealNotifications(data.id, mealNotifications);
+          
+          // NUCLEAR OPTION: Ensure we kill anything running
+          await cancelPlanNotifications(data.id);
+          console.log(`🚫 Notifications DISABLED indefinitely for plan ${data.id}`);
       }
     } catch (error) {
       console.error('Error fetching diet plan:', error);

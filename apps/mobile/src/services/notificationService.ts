@@ -107,29 +107,7 @@ export async function scheduleMealNotifications(
           // Logs removed to reduce noise
           // if (targetDate.getTime() <= now.getTime()) { ... } logic remains
           if (targetDate.getTime() <= now.getTime()) {
-             const timeDiff = now.getTime() - targetDate.getTime();
-             const GRACE_PERIOD_MS = 5 * 60 * 1000;
-             if (i === 0 && timeDiff < GRACE_PERIOD_MS) {
-                await Notifications.scheduleNotificationAsync({
-                  identifier: `${planId}-${meal.mealId}-${i}`,
-                  content: {
-                    title: '🍽️ Hora da refeição!',
-                    body: bodyText,
-                    data: { planId, mealId: meal.mealId },
-                    sound: true,
-                    // @ts-ignore
-                    channelId: 'meal-reminders',
-                  },
-                  trigger: {
-                    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                    seconds: 2,
-                    repeats: false,
-                  },
-                });
-                continue;
-             } else {
-                continue;
-             }
+             continue; 
           }
 
           const trigger: Notifications.DateTriggerInput = {

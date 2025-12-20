@@ -1,16 +1,19 @@
+import { StudentAISummary } from '@/modules/nutrition/components/StudentAISummary';
 import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+// ... rest of imports
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NutritionDashboard() {
@@ -26,11 +29,19 @@ export default function NutritionDashboard() {
     isLoading,
   } = useNutritionStore();
 
+  const [studentName, setStudentName] = useState("");
+
   useEffect(() => {
     if (studentId && typeof studentId === 'string') {
       fetchDietPlan(studentId);
       fetchDietPlanHistory(studentId);
       checkPlanExpiration(studentId);
+      
+      // Fetch student name separately for the AI Summary
+      supabase.from('profiles').select('full_name').eq('id', studentId).single()
+        .then(({ data }: { data: { full_name: string } | null }) => {
+           if (data) setStudentName(data.full_name);
+        });
     }
   }, [studentId]);
 
@@ -107,6 +118,13 @@ export default function NutritionDashboard() {
         </View>
 
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
+          {/* AI Summary Section */}
+          <StudentAISummary 
+             studentId={studentId as string} 
+             studentName={studentName || "Aluno"}
+             currentPlan={currentDietPlan}
+          />
+
           {/* Active Plan Section */}
           <View className="mb-8">
             <Text className="text-lg font-bold text-foreground mb-4">Plano Ativo</Text>
