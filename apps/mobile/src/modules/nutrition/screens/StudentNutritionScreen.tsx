@@ -2,11 +2,11 @@ import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useHealthData } from '@/hooks/useHealthData';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
-import { useNutritionStore } from '@/modules/nutrition/routes';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useNutritionStore } from '../store/nutritionStore';
 
 const DAYS = [
   { id: 0, label: 'DOM' },

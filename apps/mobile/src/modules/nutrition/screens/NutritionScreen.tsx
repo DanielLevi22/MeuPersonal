@@ -7,7 +7,7 @@ import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
-import { useNutritionStore } from '../routes';
+import { useNutritionStore } from '../store/nutritionStore';
 
 export default function NutritionScreen() {
   const router = useRouter();
@@ -123,10 +123,10 @@ export default function NutritionScreen() {
             onPress={handleCreatePress}
           >
             <LinearGradient
-              colors={['#00D9FF', '#00B8D9']}
+              colors={['#FF6B35', '#FF2E63']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="h-12 w-12 rounded-full items-center justify-center shadow-lg shadow-cyan-500/20"
+              className="h-12 w-12 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
             >
               <Ionicons name="add" size={28} color="#FFFFFF" />
             </LinearGradient>
@@ -144,7 +144,7 @@ export default function NutritionScreen() {
           <RefreshControl 
             refreshing={isLoading} 
             onRefresh={() => user?.id && fetchDietPlans(user.id)} 
-            tintColor="#00D9FF" 
+            tintColor="#FF6B35" 
           />
         }
         showsVerticalScrollIndicator={false}
@@ -170,10 +170,10 @@ export default function NutritionScreen() {
                   onPress={handleCreatePress}
                 >
                   <LinearGradient
-                    colors={['#00D9FF', '#00B8D9']}
+                    colors={['#FF6B35', '#FF2E63']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="rounded-2xl py-3.5 px-8 shadow-lg shadow-cyan-500/20"
+                    className="rounded-2xl py-3.5 px-8 shadow-lg shadow-orange-500/20"
                   >
                     <Text className="text-white text-base font-bold font-display">
                       Criar Primeiro Plano
@@ -184,7 +184,7 @@ export default function NutritionScreen() {
             </Animated.View>
           ) : (
             <View className="py-20">
-              <ActivityIndicator size="large" color="#00D9FF" />
+              <ActivityIndicator size="large" color="#FF6B35" />
             </View>
           )
         }

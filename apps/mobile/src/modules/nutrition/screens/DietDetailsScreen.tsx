@@ -18,7 +18,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue
 } from 'react-native-reanimated';
-import { FoodSearchModal, useNutritionStore } from '../routes';
+import { FoodSearchModal } from '../components';
+import { useNutritionStore } from '../store/nutritionStore';
 
 export default function DietDetailsScreen() {
   const { id: studentId, planId } = useLocalSearchParams();
@@ -35,6 +36,7 @@ export default function DietDetailsScreen() {
     addMeal,
     updateMeal,
     addFoodToMeal,
+    addFoodsToMeal,
     updateMealItem,
     removeFoodFromMeal,
     copyDay,
@@ -160,6 +162,8 @@ export default function DietDetailsScreen() {
   }, [dietPlans, planId]);
 
   // Fetch items for meals when meals change
+  // Optimization: fetchMeals now does deep matching, so we don't need to fetch items individually anymore.
+  /*
   useEffect(() => {
     if (meals.length > 0) {
       meals.forEach(meal => {
@@ -167,6 +171,7 @@ export default function DietDetailsScreen() {
       });
     }
   }, [meals]);
+  */
 
   const handleSaveMeal = async () => {
     if (!mealName.trim() || !plan) return;
@@ -542,10 +547,10 @@ export default function DietDetailsScreen() {
             <Text className="text-zinc-400 font-bold text-sm">DIA DA SEMANA</Text>
             <TouchableOpacity 
               onPress={() => setShowDayActions(true)}
-              className="flex-row items-center gap-1 bg-background-secondary px-3 py-1.5 rounded-full border border-zinc-800"
+              className="flex-row items-center gap-1 bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700"
             >
-              <Ionicons name="ellipsis-horizontal" size={16} color={tailwindColors.secondary.DEFAULT} />
-              <Text className="text-secondary-DEFAULT text-xs font-bold">Opções</Text>
+              <Ionicons name="ellipsis-horizontal" size={16} color="#E4E4E7" />
+              <Text className="text-zinc-200 text-xs font-bold">Opções</Text>
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -598,6 +603,7 @@ export default function DietDetailsScreen() {
 
                 if (existingMeal) {
                   const items = mealItems[existingMeal.id] || [];
+                  
                   const totalCals = items.reduce((acc, item) => {
                     const ratio = item.quantity / (item.food?.serving_size || 100);
                     return acc + (item.food?.calories || 0) * ratio;
@@ -732,10 +738,37 @@ export default function DietDetailsScreen() {
           onSave={async (items) => {
             try {
               if (selectedMealId) {
-                // Editing existing meal - logic to be refined if needed
-                // For now, we assume direct edits on existing meals are handled via store
-                // But if we want draft mode for edits, we'd implement diffing here.
-                // Current request focuses on NEW meals.
+                // Editing existing meal
+                const currentItems = mealItems[selectedMealId] || [];
+                const currentIds = new Set(currentItems.map(i => i.id));
+                const resultIds = new Set(items.map(i => i.id));
+
+                // 1. Add New Items (those with temp IDs or not in current)
+                const itemsToAdd = items
+                  .filter(i => !currentIds.has(i.id))
+                  .map(item => ({
+                    foodId: item.food_id || item.food?.id,
+                    quantity: item.quantity,
+                    unit: item.unit
+                  }));
+
+                if (itemsToAdd.length > 0) {
+                   await addFoodsToMeal(selectedMealId, itemsToAdd);
+                }
+
+                // 2. Remove Deleted Items
+                const itemsToRemove = currentItems.filter(i => !resultIds.has(i.id));
+                
+                // Process removals sequentially to avoid race conditions/heavy load if many
+                for (const item of itemsToRemove) {
+                  await removeFoodFromMeal(item.id);
+                }
+
+                // 3. Refresh if changes made
+                if (itemsToAdd.length > 0 || itemsToRemove.length > 0) {
+                   await fetchMealItems(selectedMealId);
+                   await fetchMeals(plan.id); // Update macro totals
+                }
               } else if (initialMealData) {
                 // Creating NEW meal
                 const newMeal = await addMeal({
@@ -749,20 +782,25 @@ export default function DietDetailsScreen() {
                 } as any);
 
                 // Add items
-                for (const item of items) {
-                  await addFoodToMeal(
-                    newMeal.id,
-                    item.food_id,
-                    item.quantity,
-                    item.unit
-                  );
-                }
+                
+                // Add items in batch
+                const itemsToAdd = items.map(item => ({
+                  foodId: item.food_id,
+                  quantity: item.quantity,
+                  unit: item.unit
+                }));
+                
+                await addFoodsToMeal(newMeal.id, itemsToAdd);
                 
                 // Refresh
                 await fetchMeals(plan.id);
               }
               } catch (error: any) {
               console.error('Error saving draft meal:', error);
+              // FORCE ALERT DEBUG
+              import('react-native').then(({ Alert }) => {
+                 Alert.alert('DEBUG SAVE ERROR', JSON.stringify(error) + '\n\n' + (error.message || ''));
+              });
               
               if (error?.code === '23503' && error?.details?.includes('daily_goals')) {
                 Alert.alert(

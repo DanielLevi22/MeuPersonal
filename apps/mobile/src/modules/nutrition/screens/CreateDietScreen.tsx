@@ -9,7 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useNutritionStore } from '../routes';
+import { useNutritionStore } from '../store/nutritionStore';
 import { calculateDietStrategy, DIET_STRATEGIES, DietStrategyType } from '../utils/dietStrategies';
 
 export default function CreateDietScreen() {
@@ -234,7 +234,7 @@ export default function CreateDietScreen() {
 
             {/* Target Calories Input (Primary Driver) */}
             <View className="bg-zinc-900/80 p-4 rounded-2xl border border-zinc-700 mb-4">
-               <Text className="text-zinc-400 text-xs mb-1">Meta Calórica Média (Base)</Text>
+               <Text className="text-zinc-400 text-xs mb-3">Meta Calórica Média (Base)</Text>
                <Input
                   value={targetCalories}
                   onChangeText={setTargetCalories}
@@ -309,6 +309,7 @@ export default function CreateDietScreen() {
             <Text className="text-foreground text-sm font-semibold mb-2 font-sans">
               Aluno *
             </Text>
+            {/* Student Selector Trigger */}
             <TouchableOpacity
               onPress={() => setShowStudentPicker(!showStudentPicker)}
               className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
@@ -318,20 +319,6 @@ export default function CreateDietScreen() {
               </Text>
               <Ionicons
                 name={showStudentPicker ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#71717A"
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowStudentPicker(true)}
-              className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
-            >
-              <Text className={selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'}>
-                {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
-              </Text>
-              <Ionicons
-                name="chevron-down"
                 size={20}
                 color="#71717A"
               />

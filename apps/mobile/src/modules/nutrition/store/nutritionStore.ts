@@ -1,10 +1,10 @@
 import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications, scheduleMealNotifications } from '@/services/notificationService';
 import type {
-    DietMeal,
-    DietMealItem,
-    DietPlan,
-    Food
+  DietMeal,
+  DietMealItem,
+  DietPlan,
+  Food
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
@@ -43,6 +43,7 @@ interface NutritionStore {
   mealItems: Record<string, DietMealItem[]>; // Keyed by meal_id
   fetchMealItems: (mealId: string) => Promise<void>;
   addFoodToMeal: (mealId: string, foodId: string, quantity: number, unit: string) => Promise<void>;
+  addFoodsToMeal: (mealId: string, items: Array<{ foodId: string, quantity: number, unit: string }>) => Promise<void>;
   updateMealItem: (itemId: string, updates: Partial<DietMealItem>) => Promise<void>;
   removeFoodFromMeal: (itemId: string) => Promise<void>;
   
@@ -207,63 +208,33 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
 
     set({ isLoading: true });
+    set({ isLoading: true });
     try {
-      // 1. Clear target day first
-      await clearDay(targetDay);
+      // Prepare payload for RPC
+      const mealsPayload = copiedDay.meals.map(meal => ({
+        name: meal.name,
+        meal_time: meal.meal_time,
+        meal_type: meal.meal_type,
+        meal_order: meal.meal_order,
+        target_calories: meal.target_calories,
+        items: (copiedDay.items[meal.id] || []).map(item => ({
+          food_id: item.food_id,
+          quantity: item.quantity,
+          unit: item.unit,
+          order_index: item.order_index
+        }))
+      }));
 
-      // 2. Re-create meals and items
-      for (const sourceMeal of copiedDay.meals) {
-        // Create meal
-        const { data: newMeal, error: mealError } = await supabase
-          .from('meals')
-          .insert({
-            diet_plan_id: targetPlanId,
-            day_of_week: targetDay,
-            meal_type: sourceMeal.meal_type,
-            meal_order: sourceMeal.meal_order,
-            name: sourceMeal.name,
-            target_calories: sourceMeal.target_calories,
-            meal_time: sourceMeal.meal_time
-          })
-          .select()
-          .single();
+      const { error } = await supabase.rpc('paste_diet_day', {
+        p_diet_plan_id: targetPlanId,
+        p_day_of_week: targetDay,
+        p_meals: mealsPayload
+      });
 
-        if (mealError) throw mealError;
+      if (error) throw error;
 
-        // Create items for this meal
-        const sourceItems = copiedDay.items[sourceMeal.id] || [];
-        if (sourceItems.length > 0) {
-          const itemsToInsert = sourceItems.map(item => ({
-            diet_meal_id: newMeal.id,
-            food_id: item.food_id,
-            quantity: item.quantity,
-            unit: item.unit,
-            order_index: item.order_index
-          }));
-
-          const { error: itemsError } = await supabase
-            .from('meal_foods')
-            .insert(itemsToInsert);
-
-          if (itemsError) throw itemsError;
-        }
-      }
-
-      // Refresh meals
+      // Refresh meals (now fetches everything deep)
       await get().fetchMeals(targetPlanId);
-      
-      // Refresh items for the new meals
-      const { data: newMeals } = await supabase
-        .from('meals')
-        .select('id')
-        .eq('diet_plan_id', targetPlanId)
-        .eq('day_of_week', targetDay);
-        
-      if (newMeals) {
-        for (const meal of newMeals) {
-          await get().fetchMealItems(meal.id);
-        }
-      }
 
     } catch (error) {
       console.error('Error pasting day:', error);
@@ -793,19 +764,42 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
   },
 
-  // Fetch meals for a diet plan
+  // Fetch meals (optimized deep fetch)
   fetchMeals: async (dietPlanId: string) => {
     try {
       const { data, error } = await supabase
         .from('meals')
-        .select('*')
+        .select(`
+          *,
+          meal_foods (
+            *,
+            food:foods (*)
+          )
+        `)
         .eq('diet_plan_id', dietPlanId)
         .order('day_of_week', { ascending: true })
         .order('meal_order', { ascending: true });
 
       if (error) throw error;
       
-      set({ meals: data || [] });
+      // Separate meals from items for the state structure
+      const mealsValues: DietMeal[] = [];
+      const itemsMap: Record<string, DietMealItem[]> = {};
+
+      data?.forEach((row: any) => {
+        const { meal_foods, ...mealData } = row;
+        mealsValues.push(mealData);
+        // Sort items by order_index
+        itemsMap[mealData.id] = (meal_foods || []).sort((a: any, b: any) => a.order_index - b.order_index);
+      });
+
+      set((state) => ({
+        meals: mealsValues,
+        mealItems: {
+          ...state.mealItems,
+          ...itemsMap
+        }
+      }));
     } catch (error) {
       console.error('Error fetching meals:', error);
     }
@@ -878,7 +872,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           [mealId]: data || []
         }
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching meal items:', error);
     }
   },
@@ -918,11 +912,47 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
   },
 
+  // Add multiple foods to meal (Batch)
+  addFoodsToMeal: async (mealId, items) => {
+    try {
+      const currentItems = get().mealItems[mealId] || [];
+      const startOrder = currentItems.length;
+
+      const itemsToInsert = items.map((item, index) => ({
+        diet_meal_id: mealId, // Correct column (meal_foods)
+        food_id: item.foodId, // Correct column (meal_foods)
+        quantity: item.quantity,
+        unit: item.unit,
+        order_index: startOrder + index
+      }));
+
+      const { data, error } = await supabase
+        .from('meal_foods')
+        .insert(itemsToInsert)
+        .select(`
+          *,
+          food:foods (*)
+        `);
+
+      if (error) throw error;
+      
+      set((state) => ({
+        mealItems: {
+          ...state.mealItems,
+          [mealId]: [...(state.mealItems[mealId] || []), ...(data || [])]
+        }
+      }));
+    } catch (error) {
+      console.error('Error adding foods to meal:', error);
+      throw error;
+    }
+  },
+
   // Update meal item
   updateMealItem: async (itemId, updates) => {
     try {
       const { data, error } = await supabase
-        .from('diet_meal_items')
+        .from('meal_foods')
         .update(updates)
         .eq('id', itemId)
         .select(`
@@ -957,7 +987,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   removeFoodFromMeal: async (itemId: string) => {
     try {
       const { error } = await supabase
-        .from('diet_meal_items')
+        .from('meal_foods')
         .delete()
         .eq('id', itemId);
 

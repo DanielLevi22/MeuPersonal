@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 
 export default function PhaseDetailsScreen() {
@@ -23,7 +23,10 @@ export default function PhaseDetailsScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showSplitModal, setShowSplitModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const [customSplit, setCustomSplit] = useState('');
+  const [pendingSplit, setPendingSplit] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF'];
 
@@ -62,21 +65,9 @@ export default function PhaseDetailsScreen() {
     
     // Check if workouts exist and warn about data loss
     if (workouts.length > 0 && phase.training_split && phase.training_split !== finalSplit) {
-      Alert.alert(
-        'Atenção - Dados Serão Perdidos',
-        `Você possui ${workouts.length} treino(s) configurado(s) para a divisão "${phase.training_split}".\n\n⚠️ TODOS OS TREINOS E EXERCÍCIOS SERÃO DELETADOS ao mudar para "${finalSplit}".\n\nDeseja continuar?`,
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel'
-          },
-          {
-            text: 'Deletar e Continuar',
-            style: 'destructive',
-            onPress: () => executeSplitChange(finalSplit)
-          }
-        ]
-      );
+      setPendingSplit(finalSplit);
+      setShowWarningModal(true);
+      setShowSplitModal(false); // Close split selector to focus on warning
     } else {
       executeSplitChange(finalSplit);
     }
@@ -85,6 +76,7 @@ export default function PhaseDetailsScreen() {
   const executeSplitChange = async (finalSplit: string) => {
     if (!phase || !user?.id) return;
     
+    setIsGenerating(true);
     try {
       await generateWorkoutsForPhase(phase.id, finalSplit, user.id);
       setShowSplitModal(false);
@@ -92,6 +84,8 @@ export default function PhaseDetailsScreen() {
       Alert.alert('Sucesso', `Treinos para divisão ${finalSplit} gerados!`);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível gerar os treinos.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -308,11 +302,17 @@ export default function PhaseDetailsScreen() {
             key={workout.id}
             className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-4 flex-row justify-between items-center"
             onPress={() => {
-              // Check if we are in the students tab or workouts tab
-              // If we are in students tab, params usually has 'id' (studentId) and 'periodizationId'
-              // If we are in workouts tab, we might just have 'id' (periodizationId) or 'phaseId'
+              // If user is a personal (even in student view context), go to Edit/Details view
+              const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
               
-              if (isStudentView) {
+              if (isProfessional) {
+                  // Redirect to the Workouts tab stack to keep the 'Treino' tab active
+                  // We pass studentId as a param so the Details screen knows which student it belongs to
+                  router.push({
+                    pathname: '/(tabs)/workouts/details/[id]',
+                    params: { id: workout.id, workoutId: workout.id, studentId: user?.id }
+                  } as any);
+              } else if (isStudentView) {
                  router.push(`/(tabs)/students/${user?.id}/workouts/details/${workout.id}` as any);
               } else {
                  router.push(`/(tabs)/workouts/details/${workout.id}` as any);
@@ -337,16 +337,20 @@ export default function PhaseDetailsScreen() {
         transparent
         animationType="fade"
         onRequestClose={() => {
-          setShowSplitModal(false);
-          setCustomSplit('');
+          if (!isGenerating) {
+            setShowSplitModal(false);
+            setCustomSplit('');
+          }
         }}
       >
         <TouchableOpacity 
           className="flex-1 bg-black/80 justify-center items-center p-6"
           activeOpacity={1}
           onPress={() => {
-            setShowSplitModal(false);
-            setCustomSplit('');
+            if (!isGenerating) {
+              setShowSplitModal(false);
+              setCustomSplit('');
+            }
           }}
         >
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
@@ -354,52 +358,125 @@ export default function PhaseDetailsScreen() {
               <Text className="text-white text-xl font-bold mb-2 text-center font-display">
                 Divisão de Treino
               </Text>
-              <Text className="text-zinc-400 text-sm mb-6 text-center">
-                Cada letra representa um treino. Ex: ABC = Treino A, B e C
+              
+              {isGenerating ? (
+                <View className="py-8 items-center">
+                  <ActivityIndicator size="large" color="#FF6B35" />
+                  <Text className="text-zinc-400 text-sm mt-4 text-center">
+                    Gerando treinos para a divisão...
+                  </Text>
+                  <Text className="text-zinc-600 text-xs mt-2 text-center">
+                    Isso pode levar alguns segundos.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text className="text-zinc-400 text-sm mb-6 text-center">
+                    Cada letra representa um treino. Ex: ABC = Treino A, B e C
+                  </Text>
+                  
+                  {/* Custom Input */}
+                  <View className="mb-4">
+                    <Text className="text-zinc-400 text-xs mb-2 font-semibold">DIVISÃO CUSTOMIZADA</Text>
+                    <View className="flex-row gap-2">
+                      <TextInput
+                        value={customSplit}
+                        onChangeText={(text: string) => setCustomSplit(text.toUpperCase())}
+                        placeholder="Ex: ABCD"
+                        placeholderTextColor="#52525B"
+                        maxLength={10}
+                        autoCapitalize="characters"
+                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white font-bold text-lg"
+                      />
+                      <TouchableOpacity
+                        className="bg-orange-500 px-6 py-3 rounded-xl items-center justify-center"
+                        onPress={() => handleSelectSplit()}
+                      >
+                        <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Quick Select */}
+                  <Text className="text-zinc-400 text-xs mb-3 font-semibold">SELEÇÃO RÁPIDA</Text>
+                  <View className="flex-row flex-wrap justify-center gap-3">
+                    {splits.map((split) => (
+                      <TouchableOpacity
+                        key={split}
+                        className={`px-6 py-4 rounded-xl border ${
+                          phase.training_split === split 
+                            ? 'bg-orange-500 border-orange-500' 
+                            : 'bg-zinc-950 border-zinc-800'
+                        }`}
+                        onPress={() => handleSelectSplit(split)}
+                      >
+                        <Text className={`font-bold text-lg ${
+                          phase.training_split === split ? 'text-white' : 'text-zinc-400'
+                        }`}>
+                          {split}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Warning Modal */}
+      <Modal
+        visible={showWarningModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowWarningModal(false)}
+      >
+        <TouchableOpacity 
+          className="flex-1 bg-black/80 justify-center items-center p-6"
+          activeOpacity={1}
+          onPress={() => setShowWarningModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View className="bg-zinc-900 w-full rounded-2xl p-6 border border-zinc-800 items-center">
+              <View className="w-16 h-16 rounded-full bg-red-500/10 items-center justify-center mb-4 border border-red-500/20">
+                <Ionicons name="warning-outline" size={32} color="#EF4444" />
+              </View>
+              
+              <Text className="text-white text-xl font-bold mb-2 text-center font-display">
+                Atenção!
               </Text>
               
-              {/* Custom Input */}
-              <View className="mb-4">
-                <Text className="text-zinc-400 text-xs mb-2 font-semibold">DIVISÃO CUSTOMIZADA</Text>
-                <View className="flex-row gap-2">
-                  <TextInput
-                    value={customSplit}
-                    onChangeText={(text: string) => setCustomSplit(text.toUpperCase())}
-                    placeholder="Ex: ABCD"
-                    placeholderTextColor="#52525B"
-                    maxLength={10}
-                    autoCapitalize="characters"
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white font-bold text-lg"
-                  />
-                  <TouchableOpacity
-                    className="bg-orange-500 px-6 py-3 rounded-xl items-center justify-center"
-                    onPress={() => handleSelectSplit()}
-                  >
-                    <Ionicons name="checkmark" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <Text className="text-zinc-400 text-sm mb-6 text-center leading-relaxed">
+                Você possui <Text className="font-bold text-white">{workouts.length} treinos</Text> configurados.{'\n'}
+                Ao mudar a divisão, <Text className="text-red-400 font-bold">TODOS os treinos e exercícios serão deletados</Text> permanentemente.
+              </Text>
 
-              {/* Quick Select */}
-              <Text className="text-zinc-400 text-xs mb-3 font-semibold">SELEÇÃO RÁPIDA</Text>
-              <View className="flex-row flex-wrap justify-center gap-3">
-                {splits.map((split) => (
-                  <TouchableOpacity
-                    key={split}
-                    className={`px-6 py-4 rounded-xl border ${
-                      phase.training_split === split 
-                        ? 'bg-orange-500 border-orange-500' 
-                        : 'bg-zinc-950 border-zinc-800'
-                    }`}
-                    onPress={() => handleSelectSplit(split)}
-                  >
-                    <Text className={`font-bold text-lg ${
-                      phase.training_split === split ? 'text-white' : 'text-zinc-400'
-                    }`}>
-                      {split}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <View className="flex-row gap-3 w-full">
+                <TouchableOpacity
+                  className="flex-1 py-4 rounded-xl bg-zinc-800 border border-zinc-700 items-center"
+                  onPress={() => {
+                    setShowWarningModal(false);
+                    setPendingSplit('');
+                  }}
+                >
+                  <Text className="text-zinc-300 font-bold">Cancelar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="flex-1 py-4 rounded-xl bg-red-500/10 border border-red-500/50 items-center"
+                  onPress={() => {
+                    setShowWarningModal(false);
+                    if (pendingSplit) {
+                      // Slight delay to allow modal to close smoothly before loading starts
+                      setTimeout(() => {
+                        executeSplitChange(pendingSplit);
+                      }, 200);
+                    }
+                  }}
+                >
+                  <Text className="text-red-500 font-bold">Deletar tudo</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </TouchableOpacity>

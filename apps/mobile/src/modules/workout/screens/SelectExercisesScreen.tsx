@@ -132,15 +132,25 @@ export default function SelectExercisesScreen() {
         await addWorkoutItems(workoutId as string, items);
         clearSelectedExercises();
         
-        if (studentId) {
-          router.replace({
-            pathname: `/(tabs)/students/${studentId}/workouts/details/${workoutId}`,
-          } as any);
-        } else if (router.canGoBack()) {
-          router.back();
-        } else {
-          router.replace('/(tabs)/workouts');
-        }
+        // Check if we should redirect to the Workouts tab (for professionals) or Students tab
+        // We can inspect the current path segment or simpler: always prefer Workouts tab for editing if we are a professional.
+        // However, we don't have accountType here easily without a hook. Let's add the hook.
+        // Or generic approach: If we want to stay in "Edit" mode (WorkoutDetails), we should target that route.
+        // The previous screen (WorkoutDetails) passed studentId.
+        
+        // Changing to redirect to /(tabs)/workouts/... for consistency with the Edit View.
+        // We keep studentId in params so the next screen has context.
+        router.replace({
+          pathname: `/(tabs)/workouts/details/${workoutId}`,
+          params: { id: workoutId, studentId: studentId as string }
+        } as any);
+
+        // Previous logic was:
+        // if (studentId) {
+        //   router.replace({
+        //     pathname: `/(tabs)/students/${studentId}/workouts/details/${workoutId}`,
+        //   } as any);
+        // } else if ...
       } catch (error) {
         Alert.alert('Erro', 'Falha ao adicionar exercícios.');
       }

@@ -239,7 +239,16 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       };
     } catch (error: any) {
       console.error('❌ Error creating student with auth:', error);
-      return { success: false, error: error.message };
+      let errorMessage = error.message;
+
+      // Check for duplicate email error
+      if (errorMessage?.includes('users_email_partial_key') || 
+          errorMessage?.includes('duplicate key value') || 
+          errorMessage?.includes('User already registered')) {
+        errorMessage = 'Este e-mail já está cadastrado. Por favor, utilize outro e-mail.';
+      }
+
+      return { success: false, error: errorMessage };
     }
   },
   cancelInvite: async (inviteId: string) => {
