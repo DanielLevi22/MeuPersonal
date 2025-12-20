@@ -17,7 +17,7 @@ import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function DashboardScreen() {
-  const { user, abilities } = useAuthStore();
+  const { user, abilities, accountType } = useAuthStore();
   const { dailyGoal, weeklyGoals, streak, achievements, showConfetti, fetchDailyData, isLoading } = useGamificationStore();
   const { steps, calories, refetch: refetchHealth, loading: healthLoading } = useHealthData();
   const [profile, setProfile] = useState<any>(null);
@@ -51,7 +51,7 @@ export default function DashboardScreen() {
     refetchHealth();
   };
 
-  if (isLoading && !profile) {
+  if (isLoading && !profile && !accountType) {
     return (
       <ScreenLayout className="justify-center items-center">
         <View className="bg-zinc-900 p-5 rounded-full mb-4 border border-zinc-800">
@@ -63,7 +63,7 @@ export default function DashboardScreen() {
   }
 
   // Personal Trainer Dashboard (Legacy View)
-  if (profile?.account_type === 'professional') {
+  if (accountType === 'professional') {
     return (
       <ScreenLayout>
         <View className="p-6">

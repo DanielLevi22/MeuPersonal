@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/auth';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,22 +17,20 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0A0A0A', // bg-background (Deep Black)
+          backgroundColor: '#09090B', // Deep Black
           borderTopWidth: 1,
-          borderTopColor: '#27272A', // border-dark
-          height: Platform.OS === 'ios' ? 85 : 65 + insets.bottom,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10 + insets.bottom,
+          borderTopColor: '#27272A',
+          height: Platform.OS === 'ios' ? 88 : 68 + insets.bottom,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8 + insets.bottom,
           paddingTop: 8,
+          elevation: 0, // Android shadow removal
         },
-        tabBarActiveTintColor: '#FF6B35', // text-primary (Vibrant Orange)
-        tabBarInactiveTintColor: '#71717A', // text-muted
-        tabBarItemStyle: {
-          padding: 0,
-        },
+        tabBarActiveTintColor: '#FF6B35', 
+        tabBarInactiveTintColor: '#A1A1AA', // Zinc-400
         tabBarLabelStyle: {
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: '600',
-          fontFamily: 'Orbitron_600SemiBold', // Use custom font if available, else default
+          marginTop: 2,
         },
       }}
     >
@@ -41,8 +39,8 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'home' : 'home-outline'} 
+            <MaterialCommunityIcons 
+              name={focused ? 'home-variant' : 'home-variant-outline'} 
               size={24} 
               color={color} 
             />
@@ -56,8 +54,8 @@ export default function TabLayout() {
           title: 'Treino',
           href: (isStudent || abilities?.can('manage', 'Workout')) ? '/workouts' : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'barbell' : 'barbell-outline'} 
+            <MaterialCommunityIcons 
+              name={focused ? 'dumbbell' : 'dumbbell'} 
               size={24} 
               color={color} 
             />
@@ -71,8 +69,8 @@ export default function TabLayout() {
           title: 'Nutrição',
           href: (isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))) ? '/nutrition' : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'restaurant' : 'restaurant-outline'} 
+            <MaterialCommunityIcons 
+              name={focused ? 'food-apple' : 'food-apple-outline'} 
               size={24} 
               color={color} 
             />
@@ -86,8 +84,8 @@ export default function TabLayout() {
           title: 'Progresso',
           href: isStudent ? '/progress' : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'stats-chart' : 'stats-chart-outline'} 
+            <MaterialCommunityIcons 
+              name={focused ? 'chart-timeline-variant' : 'chart-timeline-variant'} 
               size={24} 
               color={color} 
             />
@@ -100,8 +98,8 @@ export default function TabLayout() {
         options={{
           title: 'Menu',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'grid' : 'grid-outline'} 
+            <MaterialCommunityIcons 
+              name={focused ? 'dots-grid' : 'dots-grid'} 
               size={24} 
               color={color} 
             />
@@ -137,7 +135,7 @@ export default function TabLayout() {
           title: 'Cardio',
           href: isStudent ? '/cardio' : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
+            <MaterialCommunityIcons 
               name={focused ? 'heart' : 'heart-outline'} 
               size={24} 
               color={color} 
@@ -153,8 +151,8 @@ export default function TabLayout() {
           title: 'Alunos',
           href: (accountType === 'professional' && abilities?.can('manage', 'Workout')) ? '/students' : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'people' : 'people-outline'} 
+            <MaterialCommunityIcons 
+              name={focused ? 'account-group' : 'account-group-outline'} 
               size={24} 
               color={color} 
             />

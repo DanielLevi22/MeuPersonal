@@ -34,22 +34,24 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+  // Move splash hiding to Nav component which knows about Auth state
+  // useEffect(() => {
+  //   if (loaded) {
+  //     SplashScreen.hideAsync();
+  //   }
+  // }, [loaded]);
 
   if (!loaded) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return <RootLayoutNav loaded={loaded} />;
 }
 
-function RootLayoutNav() {
+function RootLayoutNav({ loaded }: { loaded: boolean }) {
   const colorScheme = useColorScheme();
   const { session, initializeSession, isLoading, accountType, accountStatus } = useAuthStore();
+
   const segments = useSegments();
   const router = useRouter();
 
@@ -75,6 +77,13 @@ function RootLayoutNav() {
     };
   }, []);
 
+  // Hide Splash Screen only when fonts AND auth are ready
+  useEffect(() => {
+    if (loaded && !isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, isLoading]);
+
   // Auth Guard
   useEffect(() => {
     if (isLoading) return;
@@ -95,6 +104,9 @@ function RootLayoutNav() {
       }
     }
   }, [session, segments, isLoading, accountType, accountStatus]);
+
+  // Removed manual loading view to use Native Splash
+
 
   return (
     <QueryClientProvider client={queryClient}>
