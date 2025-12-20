@@ -104,21 +104,12 @@ export async function scheduleMealNotifications(
           targetDate.setDate(targetDate.getDate() + daysUntilTarget);
           targetDate.setHours(hours, minutes, 0, 0);
 
-          console.log(`[Debug] Scheduling for: ${meal.mealName}`);
-          console.log(`[Debug] Now: ${now.toISOString()}`);
-          console.log(`[Debug] Target (initial): ${targetDate.toISOString()}`);
-          console.log(`[Debug] DayOfWeek: ${dayOfWeek}, CurrentDay: ${currentDay}, DaysUntil: ${daysUntilTarget}`);
-
-          // If the time has already passed for this week
+          // Logs removed to reduce noise
+          // if (targetDate.getTime() <= now.getTime()) { ... } logic remains
           if (targetDate.getTime() <= now.getTime()) {
              const timeDiff = now.getTime() - targetDate.getTime();
-             const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes grace period
-
+             const GRACE_PERIOD_MS = 5 * 60 * 1000;
              if (i === 0 && timeDiff < GRACE_PERIOD_MS) {
-                // If it's the current week and within grace period, schedule immediately using TimeInterval
-                // TimeInterval is often more reliable for "immediate" triggers than a Date slightly in the past/future
-                console.log(`[Debug] Within grace period (${timeDiff}ms), scheduling IMMEDIATELY via TimeInterval`);
-                
                 await Notifications.scheduleNotificationAsync({
                   identifier: `${planId}-${meal.mealId}-${i}`,
                   content: {
@@ -131,18 +122,15 @@ export async function scheduleMealNotifications(
                   },
                   trigger: {
                     type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                    seconds: 2, // Fire in 2 seconds
+                    seconds: 2,
                     repeats: false,
                   },
                 });
-                continue; // Skip the standard scheduling for this instance
+                continue;
              } else {
-                // Otherwise, skip this iteration (don't duplicate next week's notification)
-                console.log('[Debug] Time passed, skipping this instance');
                 continue;
              }
           }
-          console.log(`[Debug] Final Target: ${targetDate.toISOString()}`);
 
           const trigger: Notifications.DateTriggerInput = {
             type: Notifications.SchedulableTriggerInputTypes.DATE,

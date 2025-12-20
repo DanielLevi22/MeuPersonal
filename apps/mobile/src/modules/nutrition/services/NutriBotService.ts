@@ -54,7 +54,7 @@ export const NutriBotService = {
         ASSISTANT:
       `;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -68,6 +68,8 @@ export const NutriBotService = {
       return text || "Desculpe, não entendi.";
 
     } catch (error) {
+       console.error("NutriBot Error:", error);
+       return "Desculpe, estou com dificuldades técnicas no momento.";
     }
   }
 };

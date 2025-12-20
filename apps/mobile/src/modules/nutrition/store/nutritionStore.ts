@@ -399,11 +399,12 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       // CRITICAL: Only schedule if the current user is the student (not the professor viewing the plan)
       const currentUser = useAuthStore.getState().user;
       
-      // Debounce scheduling: Don't schedule if we just did it in the last 5 seconds
+      // Debounce scheduling: Schedule only once per hour to avoid spamming
       const lastScheduled = (get() as any).lastNotificationSchedule || 0;
       const now = Date.now();
+      const ONE_HOUR = 60 * 60 * 1000;
       
-      if (data?.id && currentUser?.id === studentId && (now - lastScheduled > 5000)) {
+      if (data?.id && currentUser?.id === studentId && (now - lastScheduled > ONE_HOUR)) {
         // Update timestamp immediately to prevent race conditions
         set({ lastNotificationSchedule: now } as any);
 

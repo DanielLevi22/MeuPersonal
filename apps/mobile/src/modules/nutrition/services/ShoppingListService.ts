@@ -101,7 +101,13 @@ export const ShoppingListService = {
 
   generateCookingSteps: async (mealName: string, ingredients: string[]): Promise<CookingStep[]> => {
       const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("API Key missing");
+      console.log('Generating cooking steps for:', mealName, 'with API Key present:', !!apiKey);
+      console.log('Ingredients:', ingredients);
+      
+      if (!apiKey) {
+        console.error('API Key missing in ShoppingListService');
+        throw new Error("API Key missing");
+      }
 
       const prompt = `
           You are a culinary instructor. Create a step-by-step cooking guide for a meal named "${mealName}" using these ingredients: ${ingredients.join(', ')}.
@@ -113,7 +119,7 @@ export const ShoppingListService = {
       `;
 
       try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -124,7 +130,10 @@ export const ShoppingListService = {
           const data = await response.json();
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           
-          if (!text) return [];
+          if (!text) {
+              console.warn("Gemini API returned no candidates:", JSON.stringify(data));
+              throw new Error("No content generated");
+          }
           
           // Clean markdown code blocks if present
           const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -160,7 +169,7 @@ export const ShoppingListService = {
       }
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

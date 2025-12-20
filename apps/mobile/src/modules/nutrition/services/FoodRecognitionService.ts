@@ -7,7 +7,7 @@ export interface FoodAnalysisResult {
   confidence: number;
 }
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface FoodAnalysisResult {
   name: string;
@@ -44,7 +44,7 @@ export const FoodRecognitionService = {
         console.log('Sending image to Gemini...');
         const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -90,8 +90,8 @@ export const FoodRecognitionService = {
         };
 
       } catch (error) {
-        console.error('AI Analysis Failed, falling back to mock or error:', error);
-        throw error;
+        console.error('AI Analysis Failed, falling back to mock:', error);
+        // Do not throw, let it fall through to mock
       }
     }
 

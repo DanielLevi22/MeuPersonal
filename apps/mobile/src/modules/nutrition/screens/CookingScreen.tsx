@@ -16,6 +16,7 @@ export default function CookingScreen() {
   const params = useLocalSearchParams();
   const mealName = params.mealName as string;
   const mealId = params.mealId as string;
+  
   const ingredients = params.ingredients ? JSON.parse(params.ingredients as string) : [];
 
   const { toggleMealCompletion } = useNutritionStore();
@@ -142,6 +143,23 @@ export default function CookingScreen() {
             A IA está organizando o passo a passo para {mealName || 'sua refeição'}.
           </Text>
           <ActivityIndicator size="large" color="#FF6B35" />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  if (!loading && steps.length === 0) {
+    return (
+      <ScreenLayout>
+        <View className="flex-1 items-center justify-center p-6">
+          <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
+          <Text className="text-white text-xl font-bold font-display text-center mt-4 mb-2">
+            Erro ao carregar guia
+          </Text>
+          <Text className="text-zinc-400 text-center mb-6">
+            Não foi possível gerar os passos de preparo. Tente novamente.
+          </Text>
+          <Button label="Voltar" onPress={() => router.back()} />
         </View>
       </ScreenLayout>
     );
