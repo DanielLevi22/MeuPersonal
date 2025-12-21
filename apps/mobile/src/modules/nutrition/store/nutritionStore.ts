@@ -1,10 +1,11 @@
 import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications } from '@/services/notificationService';
+import { useGamificationStore } from '@/store/gamificationStore';
 import type {
-  DietMeal,
-  DietMealItem,
-  DietPlan,
-  Food
+    DietMeal,
+    DietMealItem,
+    DietPlan,
+    Food
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
@@ -137,6 +138,15 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           [mealId]: optimisticLog
         }
       }));
+
+      // Sync with Gamification Store
+      const updatedLogs = get().dailyLogs;
+      const completedCount = Object.values(updatedLogs).filter(log => log.completed).length;
+      
+      // We import it dynamically or use the imported store if no cycle is confirmed.
+      // Since we need to avoid cycles, we can defer the require or use the module if imported at top.
+      // Assuming import at top is safe.
+      useGamificationStore.getState().updateMealProgress(completedCount);
 
       // Check if log exists
       if (existingLog?.id) {

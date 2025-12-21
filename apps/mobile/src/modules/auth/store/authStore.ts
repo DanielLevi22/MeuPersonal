@@ -1,8 +1,8 @@
 import {
-  AccountType,
-  AppAbility,
-  defineAbilitiesFor,
-  getUserContextJWT
+    AccountType,
+    AppAbility,
+    defineAbilitiesFor,
+    getUserContextJWT
 } from '@meupersonal/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeSession: async (session) => {
     const state = get();
     // Prevent multiple initializations for the same user or if already loading
-    if (state.isLoading && state.session?.user?.id === session?.user?.id) {
+    if (state.isLoading && session && state.session?.user?.id === session.user.id) {
       console.log('⏭️ Already initializing session for this user, skipping...');
       return;
     }

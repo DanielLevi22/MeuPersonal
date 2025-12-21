@@ -1,17 +1,94 @@
+// Imports
 import { useAuthStore } from '@/auth';
 import { AchievementBadge } from '@/components/gamification/AchievementBadge';
 import { WeeklyBarChart } from '@/components/gamification/WeeklyBarChart';
 import { DailyMacroCard } from '@/components/nutrition/DailyMacroCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { WorkoutAnalytics } from '@/components/workout/WorkoutAnalytics';
+import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-// Progress Screen Main Component
+// Helper Component for Nutrition Tab to isolate hooks
+const NutritionTabContent = () => {
+    const { user } = useAuthStore();
+    const { 
+        currentDietPlan, 
+        meals, 
+        mealItems, 
+        dailyLogs, 
+        fetchDailyLogs,
+        fetchDietPlan, 
+        fetchMeals,
+        fetchMealItems
+    } = useNutritionStore();
+
+    useFocusEffect(
+        useCallback(() => {
+            if (user?.id) {
+                const today = new Date().toISOString().split('T')[0];
+                fetchDailyLogs(user.id, today);
+                
+                if (!currentDietPlan) {
+                    fetchDietPlan(user.id);
+                } else if (currentDietPlan.id && Object.keys(mealItems).length === 0) {
+                    // Check if we need to fetch meals (if plan exists but items don't)
+                     fetchMeals(currentDietPlan.id);
+                }
+            }
+        }, [user, currentDietPlan, mealItems])
+    );
+
+
+    // Calculate Consumed Macros
+    const consumed = useMemo(() => {
+        let calories = 0;
+        let protein = 0;
+        let carbs = 0;
+        let fat = 0;
+
+        // Iterate through all meals content to match with logs
+        // Note: Ideally we should use the logs to drive this, but logs point to meal_ids
+        
+        Object.values(dailyLogs).forEach(log => {
+            if (log.completed && log.diet_meal_id) {
+                // Find the items for this meal
+                const items = mealItems[log.diet_meal_id] || [];
+                
+                items.forEach(item => {
+                    if (item.food) {
+                        const ratio = item.quantity / (item.food.serving_size || 100); 
+                        calories += item.food.calories * ratio;
+                        protein += item.food.protein * ratio;
+                        carbs += item.food.carbs * ratio;
+                        fat += item.food.fat * ratio;
+                    }
+                });
+            }
+        });
+
+        return {
+            calories: Math.round(calories),
+            protein: Math.round(protein),
+            carbs: Math.round(carbs),
+            fat: Math.round(fat)
+        };
+    }, [dailyLogs, mealItems]);
+
+    return (
+        <DailyMacroCard 
+            calories={consumed.calories} 
+            carbs={consumed.carbs} 
+            protein={consumed.protein} 
+            fat={consumed.fat} 
+        />
+    );
+};
 export default function ProgressScreen() {
   const { user } = useAuthStore();
   const { dailyGoal, weeklyGoals, achievements, fetchDailyData, isLoading } = useGamificationStore();
@@ -224,16 +301,9 @@ export default function ProgressScreen() {
 
         {/* --- TAB: NUTRITION --- */}
         {activeTab === 'NUTRICAO' && (
-            <>
-                 {/* Macro Goals Section */}
-                <DailyMacroCard 
-                    calories={2264} 
-                    carbs={283} 
-                    protein={113} 
-                    fat={75} 
-                />
-            </>
+            <NutritionTabContent />
         )}
+
 
         {/* --- TAB: WORKOUT --- */}
         {activeTab === 'TREINO' && (

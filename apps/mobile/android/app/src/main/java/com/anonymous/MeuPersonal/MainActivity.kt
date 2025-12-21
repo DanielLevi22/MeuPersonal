@@ -1,5 +1,6 @@
 package com.anonymous.MeuPersonal
 import expo.modules.splashscreen.SplashScreenManager
+import dev.matinzd.healthconnect.permissions.HealthConnectPermissionDelegate
 
 import android.os.Build
 import android.os.Bundle
@@ -11,8 +12,6 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 import expo.modules.ReactActivityDelegateWrapper
 
-import dev.matinzd.healthconnect.permissions.HealthConnectPermissionDelegate
-
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
@@ -22,8 +21,8 @@ class MainActivity : ReactActivity() {
     // @generated begin expo-splashscreen - expo prebuild (DO NOT MODIFY) sync-f3ff59a738c56c9a6119210cb55f0b613eb8b6af
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
-    super.onCreate(null)
     HealthConnectPermissionDelegate.setPermissionDelegate(this)
+    super.onCreate(null)
   }
 
   /**

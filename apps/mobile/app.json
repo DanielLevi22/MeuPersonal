@@ -50,12 +50,7 @@
           "isClinicalDataEnabled": false
         }
       ],
-      [
-        "react-native-health-connect",
-        {
-          "rationaleActivityName": "com.anonymous.MeuPersonal.RationaleActivity"
-        }
-      ],
+      "react-native-health-connect",
       [
         "expo-build-properties",
         {
@@ -71,13 +66,8 @@
           "speechRecognitionPermission": "Permitir reconhecimento de voz para comandos?"
         }
       ],
-      [
-        "@react-native-voice/voice",
-        {
-          "microphonePermission": "Permitir acesso ao microfone para comandos de voz?",
-          "speechRecognitionPermission": "Permitir reconhecimento de voz para comandos?"
-        }
-      ]
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

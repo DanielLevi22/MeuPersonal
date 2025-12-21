@@ -210,7 +210,9 @@ export default function PeriodizationDetailsScreen() {
           </Text>
           
           <View className="gap-4">
-            {currentPeriodizationPhases.map((phase, index) => (
+            {currentPeriodizationPhases
+              .filter(phase => !isStudentView || phase.status === 'active')
+              .map((phase, index) => (
               <TouchableOpacity 
                 key={phase.id} 
                 className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800"
