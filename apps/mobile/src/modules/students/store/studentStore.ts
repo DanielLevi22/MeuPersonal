@@ -209,6 +209,51 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         throw new Error(result?.error || 'Failed to create student');
       }
 
+      // MANUALLY INSERT PHYSICAL ASSESSMENT to ensure it's saved
+      if (data.weight || data.height || data.initial_assessment) {
+        console.log('📝 Saving initial assessment manually...');
+        const assessmentData = {
+          student_id: result.student_id,
+          personal_id: data.personal_id,
+          weight: data.weight ? parseFloat(data.weight) : null,
+          height: data.height ? parseFloat(data.height) : null,
+          notes: data.notes || null,
+          // Map initial assessment fields if they exist
+          neck: data.initial_assessment?.neck ? parseFloat(data.initial_assessment.neck) : null,
+          shoulder: data.initial_assessment?.shoulder ? parseFloat(data.initial_assessment.shoulder) : null,
+          chest: data.initial_assessment?.chest ? parseFloat(data.initial_assessment.chest) : null,
+          arm_right_relaxed: data.initial_assessment?.arm_right_relaxed ? parseFloat(data.initial_assessment.arm_right_relaxed) : null,
+          arm_left_relaxed: data.initial_assessment?.arm_left_relaxed ? parseFloat(data.initial_assessment.arm_left_relaxed) : null,
+          arm_right_contracted: data.initial_assessment?.arm_right_contracted ? parseFloat(data.initial_assessment.arm_right_contracted) : null,
+          arm_left_contracted: data.initial_assessment?.arm_left_contracted ? parseFloat(data.initial_assessment.arm_left_contracted) : null,
+          forearm: data.initial_assessment?.forearm ? parseFloat(data.initial_assessment.forearm) : null,
+          waist: data.initial_assessment?.waist ? parseFloat(data.initial_assessment.waist) : null,
+          abdomen: data.initial_assessment?.abdomen ? parseFloat(data.initial_assessment.abdomen) : null,
+          hips: data.initial_assessment?.hips ? parseFloat(data.initial_assessment.hips) : null,
+          thigh_proximal: data.initial_assessment?.thigh_proximal ? parseFloat(data.initial_assessment.thigh_proximal) : null,
+          thigh_distal: data.initial_assessment?.thigh_distal ? parseFloat(data.initial_assessment.thigh_distal) : null,
+          calf: data.initial_assessment?.calf ? parseFloat(data.initial_assessment.calf) : null,
+          skinfold_chest: data.initial_assessment?.skinfold_chest ? parseFloat(data.initial_assessment.skinfold_chest) : null,
+          skinfold_abdominal: data.initial_assessment?.skinfold_abdominal ? parseFloat(data.initial_assessment.skinfold_abdominal) : null,
+          skinfold_thigh: data.initial_assessment?.skinfold_thigh ? parseFloat(data.initial_assessment.skinfold_thigh) : null,
+          skinfold_triceps: data.initial_assessment?.skinfold_triceps ? parseFloat(data.initial_assessment.skinfold_triceps) : null,
+          skinfold_suprailiac: data.initial_assessment?.skinfold_suprailiac ? parseFloat(data.initial_assessment.skinfold_suprailiac) : null,
+          skinfold_subscapular: data.initial_assessment?.skinfold_subscapular ? parseFloat(data.initial_assessment.skinfold_subscapular) : null,
+          skinfold_midaxillary: data.initial_assessment?.skinfold_midaxillary ? parseFloat(data.initial_assessment.skinfold_midaxillary) : null,
+        };
+
+        const { error: assessmentError } = await supabase
+          .from('physical_assessments')
+          .insert(assessmentData);
+
+        if (assessmentError) {
+           console.error('❌ Failed to save initial assessment:', assessmentError);
+           // Not throwing here to avoid rolling back the student creation, but technically partial success
+        } else {
+           console.log('✅ Initial assessment saved successfully');
+        }
+      }
+
       console.log('✅ Student created successfully!');
       console.log('📦 Result:', result);
 
