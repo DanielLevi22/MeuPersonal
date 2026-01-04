@@ -184,73 +184,52 @@ export async function cancelAllNotifications(): Promise<void> {
   }
 }
 
-export async function schedulePostWorkoutReminder(): Promise<void> {
+export async function scheduleWorkoutReminder(
+  hour: number = 8, 
+  minute: number = 0
+): Promise<void> {
   try {
-    // Schedule for 30 minutes from now
-    const triggerSeconds = 30 * 60; 
+    // Schedule daily workout reminder
+    const trigger: any = {
+      hour,
+      minute,
+      repeats: true,
+    };
 
-    await Notifications.scheduleNotificationAsync({
-      identifier: 'post-workout-meal-reminder',
-      content: {
-        title: '💪 Treino finalizado!',
-        body: 'Não esqueça de registrar sua refeição pós-treino para garantir seus ganhos.',
-        sound: true,
-        data: { type: 'post-workout' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: triggerSeconds,
-        repeats: false,
-      },
-    });
-    console.log('Scheduled post-workout reminder for 30 minutes from now');
-  } catch (error) {
-    console.error('Error scheduling post-workout reminder:', error);
-  }
-}
-
-export async function scheduleStreakReminder(): Promise<void> {
-  try {
-    // Schedule for 8:00 PM (20:00) every day
-    // We want to remind the user if they haven't completed their goals yet
-    // This is a "dumb" reminder that just fires every day, 
-    // ideally we would check if they already completed it before showing,
-    // but background tasks are complex. For now, a gentle nudge is fine.
-    
     if (Platform.OS === 'android') {
-      await Notifications.scheduleNotificationAsync({
-        identifier: 'daily-streak-reminder',
-        content: {
-          title: '🔥 Mantenha sua ofensiva!',
-          body: 'Não deixe de bater suas metas hoje. Entre e registre seu progresso!',
-          sound: true,
-          // @ts-ignore
-          channelId: 'meal-reminders', // Reuse existing channel or create a new one
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour: 20,
-          minute: 0,
-        },
-      });
+       // Android needs specific trigger type for calendar-like repetition if not using interval
+       // However, simple daily trigger is supported via SchedulableTriggerInputTypes.DAILY (if available/mapped)
+       // Or manually scheduling for next instances.
+       // Let's use the explicit Daily trigger object if utilizing expo-notifications types directly
+        await Notifications.scheduleNotificationAsync({
+            identifier: 'daily-workout-reminder',
+            content: {
+                title: '🏋️ Hora do Treino!',
+                body: 'Seu corpo alcançar o que sua mente acredita. Vamos treinar?',
+                sound: true,
+            },
+            trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DAILY,
+                hour,
+                minute
+            },
+        });
     } else {
-      await Notifications.scheduleNotificationAsync({
-        identifier: 'daily-streak-reminder',
-        content: {
-          title: '🔥 Mantenha sua ofensiva!',
-          body: 'Não deixe de bater suas metas hoje. Entre e registre seu progresso!',
-          sound: true,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: 20,
-          minute: 0,
-          repeats: true,
-        },
-      });
+        await Notifications.scheduleNotificationAsync({
+            identifier: 'daily-workout-reminder',
+            content: {
+                title: '🏋️ Hora do Treino!',
+                body: 'Seu corpo alcançar o que sua mente acredita. Vamos treinar?',
+                sound: true,
+            },
+            trigger,
+        });
     }
-    console.log('Scheduled daily streak reminder for 20:00');
+
+    console.log(`Scheduled daily workout reminder for ${hour}:${minute < 10 ? '0' + minute : minute}`);
   } catch (error) {
-    console.error('Error scheduling streak reminder:', error);
+    console.error('Error scheduling workout reminder:', error);
   }
 }
+
+

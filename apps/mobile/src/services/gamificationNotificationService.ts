@@ -163,8 +163,8 @@ export const gamificationNotificationService = {
     const hasPermission = await this.requestPermissions();
     if (!hasPermission) return;
 
-    // Agendar lembretes
-    await this.scheduleStreakReminder();
-    await this.scheduleWeeklySummary();
+    // Disabled to reduce spam as per user request
+    // await this.scheduleStreakReminder();
+    // await this.scheduleWeeklySummary();
   },
 };

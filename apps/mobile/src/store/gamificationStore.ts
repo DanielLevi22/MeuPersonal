@@ -1,4 +1,3 @@
-import { scheduleStreakReminder } from '@/services/notificationService';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
 import { Achievement, DailyGoal, gamificationService, StudentStreak } from '../services/gamification';
@@ -77,7 +76,8 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
       ]);
       
       // Schedule daily streak reminder
-      await scheduleStreakReminder();
+      // Removed to prevent spam
+      // await scheduleStreakReminder();
       
       set({ dailyGoal, weeklyGoals, streak, achievements });
     } catch (error) {
