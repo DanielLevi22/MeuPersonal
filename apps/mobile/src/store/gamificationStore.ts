@@ -6,12 +6,14 @@ import { Achievement, DailyGoal, gamificationService, StudentStreak } from '../s
 interface GamificationState {
   dailyGoal: DailyGoal | null;
   weeklyGoals: DailyGoal[];
+  history: DailyGoal[];
   streak: StudentStreak | null;
   achievements: Achievement[];
   isLoading: boolean;
   showConfetti: boolean;
   
   fetchDailyData: (date: string) => Promise<void>;
+  fetchHistory: (days: number) => Promise<void>;
   updateMealProgress: (completed: number, date?: string) => Promise<void>;
   updateWorkoutProgress: (completed: number, date?: string) => Promise<void>;
   setShowConfetti: (show: boolean) => void;
@@ -21,10 +23,30 @@ interface GamificationState {
 export const useGamificationStore = create<GamificationState>((set, get) => ({
   dailyGoal: null,
   weeklyGoals: [],
+  history: [],
   streak: null,
   achievements: [],
   isLoading: false,
   showConfetti: false,
+
+  fetchHistory: async (days: number) => {
+    // Silent load or specific loading state? Reusing isLoading is okay for now.
+    // But better not to flicker the whole screen.
+    // I won't set isLoading here to avoid disrupting main dashboard if used in background/tab.
+    try {
+        const today = new Date();
+        const endDate = today.toISOString().split('T')[0];
+        
+        const startDateObj = new Date();
+        startDateObj.setDate(today.getDate() - days);
+        const startDate = startDateObj.toISOString().split('T')[0];
+
+        const data = await gamificationService.getWeeklyGoals(startDate, endDate);
+        set({ history: data || [] });
+    } catch (error) {
+        console.error('Error fetching history:', error);
+    }
+  },
 
   fetchDailyData: async (date: string) => {
     set({ isLoading: true });

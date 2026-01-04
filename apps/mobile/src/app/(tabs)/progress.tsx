@@ -1,6 +1,6 @@
 // Imports
 import { useAuthStore } from '@/auth';
-import { WeeklyBarChart } from '@/components/gamification/WeeklyBarChart';
+import { ConsistencyHeatmap } from '@/components/gamification/ConsistencyHeatmap';
 import { DailyMacroCard } from '@/components/nutrition/DailyMacroCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { WorkoutAnalytics } from '@/components/workout/WorkoutAnalytics';
@@ -88,9 +88,10 @@ const NutritionTabContent = () => {
         />
     );
 };
+
 export default function ProgressScreen() {
   const { user } = useAuthStore();
-  const { dailyGoal, weeklyGoals, achievements, fetchDailyData, isLoading } = useGamificationStore();
+  const { dailyGoal, weeklyGoals, history, fetchDailyData, fetchHistory, isLoading } = useGamificationStore();
   const [activeTab, setActiveTab] = useState<'GERAL' | 'NUTRICAO' | 'TREINO'>('GERAL');
 
   const tabs = [
@@ -103,6 +104,7 @@ export default function ProgressScreen() {
     if (user) {
       const today = new Date().toISOString().split('T')[0];
       fetchDailyData(today);
+      fetchHistory(120); // 4 months
     }
   }, [user]);
 
@@ -123,6 +125,7 @@ export default function ProgressScreen() {
             onRefresh={() => {
               const today = new Date().toISOString().split('T')[0];
               fetchDailyData(today);
+              fetchHistory(120);
             }} 
             tintColor="#FF6B35" 
           />
@@ -243,11 +246,10 @@ export default function ProgressScreen() {
                     </View>
                 </Animated.View>
 
-                {/* Weekly Chart */}
-                <Animated.View entering={FadeInDown.delay(300).springify()} className="mb-8">
-                  <WeeklyBarChart data={weeklyGoals} />
+                {/* Heatmap */}
+                <Animated.View entering={FadeInDown.delay(300).springify()}>
+                   <ConsistencyHeatmap history={history} />
                 </Animated.View>
-
 
             </>
         )}
