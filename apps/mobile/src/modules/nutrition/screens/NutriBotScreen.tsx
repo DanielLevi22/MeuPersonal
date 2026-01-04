@@ -8,7 +8,7 @@ import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, Text
 
 export default function NutriBotScreen() {
   const router = useRouter();
-  const { currentDietPlan, meals } = useNutritionStore();
+  const { currentDietPlan, meals, mealItems } = useNutritionStore();
   
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -41,24 +41,46 @@ export default function NutriBotScreen() {
             messages, 
             userMsg.content, 
             currentDietPlan, 
-            meals
+            meals,
+            mealItems
         );
 
-        const aiMsg: ChatMessage = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: responseText,
-            createdAt: Date.now()
-        };
-        setMessages(prev => [...prev, aiMsg]);
+        // Prepare placeholder message
+        const responseId = (Date.now() + 1).toString();
         
-        setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
+        setMessages(prev => [
+            ...prev, 
+            {
+                id: responseId,
+                role: 'assistant',
+                content: '', // Start empty
+                createdAt: Date.now()
+            }
+        ]);
+        setLoading(false); // Stop loading indicator, start streaming
+
+        // Simulate Streaming (Typewriter Effect)
+        let currentText = '';
+        const chunkSize = 5; // Characters per tick
+        
+        for (let i = 0; i < responseText.length; i += chunkSize) {
+            const chunk = responseText.slice(i, i + chunkSize);
+            currentText += chunk;
+            
+            setMessages(prev => prev.map(msg => 
+                msg.id === responseId 
+                    ? { ...msg, content: currentText }
+                    : msg
+            ));
+
+            // Auto-scroll logic
+            flatListRef.current?.scrollToEnd({ animated: false });
+            
+            // Wait a slightly random bit for realism (10ms - 30ms)
+            await new Promise(r => setTimeout(r, 15)); 
+        }
 
     } catch (error) {
-        // Error handled in service mostly
-    } finally {
         setLoading(false);
     }
   };

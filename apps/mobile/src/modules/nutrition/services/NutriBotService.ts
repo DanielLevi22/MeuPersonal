@@ -1,4 +1,4 @@
-import { DietMeal, DietPlan } from '@meupersonal/core';
+import { DietMeal, DietMealItem, DietPlan } from '@meupersonal/core';
 
 export interface ChatMessage {
   id: string;
@@ -12,16 +12,23 @@ export const NutriBotService = {
     chatHistory: ChatMessage[],
     userMessage: string,
     currentPlan: DietPlan | null,
-    meals: DietMeal[]
+    meals: DietMeal[],
+    mealItems: Record<string, DietMealItem[]>
   ): Promise<string> => {
     
     // 1. Build System Context
     let dietContext = "O usuário não possui um plano de dieta ativo.";
     
     if (currentPlan && meals.length > 0) {
-      const mealSummaries = meals.map(m => 
-        `- ${m.name} (${m.meal_time}): ${m.meal_type}`
-      ).join('\n');
+      const mealSummaries = meals.map(m => {
+        const items = mealItems[m.id] || [];
+        const itemsStr = items.map(i => {
+            const foodName = i.food?.name || 'Alimento desconhecido';
+             return `   - ${i.quantity} ${i.unit} de ${foodName}`;
+        }).join('\n');
+        
+        return `- ${m.name} (${m.meal_time}): ${m.meal_type}\n${itemsStr}`;
+      }).join('\n\n');
       
       dietContext = `
         Plano de Dieta do Usuário: "${currentPlan.name}"
