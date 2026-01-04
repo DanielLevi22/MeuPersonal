@@ -16,7 +16,7 @@ export const NutriBotService = {
   ): Promise<string> => {
     
     // 1. Build System Context
-    let dietContext = "The user has no active diet plan.";
+    let dietContext = "O usuário não possui um plano de dieta ativo.";
     
     if (currentPlan && meals.length > 0) {
       const mealSummaries = meals.map(m => 
@@ -24,46 +24,53 @@ export const NutriBotService = {
       ).join('\n');
       
       dietContext = `
-        User's Diet Plan: "${currentPlan.name}"
-        Meals:
+        Plano de Dieta do Usuário: "${currentPlan.name}"
+        Refeições:
         ${mealSummaries}
         
-        Using the above plan, answer the user's questions. 
-        If they ask for substitutions, suggest healthy options fitting the plan.
-        Be friendly, motivating, and concise.
-        Avoid medical advice.
+        Usando o plano acima, responda às perguntas do usuário em Português do Brasil.
+        Se pedirem substituições, sugira opções saudáveis que se encaixem no plano.
+        Seja amigável, motivador e conciso.
+        Evite conselhos médicos.
       `;
     }
 
     const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
       await new Promise(r => setTimeout(r, 1000));
-      return "I'm in Demo Mode. Add your API Key to chat specifically about your diet!";
+      return "Estou no Modo Demo. Adicione sua Chave de API para conversar sobre sua dieta!";
     }
 
     // 2. Call Gemini
     try {
       const historyText = chatHistory.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
       const prompt = `
-        SYSTEM: ${dietContext}
+        SISTEMA: ${dietContext}
         
-        HISTORY:
+        HISTÓRICO:
         ${historyText}
         
-        USER: ${userMessage}
-        ASSISTANT:
+        USUÁRIO: ${userMessage}
+        ASSISTENTE:
       `;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
+      const callGemini = async (model: string) => {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (response.status === 429) return null;
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text;
+      };
 
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      // Try Primary (2.5) then Fallback (2.0)
+      let text = await callGemini('gemini-2.5-flash');
+      if (!text) {
+          console.log("NutriBot primary model failed, trying fallback...");
+          text = await callGemini('gemini-2.0-flash');
+      }
       
       return text || "Desculpe, não entendi.";
 

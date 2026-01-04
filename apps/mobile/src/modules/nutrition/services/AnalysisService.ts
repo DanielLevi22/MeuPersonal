@@ -50,49 +50,53 @@ export const AnalysisService = {
 
     // Construct context
     const context = `
-      Student: ${studentName}
-      Plan: ${planName}
-      Last 7 Days Logs: ${adherence.logs.length} entries found.
-      Completed Meals: ${adherence.completedMeals} (Approx adherence based on logs).
+      Aluno: ${studentName}
+      Plano: ${planName}
+      Logs dos últimos 7 dias: ${adherence.logs.length} entradas.
+      Refeições Completas: ${adherence.completedMeals} (Aderência aproximada baseada nos logs).
       
-      Raw Logs (Sample): ${JSON.stringify(adherence.logs.slice(0, 10))}
+      Logs Brutos (Amostra): ${JSON.stringify(adherence.logs.slice(0, 10))}
     `;
 
     const prompt = `
-      You are a senior sports nutritionist assistant. 
-      Analyze the weekly adherence of this student based on the provided logs.
+      Você é um assistente nutricionista esportivo sênior. 
+      Analise a aderência semanal deste aluno com base nos logs fornecidos.
       
-      CONTEXT:
+      CONTEXTO:
       ${context}
 
-      TASK:
-      Write a concise (max 3 bullet points) weekly summary for the nutritionist.
-      Focus on patterns (e.g., "Consistent on weekdays but missed weekend meals").
-      If data is scarce, mention that the student needs to log more often.
-      Tone: Professional, direct, and helpful. Language: Portuguese (Brazil).
+      TAREFA:
+      Escreva um resumo semanal conciso (máx. 3 pontos) para o nutricionista.
+      Foque em padrões (ex: "Consistente dias de semana mas errou no fds").
+      Se houver poucos dados, mencione que o aluno precisa registrar mais.
+      Tom: Profissional, direto e útil. Idioma: Português (Brasil).
     `;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.error) {
-        // Handle Quota or other API errors gracefully
-        console.error("Gemini API Error:", data.error);
-        if (data.error.code === 429) {
-           return "⚠️ Limite de uso da IA excedido. Tente novamente mais tarde.";
+      const callGemini = async (model: string) => {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        
+        if (response.status === 429) return null; // Trigger fallback
+        
+        const data = await response.json();
+        if (data.error) {
+           console.error(`Gemini Error (${model}):`, data.error);
+           return null;
         }
-        return "Não foi possível gerar a análise no momento.";
+        return data.candidates?.[0]?.content?.parts?.[0]?.text;
+      };
+
+      // Try Primary (2.5) then Fallback (2.0)
+      let text = await callGemini('gemini-2.5-flash');
+      if (!text) {
+          console.log("Analysis primary model failed, trying fallback...");
+          text = await callGemini('gemini-2.0-flash');
       }
 
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       return text || "Sem dados suficientes para análise.";
 
     } catch (error) {

@@ -102,47 +102,42 @@ export const ShoppingListService = {
   generateCookingSteps: async (mealName: string, ingredients: string[]): Promise<CookingStep[]> => {
       const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
       console.log('Generating cooking steps for:', mealName, 'with API Key present:', !!apiKey);
-      console.log('Ingredients:', ingredients);
-      
+
       if (!apiKey) {
         console.error('API Key missing in ShoppingListService');
         throw new Error("API Key missing");
       }
 
       const prompt = `
-          You are a culinary instructor. Create a step-by-step cooking guide for a meal named "${mealName}" using these ingredients: ${ingredients.join(', ')}.
-          Return ONLY a JSON array where each object has:
-          - "step": number
-          - "instruction": string (max 150 chars, clear and direct)
-          - "timerSeconds": number (optional, only if a specific time is mentioned like "cook for 5 mins", convert to seconds).
-          Example: [{"step": 1, "instruction": "Chop the onions.", "timerSeconds": null}]
+          Você é um instrutor culinário. Crie um guia passo-a-passo de preparo para uma refeição chamada "${mealName}" usando estes ingredientes: ${ingredients.join(', ')}.
+          Retorne APENAS um array JSON onde cada objeto tem:
+          - "step": número
+          - "instruction": string (max 150 caracteres, claro e direto, em Português do Brasil)
+          - "timerSeconds": número (opcional, apenas se um tempo específico for mencionado como "cozinhe por 5 minutos", converta para segundos).
+          Exemplo: [{"step": 1, "instruction": "Pique a cebola.", "timerSeconds": null}]
       `;
 
       try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  contents: [{ parts: [{ text: prompt }] }]
-              })
-          });
+          // Try Primary Model (2.5 Flash)
+          let responseText = await ShoppingListService.callGeminiAPI(apiKey, 'gemini-2.5-flash', prompt);
 
-          const data = await response.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          
-          if (!text) {
-              console.warn("Gemini API returned no candidates:", JSON.stringify(data));
-              throw new Error("No content generated");
+          if (!responseText) {
+               console.log("Primary model failed or empty, trying fallback model (2.0 Flash)...");
+               responseText = await ShoppingListService.callGeminiAPI(apiKey, 'gemini-2.0-flash', prompt);
+          }
+
+          if (!responseText) {
+             throw new Error("Both models failed to generate content.");
           }
           
           // Clean markdown code blocks if present
-          const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const jsonStr = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
           return JSON.parse(jsonStr);
       } catch (error) {
-          console.error("Error generating cooking steps:", error);
+          console.error("Error generating cooking steps (all attempts failed):", error);
           return [
-              { step: 1, instruction: "Prepare os ingredientes.", timerSeconds: 0 },
-              { step: 2, instruction: "Cozinhe conforme sua preferência.", timerSeconds: 0 }
+              { step: 1, instruction: "Não foi possível gerar a receita com a IA no momento.", timerSeconds: 0 },
+              { step: 2, instruction: "Por favor, tente novamente em alguns instantes.", timerSeconds: 0 }
           ];
       }
   },
@@ -157,36 +152,63 @@ export const ShoppingListService = {
 
       let systemPrompt = "";
       if (promptType === 'recipes') {
-          systemPrompt = "You are a chef. Suggest 3 simple, healthy recipes using mainly the ingredients from this shopping list. Format nicely with emojis.";
+          systemPrompt = "Você é um chef. Sugira 3 receitas simples e saudáveis usando principalmente os ingredientes desta lista de compras. Formate de forma agradável com emojis. Responda em Português do Brasil.";
       } else if (promptType === 'analysis') {
-          systemPrompt = "You are a nutritionist. Analyze this shopping list. Is it balanced? Are there missing essential nutrients (fiber, protein, vitamins)? Be concise.";
+          systemPrompt = "Você é um nutricionista. Analise esta lista de compras. Ela é equilibrada? Faltam nutrientes essenciais (fibras, proteínas, vitaminas)? Seja conciso. Responda em Português do Brasil.";
       } else if (promptType === 'tips') {
-          systemPrompt = "You are a proactive shopper. specific tips on how to choose the quality of fresh items (fruits/vegetables/meat) present in this list. Short bullet points.";
+          systemPrompt = "Você é um comprador proativo. Dê dicas específicas sobre como escolher a qualidade dos itens frescos (frutas/legumes/carnes) presentes nesta lista. Bullet points curtos. Responda em Português do Brasil.";
       } else if (promptType === 'meal_prep') {
-          systemPrompt = "You are a meal prep expert. Create a step-by-step guide to cook/prepare these ingredients efficiently for the week. Group tasks (e.g., 'Chop vegetables', 'Cook protein'). Be practical.";
+          systemPrompt = "Você é um especialista em meal prep. Crie um guia passo-a-passo para cozinhar/preparar esses ingredientes de forma eficiente para a semana. Agrupe tarefas (ex: 'Picar legumes', 'Cozinhar proteínas'). Seja prático. Responda em Português do Brasil.";
       } else if (promptType === 'cooking_guide') {
-          systemPrompt = "You are a culinary instructor. Choose the main meal components (protein + specific side) from this list and teach step-by-step how to cook them perfectly for immediate consumption. Focus on technique (searing, seasoning, timing).";
+          systemPrompt = "Você é um instrutor culinário. Escolha os componentes principais da refeição (proteína + acompanhamento) desta lista e ensine passo-a-passo como cozinhá-los perfeitamente para consumo imediato. Foque na técnica (selar, temperar, tempo). Responda em Português do Brasil.";
       }
 
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              contents: [{
-                  parts: [
-                      { text: systemPrompt },
-                      { text: `Shopping List Context:\n${itemsList}` }
-                  ]
-              }]
-          })
-        });
+      const fullPrompt = `${systemPrompt}\n\nShopping List Context:\n${itemsList}`;
 
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "Não consegui gerar uma resposta no momento.";
+      try {
+         // Try Primary Model (2.5 Flash)
+         let responseText = await ShoppingListService.callGeminiAPI(apiKey, 'gemini-2.5-flash', fullPrompt);
+
+         if (!responseText) {
+             console.log("Primary model failed, trying fallback (2.0 Flash)...");
+             responseText = await ShoppingListService.callGeminiAPI(apiKey, 'gemini-2.0-flash', fullPrompt);
+         }
+
+         return responseText || "Não consegui gerar uma resposta no momento. Tente novamente.";
       } catch (e) {
           console.error("AI Assistant Error", e);
           return "Ocorreu um erro ao consultar a IA.";
+      }
+  },
+
+  callGeminiAPI: async (apiKey: string, model: string, prompt: string): Promise<string | null> => {
+      try {
+        console.log(`Calling Gemini API (${model})...`);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        if (response.status === 429) {
+            console.warn(`Gemini API (${model}) rate limited (429).`);
+            return null; // Return null to trigger fallback
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!text) {
+             console.warn(`Gemini API (${model}) returned no text candidates.`, JSON.stringify(data));
+             return null;
+        }
+
+        return text;
+      } catch (error) {
+          console.error(`Error calling Gemini API (${model}):`, error);
+          return null;
       }
   }
 };

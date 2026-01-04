@@ -19,18 +19,18 @@ export interface FoodAnalysisResult {
 }
 
 const SYSTEM_PROMPT = `
-You are a nutritional analyst AI. 
-Analyze the food in the image. 
-Return ONLY valid JSON in this exact format:
+Você é uma IA analista nutricional. 
+Analise a comida na imagem. 
+Retorne APENAS JSON válido neste formato exato::
 {
-  "name": "Concise name of the meal",
-  "calories": number (estimated total),
-  "protein": number (grams),
-  "carbs": number (grams),
-  "fat": number (grams),
-  "confidence": number (0-1)
+  "name": "Nome conciso da refeição em Português",
+  "calories": número (total estimado),
+  "protein": número (gramas),
+  "carbs": número (gramas),
+  "fat": número (gramas),
+  "confidence": número (0-1)
 }
-If unclear, provide best guess with lower confidence.
+Se não for claro, dê seu melhor palpite com confiança menor.
 `;
 
 export const FoodRecognitionService = {
@@ -43,42 +43,38 @@ export const FoodRecognitionService = {
       try {
         console.log('Sending image to Gemini...');
         const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
-        
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: SYSTEM_PROMPT },
-                        {
-                            inline_data: {
-                                mime_type: "image/jpeg",
-                                data: base64
-                            }
-                        }
-                    ]
-                }],
-                generationConfig: {
-                    response_mime_type: "application/json"
-                }
-            })
-        });
 
-        const data = await response.json();
-        
-        if (data.error) {
-            console.error("Gemini Error:", data.error);
-            throw new Error(data.error.message);
+        const callGemini = async (model: string) => {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: SYSTEM_PROMPT },
+                            { inline_data: { mime_type: "image/jpeg", data: base64 } }
+                        ]
+                    }],
+                    generationConfig: { response_mime_type: "application/json" }
+                })
+            });
+            if (response.status === 429) return null;
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text;
+        };
+
+        // Try Primary (2.5) then Fallback (2.0)
+        let text = await callGemini('gemini-2.5-flash');
+        if (!text) {
+             console.log("Food recognition primary model failed, trying fallback...");
+             text = await callGemini('gemini-2.0-flash');
         }
 
-        // Gemini returns candidates[0].content.parts[0].text
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("No content returned from Gemini");
 
-        const result = JSON.parse(text);
+        // Clean markdown if present
+        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const result = JSON.parse(jsonStr);
         
         return {
             name: result.name,
