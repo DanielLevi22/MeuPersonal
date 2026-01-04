@@ -27,7 +27,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function CreateDietPlanScreen() {
+export default function CreateNutritionScreen() {
   const router = useRouter();
   const { preselectedStudentId } = useLocalSearchParams();
   const { user } = useAuthStore();

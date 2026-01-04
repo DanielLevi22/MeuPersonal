@@ -41,53 +41,43 @@ export default function JoinPersonalScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
-      <SafeAreaView style={{ flex: 1 }}>
+    <View className="flex-1 bg-background">
+      <SafeAreaView className="flex-1">
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+          className="flex-1"
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={{ flex: 1, padding: 24 }}>
+            <View className="flex-1 p-6">
               {/* Header */}
               <TouchableOpacity 
                 onPress={() => router.back()}
-                style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: '#141B2D',
-                  padding: 10,
-                  borderRadius: 12,
-                  marginBottom: 32
-                }}
+                className="self-start bg-background-elevated p-2.5 rounded-xl mb-8"
               >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
 
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={{ alignItems: 'center', marginBottom: 40 }}>
+              <View className="flex-1 justify-center">
+                <View className="items-center mb-10">
                   <LinearGradient
                     colors={['rgba(255, 107, 53, 0.2)', 'rgba(255, 107, 53, 0.05)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={{
-                      padding: 24,
-                      borderRadius: 50,
-                      marginBottom: 24
-                    }}
+                    className="p-6 rounded-full mb-6"
                   >
                     <Ionicons name="link" size={64} color="#FF6B35" />
                   </LinearGradient>
                   
-                  <Text style={{ fontSize: 32, fontWeight: '800', color: '#FFFFFF', marginBottom: 12, textAlign: 'center' }}>
+                  <Text className="text-3xl font-bold text-white mb-3 text-center">
                     Vincular Personal
                   </Text>
-                  <Text style={{ fontSize: 16, color: '#8B92A8', textAlign: 'center', lineHeight: 24 }}>
+                  <Text className="text-base text-gray-400 text-center leading-6">
                     Insira o código de convite fornecido pelo seu Personal Trainer para acessar seus treinos.
                   </Text>
                 </View>
 
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ color: '#8B92A8', fontSize: 14, marginBottom: 8, fontWeight: '600', marginLeft: 4 }}>
+                <View className="mb-6">
+                  <Text className="text-gray-400 text-sm mb-2 font-semibold ml-1">
                     CÓDIGO DE CONVITE
                   </Text>
                   <TextInput
@@ -97,18 +87,7 @@ export default function JoinPersonalScreen() {
                     placeholderTextColor="#5A6178"
                     autoCapitalize="characters"
                     maxLength={6}
-                    style={{
-                      backgroundColor: '#141B2D',
-                      borderWidth: 2,
-                      borderColor: '#1E2A42',
-                      borderRadius: 16,
-                      padding: 20,
-                      color: '#FFFFFF',
-                      fontSize: 24,
-                      fontWeight: '700',
-                      textAlign: 'center',
-                      letterSpacing: 4
-                    }}
+                    className="bg-background-elevated border-2 border-border rounded-2xl p-5 text-white text-2xl font-bold text-center tracking-[4px]"
                   />
                 </View>
 
@@ -116,23 +95,18 @@ export default function JoinPersonalScreen() {
                   onPress={handleJoin}
                   disabled={loading || code.length < 6}
                   activeOpacity={0.8}
-                  style={{ opacity: (loading || code.length < 6) ? 0.5 : 1 }}
+                  className={loading || code.length < 6 ? 'opacity-50' : 'opacity-100'}
                 >
                   <LinearGradient
                     colors={['#FF6B35', '#E85A2A']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: 16,
-                      paddingVertical: 18,
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
+                    className="rounded-2xl py-4 items-center justify-center"
                   >
                     {loading ? (
                       <ActivityIndicator color="#FFF" />
                     ) : (
-                      <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
+                      <Text className="text-white text-lg font-bold">
                         Vincular Agora
                       </Text>
                     )}
@@ -146,3 +120,4 @@ export default function JoinPersonalScreen() {
     </View>
   );
 }
+
