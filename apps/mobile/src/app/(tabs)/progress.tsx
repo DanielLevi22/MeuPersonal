@@ -1,6 +1,5 @@
 // Imports
 import { useAuthStore } from '@/auth';
-import { AchievementBadge } from '@/components/gamification/AchievementBadge';
 import { WeeklyBarChart } from '@/components/gamification/WeeklyBarChart';
 import { DailyMacroCard } from '@/components/nutrition/DailyMacroCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
@@ -249,53 +248,7 @@ export default function ProgressScreen() {
                   <WeeklyBarChart data={weeklyGoals} />
                 </Animated.View>
 
-                 {/* Achievements Grid */}
-                <Animated.View entering={FadeInDown.delay(400).springify()}>
-                <View className="flex-row items-center justify-between mb-4 px-1">
-                    <Text className="text-white font-bold text-lg">Conquistas</Text>
-                    <Text className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Ver todas</Text>
-                </View>
-                
-                <View className="flex-row flex-wrap gap-3">
-                    {achievements.length > 0 ? (
-                    achievements.map((achievement) => (
-                        <AchievementBadge
-                        key={achievement.id}
-                        title={achievement.title}
-                        subtitle={new Date(achievement.earned_at).toLocaleDateString()}
-                        icon={achievement.icon}
-                        earned={true}
-                        size="md"
-                        />
-                    ))
-                    ) : (
-                        // Mock Achievements for visual check if empty
-                    <>
-                        <View className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-[48%] items-center gap-2">
-                            <Text className="text-3xl">🚀</Text>
-                            <View className="items-center">
-                                <Text className="text-white font-bold text-sm">Início</Text>
-                                <Text className="text-zinc-500 text-[10px]">Desbloqueado</Text>
-                            </View>
-                        </View>
-                        <View className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-[48%] items-center gap-2 opacity-50">
-                            <Text className="text-3xl grayscale">🔥</Text>
-                            <View className="items-center">
-                                <Text className="text-white font-bold text-sm">7 Dias</Text>
-                                <Text className="text-zinc-500 text-[10px]">Em progresso</Text>
-                            </View>
-                        </View>
-                        <View className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-[48%] items-center gap-2 opacity-50">
-                            <Text className="text-3xl grayscale">💪</Text>
-                            <View className="items-center">
-                                <Text className="text-white font-bold text-sm">Monstro</Text>
-                                <Text className="text-zinc-500 text-[10px]">Em progresso</Text>
-                            </View>
-                        </View>
-                    </>
-                    )}
-                </View>
-                </Animated.View>
+
             </>
         )}
 

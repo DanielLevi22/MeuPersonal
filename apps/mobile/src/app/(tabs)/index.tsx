@@ -1,9 +1,9 @@
 import { useAuthStore } from '@/auth';
-import { AchievementBadge } from '@/components/gamification/AchievementBadge';
 import { ConfettiOverlay } from '@/components/gamification/ConfettiOverlay';
 import { ProgressCard } from '@/components/gamification/ProgressCard';
 import { StatCard } from '@/components/gamification/StatCard';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
+import { WeeklyProgress } from '@/components/gamification/WeeklyProgress';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useHealthData } from '@/hooks/useHealthData';
 import { useGamificationStore } from '@/store/gamificationStore';
@@ -215,6 +215,11 @@ export default function DashboardScreen() {
           </View>
         </Animated.View>
 
+        {/* Weekly Consistency */}
+        <Animated.View entering={FadeInDown.delay(250).springify()}>
+          <WeeklyProgress weeklyGoals={weeklyGoals} />
+        </Animated.View>
+
         {/* Health Data Section */}
         <Animated.View entering={FadeInDown.delay(300).springify()} className="mb-8">
           <View className="flex-row justify-between items-center mb-3 ml-1">
@@ -252,52 +257,7 @@ export default function DashboardScreen() {
         </Animated.View>
 
 
-        <Animated.View entering={FadeInDown.delay(500).springify()}>
-          <View className="flex-row justify-between items-center mb-3 ml-1">
-            <Text className="text-zinc-500 text-[13px] font-bold font-sans uppercase tracking-widest">
-              Conquistas
-            </Text>
-            <TouchableOpacity>
-              <Text className="text-[#FF6B35] text-[13px] font-bold font-sans tracking-wide">VER TODAS</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-            {achievements.length > 0 ? (
-              achievements.map((achievement) => (
-                <AchievementBadge
-                  key={achievement.id}
-                  title={achievement.title}
-                  subtitle={new Date(achievement.earned_at).toLocaleDateString()}
-                  icon={achievement.icon}
-                  earned={true}
-                />
-              ))
-            ) : (
-              // Placeholder achievements
-              <>
-                <AchievementBadge
-                  title="Início"
-                  subtitle="Jornada"
-                  icon="🚀"
-                  earned={true}
-                />
-                <AchievementBadge
-                  title="7 Dias"
-                  subtitle="Sequência"
-                  icon="🔥"
-                  earned={false}
-                />
-                <AchievementBadge
-                  title="Foco"
-                  subtitle="Total"
-                  icon="🎯"
-                  earned={false}
-                />
-              </>
-            )}
-          </ScrollView>
-        </Animated.View>
+
 
       </ScrollView>
       
