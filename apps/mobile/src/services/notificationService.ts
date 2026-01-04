@@ -217,21 +217,38 @@ export async function scheduleStreakReminder(): Promise<void> {
     // ideally we would check if they already completed it before showing,
     // but background tasks are complex. For now, a gentle nudge is fine.
     
-    const trigger: any = {
-      hour: 20,
-      minute: 0,
-      repeats: true,
-    };
-
-    await Notifications.scheduleNotificationAsync({
-      identifier: 'daily-streak-reminder',
-      content: {
-        title: '🔥 Mantenha sua ofensiva!',
-        body: 'Não deixe de bater suas metas hoje. Entre e registre seu progresso!',
-        sound: true,
-      },
-      trigger,
-    });
+    if (Platform.OS === 'android') {
+      await Notifications.scheduleNotificationAsync({
+        identifier: 'daily-streak-reminder',
+        content: {
+          title: '🔥 Mantenha sua ofensiva!',
+          body: 'Não deixe de bater suas metas hoje. Entre e registre seu progresso!',
+          sound: true,
+          // @ts-ignore
+          channelId: 'meal-reminders', // Reuse existing channel or create a new one
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 20,
+          minute: 0,
+        },
+      });
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        identifier: 'daily-streak-reminder',
+        content: {
+          title: '🔥 Mantenha sua ofensiva!',
+          body: 'Não deixe de bater suas metas hoje. Entre e registre seu progresso!',
+          sound: true,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          hour: 20,
+          minute: 0,
+          repeats: true,
+        },
+      });
+    }
     console.log('Scheduled daily streak reminder for 20:00');
   } catch (error) {
     console.error('Error scheduling streak reminder:', error);

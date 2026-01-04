@@ -12,8 +12,8 @@ interface GamificationState {
   showConfetti: boolean;
   
   fetchDailyData: (date: string) => Promise<void>;
-  updateMealProgress: (completed: number) => Promise<void>;
-  updateWorkoutProgress: (completed: number) => Promise<void>;
+  updateMealProgress: (completed: number, date?: string) => Promise<void>;
+  updateWorkoutProgress: (completed: number, date?: string) => Promise<void>;
   setShowConfetti: (show: boolean) => void;
   useStreakFreeze: () => Promise<void>;
 }
@@ -64,33 +64,76 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
     }
   },
 
-  updateMealProgress: async (completed: number) => {
-    const { dailyGoal } = get();
-    if (!dailyGoal) return;
+  updateMealProgress: async (completed: number, date?: string) => {
+    let targetGoal = get().dailyGoal;
+    
+    // If we have a specific date and it differs from current loaded goal, or if no goal loaded
+    if (date && (!targetGoal || targetGoal.date !== date)) {
+        try {
+            // fast fetch/ensure
+            const { data: user } = await supabase.auth.getUser();
+            if (user.user) {
+                // Ensure goal exists
+                await gamificationService.calculateDailyGoals(user.user.id, date);
+                // Fetch it
+                targetGoal = await gamificationService.getDailyGoal(date);
+            }
+        } catch (e) {
+            console.error("Error ensuring daily goal for update:", e);
+        }
+    }
+
+    if (!targetGoal) {
+        return;
+    }
 
     try {
-      await gamificationService.updateMealProgress(dailyGoal.id, completed);
-      set((state) => ({
-        dailyGoal: state.dailyGoal 
-          ? { ...state.dailyGoal, meals_completed: completed }
-          : null
-      }));
+      await gamificationService.updateMealProgress(targetGoal.id, completed);
+      
+      // Only update local state if it matches the target goal
+      set((state) => {
+          if (state.dailyGoal && state.dailyGoal.id === targetGoal?.id) {
+              return {
+                 dailyGoal: { ...state.dailyGoal, meals_completed: completed }
+              };
+          }
+          return {};
+      });
     } catch (error) {
       console.error('Error updating meal progress:', error);
     }
   },
 
-  updateWorkoutProgress: async (completed: number) => {
-    const { dailyGoal } = get();
-    if (!dailyGoal) return;
+  updateWorkoutProgress: async (completed: number, date?: string) => {
+    let targetGoal = get().dailyGoal;
+    
+    // If we have a specific date and it differs from current loaded goal, or if no goal loaded
+    if (date && (!targetGoal || targetGoal.date !== date)) {
+        try {
+             const { data: user } = await supabase.auth.getUser();
+            if (user.user) {
+                await gamificationService.calculateDailyGoals(user.user.id, date);
+                targetGoal = await gamificationService.getDailyGoal(date);
+            }
+        } catch (e) {
+            console.error("Error ensuring daily goal for update:", e);
+        }
+    }
+
+    if (!targetGoal) {
+         return;
+    }
 
     try {
-      await gamificationService.updateWorkoutProgress(dailyGoal.id, completed);
-      set((state) => ({
-        dailyGoal: state.dailyGoal 
-          ? { ...state.dailyGoal, workout_completed: completed }
-          : null
-      }));
+      await gamificationService.updateWorkoutProgress(targetGoal.id, completed);
+       set((state) => {
+          if (state.dailyGoal && state.dailyGoal.id === targetGoal?.id) {
+              return {
+                 dailyGoal: { ...state.dailyGoal, workout_completed: completed }
+              };
+          }
+          return {};
+      });
     } catch (error) {
       console.error('Error updating workout progress:', error);
     }

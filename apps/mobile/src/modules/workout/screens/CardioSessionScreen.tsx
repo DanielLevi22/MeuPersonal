@@ -4,6 +4,7 @@ import { ShareWorkoutModal } from '@/components/workout/ShareWorkoutModal';
 import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal';
 import { supabase } from '@/lib/supabase';
 import { useGamificationStore } from '@/store/gamificationStore';
+import { getLocalDateISOString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -227,7 +228,8 @@ export default function CardioSessionScreen() {
       });
 
       // Update gamification
-      await updateWorkoutProgress(1);
+      const today = getLocalDateISOString();
+      await updateWorkoutProgress(1, today);
 
       Alert.alert(
         'Treino Salvo! 🎉',

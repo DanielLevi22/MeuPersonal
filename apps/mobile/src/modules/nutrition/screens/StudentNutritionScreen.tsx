@@ -18,6 +18,8 @@ const DAYS = [
   { id: 6, label: 'SÁB' },
 ];
 
+import { getLocalDateISOString } from '@/utils/dateUtils';
+
 export function StudentNutritionScreen() {
   const { user } = useAuthStore();
   const { 
@@ -49,7 +51,7 @@ export function StudentNutritionScreen() {
   const loadData = async () => {
     if (!user?.id) return;
     await fetchDietPlan(user.id);
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateISOString(); // Use local date!
     await fetchDailyLogs(user.id, today);
   };
 
@@ -74,7 +76,7 @@ export function StudentNutritionScreen() {
   };
 
   const handleToggleCheck = async (mealId: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateISOString(); // Use local date!
     const isCompleted = dailyLogs[mealId]?.completed || false;
     await toggleMealCompletion(mealId, today, !isCompleted);
   };

@@ -139,15 +139,6 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
         }
       }));
 
-      // Sync with Gamification Store
-      const updatedLogs = get().dailyLogs;
-      const completedCount = Object.values(updatedLogs).filter(log => log.completed).length;
-      
-      // We import it dynamically or use the imported store if no cycle is confirmed.
-      // Since we need to avoid cycles, we can defer the require or use the module if imported at top.
-      // Assuming import at top is safe.
-      useGamificationStore.getState().updateMealProgress(completedCount);
-
       // Check if log exists
       if (existingLog?.id) {
         // Update
@@ -181,6 +172,13 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           }
         }));
       }
+
+      // Sync with Gamification Store AFTER persistence to avoid race conditions with Dashboard recalculation
+      const updatedLogs = get().dailyLogs;
+      const completedCount = Object.values(updatedLogs).filter(log => log.completed).length;
+      
+      // We import it dynamically or use the imported store if no cycle is confirmed.
+      useGamificationStore.getState().updateMealProgress(completedCount, date);
     } catch (error) {
       console.error('Error toggling meal completion:', error);
       // Revert on error (could be improved)

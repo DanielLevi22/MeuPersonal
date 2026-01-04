@@ -5,6 +5,7 @@ import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal'
 import { useVoiceCoach } from '@/hooks/useVoiceCoach';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useGamificationStore } from '@/store/gamificationStore';
+import { getLocalDateISOString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -220,7 +221,8 @@ export default function ExecuteWorkoutScreen() {
       });
 
       // Update gamification
-      await updateWorkoutProgress(1);
+      const today = getLocalDateISOString();
+      await updateWorkoutProgress(1, today);
 
       Alert.alert(
         'Parabéns! 🎉',

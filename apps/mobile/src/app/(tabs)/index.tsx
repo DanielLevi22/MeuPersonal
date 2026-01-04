@@ -7,6 +7,7 @@ import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useHealthData } from '@/hooks/useHealthData';
 import { useGamificationStore } from '@/store/gamificationStore';
+import { getLocalDateISOString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { useFocusEffect } from '@react-navigation/native';
@@ -46,7 +47,7 @@ export default function DashboardScreen() {
     setProfile(profileData);
 
     // Fetch gamification data
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateISOString();
     await fetchDailyData(today);
     refetchHealth();
   };

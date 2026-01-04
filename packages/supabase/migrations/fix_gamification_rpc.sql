@@ -1,3 +1,4 @@
+
 -- Migration: Fix Gamification RPC
 -- Description: Re-creates the calculate_daily_goals function and triggers to resolve PGRST202 error
 -- Date: 2024-11-26
@@ -33,25 +34,25 @@ BEGIN
   IF v_nutrition_plan_id IS NOT NULL THEN
     SELECT COUNT(*) INTO v_meals_target
     FROM meals
-    WHERE nutrition_plan_id = v_nutrition_plan_id AND day_of_week = v_day_of_week;
+    WHERE diet_plan_id = v_nutrition_plan_id AND day_of_week = v_day_of_week;
   END IF;
 
   -- 3. Calculate Meals Completed
   SELECT COUNT(*) INTO v_meals_completed
-  FROM meal_logs
+  FROM diet_logs
   WHERE student_id = p_student_id 
     AND logged_date = p_date 
     AND completed = true;
 
   -- 4. Calculate Workout Target
-  -- Logic: If student has ANY assigned workouts, target is 1 per day (simplification)
-  IF EXISTS (SELECT 1 FROM workout_assignments WHERE student_id = p_student_id) THEN
+  -- Logic: If student has ANY active periodization, target is 1 per day
+  IF EXISTS (SELECT 1 FROM training_periodizations WHERE student_id = p_student_id AND status = 'active') THEN
     v_workout_target := 1;
   END IF;
 
   -- 5. Calculate Workout Completed
   SELECT COUNT(*) INTO v_workout_completed
-  FROM workout_executions
+  FROM workout_sessions
   WHERE student_id = p_student_id 
     AND DATE(completed_at) = p_date;
 
@@ -94,8 +95,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. TRIGGERS
 -- ============================================================================
 
--- Trigger 1: On Meal Log Change (Insert/Update/Delete)
-CREATE OR REPLACE FUNCTION trigger_calc_goals_meal_log()
+-- Trigger 1: On Diet Log Change (Insert/Update/Delete)
+CREATE OR REPLACE FUNCTION trigger_calc_goals_diet_log()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Calculate for the affected date
@@ -107,14 +108,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS on_meal_log_change ON meal_logs;
+DROP TRIGGER IF EXISTS on_meal_log_change ON diet_logs;
 CREATE TRIGGER on_meal_log_change
-  AFTER INSERT OR UPDATE OR DELETE ON meal_logs
+  AFTER INSERT OR UPDATE OR DELETE ON diet_logs
   FOR EACH ROW
-  EXECUTE FUNCTION trigger_calc_goals_meal_log();
+  EXECUTE FUNCTION trigger_calc_goals_diet_log();
 
--- Trigger 2: On Workout Execution Completion
-CREATE OR REPLACE FUNCTION trigger_calc_goals_workout_execution()
+-- Trigger 2: On Workout Session Completion
+CREATE OR REPLACE FUNCTION trigger_calc_goals_workout_session()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Only recalculate if completed_at changed (completed or uncompleted)
@@ -125,11 +126,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS on_workout_execution_complete ON workout_executions;
+DROP TRIGGER IF EXISTS on_workout_execution_complete ON workout_sessions;
 CREATE TRIGGER on_workout_execution_complete
-  AFTER UPDATE OF completed_at ON workout_executions
+  AFTER INSERT OR UPDATE OF completed_at ON workout_sessions
   FOR EACH ROW
-  EXECUTE FUNCTION trigger_calc_goals_workout_execution();
+  EXECUTE FUNCTION trigger_calc_goals_workout_session();
 
 -- Trigger 3: On Meal Change (Plan Update)
 CREATE OR REPLACE FUNCTION trigger_calc_goals_meal()
@@ -140,7 +141,7 @@ BEGIN
   -- Find the student associated with this meal's plan
   SELECT student_id INTO v_student_id
   FROM nutrition_plans
-  WHERE id = COALESCE(NEW.nutrition_plan_id, OLD.nutrition_plan_id);
+  WHERE id = COALESCE(NEW.diet_plan_id, OLD.diet_plan_id);
   
   IF v_student_id IS NOT NULL THEN
     -- Recalculate for today since targets might have changed
