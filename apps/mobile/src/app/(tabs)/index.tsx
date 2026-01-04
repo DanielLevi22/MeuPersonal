@@ -6,6 +6,8 @@ import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { WeeklyProgress } from '@/components/gamification/WeeklyProgress';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useHealthData } from '@/hooks/useHealthData';
+import { useStudentStore } from '@/modules/students/store/studentStore';
+import { useWorkoutStore } from '@/modules/workout/store/workoutStore';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { getLocalDateISOString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,12 +19,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+
 export default function DashboardScreen() {
   const { user, abilities, accountType } = useAuthStore();
-  const { dailyGoal, weeklyGoals, streak, achievements, showConfetti, fetchDailyData, isLoading } = useGamificationStore();
+  const { dailyGoal, weeklyGoals, streak, achievements, showConfetti, fetchDailyData, isLoading: gamificationLoading } = useGamificationStore();
   const { steps, calories, refetch: refetchHealth, loading: healthLoading } = useHealthData();
+  
+  // Professional Data Stores
+  const { students, fetchStudents, isLoading: studentsLoading } = useStudentStore();
+  const { workouts, fetchWorkouts, isLoading: workoutsLoading } = useWorkoutStore();
+
   const [profile, setProfile] = useState<any>(null);
   const router = useRouter();
+
+  const isLoading = gamificationLoading || studentsLoading || workoutsLoading;
 
   useEffect(() => {
     loadData();
@@ -46,10 +56,18 @@ export default function DashboardScreen() {
     
     setProfile(profileData);
 
-    // Fetch gamification data
-    const today = getLocalDateISOString();
-    await fetchDailyData(today);
-    refetchHealth();
+    if (accountType === 'professional') {
+        // Fetch Professional Data
+        await Promise.all([
+            fetchStudents(user.id),
+            fetchWorkouts(user.id)
+        ]);
+    } else {
+        // Fetch Student Data (Gamification & Health)
+        const today = getLocalDateISOString();
+        await fetchDailyData(today);
+        refetchHealth();
+    }
   };
 
   if (isLoading && !profile && !accountType) {
@@ -67,7 +85,12 @@ export default function DashboardScreen() {
   if (accountType === 'professional') {
     return (
       <ScreenLayout>
-        <View className="p-6">
+        <ScrollView
+             contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+             refreshControl={
+               <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#FF6B35" />
+             }
+        >
           <View className="mb-8">
             <Text className="text-4xl font-extrabold text-white mb-2 font-display">
               Dashboard 🔥
@@ -96,7 +119,7 @@ export default function DashboardScreen() {
                       ALUNOS ATIVOS
                     </Text>
                     <Text className="text-white text-5xl font-bold font-display">
-                      0
+                      {students.length}
                     </Text>
                   </View>
                   <View className="bg-white/20 p-4 rounded-2xl">
@@ -125,7 +148,7 @@ export default function DashboardScreen() {
                         TREINOS CRIADOS
                       </Text>
                       <Text className="text-white text-5xl font-bold font-display">
-                        0
+                        {workouts.length}
                       </Text>
                     </View>
                     <View className="bg-white/20 p-4 rounded-2xl">
@@ -138,7 +161,7 @@ export default function DashboardScreen() {
 
             {/* Quick Action */}
             <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/students')}
+              onPress={() => router.push('/(tabs)/students/create')}
               activeOpacity={0.8}
             >
               <View className="bg-zinc-900 border-2 border-orange-500 rounded-2xl p-5 flex-row items-center justify-center">
@@ -149,7 +172,7 @@ export default function DashboardScreen() {
               </View>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </ScreenLayout>
     );
   }

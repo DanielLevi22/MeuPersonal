@@ -332,138 +332,140 @@ export default function PhaseDetailsScreen() {
           </View>
         </View>
 
-        <Text className="text-white font-bold text-lg mb-4 font-display">Treino do Dia</Text>
-
-        {workouts.length === 0 ? (
-          <View className="items-center justify-center py-10">
-            <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
-              <Ionicons name="walk" size={64} color="#52525B" />
-            </View>
-            <Text className="text-zinc-500 font-sans text-center">
-              Nenhum treino cadastrado nesta fase.
-            </Text>
-          </View>
-        ) : (
+        {isStudentView && (
           <>
-            {/* Suggested Workout Card */}
-            {suggestedWorkout && (
-                <TouchableOpacity
-                    activeOpacity={isWorkoutDoneToday ? 1 : 0.9}
-                    onPress={() => {
-                        if (isWorkoutDoneToday) {
-                            Alert.alert('Meta Atingida! 🏆', 'Você já treinou hoje. Descanse para voltar mais forte amanhã!');
-                            return;
-                        }
+            <Text className="text-white font-bold text-lg mb-4 font-display">Treino do Dia</Text>
 
-                        const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
-                        const path = isProfessional
-                            ? '/(tabs)/workouts/details/[id]'
-                            : isStudentView
-                                ? `/(tabs)/students/${user?.id}/workouts/details/${suggestedWorkout.id}`
+            {workouts.length === 0 ? (
+              <View className="items-center justify-center py-10">
+                <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
+                  <Ionicons name="walk" size={64} color="#52525B" />
+                </View>
+                <Text className="text-zinc-500 font-sans text-center">
+                  Nenhum treino cadastrado nesta fase.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Suggested Workout Card */}
+                {suggestedWorkout && (
+                    <TouchableOpacity
+                        activeOpacity={isWorkoutDoneToday ? 1 : 0.9}
+                        onPress={() => {
+                            if (isWorkoutDoneToday) {
+                                Alert.alert('Meta Atingida! 🏆', 'Você já treinou hoje. Descanse para voltar mais forte amanhã!');
+                                return;
+                            }
+
+                            const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
+                            const path = isProfessional
+                                ? '/(tabs)/workouts/details/[id]'
                                 : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
-                        
-                        const params = isProfessional ? { id: suggestedWorkout.id, workoutId: suggestedWorkout.id, studentId: user?.id } : {};
+                            
+                            const params = isProfessional ? { id: suggestedWorkout.id, workoutId: suggestedWorkout.id, studentId: user?.id } : {};
 
-                        router.push(isProfessional ? { pathname: path, params } as any : path as any);
-                    }}
-                    className="mb-8"
-                >
-                    <LinearGradient
-                        colors={isWorkoutDoneToday ? ['#18181B', '#18181B'] : ['#FF6B35', '#FF2E63']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        className={`p-6 rounded-3xl ${isWorkoutDoneToday ? 'border border-zinc-800' : 'shadow-lg shadow-orange-500/30'}`}
+                            router.push(isProfessional ? { pathname: path, params } as any : path as any);
+                        }}
+                        className="mb-8"
                     >
-                        <View className="flex-row justify-between items-start mb-4">
-                            <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-white/20'} px-3 py-1 rounded-full`}>
-                                <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-xs uppercase`}>
-                                    {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
-                                </Text>
-                            </View>
-                            <Ionicons name={isWorkoutDoneToday ? "checkmark-circle" : "flame"} size={24} color={isWorkoutDoneToday ? "#4ADE80" : "white"} />
-                        </View>
-                        
-                        <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} text-3xl font-extrabold font-display mb-2`}>
-                            {isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
-                        </Text>
-                        
-                        {isWorkoutDoneToday ? (
-                             <Text className="text-zinc-500 font-medium">
-                                Bom descanso! O próximo treino será: {suggestedWorkout.title}
-                             </Text>
-                        ) : (
-                            <View className="flex-row items-center gap-4">
-                                <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
-                                    <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
-                                    <Text className="text-white font-medium">
-                                        {suggestedWorkout.items?.length || 0} exercícios
+                        <LinearGradient
+                            colors={isWorkoutDoneToday ? ['#18181B', '#18181B'] : ['#FF6B35', '#FF2E63']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            className={`p-6 rounded-3xl ${isWorkoutDoneToday ? 'border border-zinc-800' : 'shadow-lg shadow-orange-500/30'}`}
+                        >
+                            <View className="flex-row justify-between items-start mb-4">
+                                <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-white/20'} px-3 py-1 rounded-full`}>
+                                    <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-xs uppercase`}>
+                                        {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
                                     </Text>
                                 </View>
-                                <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
-                                    <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
-                                    <Text className="text-white font-medium">~60 min</Text>
+                                <Ionicons name={isWorkoutDoneToday ? "checkmark-circle" : "flame"} size={24} color={isWorkoutDoneToday ? "#4ADE80" : "white"} />
+                            </View>
+                            
+                            <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} text-3xl font-extrabold font-display mb-2`}>
+                                {isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
+                            </Text>
+                            
+                            {isWorkoutDoneToday ? (
+                                <Text className="text-zinc-500 font-medium">
+                                    Bom descanso! O próximo treino será: {suggestedWorkout.title}
+                                </Text>
+                            ) : (
+                                <View className="flex-row items-center gap-4">
+                                    <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
+                                        <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
+                                        <Text className="text-white font-medium">
+                                            {suggestedWorkout.items?.length || 0} exercícios
+                                        </Text>
+                                    </View>
+                                    <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
+                                        <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
+                                        <Text className="text-white font-medium">~60 min</Text>
+                                    </View>
                                 </View>
-                            </View>
-                        )}
+                            )}
 
-                        {!isWorkoutDoneToday && (
-                            <View className="mt-6 bg-white py-3 rounded-xl items-center">
-                                <Text className="text-orange-600 font-bold text-base">COMEÇAR TREINO</Text>
-                            </View>
-                        )}
-                    </LinearGradient>
-                </TouchableOpacity>
+                            {!isWorkoutDoneToday && (
+                                <View className="mt-6 bg-white py-3 rounded-xl items-center">
+                                    <Text className="text-orange-600 font-bold text-base">COMEÇAR TREINO</Text>
+                                </View>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+                )}
+              </>
             )}
-
-            {/* List Header */}
-            <View className="flex-row items-center justify-between mb-4 mt-2">
-                <Text className="text-zinc-400 font-bold text-sm uppercase tracking-wider">Todos os Treinos</Text>
-                <View className="h-[1px] flex-1 bg-zinc-800 ml-4" />
-            </View>
-
-            {/* Other Workouts List */}
-             {workouts.map((workout) => (
-                <TouchableOpacity
-                    key={workout.id}
-                    className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${workout.id === suggestedWorkout?.id ? 'opacity-50' : ''} ${isWorkoutDoneToday ? 'opacity-30' : ''}`}
-                    onPress={() => {
-                        if (isWorkoutDoneToday) {
-                             Alert.alert('Atenção', 'Você já treinou hoje.');
-                             return;
-                        }
-
-                        const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
-                        const path = isProfessional
-                            ? '/(tabs)/workouts/details/[id]'
-                            : isStudentView
-                                ? `/(tabs)/students/${user?.id}/workouts/details/${workout.id}`
-                                : `/(tabs)/workouts/details/${workout.id}`;
-
-                         const params = isProfessional ? { id: workout.id, workoutId: workout.id, studentId: user?.id } : {};
-                         
-                        router.push(isProfessional ? { pathname: path, params } as any : path as any);
-                    }}
-                >
-                    <View className="flex-row items-center flex-1">
-                        <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${workout.id === suggestedWorkout?.id ? 'bg-orange-500/20' : 'bg-zinc-800'}`}>
-                            <Text className={`font-bold ${workout.id === suggestedWorkout?.id ? 'text-orange-500' : 'text-zinc-500'}`}>
-                                {workout.title.charAt(workout.title.length - 1)}
-                            </Text>
-                        </View>
-                        <View>
-                            <Text className={`text-base font-bold ${workout.id === suggestedWorkout?.id ? 'text-zinc-400' : 'text-white'}`}>
-                                {workout.title}
-                            </Text>
-                            <Text className="text-zinc-500 text-xs">
-                                {workout.items?.length || 0} exercícios
-                            </Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color="#52525B" />
-                </TouchableOpacity>
-            ))}
           </>
         )}
+
+        {/* List Header */}
+        <View className="flex-row items-center justify-between mb-4 mt-2">
+            <Text className="text-zinc-400 font-bold text-sm uppercase tracking-wider">Todos os Treinos</Text>
+            <View className="h-[1px] flex-1 bg-zinc-800 ml-4" />
+        </View>
+
+        {/* Other Workouts List - Visible for EVERYONE */}
+         {workouts.map((workout) => (
+            <TouchableOpacity
+                key={workout.id}
+                className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${isStudentView && workout.id === suggestedWorkout?.id ? 'opacity-50' : ''} ${isStudentView && isWorkoutDoneToday ? 'opacity-30' : ''}`}
+                onPress={() => {
+                    if (isStudentView && isWorkoutDoneToday) {
+                         Alert.alert('Atenção', 'Você já treinou hoje.');
+                         return;
+                    }
+
+                    const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
+                    const path = isProfessional
+                        ? '/(tabs)/workouts/details/[id]'
+                        : isStudentView
+                            ? `/(tabs)/students/${user?.id}/workouts/details/${workout.id}`
+                            : `/(tabs)/workouts/details/${workout.id}`;
+
+                     const params = isProfessional ? { id: workout.id, workoutId: workout.id, studentId: user?.id } : {};
+                     
+                    router.push(isProfessional ? { pathname: path, params } as any : path as any);
+                }}
+            >
+                <View className="flex-row items-center flex-1">
+                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isStudentView && workout.id === suggestedWorkout?.id ? 'bg-orange-500/20' : 'bg-zinc-800'}`}>
+                        <Text className={`font-bold ${isStudentView && workout.id === suggestedWorkout?.id ? 'text-orange-500' : 'text-zinc-500'}`}>
+                            {workout.title.charAt(workout.title.length - 1)}
+                        </Text>
+                    </View>
+                    <View>
+                        <Text className={`text-base font-bold ${isStudentView && workout.id === suggestedWorkout?.id ? 'text-zinc-400' : 'text-white'}`}>
+                            {workout.title}
+                        </Text>
+                        <Text className="text-zinc-500 text-xs">
+                            {workout.items?.length || 0} exercícios
+                        </Text>
+                    </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#52525B" />
+            </TouchableOpacity>
+        ))}
       </ScrollView>
 
       {/* Split Selection Modal */}

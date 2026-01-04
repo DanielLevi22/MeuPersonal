@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusModal, StatusModalType } from '@/components/ui/StatusModal';
 import { useHealthData } from '@/hooks/useHealthData';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +19,6 @@ const DAYS = [
   { id: 6, label: 'SÁB' },
 ];
 
-import { getLocalDateISOString } from '@/utils/dateUtils';
 
 export function StudentNutritionScreen() {
   const { user } = useAuthStore();
@@ -40,19 +40,53 @@ export function StudentNutritionScreen() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [refreshing, setRefreshing] = useState(false);
 
+  // Status Modal State
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: StatusModalType;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  // Helper to get the date object for the selected day index in the CURRENT week
+  const getDateOfSelectedDay = (dayIndex: number) => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const diff = dayIndex - currentDay;
+    
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + diff);
+    return targetDate;
+  };
+
   useFocusEffect(
     useCallback(() => {
       if (user?.id) {
         loadData();
       }
-    }, [user?.id])
+    }, [user?.id, selectedDay]) // Reload when selectedDay changes
   );
 
   const loadData = async () => {
     if (!user?.id) return;
-    await fetchDietPlan(user.id);
-    const today = getLocalDateISOString(); // Use local date!
-    await fetchDailyLogs(user.id, today);
+    
+    // Only fetch plan if likely needed or stale, but here we just fetch to be safe
+    if (!currentDietPlan) {
+        await fetchDietPlan(user.id);
+    }
+    
+    const targetDateObj = getDateOfSelectedDay(selectedDay);
+    
+    // Fix: Ensure we construct the ISO string correctly for the target date
+    const offset = targetDateObj.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(targetDateObj.getTime() - offset)).toISOString().slice(0, 10);
+    
+    await fetchDailyLogs(user.id, localISOTime);
   };
 
   useEffect(() => {
@@ -76,9 +110,29 @@ export function StudentNutritionScreen() {
   };
 
   const handleToggleCheck = async (mealId: string) => {
-    const today = getLocalDateISOString(); // Use local date!
+    const targetDateObj = getDateOfSelectedDay(selectedDay);
+    const today = new Date();
+    
+    // Reset hours to compare only dates
+    targetDateObj.setHours(0,0,0,0);
+    const todayZero = new Date();
+    todayZero.setHours(0,0,0,0);
+
+    if (targetDateObj > todayZero) {
+        setStatusModal({
+            visible: true,
+            title: "Ainda não!",
+            message: "Você não pode marcar refeições de dias futuros. Planeje no presente! ✨",
+            type: 'warning'
+        });
+        return;
+    }
+
+    const offset = targetDateObj.getTimezoneOffset() * 60000;
+    const targetDateString = (new Date(targetDateObj.getTime() - offset)).toISOString().slice(0, 10);
+
     const isCompleted = dailyLogs[mealId]?.completed || false;
-    await toggleMealCompletion(mealId, today, !isCompleted);
+    await toggleMealCompletion(mealId, targetDateString, !isCompleted);
   };
 
   const dayMeals = meals
@@ -104,6 +158,7 @@ export function StudentNutritionScreen() {
 
   const consumedMacros = dayMeals.reduce(
     (total, meal) => {
+      // Check validation against logs (which are now fetched for the selected day)
       if (dailyLogs[meal.id]?.completed) {
         const items = mealItems[meal.id] || [];
         items.forEach((item) => {
@@ -188,23 +243,28 @@ export function StudentNutritionScreen() {
         <View className="px-6 mb-6">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row gap-2">
-              {DAYS.map((day) => (
-                <TouchableOpacity
-                  key={day.id}
-                  onPress={() => setSelectedDay(day.id)}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedDay === day.id
-                      ? 'bg-orange-500 border-orange-500'
-                      : 'bg-zinc-900 border-zinc-800'
-                  }`}
-                >
-                  <Text className={`font-bold text-xs ${
-                    selectedDay === day.id ? 'text-white' : 'text-zinc-400'
-                  }`}>
-                    {day.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {DAYS.map((day) => {
+                 // Check if day is future to visually dim it? 
+                 // Optional. For now keeping style same but logic blocks interactions.
+                 const isSelected = selectedDay === day.id;
+                 return (
+                    <TouchableOpacity
+                      key={day.id}
+                      onPress={() => setSelectedDay(day.id)}
+                      className={`px-4 py-2 rounded-full border ${
+                        isSelected
+                          ? 'bg-orange-500 border-orange-500'
+                          : 'bg-zinc-900 border-zinc-800'
+                      }`}
+                    >
+                      <Text className={`font-bold text-xs ${
+                        isSelected ? 'text-white' : 'text-zinc-400'
+                      }`}>
+                        {day.label}
+                      </Text>
+                    </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
         </View>
@@ -313,6 +373,15 @@ export function StudentNutritionScreen() {
       >
         <Ionicons name="chatbubbles" size={28} color="white" />
       </TouchableOpacity>
+
+      {/* Status Modal */}
+      <StatusModal 
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
+      />
     </ScreenLayout>
   );
 }
