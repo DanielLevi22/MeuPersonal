@@ -38,6 +38,7 @@ export default function PhaseDetailsScreen() {
   const [pendingSplit, setPendingSplit] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
+  const [isWorkoutDoneToday, setIsWorkoutDoneToday] = useState(false);
 
   const splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF'];
 
@@ -57,6 +58,14 @@ export default function PhaseDetailsScreen() {
               // No history, suggest first one
               setSuggestedWorkout(workouts[0]);
               return;
+          }
+
+          // Check if done today
+          const lastDate = new Date(lastSession.completed_at).toDateString();
+          const today = new Date().toDateString();
+          
+          if (lastDate === today) {
+              setIsWorkoutDoneToday(true);
           }
 
           const lastIndex = workouts.findIndex(w => w.id === lastSession.workout_id);
@@ -339,8 +348,13 @@ export default function PhaseDetailsScreen() {
             {/* Suggested Workout Card */}
             {suggestedWorkout && (
                 <TouchableOpacity
-                    activeOpacity={0.9}
+                    activeOpacity={isWorkoutDoneToday ? 1 : 0.9}
                     onPress={() => {
+                        if (isWorkoutDoneToday) {
+                            Alert.alert('Meta Atingida! 🏆', 'Você já treinou hoje. Descanse para voltar mais forte amanhã!');
+                            return;
+                        }
+
                         const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
                         const path = isProfessional
                             ? '/(tabs)/workouts/details/[id]'
@@ -355,38 +369,48 @@ export default function PhaseDetailsScreen() {
                     className="mb-8"
                 >
                     <LinearGradient
-                        colors={['#FF6B35', '#FF2E63']}
+                        colors={isWorkoutDoneToday ? ['#18181B', '#18181B'] : ['#FF6B35', '#FF2E63']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        className="p-6 rounded-3xl shadow-lg shadow-orange-500/30"
+                        className={`p-6 rounded-3xl ${isWorkoutDoneToday ? 'border border-zinc-800' : 'shadow-lg shadow-orange-500/30'}`}
                     >
                         <View className="flex-row justify-between items-start mb-4">
-                            <View className="bg-white/20 px-3 py-1 rounded-full">
-                                <Text className="text-white font-bold text-xs uppercase">Sugerido para hoje</Text>
-                            </View>
-                            <Ionicons name="flame" size={24} color="white" />
-                        </View>
-                        
-                        <Text className="text-white text-3xl font-extrabold font-display mb-2">
-                            {suggestedWorkout.title}
-                        </Text>
-                        
-                        <View className="flex-row items-center gap-4">
-                            <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
-                                <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
-                                <Text className="text-white font-medium">
-                                    {suggestedWorkout.items?.length || 0} exercícios
+                            <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-white/20'} px-3 py-1 rounded-full`}>
+                                <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-xs uppercase`}>
+                                    {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
                                 </Text>
                             </View>
-                            <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
-                                <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
-                                <Text className="text-white font-medium">~60 min</Text>
+                            <Ionicons name={isWorkoutDoneToday ? "checkmark-circle" : "flame"} size={24} color={isWorkoutDoneToday ? "#4ADE80" : "white"} />
+                        </View>
+                        
+                        <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} text-3xl font-extrabold font-display mb-2`}>
+                            {isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
+                        </Text>
+                        
+                        {isWorkoutDoneToday ? (
+                             <Text className="text-zinc-500 font-medium">
+                                Bom descanso! O próximo treino será: {suggestedWorkout.title}
+                             </Text>
+                        ) : (
+                            <View className="flex-row items-center gap-4">
+                                <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
+                                    <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
+                                    <Text className="text-white font-medium">
+                                        {suggestedWorkout.items?.length || 0} exercícios
+                                    </Text>
+                                </View>
+                                <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
+                                    <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
+                                    <Text className="text-white font-medium">~60 min</Text>
+                                </View>
                             </View>
-                        </View>
+                        )}
 
-                        <View className="mt-6 bg-white py-3 rounded-xl items-center">
-                            <Text className="text-orange-600 font-bold text-base">COMEÇAR TREINO</Text>
-                        </View>
+                        {!isWorkoutDoneToday && (
+                            <View className="mt-6 bg-white py-3 rounded-xl items-center">
+                                <Text className="text-orange-600 font-bold text-base">COMEÇAR TREINO</Text>
+                            </View>
+                        )}
                     </LinearGradient>
                 </TouchableOpacity>
             )}
@@ -401,8 +425,13 @@ export default function PhaseDetailsScreen() {
              {workouts.map((workout) => (
                 <TouchableOpacity
                     key={workout.id}
-                    className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${workout.id === suggestedWorkout?.id ? 'opacity-50' : ''}`}
+                    className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${workout.id === suggestedWorkout?.id ? 'opacity-50' : ''} ${isWorkoutDoneToday ? 'opacity-30' : ''}`}
                     onPress={() => {
+                        if (isWorkoutDoneToday) {
+                             Alert.alert('Atenção', 'Você já treinou hoje.');
+                             return;
+                        }
+
                         const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
                         const path = isProfessional
                             ? '/(tabs)/workouts/details/[id]'
