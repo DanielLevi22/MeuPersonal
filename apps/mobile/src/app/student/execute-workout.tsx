@@ -1,6 +1,10 @@
 import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { VideoPlayer } from '@/components/VideoPlayer';
+import { WorkoutFeedbackModal } from '@/components/workout/WorkoutFeedbackModal';
+import { useWorkoutStore } from '@/modules/workout/store/workoutStore';
+import { useGamificationStore } from '@/store/gamificationStore';
+import { getLocalDateISOString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,8 +26,12 @@ export default function ExecuteWorkoutScreen() {
   const [workout, setWorkout] = useState<any>(null);
   const [exercises, setExercises] = useState<any[]>([]);
   const [progress, setProgress] = useState<Record<string, ExerciseProgress>>({});
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [restTimer, setRestTimer] = useState<number>(0);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  const { saveWorkoutSession } = useWorkoutStore();
+  const { incrementWorkoutProgress } = useGamificationStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +59,7 @@ export default function ExecuteWorkoutScreen() {
         .single();
 
       setWorkout(workoutData);
+      setStartTime(new Date());
 
       const { data: itemsData } = await supabase
         .from('workout_exercises')
@@ -73,17 +82,10 @@ export default function ExecuteWorkoutScreen() {
         };
       });
       setProgress(initialProgress);
-
-      const { data: session } = await supabase
-        .from('workout_executions')
-        .insert({
-          workout_id: id,
-          student_id: user?.id,
-        })
-        .select()
-        .single();
-
-      setSessionId(session?.id);
+      
+      // Removed the immediate creation of 'workout_executions' to align with store logic which saves at the end.
+      // If we need "live" tracking, we might re-add it differently later.
+      
     } catch (error) {
       console.error(error);
     }
@@ -109,24 +111,39 @@ export default function ExecuteWorkoutScreen() {
     }
   };
 
-  const handleCompleteWorkout = async () => {
+  const handleCompleteWorkout = () => {
+    setShowFeedbackModal(true);
+  };
+
+  const onFeedbackSubmit = async (intensity: number, notes: string) => {
+    setShowFeedbackModal(false);
+    
     try {
-      await supabase
-        .from('workout_executions')
-        .update({ completed_at: new Date().toISOString() })
-        .eq('id', sessionId);
-
-      for (const [exerciseId, prog] of Object.entries(progress)) {
-        await supabase
-          .from('workout_session_items')
-          .insert({
-            session_id: sessionId,
-            workout_item_id: exerciseId,
-            sets_completed: prog.setsCompleted,
-            actual_weight: prog.weight,
-          });
-      }
-
+      if (!user?.id || !startTime || !workout) return;
+  
+      const endTime = new Date();
+      
+      // Prepare items data for store
+      const sessionItems = Object.values(progress).map((prog) => ({
+        workoutItemId: prog.id,
+        setsCompleted: prog.setsCompleted
+      }));
+  
+      // Save session via Store (consistent logic)
+      await saveWorkoutSession({
+        workoutId: workout.id,
+        studentId: user.id,
+        startedAt: startTime.toISOString(),
+        completedAt: endTime.toISOString(),
+        items: sessionItems,
+        intensity,
+        notes
+      });
+  
+      // Update gamification
+      const today = getLocalDateISOString();
+      await incrementWorkoutProgress(today);
+  
       Alert.alert(
         'Treino Concluído! 🎉',
         'Parabéns! Você está cada vez mais forte!',
@@ -134,7 +151,7 @@ export default function ExecuteWorkoutScreen() {
       );
     } catch (error) {
       console.error(error);
-      Alert.alert('Erro', 'Não foi possível salvar o treino.');
+      Alert.alert('Erro', 'Não foi possível salvar o treino. Tente novamente.');
     }
   };
 
@@ -310,6 +327,12 @@ export default function ExecuteWorkoutScreen() {
           />
         )}
       </View>
+
+      <WorkoutFeedbackModal
+        visible={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onSubmit={onFeedbackSubmit}
+      />
     </SafeAreaView>
   );
 }
