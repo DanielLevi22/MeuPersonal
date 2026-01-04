@@ -18,18 +18,22 @@
     "mobile:android": "npm run android --workspace=@meupersonal/mobile",
     "mobile:ios": "npm run ios --workspace=@meupersonal/mobile",
     "web:dev": "npm run dev --workspace=@meupersonal/web",
-    "web:build": "npm run build --workspace=@meupersonal/web"
+    "web:build": "npm run build --workspace=@meupersonal/web",
+    "android": "npm run mobile:android",
+    "ios": "npm run mobile:ios"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
-    "turbo": "^2.3.0",
+    "tailwindcss": "3.4.17",
+    "turbo": "^2.7.1",
     "typescript": "~5.9.2"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "expo-sharing": "~14.0.7",
-    "react-native-view-shot": "4.0.3"
+    "fs-extra": "^11.3.3",
+    "json-schema-traverse": "^1.0.0",
+    "jsonfile": "^6.2.0"
   }
 }
