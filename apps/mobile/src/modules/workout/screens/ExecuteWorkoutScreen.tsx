@@ -29,7 +29,7 @@ export default function ExecuteWorkoutScreen() {
 
   const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const { updateWorkoutProgress } = useGamificationStore();
+  const { incrementWorkoutProgress } = useGamificationStore();
   const { saveWorkoutSession } = useWorkoutStore();
 
   const [showShareModal, setShowShareModal] = useState(false);
@@ -222,7 +222,7 @@ export default function ExecuteWorkoutScreen() {
 
       // Update gamification
       const today = getLocalDateISOString();
-      await updateWorkoutProgress(1, today);
+      await incrementWorkoutProgress(today);
 
       Alert.alert(
         'Parabéns! 🎉',

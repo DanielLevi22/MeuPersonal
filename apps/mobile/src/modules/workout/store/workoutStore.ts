@@ -114,6 +114,7 @@ interface WorkoutState {
     intensity?: number;
     notes?: string;
   }) => Promise<void>;
+  fetchLastWorkoutSession: (studentId: string) => Promise<{ workout_id: string; completed_at: string } | null>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
   reset: () => void; // Clear all state on logout
@@ -762,6 +763,28 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       throw error;
     }
   },
+
+  fetchLastWorkoutSession: async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('workout_id, completed_at')
+        .eq('student_id', studentId)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found"
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching last workout session:', error);
+      return null;
+    }
+  },
+
   setSelectedExercises: (exercises) => {
     set({ selectedExercises: exercises });
   },

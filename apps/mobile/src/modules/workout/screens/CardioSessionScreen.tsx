@@ -7,12 +7,16 @@ import { useGamificationStore } from '@/store/gamificationStore';
 import { getLocalDateISOString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import * as Speech from 'expo-speech';
+import * as TaskManager from 'expo-task-manager';
 import { useEffect, useState } from 'react';
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, AppState, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
+
+const LOCATION_TASK_NAME = 'background-location-task';
 
 // METs aproximados
 const METS: Record<string, number> = {
@@ -28,7 +32,7 @@ export default function CardioSessionScreen() {
   const { id, exerciseId, exerciseName, muscleGroup } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { updateWorkoutProgress } = useGamificationStore();
+  const { incrementWorkoutProgress } = useGamificationStore();
   const { saveCardioSession } = useWorkoutStore();
 
   const [seconds, setSeconds] = useState(0);
@@ -163,24 +167,78 @@ export default function CardioSessionScreen() {
       }, 1000);
     }
     return () => clearInterval(interval);
+
   }, [isActive, startTime, accumulatedSeconds, met, userWeight, targetMinutes, lastFeedbackTime]);
+
+  // Handle AppState (Background/Foreground) to ensure timer consistency
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'active' && isActive && startTime) {
+            // Immediately update timer when coming back to foreground
+            const now = Date.now();
+            const diffSeconds = Math.floor((now - startTime) / 1000);
+            const totalSeconds = accumulatedSeconds + diffSeconds;
+            setSeconds(totalSeconds);
+            
+            // Also update calories
+            const calsPerSec = (met * userWeight) / 3600;
+            setCalories(totalSeconds * calsPerSec);
+        }
+    });
+
+    return () => {
+        subscription.remove();
+    };
+  }, [isActive, startTime, accumulatedSeconds, met, userWeight]);
 
   // Track the absolute start time of the session for the API
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     setIsActive(true);
     setStartTime(Date.now());
     if (!sessionStartTime) setSessionStartTime(new Date());
+
+    // Start Background Service (Android) / Live Updates (iOS)
+    try {
+        const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus === 'granted') {
+            const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+            if (backgroundStatus === 'granted') {
+                await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+                    accuracy: Location.Accuracy.Balanced,
+                    distanceInterval: 10, // Update every 10 meters
+                    deferredUpdatesInterval: 5000, 
+                    foregroundService: {
+                        notificationTitle: "Treino em Andamento 🏃",
+                        notificationBody: "Seu cardio está sendo monitorado.",
+                        notificationColor: "#FF6B35"
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.log("Error starting background location:", e);
+    }
   };
 
-  const handlePause = () => {
+  const handlePause = async () => {
     setIsActive(false);
     if (startTime) {
       const now = Date.now();
       const diffSeconds = Math.floor((now - startTime) / 1000);
       setAccumulatedSeconds(prev => prev + diffSeconds);
       setStartTime(null);
+    }
+
+    // Stop Background Service
+    try {
+        const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+        if (isRegistered) {
+            await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+        }
+    } catch (e) {
+        console.log("Error stopping background location:", e);
     }
   };
 
@@ -229,7 +287,7 @@ export default function CardioSessionScreen() {
 
       // Update gamification
       const today = getLocalDateISOString();
-      await updateWorkoutProgress(1, today);
+      await incrementWorkoutProgress(today);
 
       Alert.alert(
         'Treino Salvo! 🎉',

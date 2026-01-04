@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AppleHealthKit, {
     HealthKitPermissions,
     HealthValue,
@@ -30,6 +30,17 @@ export function useHealthData() {
 
   useEffect(() => {
     initHealthKit();
+
+    // Refetch when app comes to foreground
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        refetch();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const initHealthKit = async () => {
@@ -57,8 +68,13 @@ export function useHealthData() {
       try {
         const isInitialized = await initialize();
         if (!isInitialized) {
-            // Health Connect might not be available or installed
-            setData((prev) => ({ ...prev, error: 'Health Connect not initialized', loading: false }));
+            if (__DEV__) {
+              console.log('[HealthConnect] Not initialized. Using MOCK data for development.');
+              setData({ steps: 7543, calories: 450, loading: false, error: null });
+              setHasPermissions(true);
+            } else {
+              setData((prev) => ({ ...prev, error: 'Health Connect not initialized', loading: false }));
+            }
             return;
         }
         
@@ -76,7 +92,13 @@ export function useHealthData() {
           fetchAndroidData();
         } else {
           console.log('[HealthConnect] Permissions denied');
-          setData((prev) => ({ ...prev, error: 'Permissions denied', loading: false }));
+          if (__DEV__) {
+             console.log('[HealthConnect] Permissions denied. Using MOCK data for development.');
+             setData({ steps: 7543, calories: 450, loading: false, error: null });
+             setHasPermissions(true);
+          } else {
+             setData((prev) => ({ ...prev, error: 'Permissions denied', loading: false }));
+          }
         }
       } catch (err: any) {
         console.log('[HealthConnect] Error initializing:', err);

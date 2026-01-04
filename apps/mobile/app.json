@@ -31,10 +31,17 @@
       "package": "com.anonymous.MeuPersonal",
       "permissions": [
         "SCHEDULE_EXACT_ALARM",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
         "android.permission.health.WRITE_STEPS",
-        "android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"
+        "android.permission.health.WRITE_ACTIVE_CALORIES_BURNED",
+        "RECORD_AUDIO",
+        "INTERNET"
       ]
     },
     "web": {

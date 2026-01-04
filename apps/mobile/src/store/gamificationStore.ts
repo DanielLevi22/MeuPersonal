@@ -16,6 +16,7 @@ interface GamificationState {
   fetchHistory: (days: number) => Promise<void>;
   updateMealProgress: (completed: number, date?: string) => Promise<void>;
   updateWorkoutProgress: (completed: number, date?: string) => Promise<void>;
+  incrementWorkoutProgress: (date?: string) => Promise<void>;
   setShowConfetti: (show: boolean) => void;
   useStreakFreeze: () => Promise<void>;
 }
@@ -159,6 +160,41 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
     } catch (error) {
       console.error('Error updating workout progress:', error);
     }
+  },
+
+  incrementWorkoutProgress: async (date?: string) => {
+    let targetGoal = get().dailyGoal;
+
+    // Ensure we have the correct goal for the date
+    if (date && (!targetGoal || targetGoal.date !== date)) {
+        try {
+             const { data: user } = await supabase.auth.getUser();
+            if (user.user) {
+                // Ensure goal exists
+                await gamificationService.calculateDailyGoals(user.user.id, date);
+                // Fetch fresh
+                targetGoal = await gamificationService.getDailyGoal(date);
+            }
+        } catch (e) {
+            console.error("Error fetching goal for increment:", e);
+        }
+    }
+    
+    // Fallback to fetching fresh if local is missing even for today
+    if (!targetGoal) {
+         const today = date || new Date().toISOString().split('T')[0];
+         try {
+             const { data: user } = await supabase.auth.getUser();
+             if (user.user) {
+                targetGoal = await gamificationService.getDailyGoal(today);
+             }
+         } catch(e) {}
+    }
+
+    if (!targetGoal) return;
+
+    const newCount = (targetGoal.workout_completed || 0) + 1;
+    await get().updateWorkoutProgress(newCount, date);
   },
 
   setShowConfetti: (show: boolean) => set({ showConfetti: show }),

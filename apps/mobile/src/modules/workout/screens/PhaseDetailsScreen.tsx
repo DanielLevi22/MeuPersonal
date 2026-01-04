@@ -2,6 +2,7 @@ import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -16,7 +17,16 @@ export default function PhaseDetailsScreen() {
   
 
 
-  const { currentPeriodizationPhases, updateTrainingPlan, deleteTrainingPlan, createWorkout, fetchWorkoutsForPhase, generateWorkoutsForPhase, workouts } = useWorkoutStore();
+  const { 
+    currentPeriodizationPhases, 
+    updateTrainingPlan, 
+    deleteTrainingPlan, 
+    createWorkout, 
+    fetchWorkoutsForPhase, 
+    generateWorkoutsForPhase, 
+    workouts,
+    fetchLastWorkoutSession 
+  } = useWorkoutStore();
   
   const phase = currentPeriodizationPhases.find(p => p.id === phaseId);
 
@@ -27,6 +37,7 @@ export default function PhaseDetailsScreen() {
   const [customSplit, setCustomSplit] = useState('');
   const [pendingSplit, setPendingSplit] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
 
   const splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF'];
 
@@ -35,6 +46,33 @@ export default function PhaseDetailsScreen() {
       fetchWorkoutsForPhase(phase.id);
     }
   }, [phase?.id]);
+
+  useEffect(() => {
+      const determineSuggested = async () => {
+          if (!user?.id || workouts.length === 0) return;
+
+          const lastSession = await fetchLastWorkoutSession(user.id);
+          
+          if (!lastSession) {
+              // No history, suggest first one
+              setSuggestedWorkout(workouts[0]);
+              return;
+          }
+
+          const lastIndex = workouts.findIndex(w => w.id === lastSession.workout_id);
+          
+          if (lastIndex === -1) {
+              // Last workout not in this list (maybe from another phase), suggest first
+              setSuggestedWorkout(workouts[0]);
+          } else {
+              // Suggest next, rotating
+              const nextIndex = (lastIndex + 1) % workouts.length;
+              setSuggestedWorkout(workouts[nextIndex]);
+          }
+      };
+
+      determineSuggested();
+  }, [workouts, user?.id]);
 
   const handleUpdateDate = async (type: 'start' | 'end', date: Date) => {
     if (!phase) return;
@@ -285,8 +323,8 @@ export default function PhaseDetailsScreen() {
           </View>
         </View>
 
-        <Text className="text-white font-bold text-lg mb-4 font-display">Treinos</Text>
-        
+        <Text className="text-white font-bold text-lg mb-4 font-display">Treino do Dia</Text>
+
         {workouts.length === 0 ? (
           <View className="items-center justify-center py-10">
             <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
@@ -297,37 +335,105 @@ export default function PhaseDetailsScreen() {
             </Text>
           </View>
         ) : (
-          workouts.map((workout) => (
-          <TouchableOpacity
-            key={workout.id}
-            className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-4 flex-row justify-between items-center"
-            onPress={() => {
-              // If user is a personal (even in student view context), go to Edit/Details view
-              const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
-              
-              if (isProfessional) {
-                  // Redirect to the Workouts tab stack to keep the 'Treino' tab active
-                  // We pass studentId as a param so the Details screen knows which student it belongs to
-                  router.push({
-                    pathname: '/(tabs)/workouts/details/[id]',
-                    params: { id: workout.id, workoutId: workout.id, studentId: user?.id }
-                  } as any);
-              } else if (isStudentView) {
-                 router.push(`/(tabs)/students/${user?.id}/workouts/details/${workout.id}` as any);
-              } else {
-                 router.push(`/(tabs)/workouts/details/${workout.id}` as any);
-              }
-            }}
-          >
-            <View>
-              <Text className="text-white font-bold text-lg">{workout.title}</Text>
-              <Text className="text-zinc-500 text-sm">
-                {workout.items?.length || 0} exercícios
-              </Text>
+          <>
+            {/* Suggested Workout Card */}
+            {suggestedWorkout && (
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                        const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
+                        const path = isProfessional
+                            ? '/(tabs)/workouts/details/[id]'
+                            : isStudentView
+                                ? `/(tabs)/students/${user?.id}/workouts/details/${suggestedWorkout.id}`
+                                : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
+                        
+                        const params = isProfessional ? { id: suggestedWorkout.id, workoutId: suggestedWorkout.id, studentId: user?.id } : {};
+
+                        router.push(isProfessional ? { pathname: path, params } as any : path as any);
+                    }}
+                    className="mb-8"
+                >
+                    <LinearGradient
+                        colors={['#FF6B35', '#FF2E63']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        className="p-6 rounded-3xl shadow-lg shadow-orange-500/30"
+                    >
+                        <View className="flex-row justify-between items-start mb-4">
+                            <View className="bg-white/20 px-3 py-1 rounded-full">
+                                <Text className="text-white font-bold text-xs uppercase">Sugerido para hoje</Text>
+                            </View>
+                            <Ionicons name="flame" size={24} color="white" />
+                        </View>
+                        
+                        <Text className="text-white text-3xl font-extrabold font-display mb-2">
+                            {suggestedWorkout.title}
+                        </Text>
+                        
+                        <View className="flex-row items-center gap-4">
+                            <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
+                                <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
+                                <Text className="text-white font-medium">
+                                    {suggestedWorkout.items?.length || 0} exercícios
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
+                                <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
+                                <Text className="text-white font-medium">~60 min</Text>
+                            </View>
+                        </View>
+
+                        <View className="mt-6 bg-white py-3 rounded-xl items-center">
+                            <Text className="text-orange-600 font-bold text-base">COMEÇAR TREINO</Text>
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            )}
+
+            {/* List Header */}
+            <View className="flex-row items-center justify-between mb-4 mt-2">
+                <Text className="text-zinc-400 font-bold text-sm uppercase tracking-wider">Todos os Treinos</Text>
+                <View className="h-[1px] flex-1 bg-zinc-800 ml-4" />
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#71717A" />
-          </TouchableOpacity>
-        ))
+
+            {/* Other Workouts List */}
+             {workouts.map((workout) => (
+                <TouchableOpacity
+                    key={workout.id}
+                    className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${workout.id === suggestedWorkout?.id ? 'opacity-50' : ''}`}
+                    onPress={() => {
+                        const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
+                        const path = isProfessional
+                            ? '/(tabs)/workouts/details/[id]'
+                            : isStudentView
+                                ? `/(tabs)/students/${user?.id}/workouts/details/${workout.id}`
+                                : `/(tabs)/workouts/details/${workout.id}`;
+
+                         const params = isProfessional ? { id: workout.id, workoutId: workout.id, studentId: user?.id } : {};
+                         
+                        router.push(isProfessional ? { pathname: path, params } as any : path as any);
+                    }}
+                >
+                    <View className="flex-row items-center flex-1">
+                        <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${workout.id === suggestedWorkout?.id ? 'bg-orange-500/20' : 'bg-zinc-800'}`}>
+                            <Text className={`font-bold ${workout.id === suggestedWorkout?.id ? 'text-orange-500' : 'text-zinc-500'}`}>
+                                {workout.title.charAt(workout.title.length - 1)}
+                            </Text>
+                        </View>
+                        <View>
+                            <Text className={`text-base font-bold ${workout.id === suggestedWorkout?.id ? 'text-zinc-400' : 'text-white'}`}>
+                                {workout.title}
+                            </Text>
+                            <Text className="text-zinc-500 text-xs">
+                                {workout.items?.length || 0} exercícios
+                            </Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="#52525B" />
+                </TouchableOpacity>
+            ))}
+          </>
         )}
       </ScrollView>
 
