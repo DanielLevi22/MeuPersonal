@@ -1,12 +1,23 @@
 import { useAuthStore } from '@/auth';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusModal } from '@/components/ui/StatusModal';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, ImageBackground, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
+
+const MUSCLE_IMAGES: Record<string, any> = {
+  'Peito': require('../../../../assets/workouts/chest.png'),
+  'Costas': require('../../../../assets/workouts/back.png'),
+  'Pernas': require('../../../../assets/workouts/legs.png'),
+  'Braços': require('../../../../assets/workouts/arms.png'),
+  'Ombros': require('../../../../assets/workouts/shoulders.png'),
+  'Abdominais': require('../../../../assets/workouts/abs.png'),
+  'Geral': require('../../../../assets/workouts/back.png'),
+};
 
 export default function PhaseDetailsScreen() {
   const { phaseId } = useLocalSearchParams();
@@ -14,7 +25,18 @@ export default function PhaseDetailsScreen() {
   const { user, accountType } = useAuthStore();
   const pathname = usePathname();
   const isStudentView = pathname.includes('/students/') || accountType === 'managed_student' || accountType === 'autonomous_student';
-  
+  const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
+
+  const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
+
+  const muscleFilters = [
+    { name: 'Peito', icon: 'fitness' },
+    { name: 'Costas', icon: 'body' },
+    { name: 'Pernas', icon: 'footsteps' },
+    { name: 'Braços', icon: 'barbell' },
+    { name: 'Ombros', icon: 'shield' },
+    { name: 'Abdominais', icon: 'grid' },
+  ];
 
 
   const { 
@@ -22,9 +44,10 @@ export default function PhaseDetailsScreen() {
     updateTrainingPlan, 
     deleteTrainingPlan, 
     createWorkout, 
-    fetchWorkoutsForPhase, 
+    fetchWorkoutsForPhase,
     generateWorkoutsForPhase, 
     workouts,
+    libraryWorkouts,
     fetchLastWorkoutSession 
   } = useWorkoutStore();
   
@@ -38,6 +61,61 @@ export default function PhaseDetailsScreen() {
   const [pendingSplit, setPendingSplit] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [selectedLibraryMuscle, setSelectedLibraryMuscle] = useState<string | null>(null);
+  const [showStatusModalMenu, setShowStatusModalMenu] = useState(false);
+
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const [confirmModal, setConfirmModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: 'danger' | 'warning' | 'info';
+    confirmText?: string;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'info'
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setStatusModal({ visible: true, title, message, type });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'warning' | 'info' = 'info', confirmText?: string) => {
+    setConfirmModal({ visible: true, title, message, onConfirm, type, confirmText });
+  };
+
+  const { fetchWorkouts } = useWorkoutStore();
+
+  useEffect(() => {
+    if (showLibraryModal && user?.id) {
+      fetchWorkouts(user.id);
+    }
+  }, [showLibraryModal, user]);
+
+  const libraryWorkoutsFiltered = useMemo(() => {
+    return libraryWorkouts.filter(w => {
+        const matchesSearch = w.title.toLowerCase().includes(librarySearch.toLowerCase());
+        const matchesMuscle = !selectedLibraryMuscle || w.muscle_group === selectedLibraryMuscle;
+        return matchesSearch && matchesMuscle;
+    });
+  }, [libraryWorkouts, librarySearch, selectedLibraryMuscle]);
   const [isWorkoutDoneToday, setIsWorkoutDoneToday] = useState(false);
 
   const splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF'];
@@ -100,13 +178,13 @@ export default function PhaseDetailsScreen() {
     const finalSplit = split || customSplit.toUpperCase().trim();
     
     if (!finalSplit) {
-      Alert.alert('Atenção', 'Digite uma divisão de treino válida.');
+      showAlert('Atenção', 'Digite uma divisão de treino válida.', 'warning');
       return;
     }
     
     // Validate that split only contains letters
     if (!/^[A-Z]+$/.test(finalSplit)) {
-      Alert.alert('Erro', 'A divisão deve conter apenas letras (A-Z).');
+      showAlert('Erro', 'A divisão deve conter apenas letras (A-Z).', 'error');
       return;
     }
     
@@ -128,9 +206,9 @@ export default function PhaseDetailsScreen() {
       await generateWorkoutsForPhase(phase.id, finalSplit, user.id);
       setShowSplitModal(false);
       setCustomSplit('');
-      Alert.alert('Sucesso', `Treinos para divisão ${finalSplit} gerados!`);
+      showAlert('Sucesso! 🚀', `Treinos para divisão ${finalSplit} gerados com sucesso!`, 'success');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível gerar os treinos.');
+      showAlert('Erro', 'Não foi possível gerar os treinos automatizados.', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -139,54 +217,44 @@ export default function PhaseDetailsScreen() {
   const handleToggleStatus = async () => {
     if (!phase) return;
     
-    const newStatus = phase.status === 'draft' ? 'active' : 
-                     phase.status === 'active' ? 'completed' : 'draft';
+    setShowStatusModalMenu(true);
+  };
+
+  const handleUpdateStatus = async (newStatus: 'draft' | 'active' | 'completed') => {
+    if (!phase) return;
     
     const statusLabel = newStatus === 'draft' ? 'Rascunho' :
                        newStatus === 'active' ? 'Ativo' : 'Concluído';
     
-    Alert.alert(
-      'Alterar Status',
-      `Deseja alterar o status desta fase para "${statusLabel}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: async () => {
-            try {
-              await updateTrainingPlan(phase.id, { status: newStatus });
-              Alert.alert('Sucesso', `Status alterado para ${statusLabel}!`);
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível alterar o status.');
-            }
-          }
-        }
-      ]
-    );
+    try {
+      await updateTrainingPlan(phase.id, { status: newStatus });
+      setShowStatusModalMenu(false);
+      showAlert('Sucesso! ✨', `O status da fase foi alterado para ${statusLabel}.`, 'success');
+    } catch (error) {
+      showAlert('Erro', 'Houve um problema ao atualizar o status.', 'error');
+    }
   };
 
   const handleDeletePhase = async () => {
     if (!phase) return;
     
-    Alert.alert(
+    showConfirm(
       'Excluir Fase',
-      `Tem certeza que deseja excluir a fase "${phase.name}"? Todos os treinos e exercícios desta fase serão perdidos. Esta ação não pode ser desfeita.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await useWorkoutStore.getState().deleteTrainingPlan(phase.id);
-              Alert.alert('Sucesso', 'Fase excluída!');
+      `Tem certeza que deseja excluir a fase "${phase.name}"? Todos os treinos desta fase serão perdidos permanentemente.`,
+      async () => {
+        try {
+          await useWorkoutStore.getState().deleteTrainingPlan(phase.id);
+          // Small delay for the confirm modal to disappear
+          setTimeout(() => {
+              showAlert('Fase Excluída', 'A fase e seus treinos foram removidos com sucesso.', 'success');
               router.back();
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível excluir a fase.');
-            }
-          }
+          }, 500);
+        } catch (error) {
+          showAlert('Erro', 'Não foi possível excluir a fase no momento.', 'error');
         }
-      ]
+      },
+      'danger',
+      'Excluir'
     );
   };
 
@@ -199,9 +267,9 @@ export default function PhaseDetailsScreen() {
         description: '',
         personal_id: user.id
       });
-      Alert.alert('Sucesso', 'Treino criado!');
+      showAlert('Treino Criado 🏋️', 'Novo treino adicionado com sucesso à sua fase.', 'success');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível criar o treino.');
+      showAlert('Erro', 'Ocorreu um erro ao criar o treino.', 'error');
     }
   };
 
@@ -224,113 +292,117 @@ export default function PhaseDetailsScreen() {
 
   return (
     <ScreenLayout>
-      <View className="flex-row items-center justify-between p-6 border-b border-zinc-800 bg-zinc-900">
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
-        >
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text className="text-white font-bold text-lg font-display">{phase.name}</Text>
-        {!isStudentView && (
-          <View className="flex-row gap-2">
-            <TouchableOpacity 
-              onPress={handleToggleStatus}
-              className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
-            >
-              <Ionicons 
-                name={phase.status === 'draft' ? 'play-circle' : phase.status === 'active' ? 'checkmark-circle' : 'refresh-circle'} 
-                size={24} 
-                color={phase.status === 'draft' ? '#FFB800' : phase.status === 'active' ? '#00C9A7' : '#71717A'} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={handleDeletePhase}
-              className="bg-zinc-950 p-2 rounded-xl border border-zinc-800"
-            >
-              <Ionicons name="trash" size={24} color="#FF2E63" />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 100 }}>
-        <View className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-6">
-          <Text className="text-zinc-400 text-sm mb-1">Divisão de Treino</Text>
+      <View className="px-6 pt-4 pb-4">
+        <View className="flex-row items-center justify-between mb-8">
           <TouchableOpacity 
-            onPress={() => !isStudentView && setShowSplitModal(true)}
-            activeOpacity={isStudentView ? 1 : 0.7}
-            className="bg-zinc-800 p-3 rounded-xl border border-zinc-700 flex-row items-center justify-between mt-1"
+            onPress={() => router.back()} 
+            className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800 shadow-sm"
           >
-            <Text className="text-white font-bold text-lg uppercase">
-              {phase.training_split || 'Selecionar'}
-            </Text>
-            {!isStudentView && <Ionicons name="chevron-down" size={20} color="#71717A" />}
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           
-          <View className="flex-row gap-4 mt-4">
-            <View className="flex-1">
-              <Text className="text-zinc-400 text-xs mb-1">Frequência</Text>
-              <Text className="text-white font-bold">{phase.weekly_frequency}x/semana</Text>
+          <View className="items-center">
+            <Text className="text-white text-2xl font-extrabold font-display tracking-tight">{phase.name}</Text>
+            <View className="flex-row items-center mt-1">
+                <View className={`w-2 h-2 rounded-full mr-2 ${phase.status === 'active' ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-orange-500'}`} />
+                <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                    {phase.status === 'active' ? 'Em Progresso' : phase.status === 'draft' ? 'Rascunho' : 'Concluído'}
+                </Text>
             </View>
           </View>
 
-          <View className="flex-row gap-4 mt-4">
-            <View className="flex-1">
-              <Text className="text-zinc-400 text-xs mb-1">Início</Text>
+          {!isStudentView ? (
+            <View className="flex-row gap-2">
               <TouchableOpacity 
-                onPress={() => !isStudentView && setShowStartPicker(true)}
-                activeOpacity={isStudentView ? 1 : 0.7}
-                className="bg-zinc-800 p-2 rounded-lg border border-zinc-700 flex-row items-center justify-between"
+                onPress={() => setShowStatusModalMenu(true)}
+                className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800"
               >
-                <Text className="text-white font-bold text-sm">
-                  {new Date(phase.start_date).toLocaleDateString('pt-BR')}
-                </Text>
-                {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#71717A" />}
-              </TouchableOpacity>
-              {showStartPicker && (
-                <DateTimePicker
-                  value={new Date(phase.start_date)}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, selectedDate) => {
-                    setShowStartPicker(false);
-                    if (selectedDate && event.type === 'set') {
-                      handleUpdateDate('start', selectedDate);
-                    }
-                  }}
+                <Ionicons 
+                  name={phase.status === 'draft' ? 'document-text-outline' : phase.status === 'active' ? 'play-outline' : 'checkmark-done-outline'} 
+                  size={20} 
+                  color={phase.status === 'draft' ? '#FFB800' : phase.status === 'active' ? '#00C9A7' : '#71717A'} 
                 />
-              )}
-            </View>
-            <View className="flex-1">
-              <Text className="text-zinc-400 text-xs mb-1">Término</Text>
+              </TouchableOpacity>
               <TouchableOpacity 
-                onPress={() => !isStudentView && setShowEndPicker(true)}
-                activeOpacity={isStudentView ? 1 : 0.7}
-                className="bg-zinc-800 p-2 rounded-lg border border-zinc-700 flex-row items-center justify-between"
+                onPress={handleDeletePhase}
+                className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800"
               >
-                <Text className="text-white font-bold text-sm">
-                  {new Date(phase.end_date).toLocaleDateString('pt-BR')}
-                </Text>
-                {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#71717A" />}
+                <Ionicons name="trash-outline" size={20} color="#FF2E63" />
               </TouchableOpacity>
-              {showEndPicker && (
-                <DateTimePicker
-                  value={new Date(phase.end_date)}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  minimumDate={new Date(phase.start_date)}
-                  onChange={(event, selectedDate) => {
-                    setShowEndPicker(false);
-                    if (selectedDate && event.type === 'set') {
-                      handleUpdateDate('end', selectedDate);
-                    }
-                  }}
-                />
-              )}
             </View>
-          </View>
+          ) : (
+            <View className="w-12" />
+          )}
         </View>
+
+        {/* Premium Training Split Card */}
+        <LinearGradient
+            colors={['#1C1C1E', '#0C0C0E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="rounded-[32px] p-6 border border-white/10 shadow-2xl relative overflow-hidden"
+        >
+            {/* Elegant Glow Effect */}
+            <View className="absolute -top-20 -right-20 w-64 h-64 bg-orange-500/10 rounded-full" style={{ filter: 'blur(60px)' }} />
+            <View className="absolute -bottom-20 -left-20 w-48 h-48 bg-zinc-500/5 rounded-full" style={{ filter: 'blur(50px)' }} />
+            
+            <View className="flex-row justify-between mb-6">
+                <View className="flex-1">
+                    <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Divisão de Treino</Text>
+                    <TouchableOpacity 
+                        activeOpacity={isStudentView ? 1 : 0.7}
+                        onPress={() => !isStudentView && setShowSplitModal(true)}
+                        className="flex-row items-center bg-white/5 self-start px-4 py-2.5 rounded-2xl border border-white/5"
+                    >
+                        <Text className="text-white font-extrabold text-xl mr-2 uppercase">{phase.training_split || '--'}</Text>
+                        {!isStudentView && <Ionicons name="chevron-down" size={16} color="#FF6B35" />}
+                    </TouchableOpacity>
+                </View>
+
+                <View className="items-end">
+                    <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Frequência</Text>
+                    <View className="flex-row items-center bg-orange-500/10 px-4 py-2.5 rounded-2xl border border-orange-500/20">
+                        <Ionicons name="fitness-outline" size={16} color="#FF6B35" style={{marginRight: 8}} />
+                        <Text className="text-orange-500 font-extrabold text-lg">{phase.weekly_frequency || 0}x</Text>
+                    </View>
+                </View>
+            </View>
+
+            <View className="h-[1px] bg-white/5 mb-6" />
+
+            <View className="flex-row justify-between">
+                <View className="flex-1 mr-4">
+                    <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Início</Text>
+                    <TouchableOpacity 
+                        activeOpacity={isStudentView ? 1 : 0.7}
+                        onPress={() => !isStudentView && setShowStartPicker(true)}
+                        className="bg-white/5 p-3 rounded-2xl border border-white/5 flex-row items-center justify-between"
+                    >
+                        <Text className="text-zinc-300 font-bold text-sm">
+                            {new Date(phase.start_date).toLocaleDateString('pt-BR')}
+                        </Text>
+                        {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#52525B" />}
+                    </TouchableOpacity>
+                </View>
+
+                <View className="flex-1">
+                    <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Término</Text>
+                    <TouchableOpacity 
+                        activeOpacity={isStudentView ? 1 : 0.7}
+                        onPress={() => !isStudentView && setShowEndPicker(true)}
+                        className="bg-white/5 p-3 rounded-2xl border border-white/10 flex-row items-center justify-between"
+                    >
+                        <Text className="text-zinc-300 font-bold text-sm">
+                            {new Date(phase.end_date).toLocaleDateString('pt-BR')}
+                        </Text>
+                        {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#52525B" />}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </LinearGradient>
+      </View>
+
+      <ScrollView className="px-6" contentContainerStyle={{ paddingBottom: 100 }}>
 
         {isStudentView && (
           <>
@@ -368,50 +440,58 @@ export default function PhaseDetailsScreen() {
                         }}
                         className="mb-8"
                     >
-                        <LinearGradient
-                            colors={isWorkoutDoneToday ? ['#18181B', '#18181B'] : ['#FF6B35', '#FF2E63']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            className={`p-6 rounded-3xl ${isWorkoutDoneToday ? 'border border-zinc-800' : 'shadow-lg shadow-orange-500/30'}`}
-                        >
-                            <View className="flex-row justify-between items-start mb-4">
-                                <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-white/20'} px-3 py-1 rounded-full`}>
-                                    <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-xs uppercase`}>
-                                        {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
+                        <View className={`rounded-3xl overflow-hidden ${isWorkoutDoneToday ? 'border border-zinc-800' : 'shadow-lg shadow-orange-500/30'}`}>
+                            <ImageBackground 
+                                source={isWorkoutDoneToday ? null : (MUSCLE_IMAGES[suggestedWorkout.muscle_group || 'Geral'] || MUSCLE_IMAGES['Geral'])} 
+                                className="w-full"
+                                resizeMode="cover"
+                            >
+                                <LinearGradient
+                                    colors={isWorkoutDoneToday ? ['#18181B', '#18181B'] : ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 0, y: 1 }}
+                                    className="p-6"
+                                >
+                                    <View className="flex-row justify-between items-start mb-4">
+                                        <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-black/40'} px-3 py-1 rounded-full border border-white/10`}>
+                                            <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-xs uppercase`}>
+                                                {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
+                                            </Text>
+                                        </View>
+                                        <Ionicons name={isWorkoutDoneToday ? "checkmark-circle" : "flame"} size={24} color={isWorkoutDoneToday ? "#4ADE80" : "white"} />
+                                    </View>
+                                    
+                                    <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} text-3xl font-extrabold font-display mb-2`}>
+                                        {isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
                                     </Text>
-                                </View>
-                                <Ionicons name={isWorkoutDoneToday ? "checkmark-circle" : "flame"} size={24} color={isWorkoutDoneToday ? "#4ADE80" : "white"} />
-                            </View>
-                            
-                            <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} text-3xl font-extrabold font-display mb-2`}>
-                                {isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
-                            </Text>
-                            
-                            {isWorkoutDoneToday ? (
-                                <Text className="text-zinc-500 font-medium">
-                                    Bom descanso! O próximo treino será: {suggestedWorkout.title}
-                                </Text>
-                            ) : (
-                                <View className="flex-row items-center gap-4">
-                                    <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
-                                        <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
-                                        <Text className="text-white font-medium">
-                                            {suggestedWorkout.items?.length || 0} exercícios
+                                    
+                                    {isWorkoutDoneToday ? (
+                                        <Text className="text-zinc-500 font-medium">
+                                            Bom descanso! O próximo treino será: {suggestedWorkout.title}
                                         </Text>
-                                    </View>
-                                    <View className="flex-row items-center bg-black/10 px-3 py-1.5 rounded-lg">
-                                        <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
-                                        <Text className="text-white font-medium">~60 min</Text>
-                                    </View>
-                                </View>
-                            )}
+                                    ) : (
+                                        <View className="flex-row items-center gap-4">
+                                            <View className="flex-row items-center bg-black/40 px-3 py-1.5 rounded-lg border border-white/10">
+                                                <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
+                                                <Text className="text-white font-medium">
+                                                    {suggestedWorkout.items?.length || 0} exercícios
+                                                </Text>
+                                            </View>
+                                            <View className="flex-row items-center bg-black/40 px-3 py-1.5 rounded-lg border border-white/10">
+                                                <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
+                                                <Text className="text-white font-medium">~60 min</Text>
+                                            </View>
+                                        </View>
+                                    )}
 
-                            {!isWorkoutDoneToday && (
-                                <View className="mt-6 bg-white py-3 rounded-xl items-center">
-                                    <Text className="text-orange-600 font-bold text-base">COMEÇAR TREINO</Text>
-                                </View>
-                            )}
-                        </LinearGradient>
+                                    {!isWorkoutDoneToday && (
+                                        <View className="mt-6 bg-orange-500 py-3 rounded-xl items-center shadow-lg shadow-orange-500/40">
+                                            <Text className="text-white font-bold text-base">COMEÇAR TREINO</Text>
+                                        </View>
+                                    )}
+                                </LinearGradient>
+                            </ImageBackground>
+                        </View>
                     </TouchableOpacity>
                 )}
               </>
@@ -420,13 +500,78 @@ export default function PhaseDetailsScreen() {
         )}
 
         {/* List Header */}
-        <View className="flex-row items-center justify-between mb-4 mt-2">
-            <Text className="text-zinc-400 font-bold text-sm uppercase tracking-wider">Todos os Treinos</Text>
-            <View className="h-[1px] flex-1 bg-zinc-800 ml-4" />
+        <View className="flex-row items-center justify-between mb-4 mt-6">
+            <View className="flex-row items-center">
+                <Text className="text-zinc-400 font-bold text-sm uppercase tracking-wider">Treinos da Fase</Text>
+                <View className="bg-zinc-800 px-2 py-0.5 rounded-md ml-2">
+                    <Text className="text-zinc-500 text-[10px] font-bold">{(selectedMuscle ? workouts.filter(w => w.muscle_group === selectedMuscle) : workouts).length}</Text>
+                </View>
+            </View>
+            
+            {isProfessional && (
+                <TouchableOpacity 
+                    onPress={() => setShowLibraryModal(true)}
+                    className="flex-row items-center"
+                >
+                    <Ionicons name="library" size={14} color="#FF6B35" style={{marginRight: 6}} />
+                    <Text className="text-orange-500 font-bold text-xs">IMPORTAR</Text>
+                </TouchableOpacity>
+            )}
         </View>
 
-        {/* Other Workouts List - Visible for EVERYONE */}
-         {workouts.map((workout) => (
+        {/* Smart Filters Carousel */}
+        <View className="mb-6">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 10 }}
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedMuscle(null)}
+              className={`px-5 py-2.5 rounded-2xl border-2 flex-row items-center ${
+                selectedMuscle === null 
+                  ? 'bg-orange-500 border-orange-500' 
+                  : 'bg-zinc-950 border-zinc-800'
+              }`}
+            >
+              <Text className={`font-bold text-[10px] uppercase tracking-widest ${
+                selectedMuscle === null ? 'text-white' : 'text-zinc-500'
+              }`}>
+                Todos
+              </Text>
+            </TouchableOpacity>
+
+            {muscleFilters.map((muscle) => (
+              <TouchableOpacity
+                key={muscle.name}
+                onPress={() => setSelectedMuscle(selectedMuscle === muscle.name ? null : muscle.name)}
+                className={`px-5 py-2.5 rounded-2xl border-2 flex-row items-center ${
+                  selectedMuscle === muscle.name 
+                    ? 'bg-orange-500 border-orange-500' 
+                    : 'bg-zinc-950 border-zinc-800'
+                }`}
+              >
+                <Ionicons 
+                  name={muscle.icon as any} 
+                  size={14} 
+                  color={selectedMuscle === muscle.name ? "white" : "#52525B"}
+                  style={{ marginRight: 6 }}
+                />
+                <Text className={`font-bold text-[10px] uppercase tracking-widest ${
+                  selectedMuscle === muscle.name ? 'text-white' : 'text-zinc-500'
+                }`}>
+                  {muscle.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Other Workouts List - Filtered */}
+         {(selectedMuscle 
+            ? workouts.filter(w => w.muscle_group === selectedMuscle) 
+            : workouts
+          ).map((workout) => (
             <TouchableOpacity
                 key={workout.id}
                 className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${isStudentView && workout.id === suggestedWorkout?.id ? 'opacity-50' : ''} ${isStudentView && isWorkoutDoneToday ? 'opacity-30' : ''}`}
@@ -449,18 +594,32 @@ export default function PhaseDetailsScreen() {
                 }}
             >
                 <View className="flex-row items-center flex-1">
-                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isStudentView && workout.id === suggestedWorkout?.id ? 'bg-orange-500/20' : 'bg-zinc-800'}`}>
-                        <Text className={`font-bold ${isStudentView && workout.id === suggestedWorkout?.id ? 'text-orange-500' : 'text-zinc-500'}`}>
-                            {workout.title.charAt(workout.title.length - 1)}
-                        </Text>
+                    <View className="w-14 h-14 rounded-2xl overflow-hidden mr-4 border border-zinc-800">
+                        <ImageBackground 
+                            source={MUSCLE_IMAGES[workout.muscle_group || 'Geral'] || MUSCLE_IMAGES['Geral']}
+                            className="w-full h-full items-center justify-center"
+                            resizeMode="cover"
+                        >
+                            <LinearGradient
+                                colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.6)']}
+                                className="w-full h-full items-center justify-center"
+                            >
+                                <Text className="text-white font-bold text-xs">
+                                    {workout.title.charAt(0)}
+                                </Text>
+                            </LinearGradient>
+                        </ImageBackground>
                     </View>
                     <View>
                         <Text className={`text-base font-bold ${isStudentView && workout.id === suggestedWorkout?.id ? 'text-zinc-400' : 'text-white'}`}>
                             {workout.title}
                         </Text>
-                        <Text className="text-zinc-500 text-xs">
-                            {workout.items?.length || 0} exercícios
-                        </Text>
+                        <View className="flex-row items-center mt-0.5">
+                            <Ionicons name="barbell-outline" size={10} color="#71717A" style={{ marginRight: 4 }} />
+                            <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
+                                {workout.muscle_group || 'Geral'} • {workout.items?.length || 0} exercícios
+                            </Text>
+                        </View>
                     </View>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#52525B" />
@@ -619,6 +778,193 @@ export default function PhaseDetailsScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+      {/* Library Import Modal */}
+      <Modal
+        visible={showLibraryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLibraryModal(false)}
+      >
+        <View className="flex-1 bg-black/95 pt-20">
+          <View className="px-6 flex-row justify-between items-center mb-6">
+            <View>
+              <Text className="text-3xl font-extrabold text-white font-display">Biblioteca</Text>
+              <Text className="text-zinc-400 text-sm">Toque num modelo para importar</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => setShowLibraryModal(false)}
+              className="w-10 h-10 bg-zinc-900 rounded-full items-center justify-center border border-zinc-800"
+            >
+              <Ionicons name="close" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search & Filter */}
+          <View className="px-6 mb-6">
+            <View className="bg-zinc-900 flex-row items-center px-4 py-3 rounded-2xl border border-zinc-800 mb-4">
+              <Ionicons name="search" size={20} color="#71717A" style={{ marginRight: 12 }} />
+              <TextInput 
+                placeholder="Buscar na biblioteca..."
+                placeholderTextColor="#52525B"
+                className="flex-1 text-white font-medium"
+                value={librarySearch}
+                onChangeText={setLibrarySearch}
+              />
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                 <TouchableOpacity
+                    onPress={() => setSelectedLibraryMuscle(null)}
+                    className={`px-4 py-2 rounded-xl border ${!selectedLibraryMuscle ? 'bg-orange-500 border-orange-500' : 'bg-zinc-900 border-zinc-800'}`}
+                 >
+                    <Text className={`text-xs font-bold ${!selectedLibraryMuscle ? 'text-white' : 'text-zinc-500'}`}>Todos</Text>
+                 </TouchableOpacity>
+                 {muscleFilters.map(m => (
+                    <TouchableOpacity
+                        key={m.name}
+                        onPress={() => setSelectedLibraryMuscle(selectedLibraryMuscle === m.name ? null : m.name)}
+                        className={`px-4 py-2 rounded-xl border flex-row items-center ${selectedLibraryMuscle === m.name ? 'bg-orange-500 border-orange-500' : 'bg-zinc-900 border-zinc-800'}`}
+                    >
+                        <Ionicons name={m.icon as any} size={12} color={selectedLibraryMuscle === m.name ? 'white' : '#52525B'} style={{marginRight: 6}} />
+                        <Text className={`text-xs font-bold ${selectedLibraryMuscle === m.name ? 'text-white' : 'text-zinc-500'}`}>{m.name}</Text>
+                    </TouchableOpacity>
+                 ))}
+            </ScrollView>
+          </View>
+
+          {/* Library List */}
+          <FlatList
+            data={libraryWorkoutsFiltered}
+            keyExtractor={(item) => `lib-${item.id}`}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                onPress={async () => {
+                   try {
+                     await useWorkoutStore.getState().duplicateWorkout(item.id, phaseId as string);
+                     setShowLibraryModal(false);
+                     showAlert('Sucesso! 🚀', 'Treino importado com sucesso para esta fase.', 'success');
+                   } catch (e) {
+                     showAlert('Erro', 'Não foi possível importar o treino selecionado.', 'error');
+                   }
+                }}
+                className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-4 flex-row items-center"
+              >
+                <View className="w-12 h-12 rounded-xl overflow-hidden mr-4">
+                  <ImageBackground 
+                    source={MUSCLE_IMAGES[item.muscle_group || 'Geral'] || MUSCLE_IMAGES['Geral']}
+                    className="w-full h-full"
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-base">{item.title}</Text>
+                  <Text className="text-zinc-500 text-xs uppercase font-bold tracking-wider">
+                    {item.muscle_group || 'Geral'} • {item.difficulty || 'Iniciante'}
+                  </Text>
+                </View>
+                <Ionicons name="add-circle" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View className="items-center py-20">
+                <Ionicons name="search" size={64} color="#27272A" />
+                <Text className="text-zinc-600 mt-4">Nenhum modelo encontrado</Text>
+              </View>
+            }
+          />
+        </View>
+      </Modal>
+      {/* Status Selection Modal */}
+      <Modal
+        visible={showStatusModalMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStatusModalMenu(false)}
+      >
+        <TouchableOpacity 
+          activeOpacity={1} 
+          onPress={() => setShowStatusModalMenu(false)}
+          className="flex-1 bg-black/80 justify-center px-6"
+        >
+          <View className="bg-zinc-950 rounded-[32px] border border-white/10 p-6 shadow-2xl overflow-hidden">
+            <View className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/5 rounded-full blur-3xl" />
+            
+            <Text className="text-white text-xl font-extrabold font-display mb-1 text-center">Status da Fase</Text>
+            <Text className="text-zinc-500 text-sm mb-6 text-center">Escolha a etapa atual desta periodização</Text>
+            
+            <View className="gap-3">
+              <TouchableOpacity 
+                onPress={() => handleUpdateStatus('draft')}
+                className={`flex-row items-center p-4 rounded-2xl border ${phase.status === 'draft' ? 'bg-orange-500/10 border-orange-500/30' : 'bg-white/5 border-white/5'}`}
+              >
+                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${phase.status === 'draft' ? 'bg-orange-500/20' : 'bg-zinc-900'}`}>
+                  <Ionicons name="document-text" size={20} color={phase.status === 'draft' ? '#FF6B35' : '#71717A'} />
+                </View>
+                <View className="flex-1">
+                  <Text className={`font-bold ${phase.status === 'draft' ? 'text-white' : 'text-zinc-300'}`}>Rascunho</Text>
+                  <Text className="text-zinc-500 text-xs text-wrap">Fase em planejamento, não visível ao aluno</Text>
+                </View>
+                {phase.status === 'draft' && <Ionicons name="checkmark-circle" size={20} color="#FF6B35" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={() => handleUpdateStatus('active')}
+                className={`flex-row items-center p-4 rounded-2xl border ${phase.status === 'active' ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/5'}`}
+              >
+                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${phase.status === 'active' ? 'bg-green-500/20' : 'bg-zinc-900'}`}>
+                  <Ionicons name="play" size={20} color={phase.status === 'active' ? '#00C9A7' : '#71717A'} />
+                </View>
+                <View className="flex-1">
+                  <Text className={`font-bold ${phase.status === 'active' ? 'text-white' : 'text-zinc-300'}`}>Ativo</Text>
+                  <Text className="text-zinc-500 text-xs text-wrap">Fase em execução pelo aluno</Text>
+                </View>
+                {phase.status === 'active' && <Ionicons name="checkmark-circle" size={20} color="#00C9A7" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={() => handleUpdateStatus('completed')}
+                className={`flex-row items-center p-4 rounded-2xl border ${phase.status === 'completed' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/5'}`}
+              >
+                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${phase.status === 'completed' ? 'bg-blue-500/20' : 'bg-zinc-900'}`}>
+                  <Ionicons name="checkmark-done" size={20} color={phase.status === 'completed' ? '#3B82F6' : '#71717A'} />
+                </View>
+                <View className="flex-1">
+                  <Text className={`font-bold ${phase.status === 'completed' ? 'text-white' : 'text-zinc-300'}`}>Concluído</Text>
+                  <Text className="text-zinc-500 text-xs text-wrap">Fase finalizada e arquivada para consulta</Text>
+                </View>
+                {phase.status === 'completed' && <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />}
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              onPress={() => setShowStatusModalMenu(false)}
+              className="mt-6 bg-zinc-900 py-4 rounded-2xl border border-white/5"
+            >
+              <Text className="text-white font-bold text-center">Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Global Status Alert Modal */}
+      <StatusModal 
+        visible={statusModal.visible}
+        onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+      />
+
+      {/* Global Confirmation Modal */}
+      <ConfirmModal 
+        visible={confirmModal.visible}
+        onClose={() => setConfirmModal(prev => ({ ...prev, visible: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+      />
     </ScreenLayout>
   );
 }

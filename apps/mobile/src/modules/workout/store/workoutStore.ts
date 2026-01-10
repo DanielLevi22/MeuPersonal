@@ -24,6 +24,9 @@ export interface Workout {
   training_plan_id: string;
   title: string;
   description: string | null;
+  muscle_group: string | null;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  personal_id?: string;
   created_at: string;
   items?: WorkoutItem[];
 }
@@ -50,6 +53,7 @@ export interface Periodization {
   start_date: string;
   end_date: string;
   status: 'planned' | 'active' | 'completed';
+  type?: 'strength' | 'hypertrophy' | 'adaptation';
   notes?: string;
   student?: {
     full_name: string;
@@ -66,11 +70,13 @@ export interface TrainingPlan {
   start_date: string;
   end_date: string;
   status: 'draft' | 'active' | 'completed';
+  type?: 'strength' | 'hypertrophy' | 'adaptation';
   notes?: string;
 }
 
 interface WorkoutState {
   workouts: Workout[];
+  libraryWorkouts: Workout[];
   periodizations: Periodization[];
   exercises: Exercise[];
   selectedExercises: SelectedExercise[];
@@ -90,7 +96,13 @@ interface WorkoutState {
   fetchWorkoutsForPhase: (trainingPlanId: string) => Promise<void>;
   addWorkoutItems: (workoutId: string, items: WorkoutItem[]) => Promise<void>;
   generateWorkoutsForPhase: (trainingPlanId: string, split: string, personalId: string) => Promise<void>;
-  createWorkout: (workout: { training_plan_id: string; title: string; description?: string; personal_id: string }) => Promise<void>;
+  createWorkout: (workout: { 
+    training_plan_id: string; 
+    title: string; 
+    description?: string; 
+    muscle_group?: string;
+    personal_id: string 
+  }) => Promise<void>;
   activatePeriodization: (periodizationId: string) => Promise<any>;
   saveWorkoutSession: (sessionData: {
     workoutId: string;
@@ -117,11 +129,13 @@ interface WorkoutState {
   fetchLastWorkoutSession: (studentId: string) => Promise<{ workout_id: string; completed_at: string } | null>;
   setSelectedExercises: (exercises: SelectedExercise[]) => void;
   clearSelectedExercises: () => void;
+  duplicateWorkout: (workoutId: string, targetPlanId: string) => Promise<void>;
   reset: () => void; // Clear all state on logout
 }
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   workouts: [],
+  libraryWorkouts: [],
   periodizations: [],
   exercises: [],
   selectedExercises: [],
@@ -249,7 +263,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      set({ workouts: data });
+      set({ libraryWorkouts: data });
     } catch (error) {
       console.error('Error fetching workouts:', error);
     } finally {
@@ -794,9 +808,61 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   },
   
   // Reset all state on logout
+  duplicateWorkout: async (workoutId: string, targetPlanId: string) => {
+    set({ isLoading: true });
+    try {
+      // 1. Fetch source workout with items
+      const sourceWorkout = await get().fetchWorkoutById(workoutId);
+      if (!sourceWorkout) throw new Error('Source workout not found');
+
+      // 2. Create new workout
+      const { data: newWorkout, error: workoutError } = await supabase
+        .from('workouts')
+        .insert({
+          training_plan_id: targetPlanId,
+          title: sourceWorkout.title,
+          description: sourceWorkout.description,
+          muscle_group: sourceWorkout.muscle_group,
+          personal_id: sourceWorkout.personal_id
+        })
+        .select()
+        .single();
+
+      if (workoutError) throw workoutError;
+
+      // 3. Duplicate items
+      if (sourceWorkout.items && sourceWorkout.items.length > 0) {
+        const newItems = sourceWorkout.items.map(item => ({
+          workout_id: newWorkout.id,
+          exercise_id: item.exercise_id,
+          sets: item.sets,
+          reps: item.reps,
+          weight: item.weight,
+          rest_time: item.rest_time,
+          notes: item.notes
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('workout_exercises')
+          .insert(newItems);
+
+        if (itemsError) throw itemsError;
+      }
+
+      // 4. Refresh workouts for the phase
+      await get().fetchWorkoutsForPhase(targetPlanId);
+    } catch (error) {
+      console.error('Error duplicating workout:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   reset: () => {
     set({
       workouts: [],
+      libraryWorkouts: [],
       periodizations: [],
       exercises: [],
       selectedExercises: [],

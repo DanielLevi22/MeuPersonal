@@ -1,10 +1,18 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
+
+const PERIODIZATION_IMAGES: Record<string, any> = {
+  'strength': require('../../../../assets/workouts/back.png'),
+  'hypertrophy': require('../../../../assets/workouts/chest.png'),
+  'adaptation': require('../../../../assets/workouts/arms.png'),
+  'default': require('../../../../assets/workouts/shoulders.png'),
+};
 
 export default function PeriodizationDetailsScreen() {
   const params = useLocalSearchParams();
@@ -95,53 +103,75 @@ export default function PeriodizationDetailsScreen() {
   return (
     <ScreenLayout>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Header */}
-        <View className="items-center pt-8 pb-8 px-6 bg-zinc-900 rounded-b-[32px] border-b border-zinc-800">
-          <View className="flex-row items-center justify-between w-full mb-6">
-            <TouchableOpacity 
-              onPress={() => router.back()} 
-              className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
-            >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View className="flex-row gap-2">
+        {/* Premium Header */}
+        <ImageBackground
+          source={PERIODIZATION_IMAGES[periodization.type] || PERIODIZATION_IMAGES['default']}
+          className="h-96 w-full relative"
+          resizeMode="cover"
+        >
+          <LinearGradient
+            colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,1)']}
+            className="absolute inset-0 flex-1 px-6 pb-10 justify-between"
+          >
+            {/* Header Icons */}
+            <View className="flex-row items-center justify-between pt-8">
+              <TouchableOpacity 
+                onPress={() => router.back()} 
+                className="bg-black/40 p-2.5 rounded-xl border border-white/10"
+              >
+                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              
               {!isStudentView && (
                 <TouchableOpacity 
                   onPress={() => Alert.alert('Em breve', 'Edição em desenvolvimento')}
-                  className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
+                  className="bg-black/40 p-2.5 rounded-xl border border-white/10"
                 >
                   <Ionicons name="pencil" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
             </View>
-          </View>
 
-          <View className="w-20 h-20 rounded-full bg-cyan-400/10 items-center justify-center mb-4 border-2 border-cyan-400/20">
-            <Ionicons name="calendar" size={40} color="#00D9FF" />
-          </View>
-          
-          <Text className="text-2xl font-extrabold text-white mb-1 font-display text-center">
-            {periodization.name}
-          </Text>
-          <Text className="text-zinc-400 font-sans mb-6 text-center">
-            {periodization.description || 'Sem descrição'}
-          </Text>
+            <View>
+              <View className="flex-row items-center mb-3">
+                <View className="bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/30">
+                  <Text className="text-orange-500 text-[10px] font-bold uppercase tracking-widest">
+                    {periodization.type || 'Planejamento'}
+                  </Text>
+                </View>
+                <View className="bg-white/10 px-3 py-1 rounded-full border border-white/10 ml-2">
+                  <Text className="text-white/60 text-[10px] font-bold uppercase">
+                    {periodization.status === 'active' ? 'Em andamento' : 'Planejado'}
+                  </Text>
+                </View>
+              </View>
+              
+              <Text className="text-4xl font-extrabold text-white mb-2 font-display leading-[42px] drop-shadow-lg">
+                {periodization.name}
+              </Text>
+              
+              <Text className="text-zinc-300 font-sans text-base mb-6 max-w-[85%]">
+                {periodization.description || 'Transforme seu corpo com este planejamento exclusivo.'}
+              </Text>
 
-          <View className="flex-row gap-3 w-full">
-            <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
-              <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase">Início</Text>
-              <Text className="text-white font-bold">
-                {new Date(periodization.start_date).toLocaleDateString()}
-              </Text>
+              <View className="flex-row gap-4">
+                <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
+                  <Ionicons name="calendar-outline" size={14} color="#FF6B35" style={{ marginRight: 8 }} />
+                  <Text className="text-white font-bold text-xs">
+                    {new Date(periodization.start_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  </Text>
+                </View>
+                <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
+                  <Ionicons name="flag-outline" size={14} color="#FF6B35" style={{ marginRight: 8 }} />
+                  <Text className="text-white font-bold text-xs">
+                    {new Date(periodization.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
-              <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase">Fim</Text>
-              <Text className="text-white font-bold">
-                {new Date(periodization.end_date).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-          
+          </LinearGradient>
+        </ImageBackground>
+        <View className="px-6 -mt-6">
           {!isStudentView && periodization.status === 'planned' && (
             <TouchableOpacity 
               onPress={() => {
@@ -164,9 +194,9 @@ export default function PeriodizationDetailsScreen() {
                   ]
                 );
               }}
-              className="mt-6 bg-orange-500 px-6 py-3 rounded-xl w-full items-center"
+              className="bg-orange-500 px-6 py-4 rounded-2xl w-full items-center shadow-lg shadow-orange-500/30"
             >
-              <Text className="text-white font-bold font-display">ATIVAR PERIODIZAÇÃO</Text>
+              <Text className="text-white font-bold font-display uppercase tracking-widest text-sm">ATIVAR PERIODIZAÇÃO</Text>
             </TouchableOpacity>
           )}
           
@@ -196,9 +226,9 @@ export default function PeriodizationDetailsScreen() {
                   ]
                 );
               }}
-              className="mt-6 bg-red-500 px-6 py-3 rounded-xl w-full items-center"
+              className="bg-red-500 px-6 py-4 rounded-2xl w-full items-center shadow-lg shadow-red-500/30"
             >
-              <Text className="text-white font-bold font-display">ENCERRAR PERIODIZAÇÃO</Text>
+              <Text className="text-white font-bold font-display uppercase tracking-widest text-sm">ENCERRAR PERIODIZAÇÃO</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -212,75 +242,94 @@ export default function PeriodizationDetailsScreen() {
           <View className="gap-4">
             {currentPeriodizationPhases
               .filter(phase => !isStudentView || phase.status === 'active')
-              .map((phase, index) => (
-              <TouchableOpacity 
-                key={phase.id} 
-                className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800"
-                onPress={() => {
-                  // Determine navigation path based on context
-                  const targetStudentId = params.id || periodization?.student_id;
-                  
-                  if (params.id && params.periodizationId) {
-                    // We are in students tab: /students/[id]/workouts/[periodizationId]
-                    router.push(`/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as any);
-                  } else {
-                    // We are in workouts tab: /workouts/periodizations/[id]
-                    // Now we have the route!
-                    router.push(`/(tabs)/workouts/periodizations/${periodizationId}/phases/${phase.id}` as any);
-                  }
-                }}
-              >
-                <View className="flex-row justify-between items-start mb-3">
-                  <View className="flex-row items-center flex-1">
-                    <View className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center mr-3">
-                      <Text className="text-white font-bold">{index + 1}</Text>
+              .map((phase, index) => {
+                const phaseIsActive = phase.status === 'active';
+                const isLast = index === currentPeriodizationPhases.length - 1;
+                
+                return (
+                  <View key={phase.id} className="flex-row">
+                    {/* Timeline Tracker */}
+                    <View className="items-center mr-4">
+                      <View className={`w-8 h-8 rounded-full items-center justify-center border-2 ${
+                        phaseIsActive ? 'bg-orange-500 border-orange-400 shadow-lg shadow-orange-500/40' : 'bg-zinc-900 border-zinc-800'
+                      }`}>
+                        {phase.status === 'completed' ? (
+                          <Ionicons name="checkmark" size={16} color="white" />
+                        ) : (
+                          <Text className={`text-xs font-bold ${phaseIsActive ? 'text-white' : 'text-zinc-500'}`}>
+                            {index + 1}
+                          </Text>
+                        )}
+                      </View>
+                      {!isLast && <View className="w-[2px] flex-1 bg-dashed bg-zinc-800 my-2" />}
                     </View>
-                    <View className="flex-1">
-                      <Text className="text-white font-bold text-base">{phase.name}</Text>
-                      <Text className="text-zinc-500 text-xs mt-0.5">
-                        {phase.weekly_frequency}x/semana • {phase.training_split || 'Não definido'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View 
-                    className="px-2 py-1 rounded-md ml-2"
-                    style={{ 
-                      backgroundColor: phase.status === 'draft' ? '#FFB80020' : 
-                                      phase.status === 'active' ? '#00C9A720' : '#71717A20'
-                    }}
-                  >
-                    <Text 
-                      className="text-[10px] font-bold uppercase"
-                      style={{ 
-                        color: phase.status === 'draft' ? '#FFB800' : 
-                              phase.status === 'active' ? '#00C9A7' : '#71717A'
+
+                    {/* Phase Card */}
+                    <TouchableOpacity 
+                      className={`flex-1 mb-8 rounded-2xl overflow-hidden border ${
+                        phaseIsActive ? 'bg-zinc-900 border-orange-500/50' : 'bg-zinc-900/50 border-zinc-800'
+                      }`}
+                      style={phaseIsActive ? { 
+                        shadowColor: '#FF6B35',
+                        shadowOffset: { width: 0, height: 10 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 20,
+                        elevation: 5
+                      } : {}}
+                      onPress={() => {
+                        const targetStudentId = params.id || periodization?.student_id;
+                        if (params.id && params.periodizationId) {
+                          router.push(`/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as any);
+                        } else {
+                          router.push(`/(tabs)/workouts/periodizations/${periodizationId}/phases/${phase.id}` as any);
+                        }
                       }}
                     >
-                      {phase.status === 'draft' ? 'Rascunho' : phase.status === 'active' ? 'Ativo' : 'Concluído'}
-                    </Text>
+                      <View className="p-4">
+                        <View className="flex-row justify-between items-start mb-2">
+                          <View className="flex-1">
+                            <Text className={`text-lg font-bold font-display ${phaseIsActive ? 'text-white' : 'text-zinc-400'}`}>
+                              {phase.name}
+                            </Text>
+                            <View className="flex-row items-center mt-1">
+                              <Ionicons name="barbell-outline" size={12} color={phaseIsActive ? "#FF6B35" : "#52525B"} />
+                              <Text className="text-zinc-500 text-[10px] font-bold ml-1 uppercase">
+                                {phase.training_split || 'Split A/B'} • {phase.weekly_frequency}x por semana
+                              </Text>
+                            </View>
+                          </View>
+                          
+                          <View className={`px-2 py-1 rounded-lg ${
+                            phaseIsActive ? 'bg-orange-500/10' : 'bg-zinc-800'
+                          }`}>
+                            <Text className={`text-[9px] font-bold uppercase tracking-wider ${
+                              phaseIsActive ? 'text-orange-500' : 'text-zinc-500'
+                            }`}>
+                              {phase.status === 'active' ? 'Fase Atual' : getPhaseLabel(phase.type || 'meta')}
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <View className="flex-row items-center border-t border-zinc-800/50 pt-3 mt-1">
+                          <View className="flex-row items-center bg-zinc-800/40 px-2.5 py-1.5 rounded-lg border border-white/5">
+                            <Ionicons name="time-outline" size={12} color="#71717A" />
+                            <Text className="text-zinc-400 text-[10px] font-bold ml-2">
+                                {new Date(phase.start_date).toLocaleDateString('pt-BR', { month: 'short' })} - {new Date(phase.end_date).toLocaleDateString('pt-BR', { month: 'short' })}
+                            </Text>
+                          </View>
+                          
+                          <View className="flex-1" />
+                          
+                          <View className="flex-row items-center">
+                            <Text className="text-orange-500 text-[10px] font-bold mr-1">ACESSAR</Text>
+                            <Ionicons name="chevron-forward" size={12} color="#FF6B35" />
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                </View>
-                
-                <View className="flex-row items-center justify-between pl-11">
-                  <View className="flex-row items-center gap-3">
-                    <View className="flex-row items-center">
-                      <Ionicons name="calendar-outline" size={12} color="#71717A" />
-                      <Text className="text-zinc-500 text-xs ml-1">
-                        {new Date(phase.start_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                      </Text>
-                    </View>
-                    <Text className="text-zinc-600">→</Text>
-                    <View className="flex-row items-center">
-                      <Ionicons name="calendar-outline" size={12} color="#71717A" />
-                      <Text className="text-zinc-500 text-xs ml-1">
-                        {new Date(phase.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                      </Text>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color="#52525B" />
-                </View>
-              </TouchableOpacity>
-            ))}
+                );
+              })}
           </View>
 
           {!isStudentView && (

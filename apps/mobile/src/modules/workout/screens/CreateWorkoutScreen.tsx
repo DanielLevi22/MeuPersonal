@@ -15,6 +15,7 @@ export default function CreateWorkoutScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState('intermediate');
+  const [muscleGroup, setMuscleGroup] = useState('Peito');
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -27,10 +28,11 @@ export default function CreateWorkoutScreen() {
       return;
     }
 
-    const result = await createWorkout({
+    const result = await (createWorkout as any)({
       title,
       description,
       difficulty,
+      muscle_group: muscleGroup,
       personal_id: user.id,
     });
 
@@ -54,6 +56,15 @@ export default function CreateWorkoutScreen() {
     { value: 'beginner', label: 'Iniciante', color: '#00C9A7' },
     { value: 'intermediate', label: 'Intermediário', color: '#FFB800' },
     { value: 'advanced', label: 'Avançado', color: '#FF2E63' },
+  ];
+
+  const muscleOptions = [
+    { value: 'Peito', icon: 'fitness-outline' },
+    { value: 'Costas', icon: 'body-outline' },
+    { value: 'Pernas', icon: 'footsteps-outline' },
+    { value: 'Braços', icon: 'barbell-outline' },
+    { value: 'Ombros', icon: 'shield-outline' },
+    { value: 'Abdominais', icon: 'grid-outline' },
   ];
 
   return (
@@ -110,6 +121,39 @@ export default function CreateWorkoutScreen() {
                 multiline
                 textAlignVertical="top"
               />
+            </View>
+          </View>
+
+          <View className="mb-8">
+            <Text className="text-base font-bold text-white mb-3 font-display">
+              Grupo Muscular Dominante (Visual)
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {muscleOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => setMuscleGroup(option.value)}
+                  className={`px-4 py-3 rounded-xl border-2 flex-row items-center ${
+                    muscleGroup === option.value 
+                      ? 'bg-orange-500 border-orange-500' 
+                      : 'bg-zinc-900 border-zinc-800'
+                  }`}
+                >
+                  <Ionicons 
+                    name={option.icon as any} 
+                    size={16} 
+                    color={muscleGroup === option.value ? "#FFFFFF" : "#71717A"} 
+                    style={{ marginRight: 8 }} 
+                  />
+                  <Text 
+                    className={`font-bold text-xs font-display ${
+                      muscleGroup === option.value ? 'text-white' : 'text-zinc-500'
+                    }`}
+                  >
+                    {option.value}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 

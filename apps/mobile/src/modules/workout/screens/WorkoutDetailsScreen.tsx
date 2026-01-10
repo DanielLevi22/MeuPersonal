@@ -1,23 +1,45 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, ImageBackground, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+    FadeIn,
+    FadeInDown
+} from 'react-native-reanimated';
 import { useWorkoutStore } from '../store/workoutStore';
+
+const { width } = Dimensions.get('window');
+
+// Asset Mapping
+const MUSCLE_IMAGES: Record<string, any> = {
+  'Peito': require('../../../../assets/workouts/chest.png'),
+  'Costas': require('../../../../assets/workouts/back.png'),
+  'Pernas': require('../../../../assets/workouts/legs.png'),
+  'Braços': require('../../../../assets/workouts/arms.png'),
+  'Ombros': require('../../../../assets/workouts/shoulders.png'),
+  'Abdominais': require('../../../../assets/workouts/abs.png'),
+  'Chest': require('../../../../assets/workouts/chest.png'),
+  'Back': require('../../../../assets/workouts/back.png'),
+  'Legs': require('../../../../assets/workouts/legs.png'),
+  'Arms': require('../../../../assets/workouts/arms.png'),
+  'Shoulders': require('../../../../assets/workouts/shoulders.png'),
+  'Abs': require('../../../../assets/workouts/abs.png'),
+  'Geral': require('../../../../assets/workouts/back.png'), // Fallback
+};
 
 export default function WorkoutDetailsScreen() {
   const { id, workoutId } = useLocalSearchParams();
   const router = useRouter();
   const { user, accountType } = useAuthStore();
-  const { workouts, fetchWorkoutsForPhase, isLoading, selectedExercises, addWorkoutItems, clearSelectedExercises, fetchWorkoutById } = useWorkoutStore();
+  const { workouts, isLoading, fetchWorkoutById } = useWorkoutStore();
   const [workout, setWorkout] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
 
-  // Use workoutId if available (nested route), otherwise id (direct route)
   const targetId = (workoutId || id) as string;
 
-  // Find workout from store or fetch it
   useEffect(() => {
     if (!targetId) return;
 
@@ -25,19 +47,44 @@ export default function WorkoutDetailsScreen() {
     if (found) {
       setWorkout(found);
     } else {
-      // If not found in current list, fetch it specifically
       fetchWorkoutById(targetId).then(data => {
-        if (data) {
-          setWorkout(data);
-        } else {
-          setNotFound(true);
-        }
+        if (data) setWorkout(data);
+        else setNotFound(true);
       });
     }
   }, [workouts, targetId]);
 
-  // Handle returning from SelectExercisesScreen
-  // Removed useFocusEffect for adding exercises - moved to SelectExercisesScreen
+  // Identify unique muscle groups for the slideshow
+  const muscleGroups = useMemo(() => {
+    let groups: string[] = [];
+    
+    // 1. Add dominant muscle group if exists
+    if (workout?.muscle_group) {
+      groups.push(workout.muscle_group);
+    }
+    
+    // 2. Add muscle groups from exercises
+    if (workout?.items) {
+      const exerciseGroups = workout.items
+        .map((item: any) => item.exercise?.muscle_group)
+        .filter((g: string) => g && g !== workout.muscle_group);
+      groups = [...groups, ...new Set(exerciseGroups)] as string[];
+    }
+    
+    return groups.length > 0 ? groups : ['Geral'];
+  }, [workout]);
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (muscleGroups.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % muscleGroups.length);
+    }, 4000);
+    
+    return () => clearInterval(interval);
+  }, [muscleGroups]);
 
   if (notFound) {
     return (
@@ -67,129 +114,151 @@ export default function WorkoutDetailsScreen() {
     );
   }
 
-  if (!workout) return null; // Should be handled by notFound, but just in case
+  if (!workout) return null;
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner': return '#00C9A7'; // Emerald
-      case 'intermediate': return '#FFB800'; // Gold
-      case 'advanced': return '#FF2E63'; // Red
-      default: return '#00D9FF'; // Cyan
-    }
+  const renderExerciseItem = ({ item, index }: { item: any, index: number }) => {
+    const muscleGroup = item.exercise?.muscle_group || 'Geral';
+    const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES['Geral'];
+
+    return (
+      <Animated.View 
+        entering={FadeInDown.delay(index * 100).duration(500)}
+        className="mb-4"
+      >
+        <ImageBackground
+          source={bgImage}
+          className="rounded-2xl overflow-hidden border border-zinc-800 h-40"
+          resizeMode="cover"
+        >
+          <LinearGradient
+            colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.85)']}
+            className="flex-1 p-4 justify-between"
+          >
+            <View className="flex-row justify-between items-start">
+              <View className="bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/30">
+                <Text className="text-orange-500 text-[10px] font-bold uppercase tracking-wider">
+                  {muscleGroup}
+                </Text>
+              </View>
+              <View className="w-8 h-8 rounded-lg bg-black/40 items-center justify-center border border-white/10">
+                <Text className="text-white font-bold">{index + 1}</Text>
+              </View>
+            </View>
+
+            <View>
+              <Text className="text-white text-lg font-bold font-display mb-2 drop-shadow-lg">
+                {item.exercise?.name || 'Exercício'}
+              </Text>
+              
+              <View className="flex-row items-center gap-3">
+                <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
+                  <Ionicons name="repeat-outline" size={14} color="#FF6B35" style={{ marginRight: 4 }} />
+                  <Text className="text-zinc-200 text-xs font-bold">{item.sets} x {item.reps}</Text>
+                </View>
+                
+                <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
+                  <Ionicons name="timer-outline" size={14} color="#FF6B35" style={{ marginRight: 4 }} />
+                  <Text className="text-zinc-200 text-xs font-bold">{item.rest_time}s</Text>
+                </View>
+
+                {item.weight && (
+                  <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
+                    <Ionicons name="barbell-outline" size={14} color="#FF6B35" style={{ marginRight: 4 }} />
+                    <Text className="text-zinc-200 text-xs font-bold">{item.weight}kg</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+      </Animated.View>
+    );
   };
-
-  const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner': return 'Iniciante';
-      case 'intermediate': return 'Intermediário';
-      case 'advanced': return 'Avançado';
-      default: return difficulty;
-    }
-  };
-
-  const renderExerciseItem = ({ item, index }: { item: any, index: number }) => (
-    <View className="bg-zinc-900 rounded-2xl p-4 mb-4 border border-zinc-800">
-      <View className="flex-row items-center mb-3">
-        <View className="w-8 h-8 rounded-full bg-orange-500/20 items-center justify-center mr-3">
-          <Text className="text-orange-500 font-bold">{index + 1}</Text>
-        </View>
-        <View className="flex-1">
-          <Text className="text-white text-base font-bold font-display">
-            {item.exercise?.name || 'Exercício'}
-          </Text>
-          <Text className="text-zinc-500 text-xs font-sans">
-            {item.exercise?.muscle_group || 'Geral'}
-          </Text>
-        </View>
-      </View>
-
-      <View className="flex-row gap-2">
-        <View className="flex-1 bg-zinc-950 p-2 rounded-xl border border-zinc-800 items-center">
-          <Text className="text-zinc-500 text-[10px] font-bold mb-1 uppercase">Séries</Text>
-          <Text className="text-white font-bold">{item.sets}</Text>
-        </View>
-        <View className="flex-1 bg-zinc-950 p-2 rounded-xl border border-zinc-800 items-center">
-          <Text className="text-zinc-500 text-[10px] font-bold mb-1 uppercase">Reps</Text>
-          <Text className="text-white font-bold">{item.reps}</Text>
-        </View>
-        <View className="flex-1 bg-zinc-950 p-2 rounded-xl border border-zinc-800 items-center">
-          <Text className="text-zinc-500 text-[10px] font-bold mb-1 uppercase">Descanso</Text>
-          <Text className="text-white font-bold">{item.rest_time}s</Text>
-        </View>
-        {item.weight && (
-          <View className="flex-1 bg-zinc-950 p-2 rounded-xl border border-zinc-800 items-center">
-            <Text className="text-zinc-500 text-[10px] font-bold mb-1 uppercase">Carga</Text>
-            <Text className="text-white font-bold">{item.weight}kg</Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
 
   return (
     <ScreenLayout>
       <View className="flex-1">
-        {/* Header */}
-        <View className="items-center pt-8 pb-8 px-6 bg-zinc-900 rounded-b-[32px] border-b border-zinc-800 mb-6">
-          <View className="flex-row items-center justify-between w-full mb-6">
-            <TouchableOpacity 
-              onPress={() => router.back()} 
-              className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
-            >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View className="flex-row gap-2">
-              <TouchableOpacity 
-                onPress={() => router.push({
-                  pathname: '/(tabs)/workouts/select-exercises',
-                  params: { workoutId: workout.id, studentId: id }
-                })}
-                className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800"
-              >
-                <Ionicons name="add" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View className="w-20 h-20 rounded-full bg-orange-500/10 items-center justify-center mb-4 border-2 border-orange-500/20">
-            <Ionicons name="barbell" size={40} color="#FF6B35" />
-          </View>
+        {/* Animated Header */}
+        <Animated.View 
+          entering={FadeIn.duration(800)}
+          className="h-80 w-full relative"
+        >
+          <Animated.Image
+            key={currentImageIndex}
+            source={MUSCLE_IMAGES[muscleGroups[currentImageIndex]] || MUSCLE_IMAGES['Geral']}
+            className="absolute inset-0 w-full h-full"
+            resizeMode="cover"
+          />
           
-          <Text className="text-2xl font-extrabold text-white mb-2 font-display text-center">
-            {workout.title}
-          </Text>
-          
-          <View 
-            className="px-3 py-1 rounded-full mb-4"
-            style={{ backgroundColor: `${getDifficultyColor(workout.difficulty)}20` }}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0)', 'rgba(0,0,0,1)']}
+            className="absolute inset-0 flex-1 px-6 pb-8 justify-between"
           >
-            <Text 
-              className="text-xs font-bold"
-              style={{ color: getDifficultyColor(workout.difficulty) }}
-            >
-              {getDifficultyLabel(workout.difficulty)}
-            </Text>
-          </View>
+            {/* Header Controls */}
+            <View className="flex-row items-center justify-between pt-8">
+              <TouchableOpacity 
+                onPress={() => router.back()} 
+                className="bg-black/40 p-2.5 rounded-xl border border-white/10"
+              >
+                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              
+              <View className="flex-row gap-2">
+                {accountType === 'professional' && (
+                  <TouchableOpacity 
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/workouts/select-exercises',
+                      params: { workoutId: workout.id, studentId: id }
+                    })}
+                    className="bg-orange-500 p-2.5 rounded-xl border border-orange-400"
+                  >
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
 
-          <Text className="text-zinc-400 font-sans text-center px-4">
-            {workout.description || 'Sem descrição'}
-          </Text>
-        </View>
-
-
+            {/* Workout Info */}
+            <View>
+              <View className="flex-row items-center gap-2 mb-2">
+                {muscleGroups.map((group, idx) => (
+                  <View key={idx} className="bg-white/10 px-2 py-1 rounded-md border border-white/10">
+                    <Text className="text-zinc-300 text-[10px] font-bold uppercase">{group}</Text>
+                  </View>
+                ))}
+              </View>
+              
+              <Text className="text-3xl font-extrabold text-white mb-2 font-display">
+                {workout.title}
+              </Text>
+              
+              <Text className="text-zinc-400 font-sans text-sm line-clamp-2">
+                {workout.description || 'Foco em hipertrofia e definição muscular.'}
+              </Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Exercises List */}
-        <View className="flex-1 px-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-lg font-bold font-display tracking-wide">
-              EXERCÍCIOS
-            </Text>
-            <TouchableOpacity onPress={() => router.push({
-              pathname: '/(tabs)/workouts/select-exercises',
-              params: { workoutId: workout.id, studentId: id }
-            })}>
-              <Text className="text-orange-500 font-bold text-sm">Adicionar</Text>
-            </TouchableOpacity>
+        <View className="flex-1 px-6 -mt-4 bg-black rounded-t-[32px] pt-6">
+          <View className="flex-row justify-between items-center mb-6">
+            <View>
+              <Text className="text-white text-xl font-bold font-display tracking-tight">
+                Lista de Exercícios
+              </Text>
+              <Text className="text-zinc-500 text-xs font-sans">
+                {workout.items?.length || 0} movimentos planejados
+              </Text>
+            </View>
+            
+            {accountType === 'professional' && (
+              <TouchableOpacity onPress={() => router.push({
+                pathname: '/(tabs)/workouts/select-exercises',
+                params: { workoutId: workout.id, studentId: id }
+              })}>
+                <Text className="text-orange-500 font-bold text-sm">Editar</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           <FlatList
@@ -199,23 +268,24 @@ export default function WorkoutDetailsScreen() {
             contentContainerStyle={{ paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <View className="items-center justify-center py-10">
-                <Text className="text-zinc-500 font-sans mb-4">Nenhum exercício cadastrado.</Text>
-                <TouchableOpacity 
-                  onPress={() => router.push({
-                    pathname: '/(tabs)/workouts/select-exercises',
-                    params: { workoutId: workout.id, studentId: id }
-                  })}
-                  className="bg-zinc-800 px-6 py-3 rounded-xl"
-                >
-                  <Text className="text-white font-bold">Adicionar Exercícios</Text>
-                </TouchableOpacity>
+              <View className="items-center justify-center py-20 bg-zinc-900/50 rounded-3xl border border-zinc-800">
+                <Ionicons name="barbell-outline" size={48} color="#3F3F46" />
+                <Text className="text-zinc-500 font-sans mt-4 text-center">Nenhum exercício cadastrado ainda.</Text>
+                {accountType === 'professional' && (
+                  <TouchableOpacity 
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/workouts/select-exercises',
+                      params: { workoutId: workout.id, studentId: id }
+                    })}
+                    className="mt-6 bg-zinc-800 px-8 py-3 rounded-2xl border border-zinc-700"
+                  >
+                    <Text className="text-white font-bold">Adicionar</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             }
           />
         </View>
-
-
       </View>
     </ScreenLayout>
   );
