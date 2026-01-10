@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import AddFoodQuantityModal from '@/components/AddFoodQuantityModal';
+import { IconButton } from '@/components/ui/IconButton';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { StatusModal } from '@/components/ui/StatusModal';
 import { colors as brandColors } from '@/constants/colors';
@@ -489,22 +490,17 @@ export default function DietDetailsScreen() {
 
           {/* Navigation Row */}
           <View className="flex-row items-center justify-between w-full mb-2 z-20 h-11">
-            <TouchableOpacity 
+            <IconButton 
+              icon="arrow-back" 
               onPress={() => router.back()} 
-              className="p-2.5 rounded-xl border"
-              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
-            >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+            />
             
             <View className="flex-row gap-2">
-              <TouchableOpacity 
+              <IconButton 
+                icon="pencil" 
                 onPress={() => setStatusModal({ visible: true, title: 'Em breve', message: 'Edição em desenvolvimento', type: 'info' })}
-                className="p-2.5 rounded-xl border"
-                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
-              >
-                <Ionicons name="pencil" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
+                size={20}
+              />
             </View>
           </View>
 

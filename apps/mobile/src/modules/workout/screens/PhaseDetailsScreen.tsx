@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { IconButton } from '@/components/ui/IconButton';
 import { PremiumCard } from '@/components/ui/PremiumCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -290,12 +291,10 @@ export default function PhaseDetailsScreen() {
     <ScreenLayout>
       <View className="px-6 pt-4 pb-4">
         <View className="flex-row items-center justify-between mb-8">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800 shadow-sm"
-          >
-            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          <IconButton 
+            icon="chevron-back"
+            onPress={() => router.back()}
+          />
           
           <View className="items-center">
             <Text className="text-white text-2xl font-extrabold font-display tracking-tight">{phase.name}</Text>
@@ -306,22 +305,18 @@ export default function PhaseDetailsScreen() {
 
           {!isStudentView ? (
             <View className="flex-row gap-2">
-              <TouchableOpacity 
+              <IconButton 
+                icon={phase.status === 'draft' ? 'document-text-outline' : phase.status === 'active' ? 'play-outline' : 'checkmark-done-outline'}
                 onPress={() => setShowStatusModalMenu(true)}
-                className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800"
-              >
-                <Ionicons 
-                  name={phase.status === 'draft' ? 'document-text-outline' : phase.status === 'active' ? 'play-outline' : 'checkmark-done-outline'} 
-                  size={20} 
-                  color={phase.status === 'draft' ? colors.status.warning : phase.status === 'active' ? colors.status.success : colors.text.muted} 
-                />
-              </TouchableOpacity>
-              <TouchableOpacity 
+                iconColor={phase.status === 'draft' ? colors.status.warning : phase.status === 'active' ? colors.status.success : colors.text.muted}
+                size={20}
+              />
+              <IconButton 
+                icon="trash-outline"
+                variant="danger"
                 onPress={handleDeletePhase}
-                className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800"
-              >
-                <Ionicons name="trash-outline" size={20} color={colors.status.error} />
-              </TouchableOpacity>
+                size={20}
+              />
             </View>
           ) : (
             <View className="w-12" />

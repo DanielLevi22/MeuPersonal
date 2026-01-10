@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/auth';
+import { IconButton } from '@/components/ui/IconButton';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -196,24 +197,21 @@ export default function WorkoutDetailsScreen() {
           >
             {/* Header Controls */}
             <View className="flex-row items-center justify-between pt-8">
-              <TouchableOpacity 
+              <IconButton 
+                icon="arrow-back" 
                 onPress={() => router.back()} 
-                className="bg-black/40 p-2.5 rounded-xl border border-white/10"
-              >
-                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
+              />
               
               <View className="flex-row gap-2">
                 {accountType === 'professional' && (
-                  <TouchableOpacity 
+                  <IconButton 
+                    icon="add" 
+                    variant="solid"
                     onPress={() => router.push({
                       pathname: '/(tabs)/workouts/select-exercises',
                       params: { workoutId: workout.id, studentId: id }
                     })}
-                    className="bg-orange-500 p-2.5 rounded-xl border border-orange-400"
-                  >
-                    <Ionicons name="add" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
+                  />
                 )}
               </View>
             </View>

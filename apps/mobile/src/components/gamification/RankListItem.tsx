@@ -1,5 +1,4 @@
 import { colors as brandColors } from '@/constants/colors';
-import { Ionicons } from '@expo/vector-icons';
 import { Image, Text, View } from 'react-native';
 
 interface RankListItemProps {
@@ -14,54 +13,60 @@ interface RankListItemProps {
 }
 
 export function RankListItem({ item, isCurrentUser }: RankListItemProps) {
+  const isTopThree = item.rank <= 3;
+  const rankColor = item.rank === 1 ? 'text-yellow-400' :
+                    item.rank === 2 ? 'text-zinc-300' :
+                    item.rank === 3 ? 'text-orange-400' : 'text-zinc-500';
+
   return (
     <View 
-      className={`flex-row items-center justify-between py-3 px-4 rounded-xl mb-2 border ${
-        isCurrentUser ? 'bg-orange-500/10 border-orange-500/30' : 'bg-zinc-900 border-zinc-800'
+      className={`flex-row items-center justify-between py-4 px-5 rounded-2xl mb-3 border ${
+        isCurrentUser ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-zinc-900 border-zinc-800'
       }`}
-      style={isCurrentUser ? { borderColor: brandColors.primary.start } : {}}
     >
       <View className="flex-row items-center flex-1">
-        <Text className={`text-base font-bold w-8 ${isCurrentUser ? 'text-white' : 'text-zinc-400'}`}>
-          {item.rank}
+        <Text className={`text-lg font-black italic w-10 text-center mr-2 ${rankColor}`}>
+            #{item.rank}
         </Text>
         
         {item.avatar_url ? (
           <Image 
             source={{ uri: item.avatar_url }} 
-            className="w-9 h-9 rounded-full mr-3 border"
-            style={{ borderColor: isCurrentUser ? brandColors.primary.start : brandColors.border.dark }} 
+            className="w-10 h-10 rounded-full mr-4 border-2"
+            style={{ borderColor: isCurrentUser ? brandColors.primary.start : '#27272a' }} 
           />
         ) : (
           <View 
-            className="w-9 h-9 rounded-full mr-3 items-center justify-center border"
+            className="w-10 h-10 rounded-full mr-4 items-center justify-center border-2"
             style={{ 
               backgroundColor: isCurrentUser ? brandColors.primary.start + '20' : brandColors.background.elevated, 
-              borderColor: isCurrentUser ? brandColors.primary.start : brandColors.border.dark 
+              borderColor: isCurrentUser ? brandColors.primary.start : '#27272a' 
             }}
           >
             <Text className="text-white font-bold text-sm">{item.name.charAt(0)}</Text>
           </View>
         )}
         
-        <Text 
-          className={`text-sm font-semibold flex-1 ${isCurrentUser ? 'text-white' : 'text-zinc-200'}`} 
-          numberOfLines={1}
-        >
-          {item.name} {isCurrentUser && '(Você)'}
-        </Text>
+        <View className="flex-1 justify-center">
+            <Text 
+            className={`text-base font-bold ${isCurrentUser ? 'text-white' : 'text-zinc-100'}`} 
+            numberOfLines={1}
+            >
+            {item.name} {isCurrentUser && <Text className="text-yellow-500 text-xs font-normal"> (Você)</Text>}
+            </Text>
+        </View>
       </View>
       
-      <View className="flex-row items-center">
+      <View className="items-end">
         <Text 
-          className="text-sm font-bold"
+          className="text-base font-black italic"
           style={{ color: brandColors.primary.start }}
         >
-          {item.points} pts
+          {item.points}
         </Text>
-        {isCurrentUser && (
-          <Ionicons name="flame" size={16} color={brandColors.primary.start} style={{ marginLeft: 4 }} />
-        )}
+        <Text className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            PTS
+        </Text>
       </View>
     </View>
   );

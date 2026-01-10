@@ -87,7 +87,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ranking"
         options={{
-          href: null,
+          title: 'Ranking',
+          href: '/ranking',
         }}
       />
 

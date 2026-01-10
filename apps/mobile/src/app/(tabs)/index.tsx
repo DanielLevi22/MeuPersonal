@@ -138,10 +138,18 @@ export default function DashboardScreen() {
     );
   }
 
-  // Personal Trainer Dashboard (Legacy View)
+  // Personal Trainer Dashboard (Legacy View - NOW PREMIUM)
   if (accountType === 'professional' && !useAuthStore.getState().isMasquerading) {
     return (
       <ScreenLayout>
+        {/* Ambient Top Light - Made extremely subtle */}
+        <View className="absolute top-0 w-full h-[200px] pointer-events-none opacity-20">
+           <LinearGradient
+              colors={[brandColors.primary.start, 'transparent']}
+              style={{ flex: 1 }}
+           />
+        </View>
+
         <ScrollView
              contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
              refreshControl={
@@ -150,11 +158,11 @@ export default function DashboardScreen() {
         >
           <View className="mb-8 flex-row justify-between items-start">
             <View>
-              <Text className="text-zinc-500 text-[13px] font-bold mb-1 uppercase tracking-widest font-sans ml-1">
+              <Text className="text-zinc-500 text-[12px] font-bold mb-1 uppercase tracking-widest font-sans ml-1">
                 Central de Comando
               </Text>
               <Text className="text-4xl font-extrabold text-white mb-2 font-display">
-                Dashboard 🔥
+                Dashboard
               </Text>
             </View>
             {renderHeaderAvatar()}
@@ -163,71 +171,99 @@ export default function DashboardScreen() {
           <View className="gap-y-4">
             {/* Stats Grid */}
             <View className="flex-row gap-4">
+              {/* Students Card - Clean Dark */}
               <TouchableOpacity 
                 onPress={() => router.push('/(tabs)/students')}
                 activeOpacity={0.8}
                 className="flex-1"
               >
-                <LinearGradient
-                  colors={brandColors.gradients.secondary}
-                  className="rounded-3xl p-6 h-48 justify-between relative overflow-hidden"
+                <View
+                  className="rounded-[24px] p-5 h-44 justify-between relative overflow-hidden border bg-zinc-900"
+                  style={{ borderColor: brandColors.border.default }}
                 >
-                  <Ionicons name="people" size={80} color="rgba(255,255,255,0.1)" style={{ position: 'absolute', right: -10, bottom: -10 }} />
-                  <View className="bg-white/20 self-start p-2 rounded-xl">
-                    <Ionicons name="people" size={20} color="white" />
+                  <View className="bg-zinc-800 self-start p-2.5 rounded-xl">
+                    <Ionicons name="people" size={20} color={brandColors.secondary.main} />
                   </View>
                   <View>
-                    <Text className="text-white text-5xl font-black font-display">
+                    <Text className="text-white text-4xl font-black font-display tracking-tight">
                       {students.length}
                     </Text>
-                    <Text className="text-white/80 text-[10px] font-bold tracking-widest uppercase font-sans">
+                    <Text className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase font-sans mt-1">
                       Alunos Ativos
                     </Text>
                   </View>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
 
+              {/* Workouts Card - Clean Dark */}
               <TouchableOpacity 
                 onPress={() => router.push('/(tabs)/workouts')}
                 activeOpacity={0.8}
                 className="flex-1"
               >
-                <LinearGradient
-                  colors={brandColors.gradients.primary}
-                  className="rounded-3xl p-6 h-48 justify-between relative overflow-hidden"
+                <View
+                  className="rounded-[24px] p-5 h-44 justify-between relative overflow-hidden border bg-zinc-900"
+                  style={{ borderColor: brandColors.border.default }}
                 >
-                  <Ionicons name="barbell" size={80} color="rgba(255,255,255,0.1)" style={{ position: 'absolute', right: -10, bottom: -10 }} />
-                  <View className="bg-white/20 self-start p-2 rounded-xl">
-                    <Ionicons name="barbell" size={20} color="white" />
+                  <View className="bg-zinc-800 self-start p-2.5 rounded-xl">
+                    <Ionicons name="barbell" size={20} color={brandColors.primary.start} />
                   </View>
                   <View>
-                    <Text className="text-white text-5xl font-black font-display">
+                    <Text className="text-white text-4xl font-black font-display tracking-tight">
                       {workouts.length}
                     </Text>
-                    <Text className="text-white/80 text-[10px] font-bold tracking-widest uppercase font-sans">
-                      Modelos de Treino
+                    <Text className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase font-sans mt-1">
+                      Modelos
                     </Text>
                   </View>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
 
-            {/* Quick Action - Glass Style */}
+            {/* Ranking Card - Full Width */}
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/ranking')}
+              activeOpacity={0.8}
+            >
+              <View
+                className="rounded-[24px] p-5 flex-row items-center justify-between border bg-zinc-900"
+                style={{ borderColor: brandColors.border.default }}
+              >
+                <View className="flex-row items-center gap-4">
+                   <View className="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20">
+                     <Ionicons name="trophy" size={24} color="#EAB308" />
+                   </View>
+                   <View>
+                     <Text className="text-white text-lg font-black font-display tracking-tight">
+                       Ranking de Elite 🏆
+                     </Text>
+                     <Text className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase font-sans">
+                       Competição Semanal
+                     </Text>
+                   </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={brandColors.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Quick Action - Premium Solid Button */}
             <TouchableOpacity 
               onPress={() => router.push('/(tabs)/students/create')}
               activeOpacity={0.8}
-              className="mt-2"
+              className="mt-2 text-center"
             >
-              <View 
-                className="rounded-3xl p-6 flex-row items-center justify-center border-2 border-dashed"
-                style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.default }}
-              >
-                <View className="bg-orange-500/10 p-3 rounded-full mr-4 border border-orange-500/20">
-                  <Ionicons name="add-circle" size={24} color={brandColors.primary.start} />
-                </View>
-                <Text className="text-white text-lg font-bold font-display">
-                   Novo Aluno
-                </Text>
+              <View style={{ borderRadius: 24, overflow: 'hidden' }}>
+                  <LinearGradient
+                     colors={[brandColors.primary.start, brandColors.primary.end]}
+                     start={{ x: 0, y: 0 }}
+                     end={{ x: 1, y: 0 }}
+                     className="p-5 flex-row items-center justify-center shadow-lg shadow-orange-500/30"
+                  >
+                    <Ionicons name="person-add" size={22} color="white" style={{marginRight: 10}} />
+                    <Text className="text-white text-base font-black font-display uppercase tracking-widest">
+                       Novo Aluno
+                    </Text>
+                  </LinearGradient>
               </View>
             </TouchableOpacity>
           </View>
@@ -332,6 +368,33 @@ export default function DashboardScreen() {
         {/* Weekly Consistency */}
         <Animated.View entering={FadeInDown.delay(250).springify()} className="mb-8">
            <WeeklyProgress weeklyGoals={weeklyGoals} />
+
+           {/* Ranking Entry for Students */}
+           <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/ranking')}
+              activeOpacity={0.8}
+              className="mt-4"
+            >
+              <View
+                className="rounded-[24px] p-5 flex-row items-center justify-between border bg-zinc-900"
+                style={{ borderColor: brandColors.border.default }}
+              >
+                <View className="flex-row items-center gap-4">
+                   <View className="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20">
+                     <Ionicons name="trophy" size={24} color="#EAB308" />
+                   </View>
+                   <View>
+                     <Text className="text-white text-lg font-black font-display tracking-tight">
+                       Ranking de Elite
+                     </Text>
+                     <Text className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase font-sans">
+                       Veja sua posição
+                     </Text>
+                   </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={brandColors.text.muted} />
+              </View>
+            </TouchableOpacity>
         </Animated.View>
 
         {/* Health Data (Bento Activity) */}

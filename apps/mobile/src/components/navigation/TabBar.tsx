@@ -76,6 +76,7 @@ const TabItem = memo(({ route, state, navigation, isDragging }: {
     case 'workouts': iconName = isFocused ? 'dumbbell' : 'dumbbell'; break;
     case 'nutrition': iconName = isFocused ? 'silverware-fork-knife' : 'silverware-fork-knife'; break;
     case 'progress': iconName = isFocused ? 'chart-line' : 'chart-line-variant'; break;
+    case 'ranking': iconName = isFocused ? 'trophy' : 'trophy-outline'; break;
     case 'students': iconName = isFocused ? 'account-group' : 'account-group-outline'; break;
   }
 
@@ -102,7 +103,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { accountType, isMasquerading } = useAuthStore();
   const router = useRouter();
   
-  const routeOrder = ['index', 'workouts', 'nutrition', 'progress', 'students'];
+  const routeOrder = ['index', 'workouts', 'students', 'nutrition', 'progress', 'ranking'];
   
   const sortedRoutes = useMemo(() => state.routes
     .filter((r: any) => {
