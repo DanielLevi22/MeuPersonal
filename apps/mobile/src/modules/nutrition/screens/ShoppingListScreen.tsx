@@ -1,20 +1,23 @@
 import { Button } from '@/components/ui/Button';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusModal } from '@/components/ui/StatusModal';
+import { colors as brandColors } from '@/constants/colors';
 import { useNutritionStore } from '@/modules/nutrition/routes';
 import { ShoppingCategory, ShoppingListService } from '@/modules/nutrition/services/ShoppingListService';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const CATEGORY_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  'Hortifruti': { icon: 'leaf', color: '#4ADE80', bg: 'bg-green-500/10' }, // Green
-  'Carnes & Proteínas': { icon: 'restaurant', color: '#F87171', bg: 'bg-red-500/10' }, // Red
-  'Laticínios & Frios': { icon: 'water', color: '#60A5FA', bg: 'bg-blue-500/10' }, // Blue
-  'Mercearia': { icon: 'basket', color: '#FBBF24', bg: 'bg-amber-500/10' }, // Amber
-  'Bebidas': { icon: 'wine', color: '#A78BFA', bg: 'bg-violet-500/10' }, // Violet
-  'Suplementos': { icon: 'flash', color: '#22D3EE', bg: 'bg-cyan-500/10' }, // Cyan
-  'Outros': { icon: 'cart', color: '#A1A1AA', bg: 'bg-zinc-500/10' } // Zinc
+  'Hortifruti': { icon: 'leaf', color: '#4ADE80', bg: 'rgba(74, 222, 128, 0.1)' },
+  'Carnes & Proteínas': { icon: 'restaurant', color: '#F87171', bg: 'rgba(248, 113, 113, 0.1)' },
+  'Laticínios & Frios': { icon: 'water', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.1)' },
+  'Mercearia': { icon: 'basket', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.1)' },
+  'Bebidas': { icon: 'wine', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.1)' },
+  'Suplementos': { icon: 'flash', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.1)' },
+  'Outros': { icon: 'cart', color: '#A1A1AA', bg: 'rgba(161, 161, 170, 0.1)' }
 };
 
 export default function ShoppingListScreen() {
@@ -34,6 +37,18 @@ export default function ShoppingListScreen() {
   /* Shopping Mode State */
   const [isShoppingMode, setIsShoppingMode] = useState(false);
 
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
   const handleAskAssistant = async (type: 'recipes' | 'analysis' | 'tips' | 'meal_prep' | 'cooking_guide') => {
       setAssistantLoading(true);
       setAssistantResult(null);
@@ -50,56 +65,73 @@ export default function ShoppingListScreen() {
   const AIAssistantModal = () => (
       <View className="absolute inset-0 bg-black/80 z-50 justify-end">
           <TouchableOpacity className="flex-1" onPress={() => setShowAssistant(false)} />
-          <View className="bg-zinc-900 rounded-t-3xl border-t border-zinc-800 p-6 h-[80%]">
-              <View className="flex-row items-center justify-between mb-6">
-                  <View className="flex-row items-center gap-2">
-                       <View className="bg-purple-500/20 p-2 rounded-full">
-                          <Ionicons name="sparkles" size={20} color="#A855F7" />
+          <View 
+            className="rounded-t-[40px] p-8 h-[85%] border-t"
+            style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+          >
+              <View className="flex-row items-center justify-between mb-8">
+                  <View className="flex-row items-center gap-3">
+                       <LinearGradient
+                          colors={brandColors.gradients.primary}
+                          className="p-2.5 rounded-2xl"
+                       >
+                          <Ionicons name="sparkles" size={24} color="#FFF" />
+                       </LinearGradient>
+                       <View>
+                        <Text className="text-white text-2xl font-black font-display tracking-tight italic">NutriAI</Text>
+                        <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Powered by GPT-4o</Text>
                        </View>
-                       <Text className="text-white text-xl font-bold font-display">Assistente Inteligente</Text>
                   </View>
-                  <TouchableOpacity onPress={() => setShowAssistant(false)}>
-                      <Ionicons name="close-circle" size={24} color="#52525B" />
+                  <TouchableOpacity onPress={() => setShowAssistant(false)} className="bg-white/5 p-2 rounded-full border border-white/10">
+                      <Ionicons name="close" size={24} color={brandColors.text.primary} />
                   </TouchableOpacity>
               </View>
 
-              <Text className="text-zinc-400 mb-6 font-medium">
-                  Use a IA para te ajudar com sua lista de compras. O que você deseja saber?
+              <Text className="text-zinc-400 mb-8 font-medium italic">
+                  Olá! Analisei sua lista de compras. Como posso otimizar sua jornada nutricional hoje?
               </Text>
 
-              <View className="flex-row gap-3 mb-6 flex-wrap">
+              <View className="flex-row gap-2 mb-8 flex-wrap">
                   {[
-                      { id: 'recipes', label: 'Receitas', icon: 'restaurant' as const },
-                      { id: 'analysis', label: 'Análise', icon: 'stats-chart' as const },
-                      { id: 'tips', label: 'Dicas', icon: 'bulb' as const },
-                      { id: 'meal_prep', label: 'Meal Prep', icon: 'calendar' as const },
-                      { id: 'cooking_guide', label: 'Aprender a Cozinhar', icon: 'school' as const }
+                      { id: 'recipes', label: 'RECEITAS', icon: 'restaurant' as const },
+                      { id: 'analysis', label: 'ANÁLISE', icon: 'stats-chart' as const },
+                      { id: 'tips', label: 'DICAS', icon: 'bulb' as const },
+                      { id: 'meal_prep', label: 'MEAL PREP', icon: 'calendar' as const },
+                      { id: 'cooking_guide', label: 'COZINHAR', icon: 'school' as const }
                   ].map((opt) => (
                       <TouchableOpacity 
                           key={opt.id}
                           onPress={() => handleAskAssistant(opt.id as any)}
-                          className={`items-center justify-center p-3 rounded-xl border flex-1 min-w-[80px] ${assistantResult ? 'bg-zinc-800 border-zinc-700' : 'bg-purple-900/10 border-purple-500/30'}`}
+                          className="items-center justify-center py-3 px-4 rounded-2xl border"
+                          style={{ 
+                            backgroundColor: brandColors.background.primary, 
+                            borderColor: brandColors.border.dark
+                          }}
                       >
-                          <Ionicons name={opt.icon} size={20} color="#DDD" className="mb-1" />
-                          <Text className="text-zinc-300 text-[10px] font-bold text-center">{opt.label}</Text>
+                          <Ionicons name={opt.icon} size={18} color={brandColors.primary.start} className="mb-2" />
+                          <Text className="text-zinc-300 text-[9px] font-black uppercase tracking-widest text-center">{opt.label}</Text>
                       </TouchableOpacity>
                   ))}
               </View>
 
-              <ScrollView className="flex-1 bg-zinc-950/50 rounded-xl p-4 border border-zinc-800">
+              <ScrollView 
+                className="flex-1 rounded-3xl p-6 border shadow-inner"
+                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+              >
                   {assistantLoading ? (
-                      <View className="items-center justify-center py-10">
-                          <ActivityIndicator color="#A855F7" size="large" />
-                          <Text className="text-zinc-500 mt-4 text-sm animate-pulse">Consultando a IA...</Text>
+                      <View className="items-center justify-center py-16">
+                          <ActivityIndicator color={brandColors.primary.start} size="large" />
+                          <Text className="text-zinc-500 mt-6 text-xs uppercase font-black tracking-widest animate-pulse">Sincronizando Nutrientes...</Text>
                       </View>
                   ) : assistantResult ? (
-                      <Text className="text-zinc-300 leading-6">{assistantResult}</Text>
+                      <Text className="text-zinc-300 leading-7 text-base font-sans">{assistantResult}</Text>
                   ) : (
-                      <View className="items-center justify-center py-10 opacity-50">
-                           <Ionicons name="chatbubbles-outline" size={40} color="#52525B" />
-                           <Text className="text-zinc-600 mt-2 text-center">Selecione uma opção acima para iniciar</Text>
+                      <View className="items-center justify-center py-20 opacity-30">
+                            <Ionicons name="chatbubbles-outline" size={64} style={{ color: brandColors.text.disabled }} />
+                            <Text className="text-zinc-500 mt-6 text-center font-black text-[10px] uppercase tracking-widest">Selecione uma categoria acima</Text>
                       </View>
                   )}
+                  <View className="h-10" />
               </ScrollView>
           </View>
       </View>
@@ -148,21 +180,28 @@ export default function ShoppingListScreen() {
   );
 
   const generateList = async () => {
-    // ...
-
     if (!currentDietPlan) {
-        Alert.alert("Erro", "Nenhum plano de dieta ativo.");
+        setStatusModal({
+          visible: true,
+          title: 'Erro',
+          message: 'Nenhum plano de dieta ativo.',
+          type: 'error'
+        });
         return;
     }
     
     setLoading(true);
     try {
-        // Pass duration to service
         const result = await ShoppingListService.generateShoppingList(meals, mealItems, duration);
         setCategories(result);
         setHasGenerated(true);
     } catch (e) {
-        Alert.alert("Erro", "Falha ao gerar lista.");
+        setStatusModal({
+          visible: true,
+          title: 'Erro',
+          message: 'Falha ao gerar lista.',
+          type: 'error'
+        });
     } finally {
         setLoading(false);
     }
@@ -185,38 +224,61 @@ export default function ShoppingListScreen() {
     });
   };
 
-  const DurationOption = ({ days }: { days: number }) => (
-    <TouchableOpacity 
-       onPress={() => setDuration(days)}
-       className={`flex-1 items-center justify-center py-3 rounded-xl border ${duration === days ? 'bg-orange-500 border-orange-500 shadow-lg shadow-orange-500/20' : 'bg-zinc-900 border-zinc-700'}`}
-    >
-        <Text className={`font-bold text-lg ${duration === days ? 'text-white' : 'text-zinc-400'}`}>
-            {days}
-        </Text>
-        <Text className={`text-xs ${duration === days ? 'text-orange-100' : 'text-zinc-500'}`}>
-            Dias
-        </Text>
-    </TouchableOpacity>
-  );
+  const DurationOption = ({ days }: { days: number }) => {
+    const isSelected = duration === days;
+    return (
+      <TouchableOpacity 
+        onPress={() => setDuration(days)}
+        className="flex-1 items-center justify-center py-4 rounded-2xl border"
+        style={{ 
+          backgroundColor: isSelected ? brandColors.primary.start : brandColors.background.secondary,
+          borderColor: isSelected ? brandColors.primary.start : brandColors.border.dark
+        }}
+      >
+          <Text className={`text-xl font-black font-display italic ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
+              {days}
+          </Text>
+          <Text className={`text-[8px] font-black uppercase tracking-widest ${isSelected ? 'text-white/70' : 'text-zinc-600'}`}>
+              DIAS
+          </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ScreenLayout>
-      <View className="px-6 py-4 flex-row items-center justify-between border-b border-zinc-800 bg-zinc-900">
+      <View 
+        className="px-6 py-5 flex-row items-center justify-between border-b"
+        style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+      >
          <View className="flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="mr-4">
-                <Ionicons name="arrow-back" size={24} color="#FFF" />
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              className="mr-5 p-2 rounded-xl bg-white/5 border border-white/10"
+            >
+                <Ionicons name="arrow-back" size={20} color="#FFF" />
             </TouchableOpacity>
-            <Text className="text-xl font-bold text-white font-display">Lista de Compras</Text>
+            <View>
+              <Text className="text-xl font-black text-white font-display tracking-tight italic">MERCADO</Text>
+              <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Logística Nutricional</Text>
+            </View>
          </View>
          {hasGenerated && (
-             <View className="flex-row gap-2">
-                 {/* AI Button */}
-                 <TouchableOpacity onPress={() => setShowAssistant(true)} className="bg-purple-500/10 p-2 rounded-full border border-purple-500/50">
-                     <Ionicons name="sparkles" size={20} color="#A855F7" />
+             <View className="flex-row gap-3">
+                 <TouchableOpacity 
+                    onPress={() => setShowAssistant(true)} 
+                    className="p-2.5 rounded-2xl border"
+                    style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+                  >
+                     <Ionicons name="sparkles" size={18} color={brandColors.primary.start} />
                  </TouchableOpacity>
 
-                 <TouchableOpacity onPress={shareList} className="bg-zinc-800 p-2 rounded-full border border-zinc-700">
-                     <Ionicons name="share-outline" size={20} color="#FF6B35" />
+                 <TouchableOpacity 
+                    onPress={shareList} 
+                    className="p-2.5 rounded-2xl border"
+                    style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+                  >
+                     <Ionicons name="share-outline" size={18} color={brandColors.primary.start} />
                  </TouchableOpacity>
              </View>
          )}
@@ -273,26 +335,28 @@ export default function ShoppingListScreen() {
                  />
              </View>
          ) : (
-             <View className="gap-6">
-                <View className="flex-row justify-between items-center mb-2">
+             <View className="gap-8">
+                <View className="flex-row justify-between items-end mb-4">
                     <View>
-                        <Text className="text-zinc-400 text-sm">Lista gerada para</Text>
-                        <Text className="text-white font-bold text-xl">{duration} Dias</Text>
+                        <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">PROVISÃO PARA</Text>
+                        <Text className="text-white font-black text-3xl font-display italic">{duration} DIAS</Text>
                     </View>
                     <View className="flex-row gap-2">
                         <TouchableOpacity 
                             onPress={() => setIsShoppingMode(true)}
-                            className="bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/30 flex-row items-center gap-2"
+                            className="px-4 py-2.5 rounded-2xl border flex-row items-center gap-2"
+                            style={{ backgroundColor: `${brandColors.status.success}10`, borderColor: `${brandColors.status.success}20` }}
                         >
-                            <Ionicons name="scan-outline" size={16} color="#34D399" />
-                            <Text className="text-emerald-400 font-bold text-xs uppercase">Modo Mercado</Text>
+                            <Ionicons name="scan" size={16} color={brandColors.status.success} />
+                            <Text className="font-black text-[10px] uppercase tracking-widest" style={{ color: brandColors.status.success }}>MERCADO</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
                             onPress={() => setHasGenerated(false)}
-                            className="bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700"
+                            className="p-2.5 rounded-2xl border"
+                            style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
                         >
-                            <Text className="text-zinc-300 font-bold text-xs">NOVA LISTA</Text>
+                             <Ionicons name="refresh" size={18} color={brandColors.text.muted} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -301,41 +365,57 @@ export default function ShoppingListScreen() {
                     const config = CATEGORY_CONFIG[cat.category] || CATEGORY_CONFIG['Outros'];
                     
                     return (
-                        <View key={catIdx} className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+                        <View 
+                          key={catIdx} 
+                          className="rounded-[32px] overflow-hidden border shadow-sm mb-2"
+                          style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+                        >
                             {/* Category Header */}
-                            <View className={`flex-row items-center p-4 border-b border-zinc-800/50 ${config.bg}`}>
-                                <View className="p-2 bg-zinc-950/30 rounded-lg mr-3">
+                            <View 
+                              className="flex-row items-center p-5 border-b"
+                              style={{ backgroundColor: config.bg, borderBottomColor: brandColors.border.dark }}
+                            >
+                                <View className="p-2.5 bg-black/20 rounded-xl mr-4">
                                     <Ionicons name={config.icon as any} size={20} color={config.color} />
                                 </View>
-                                <Text className="text-white font-bold text-lg flex-1 font-display">
+                                <Text className="text-white font-black text-lg flex-1 font-display italic tracking-tight">
                                     {cat.category}
                                 </Text>
-                                <View className="bg-zinc-950/30 px-2 py-1 rounded">
-                                    <Text className="text-zinc-400 text-xs font-bold">{cat.items.length} itens</Text>
+                                <View className="bg-black/20 px-3 py-1.5 rounded-full">
+                                    <Text className="text-white/60 text-[9px] font-black uppercase tracking-widest">{cat.items.length} itens</Text>
                                 </View>
                             </View>
 
                             {/* Items */}
-                            <View className="p-2">
+                            <View className="p-3">
                                 {cat.items.map((item, itemIdx) => (
                                     <TouchableOpacity 
                                         key={itemIdx}
                                         onPress={() => toggleItem(catIdx, itemIdx)}
                                         activeOpacity={0.7}
-                                        className={`flex-row items-center p-3 rounded-xl mb-1 ${item.checked ? 'opacity-50' : 'bg-transparent'}`}
+                                        className={`flex-row items-center p-4 rounded-2xl mb-1 ${item.checked ? 'opacity-30' : 'bg-transparent'}`}
                                     >
-                                        <View className={`w-6 h-6 rounded-full border mr-3 items-center justify-center ${item.checked ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-700 bg-zinc-950'}`}>
-                                            {item.checked && <Ionicons name="checkmark" size={14} color="white" />}
+                                        <View 
+                                          className="w-10 h-10 rounded-2xl border mr-4 items-center justify-center"
+                                          style={{ 
+                                            backgroundColor: item.checked ? brandColors.status.success : brandColors.background.primary,
+                                            borderColor: item.checked ? brandColors.status.success : brandColors.border.dark
+                                          }}
+                                        >
+                                            {item.checked && <Ionicons name="checkmark" size={24} color="white" />}
                                         </View>
                                         
                                         <View className="flex-1">
-                                            <Text className={`text-base font-medium ${item.checked ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
+                                            <Text className={`text-base font-bold ${item.checked ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
                                                 {item.name}
                                             </Text>
                                         </View>
                                         
-                                        <View className="bg-zinc-950 px-2 py-1 rounded border border-zinc-800">
-                                            <Text className="text-zinc-400 text-xs font-bold font-mono">{item.quantity}</Text>
+                                        <View 
+                                          className="px-3 py-1.5 rounded-xl border"
+                                          style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+                                        >
+                                            <Text className="text-zinc-500 font-black text-[10px] uppercase tracking-widest">{item.quantity}</Text>
                                         </View>
                                     </TouchableOpacity>
                                 ))}
@@ -350,6 +430,14 @@ export default function ShoppingListScreen() {
       {/* Overlays */}
       {showAssistant && <AIAssistantModal />}
       {isShoppingMode && <ShoppingModeOverlay />}
+
+      <StatusModal 
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
+      />
 
     </ScreenLayout>
   );

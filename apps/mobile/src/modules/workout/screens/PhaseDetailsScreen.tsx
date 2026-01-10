@@ -1,7 +1,11 @@
 import { useAuthStore } from '@/auth';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { PremiumCard } from '@/components/ui/PremiumCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusModal } from '@/components/ui/StatusModal';
+import { MuscleFilterCarousel } from '@/components/workout/MuscleFilterCarousel';
+import { colors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
@@ -29,14 +33,6 @@ export default function PhaseDetailsScreen() {
 
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
-  const muscleFilters = [
-    { name: 'Peito', icon: 'fitness' },
-    { name: 'Costas', icon: 'body' },
-    { name: 'Pernas', icon: 'footsteps' },
-    { name: 'Braços', icon: 'barbell' },
-    { name: 'Ombros', icon: 'shield' },
-    { name: 'Abdominais', icon: 'grid' },
-  ];
 
 
   const { 
@@ -303,11 +299,8 @@ export default function PhaseDetailsScreen() {
           
           <View className="items-center">
             <Text className="text-white text-2xl font-extrabold font-display tracking-tight">{phase.name}</Text>
-            <View className="flex-row items-center mt-1">
-                <View className={`w-2 h-2 rounded-full mr-2 ${phase.status === 'active' ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-orange-500'}`} />
-                <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                    {phase.status === 'active' ? 'Em Progresso' : phase.status === 'draft' ? 'Rascunho' : 'Concluído'}
-                </Text>
+            <View className="mt-1">
+                <StatusBadge status={phase.status} />
             </View>
           </View>
 
@@ -320,14 +313,14 @@ export default function PhaseDetailsScreen() {
                 <Ionicons 
                   name={phase.status === 'draft' ? 'document-text-outline' : phase.status === 'active' ? 'play-outline' : 'checkmark-done-outline'} 
                   size={20} 
-                  color={phase.status === 'draft' ? '#FFB800' : phase.status === 'active' ? '#00C9A7' : '#71717A'} 
+                  color={phase.status === 'draft' ? colors.status.warning : phase.status === 'active' ? colors.status.success : colors.text.muted} 
                 />
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={handleDeletePhase}
                 className="w-12 h-12 bg-zinc-900 rounded-2xl items-center justify-center border border-zinc-800"
               >
-                <Ionicons name="trash-outline" size={20} color="#FF2E63" />
+                <Ionicons name="trash-outline" size={20} color={colors.status.error} />
               </TouchableOpacity>
             </View>
           ) : (
@@ -361,9 +354,9 @@ export default function PhaseDetailsScreen() {
 
                 <View className="items-end">
                     <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Frequência</Text>
-                    <View className="flex-row items-center bg-orange-500/10 px-4 py-2.5 rounded-2xl border border-orange-500/20">
-                        <Ionicons name="fitness-outline" size={16} color="#FF6B35" style={{marginRight: 8}} />
-                        <Text className="text-orange-500 font-extrabold text-lg">{phase.weekly_frequency || 0}x</Text>
+                    <View className="flex-row items-center bg-orange-500/10 px-4 py-2.5 rounded-2xl border border-orange-500/20" style={{ borderColor: colors.primary.start + '33' }}>
+                        <Ionicons name="fitness-outline" size={16} color={colors.primary.start} style={{marginRight: 8}} />
+                        <Text className="font-extrabold text-lg" style={{ color: colors.primary.start }}>{phase.weekly_frequency || 0}x</Text>
                     </View>
                 </View>
             </View>
@@ -440,58 +433,37 @@ export default function PhaseDetailsScreen() {
                         }}
                         className="mb-8"
                     >
-                        <View className={`rounded-3xl overflow-hidden ${isWorkoutDoneToday ? 'border border-zinc-800' : 'shadow-lg shadow-orange-500/30'}`}>
-                            <ImageBackground 
-                                source={isWorkoutDoneToday ? null : (MUSCLE_IMAGES[suggestedWorkout.muscle_group || 'Geral'] || MUSCLE_IMAGES['Geral'])} 
-                                className="w-full"
-                                resizeMode="cover"
-                            >
-                                <LinearGradient
-                                    colors={isWorkoutDoneToday ? ['#18181B', '#18181B'] : ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 0, y: 1 }}
-                                    className="p-6"
-                                >
-                                    <View className="flex-row justify-between items-start mb-4">
-                                        <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-black/40'} px-3 py-1 rounded-full border border-white/10`}>
-                                            <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-xs uppercase`}>
-                                                {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
-                                            </Text>
-                                        </View>
-                                        <Ionicons name={isWorkoutDoneToday ? "checkmark-circle" : "flame"} size={24} color={isWorkoutDoneToday ? "#4ADE80" : "white"} />
-                                    </View>
-                                    
-                                    <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} text-3xl font-extrabold font-display mb-2`}>
-                                        {isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
-                                    </Text>
-                                    
-                                    {isWorkoutDoneToday ? (
-                                        <Text className="text-zinc-500 font-medium">
-                                            Bom descanso! O próximo treino será: {suggestedWorkout.title}
-                                        </Text>
-                                    ) : (
-                                        <View className="flex-row items-center gap-4">
-                                            <View className="flex-row items-center bg-black/40 px-3 py-1.5 rounded-lg border border-white/10">
-                                                <Ionicons name="barbell" size={16} color="white" style={{ marginRight: 6 }} />
-                                                <Text className="text-white font-medium">
-                                                    {suggestedWorkout.items?.length || 0} exercícios
-                                                </Text>
-                                            </View>
-                                            <View className="flex-row items-center bg-black/40 px-3 py-1.5 rounded-lg border border-white/10">
-                                                <Ionicons name="time" size={16} color="white" style={{ marginRight: 6 }} />
-                                                <Text className="text-white font-medium">~60 min</Text>
-                                            </View>
-                                        </View>
-                                    )}
+                <PremiumCard
+                    title={isWorkoutDoneToday ? 'Treino Finalizado' : suggestedWorkout.title}
+                    subtitle={isWorkoutDoneToday ? `Bom descanso! O próximo treino será: ${suggestedWorkout.title}` : `${suggestedWorkout.items?.length || 0} exercícios • ~60 min`}
+                    image={isWorkoutDoneToday ? null : (MUSCLE_IMAGES[suggestedWorkout.muscle_group || 'Geral'] || MUSCLE_IMAGES['Geral'])}
+                    onPress={() => {
+                        const isProfessional = (accountType as string) === 'personal' || (accountType as string) === 'professional';
+                        const path = isProfessional
+                            ? '/(tabs)/workouts/details/[id]'
+                            : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
+                        
+                        const params = isProfessional ? { id: suggestedWorkout.id, workoutId: suggestedWorkout.id, studentId: user?.id } : {};
 
-                                    {!isWorkoutDoneToday && (
-                                        <View className="mt-6 bg-orange-500 py-3 rounded-xl items-center shadow-lg shadow-orange-500/40">
-                                            <Text className="text-white font-bold text-base">COMEÇAR TREINO</Text>
-                                        </View>
-                                    )}
-                                </LinearGradient>
-                            </ImageBackground>
+                        router.push(isProfessional ? { pathname: path, params } as any : path as any);
+                    }}
+                    containerStyle={isWorkoutDoneToday ? { opacity: 0.8 } : {}}
+                    badge={
+                        <View className={`${isWorkoutDoneToday ? 'bg-zinc-800' : 'bg-black/40'} px-3 py-1 rounded-full border border-white/10 self-start`}>
+                            <Text className={`${isWorkoutDoneToday ? 'text-zinc-400' : 'text-white'} font-bold text-[10px] uppercase tracking-wider`}>
+                                {isWorkoutDoneToday ? 'Concluído' : 'Sugerido para hoje'}
+                            </Text>
                         </View>
+                    }
+                    icon={isWorkoutDoneToday ? "checkmark-circle" : "flame"}
+                    iconColor={isWorkoutDoneToday ? "#4ADE80" : "white"}
+                >
+                    {!isWorkoutDoneToday && (
+                        <View className="mt-4 bg-orange-500 py-3 rounded-2xl items-center shadow-lg shadow-orange-500/40">
+                            <Text className="text-white font-bold text-base uppercase tracking-widest">Começar Treino</Text>
+                        </View>
+                    )}
+                </PremiumCard>
                     </TouchableOpacity>
                 )}
               </>
@@ -520,52 +492,11 @@ export default function PhaseDetailsScreen() {
         </View>
 
         {/* Smart Filters Carousel */}
-        <View className="mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 10 }}
-          >
-            <TouchableOpacity
-              onPress={() => setSelectedMuscle(null)}
-              className={`px-5 py-2.5 rounded-2xl border-2 flex-row items-center ${
-                selectedMuscle === null 
-                  ? 'bg-orange-500 border-orange-500' 
-                  : 'bg-zinc-950 border-zinc-800'
-              }`}
-            >
-              <Text className={`font-bold text-[10px] uppercase tracking-widest ${
-                selectedMuscle === null ? 'text-white' : 'text-zinc-500'
-              }`}>
-                Todos
-              </Text>
-            </TouchableOpacity>
-
-            {muscleFilters.map((muscle) => (
-              <TouchableOpacity
-                key={muscle.name}
-                onPress={() => setSelectedMuscle(selectedMuscle === muscle.name ? null : muscle.name)}
-                className={`px-5 py-2.5 rounded-2xl border-2 flex-row items-center ${
-                  selectedMuscle === muscle.name 
-                    ? 'bg-orange-500 border-orange-500' 
-                    : 'bg-zinc-950 border-zinc-800'
-                }`}
-              >
-                <Ionicons 
-                  name={muscle.icon as any} 
-                  size={14} 
-                  color={selectedMuscle === muscle.name ? "white" : "#52525B"}
-                  style={{ marginRight: 6 }}
-                />
-                <Text className={`font-bold text-[10px] uppercase tracking-widest ${
-                  selectedMuscle === muscle.name ? 'text-white' : 'text-zinc-500'
-                }`}>
-                  {muscle.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <MuscleFilterCarousel 
+          selectedMuscle={selectedMuscle} 
+          onSelectMuscle={setSelectedMuscle}
+          containerStyle={{ marginBottom: 24 }}
+        />
 
         {/* Other Workouts List - Filtered */}
          {(selectedMuscle 
@@ -802,34 +733,20 @@ export default function PhaseDetailsScreen() {
           {/* Search & Filter */}
           <View className="px-6 mb-6">
             <View className="bg-zinc-900 flex-row items-center px-4 py-3 rounded-2xl border border-zinc-800 mb-4">
-              <Ionicons name="search" size={20} color="#71717A" style={{ marginRight: 12 }} />
+              <Ionicons name="search" size={20} color={colors.text.muted} style={{ marginRight: 12 }} />
               <TextInput 
                 placeholder="Buscar na biblioteca..."
-                placeholderTextColor="#52525B"
+                placeholderTextColor={colors.text.muted}
                 className="flex-1 text-white font-medium"
                 value={librarySearch}
                 onChangeText={setLibrarySearch}
               />
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                 <TouchableOpacity
-                    onPress={() => setSelectedLibraryMuscle(null)}
-                    className={`px-4 py-2 rounded-xl border ${!selectedLibraryMuscle ? 'bg-orange-500 border-orange-500' : 'bg-zinc-900 border-zinc-800'}`}
-                 >
-                    <Text className={`text-xs font-bold ${!selectedLibraryMuscle ? 'text-white' : 'text-zinc-500'}`}>Todos</Text>
-                 </TouchableOpacity>
-                 {muscleFilters.map(m => (
-                    <TouchableOpacity
-                        key={m.name}
-                        onPress={() => setSelectedLibraryMuscle(selectedLibraryMuscle === m.name ? null : m.name)}
-                        className={`px-4 py-2 rounded-xl border flex-row items-center ${selectedLibraryMuscle === m.name ? 'bg-orange-500 border-orange-500' : 'bg-zinc-900 border-zinc-800'}`}
-                    >
-                        <Ionicons name={m.icon as any} size={12} color={selectedLibraryMuscle === m.name ? 'white' : '#52525B'} style={{marginRight: 6}} />
-                        <Text className={`text-xs font-bold ${selectedLibraryMuscle === m.name ? 'text-white' : 'text-zinc-500'}`}>{m.name}</Text>
-                    </TouchableOpacity>
-                 ))}
-            </ScrollView>
+            <MuscleFilterCarousel 
+              selectedMuscle={selectedLibraryMuscle} 
+              onSelectMuscle={setSelectedLibraryMuscle} 
+            />
           </View>
 
           {/* Library List */}
@@ -862,7 +779,7 @@ export default function PhaseDetailsScreen() {
                     {item.muscle_group || 'Geral'} • {item.difficulty || 'Iniciante'}
                   </Text>
                 </View>
-                <Ionicons name="add-circle" size={24} color="#FF6B35" />
+                <Ionicons name="add-circle" size={24} color={colors.primary.start} />
               </TouchableOpacity>
             )}
             ListEmptyComponent={

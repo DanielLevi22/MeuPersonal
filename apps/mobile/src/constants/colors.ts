@@ -63,6 +63,14 @@ export const colors = {
     light: '#52525B',        // Zinc-600
     dark: '#27272A',         // Zinc-800
   },
+
+  // Macros
+  macro: {
+    protein: '#00C9A7',      // Emerald Green
+    carbs: '#9D4EDD',        // Vibrant Purple
+    fat: '#FFB800',          // Gold Yellow
+    calories: '#FFFFFF',     // White
+  },
   
   // Gradients (for LinearGradient usage - using tuples for type safety)
   gradients: {

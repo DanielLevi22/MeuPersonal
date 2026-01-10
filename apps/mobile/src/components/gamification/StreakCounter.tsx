@@ -1,3 +1,4 @@
+import { colors as brandColors } from '@/constants/colors';
 import { Text, View } from 'react-native';
 import { FireAnimation } from './FireAnimation';
 
@@ -9,18 +10,20 @@ interface StreakCounterProps {
 export function StreakCounter({ streak, frozen = false }: StreakCounterProps) {
   return (
     <View 
-      className={`px-3 py-2 rounded-full flex-row items-center gap-x-2 border ${
-        frozen 
-          ? 'bg-blue-500/10 border-blue-500/20' 
-          : 'bg-orange-500/10 border-orange-500/20'
-      }`}
+      className="px-3 py-2 rounded-full flex-row items-center gap-x-2 border"
+      style={{
+        backgroundColor: frozen ? brandColors.secondary.main + '20' : brandColors.primary.start + '20',
+        borderColor: frozen ? brandColors.secondary.main + '40' : brandColors.primary.start + '40'
+      }}
     >
       <FireAnimation active={streak > 0} frozen={frozen} size={20} />
-      <Text className={`font-bold text-base font-display ${
-        frozen ? 'text-blue-500' : 'text-orange-500'
-      }`}>
+      <Text 
+        className="font-bold text-base font-display"
+        style={{ color: frozen ? brandColors.secondary.main : brandColors.primary.start }}
+      >
         {streak}
       </Text>
     </View>
   );
 }
+

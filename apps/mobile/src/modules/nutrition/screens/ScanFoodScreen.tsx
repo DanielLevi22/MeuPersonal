@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/Button';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -75,11 +77,21 @@ export default function ScanFoodScreen() {
     <ScreenLayout>
       <View className="flex-1">
         {/* Header */}
-        <View className="px-6 py-4 flex-row items-center border-b border-zinc-800">
-           <TouchableOpacity onPress={() => router.back()} className="mr-4">
-              <Ionicons name="close" size={24} color="#FFF" />
+        <View 
+          className="flex-row items-center px-6 py-5 border-b"
+          style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+        >
+           <TouchableOpacity 
+             onPress={() => router.back()} 
+             className="mr-5 p-2 rounded-xl border"
+             style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+           >
+              <Ionicons name="close" size={20} color={brandColors.text.muted} />
            </TouchableOpacity>
-           <Text className="text-xl font-bold text-white">Escanear Refeição</Text>
+           <View>
+              <Text className="text-xl font-black text-white font-display tracking-tight italic">ESCANEAR</Text>
+              <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Reconhecimento IA</Text>
+           </View>
         </View>
 
         <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }}>
@@ -118,50 +130,61 @@ export default function ScanFoodScreen() {
                             <Text className="text-zinc-500 text-sm">Identificando componentes e porções</Text>
                         </View>
                     ) : result ? (
-                        <View className="w-full bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
-                            <View className="flex-row items-start justify-between mb-4">
+                        <View 
+                            className="w-full rounded-[32px] p-6 border"
+                            style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+                        >
+                            <View className="flex-row items-start justify-between mb-6">
                                 <View className="flex-1">
-                                    <Text className="text-white font-bold text-xl mb-1">{result.name}</Text>
-                                    <View className="bg-green-500/20 self-start px-2 py-1 rounded">
-                                        <Text className="text-green-500 text-xs font-bold">
+                                    <Text className="text-white font-black text-2xl mb-2 italic font-display">{result.name}</Text>
+                                    <LinearGradient
+                                      colors={brandColors.gradients.success}
+                                      start={{ x: 0, y: 0 }}
+                                      end={{ x: 1, y: 0 }}
+                                      className="self-start px-3 py-1 rounded-full"
+                                    >
+                                        <Text className="text-white text-[10px] font-black uppercase tracking-widest">
                                             {(result.confidence * 100).toFixed(0)}% Confiança
                                         </Text>
-                                    </View>
+                                    </LinearGradient>
                                 </View>
                             </View>
 
-                            <View className="flex-row justify-between bg-zinc-950 p-4 rounded-xl mb-6">
+                            <View 
+                              className="flex-row justify-between p-4 rounded-2xl mb-8 border"
+                              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+                            >
                                 <View className="items-center">
-                                    <Text className="text-zinc-400 text-xs uppercase mb-1">Calorias</Text>
-                                    <Text className="text-white font-bold text-lg">{result.calories}</Text>
+                                    <Text className="text-zinc-500 text-[9px] font-black uppercase tracking-wider mb-1">KCAL</Text>
+                                    <Text className="text-white font-black text-lg italic">{result.calories}</Text>
                                 </View>
                                 <View className="w-[1px] bg-zinc-800" />
                                 <View className="items-center">
-                                    <Text className="text-emerald-500 text-xs uppercase mb-1">Prot</Text>
-                                    <Text className="text-white font-bold text-lg">{result.protein}g</Text>
+                                    <Text className="text-[9px] font-black uppercase tracking-wider mb-1" style={{ color: brandColors.macro.protein }}>PROT</Text>
+                                    <Text className="text-white font-black text-lg italic">{result.protein}g</Text>
                                 </View>
                                 <View className="w-[1px] bg-zinc-800" />
                                 <View className="items-center">
-                                    <Text className="text-purple-500 text-xs uppercase mb-1">Carb</Text>
-                                    <Text className="text-white font-bold text-lg">{result.carbs}g</Text>
+                                    <Text className="text-[9px] font-black uppercase tracking-wider mb-1" style={{ color: brandColors.macro.carbs }}>CARB</Text>
+                                    <Text className="text-white font-black text-lg italic">{result.carbs}g</Text>
                                 </View>
                                 <View className="w-[1px] bg-zinc-800" />
                                 <View className="items-center">
-                                    <Text className="text-amber-500 text-xs uppercase mb-1">Gord</Text>
-                                    <Text className="text-white font-bold text-lg">{result.fat}g</Text>
+                                    <Text className="text-[9px] font-black uppercase tracking-wider mb-1" style={{ color: brandColors.macro.fat }}>GORD</Text>
+                                    <Text className="text-white font-black text-lg italic">{result.fat}g</Text>
                                 </View>
                             </View>
 
                             <Button 
                                 variant="primary" 
-                                label="Adicionar à Dieta" 
+                                label="ADICIONAR À DIETA" 
                                 onPress={() => {
                                     Alert.alert("Sucesso", "Alimento adicionado à sua dieta! (Simulação)");
                                     router.back();
                                 }}
                             />
-                             <TouchableOpacity onPress={handleReset} className="mt-4 py-2 items-center">
-                                <Text className="text-zinc-500 text-sm">Escanear Outro</Text>
+                             <TouchableOpacity onPress={handleReset} className="mt-6 py-2 items-center">
+                                <Text className="text-zinc-500 text-xs font-black uppercase tracking-widest">Escanear Outro</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (

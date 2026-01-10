@@ -1,7 +1,9 @@
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { colors as brandColors } from '@/constants/colors';
 import { useNutritionStore } from '@/modules/nutrition/routes';
 import { ChatMessage, NutriBotService } from '@/modules/nutrition/services/NutriBotService';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -14,7 +16,7 @@ export default function NutriBotScreen() {
     {
         id: '1',
         role: 'assistant',
-        content: `Olá! Sou seu assistente nutricional. Posso tirar dúvidas sobre sua dieta "${currentDietPlan?.name || 'Atual'}". O que manda?`,
+        content: `Olá! Sou seu assistente nutricional pessoal. Estou aqui para otimizar sua estratégia na dieta "${currentDietPlan?.name || 'Atual'}". Como posso ajudar hoje?`,
         createdAt: Date.now()
     }
   ]);
@@ -93,13 +95,20 @@ export default function NutriBotScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {/* Header */}
-        <View className="px-6 py-4 flex-row items-center border-b border-zinc-800 bg-zinc-950">
-           <TouchableOpacity onPress={() => router.back()} className="mr-4">
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
+        <View 
+          className="flex-row items-center px-6 py-5 border-b"
+          style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+        >
+           <TouchableOpacity 
+             onPress={() => router.back()} 
+             className="mr-5 p-2 rounded-xl border"
+             style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+           >
+              <Ionicons name="arrow-back" size={20} color={brandColors.primary.start} />
            </TouchableOpacity>
            <View>
-               <Text className="text-xl font-bold text-white">NutriBot 🤖</Text>
-               <Text className="text-zinc-500 text-xs">Assistente Nutricional</Text>
+               <Text className="text-xl font-black text-white font-display tracking-tight italic">NUTRIBOT</Text>
+               <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Inteligência Nutricional</Text>
            </View>
         </View>
 
@@ -108,40 +117,71 @@ export default function NutriBotScreen() {
             ref={flatListRef}
             data={messages}
             keyExtractor={item => item.id}
-            contentContainerStyle={{ padding: 16, gap: 16 }}
-            renderItem={({ item }) => (
-                <View className={`max-w-[80%] rounded-2xl p-4 ${
-                    item.role === 'user' 
-                        ? 'bg-orange-600 self-end rounded-tr-sm' 
-                        : 'bg-zinc-800 self-start rounded-tl-sm'
-                }`}>
-                    <Text className="text-white text-base leading-6">{item.content}</Text>
-                </View>
-            )}
+            contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}
+            renderItem={({ item }) => {
+                const isUser = item.role === 'user';
+                return (
+                    <View className={`max-w-[85%] ${isUser ? 'self-end' : 'self-start'}`}>
+                        {isUser ? (
+                            <LinearGradient
+                                colors={brandColors.gradients.primary}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                className="rounded-2xl rounded-tr-sm p-4 shadow-lg"
+                                style={{ shadowColor: brandColors.primary.start, shadowOpacity: 0.3, shadowRadius: 10 }}
+                            >
+                                <Text className="text-white text-base font-medium leading-6">{item.content}</Text>
+                            </LinearGradient>
+                        ) : (
+                            <View 
+                                className="rounded-2xl rounded-tl-sm p-5 border"
+                                style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+                            >
+                                <Text className="text-zinc-300 text-base leading-7 font-sans">{item.content}</Text>
+                            </View>
+                        )}
+                        <Text className={`text-[9px] text-zinc-600 mt-1 uppercase font-black tracking-widest ${isUser ? 'text-right mr-1' : 'ml-1'}`}>
+                            {isUser ? 'Você' : 'NutriBot'}
+                        </Text>
+                    </View>
+                );
+            }}
         />
 
         {/* Input Area */}
-        <View className="p-4 bg-zinc-900 border-t border-zinc-800 flex-row items-center">
-            <TextInput
-                className="flex-1 bg-zinc-950 text-white rounded-full px-4 py-3 mr-3 border border-zinc-800"
-                placeholder="Pergunte sobre sua dieta..."
-                placeholderTextColor="#71717A"
-                value={input}
-                onChangeText={setInput}
-                onSubmitEditing={handleSend}
-            />
+        <View 
+          className="p-5 border-t flex-row items-center"
+          style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+        >
+            <View 
+              className="flex-1 rounded-2xl border px-4 py-3 mr-3 flex-row items-center"
+              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+            >
+                <TextInput
+                    className="flex-1 text-white text-base font-medium"
+                    placeholder="Pergunte sobre sua dieta..."
+                    placeholderTextColor="#52525B"
+                    value={input}
+                    onChangeText={setInput}
+                    onSubmitEditing={handleSend}
+                />
+            </View>
             <TouchableOpacity 
                 onPress={handleSend}
                 disabled={loading || !input.trim()}
-                className={`w-12 h-12 rounded-full items-center justify-center ${
-                    !input.trim() ? 'bg-zinc-800' : 'bg-orange-500'
-                }`}
+                activeOpacity={0.8}
             >
-                {loading ? (
-                    <ActivityIndicator color="white" size="small" />
-                ) : (
-                    <Ionicons name="send" size={20} color={!input.trim() ? '#52525B' : 'white'} />
-                )}
+                <LinearGradient
+                    colors={!input.trim() ? [brandColors.background.elevated, brandColors.background.elevated] : brandColors.gradients.primary}
+                    className="w-12 h-12 rounded-xl items-center justify-center border"
+                    style={{ borderColor: !input.trim() ? brandColors.border.dark : 'transparent' }}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="white" size="small" />
+                    ) : (
+                        <Ionicons name="send" size={20} color={!input.trim() ? '#52525B' : 'white'} />
+                    )}
+                </LinearGradient>
             </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

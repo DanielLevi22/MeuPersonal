@@ -1,5 +1,9 @@
 import { useAuthStore } from '@/auth';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { StatusModal } from '@/components/ui/StatusModal';
+import { colors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
@@ -23,6 +27,41 @@ export default function PeriodizationDetailsScreen() {
   const isStudentView = pathname.includes('/students/') || accountType === 'managed_student' || accountType === 'autonomous_student';
   const { periodizations, fetchPeriodizations, isLoading, activatePeriodization, currentPeriodizationPhases, fetchPeriodizationPhases, createTrainingPlan } = useWorkoutStore();
   const [periodization, setPeriodization] = useState<any>(null);
+
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const [confirmModal, setConfirmModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: 'danger' | 'warning' | 'info';
+    confirmText?: string;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'info'
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setStatusModal({ visible: true, title, message, type });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'warning' | 'info' = 'info', confirmText?: string) => {
+    setConfirmModal({ visible: true, title, message, onConfirm, type, confirmText });
+  };
 
   // Handle both route patterns:
   // 1. /students/[id]/workouts/[periodizationId] -> id is student, periodizationId is periodization
@@ -101,7 +140,8 @@ export default function PeriodizationDetailsScreen() {
   };
 
   return (
-    <ScreenLayout>
+    <>
+      <ScreenLayout>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Premium Header */}
         <ImageBackground
@@ -134,16 +174,20 @@ export default function PeriodizationDetailsScreen() {
 
             <View>
               <View className="flex-row items-center mb-3">
-                <View className="bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/30">
-                  <Text className="text-orange-500 text-[10px] font-bold uppercase tracking-widest">
+                <View 
+                  className="px-3 py-1 rounded-full border"
+                  style={{ backgroundColor: `${colors.primary.start}20`, borderColor: `${colors.primary.start}30` }}
+                >
+                  <Text 
+                    className="text-[10px] font-bold uppercase tracking-widest"
+                    style={{ color: colors.primary.start }}
+                  >
                     {periodization.type || 'Planejamento'}
                   </Text>
                 </View>
-                <View className="bg-white/10 px-3 py-1 rounded-full border border-white/10 ml-2">
-                  <Text className="text-white/60 text-[10px] font-bold uppercase">
-                    {periodization.status === 'active' ? 'Em andamento' : 'Planejado'}
-                  </Text>
-                </View>
+                  <View className="ml-2">
+                    <StatusBadge status={periodization.status} />
+                  </View>
               </View>
               
               <Text className="text-4xl font-extrabold text-white mb-2 font-display leading-[42px] drop-shadow-lg">
@@ -155,18 +199,18 @@ export default function PeriodizationDetailsScreen() {
               </Text>
 
               <View className="flex-row gap-4">
-                <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
-                  <Ionicons name="calendar-outline" size={14} color="#FF6B35" style={{ marginRight: 8 }} />
-                  <Text className="text-white font-bold text-xs">
-                    {new Date(periodization.start_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                  </Text>
-                </View>
-                <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
-                  <Ionicons name="flag-outline" size={14} color="#FF6B35" style={{ marginRight: 8 }} />
-                  <Text className="text-white font-bold text-xs">
-                    {new Date(periodization.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                  </Text>
-                </View>
+                  <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
+                    <Ionicons name="calendar-outline" size={14} color={colors.primary.start} style={{ marginRight: 8 }} />
+                    <Text className="text-white font-bold text-xs">
+                      {new Date(periodization.start_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
+                    <Ionicons name="flag-outline" size={14} color={colors.primary.start} style={{ marginRight: 8 }} />
+                    <Text className="text-white font-bold text-xs">
+                      {new Date(periodization.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </Text>
+                  </View>
               </View>
             </View>
           </LinearGradient>
@@ -175,26 +219,23 @@ export default function PeriodizationDetailsScreen() {
           {!isStudentView && periodization.status === 'planned' && (
             <TouchableOpacity 
               onPress={() => {
-                Alert.alert(
+                showConfirm(
                   'Ativar Periodização',
                   'Deseja ativar esta periodização? Outras periodizações ativas deste aluno serão concluídas.',
-                  [
-                    { text: 'Cancelar', style: 'cancel' },
-                    { 
-                      text: 'Ativar', 
-                      onPress: async () => {
-                        try {
-                          await activatePeriodization(periodization.id);
-                          Alert.alert('Sucesso', 'Periodização ativada!');
-                        } catch (error) {
-                          Alert.alert('Erro', 'Não foi possível ativar a periodização.');
-                        }
-                      }
+                  async () => {
+                    try {
+                      await activatePeriodization(periodization.id);
+                      showAlert('Sucesso! 🚀', 'Periodização ativada com sucesso.', 'success');
+                    } catch (error) {
+                      showAlert('Erro', 'Não foi possível ativar a periodização.', 'error');
                     }
-                  ]
+                  },
+                  'warning',
+                  'Ativar'
                 );
               }}
               className="bg-orange-500 px-6 py-4 rounded-2xl w-full items-center shadow-lg shadow-orange-500/30"
+              style={{ backgroundColor: colors.primary.start }}
             >
               <Text className="text-white font-bold font-display uppercase tracking-widest text-sm">ATIVAR PERIODIZAÇÃO</Text>
             </TouchableOpacity>
@@ -203,30 +244,26 @@ export default function PeriodizationDetailsScreen() {
           {!isStudentView && periodization.status === 'active' && (
             <TouchableOpacity 
               onPress={() => {
-                Alert.alert(
+                showConfirm(
                   'Encerrar Periodização',
                   'Deseja encerrar esta periodização? Esta ação não pode ser desfeita.',
-                  [
-                    { text: 'Cancelar', style: 'cancel' },
-                    { 
-                      text: 'Encerrar',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await useWorkoutStore.getState().updatePeriodization(periodization.id, { status: 'completed' });
-                          Alert.alert('Sucesso', 'Periodização encerrada!');
-                          if (user?.id) {
-                            fetchPeriodizations(user.id);
-                          }
-                        } catch (error) {
-                          Alert.alert('Erro', 'Não foi possível encerrar a periodização.');
-                        }
+                  async () => {
+                    try {
+                      await useWorkoutStore.getState().updatePeriodization(periodization.id, { status: 'completed' });
+                      showAlert('Sucesso! ✓', 'Periodização encerrada com sucesso.', 'success');
+                      if (user?.id) {
+                        fetchPeriodizations(user.id);
                       }
+                    } catch (error) {
+                      showAlert('Erro', 'Não foi possível encerrar a periodização.', 'error');
                     }
-                  ]
+                  },
+                  'danger',
+                  'Encerrar'
                 );
               }}
               className="bg-red-500 px-6 py-4 rounded-2xl w-full items-center shadow-lg shadow-red-500/30"
+              style={{ backgroundColor: colors.status.error }}
             >
               <Text className="text-white font-bold font-display uppercase tracking-widest text-sm">ENCERRAR PERIODIZAÇÃO</Text>
             </TouchableOpacity>
@@ -249,33 +286,36 @@ export default function PeriodizationDetailsScreen() {
                 return (
                   <View key={phase.id} className="flex-row">
                     {/* Timeline Tracker */}
-                    <View className="items-center mr-4">
-                      <View className={`w-8 h-8 rounded-full items-center justify-center border-2 ${
-                        phaseIsActive ? 'bg-orange-500 border-orange-400 shadow-lg shadow-orange-500/40' : 'bg-zinc-900 border-zinc-800'
-                      }`}>
-                        {phase.status === 'completed' ? (
-                          <Ionicons name="checkmark" size={16} color="white" />
-                        ) : (
-                          <Text className={`text-xs font-bold ${phaseIsActive ? 'text-white' : 'text-zinc-500'}`}>
-                            {index + 1}
-                          </Text>
-                        )}
+                      <View className="items-center mr-4">
+                        <View className={`w-8 h-8 rounded-full items-center justify-center border-2 ${
+                          phaseIsActive ? 'bg-orange-500 border-orange-400' : 'bg-zinc-900 border-zinc-800'
+                        }`}
+                        style={phaseIsActive ? { backgroundColor: colors.primary.start, borderColor: colors.primary.light } : {}}
+                        >
+                          {phase.status === 'completed' ? (
+                            <Ionicons name="checkmark" size={16} color="white" />
+                          ) : (
+                            <Text className={`text-xs font-bold ${phaseIsActive ? 'text-white' : 'text-zinc-500'}`}>
+                              {index + 1}
+                            </Text>
+                          )}
+                        </View>
+                        {!isLast && <View className="w-[2px] flex-1 bg-zinc-800 my-2" />}
                       </View>
-                      {!isLast && <View className="w-[2px] flex-1 bg-dashed bg-zinc-800 my-2" />}
-                    </View>
 
                     {/* Phase Card */}
                     <TouchableOpacity 
                       className={`flex-1 mb-8 rounded-2xl overflow-hidden border ${
-                        phaseIsActive ? 'bg-zinc-900 border-orange-500/50' : 'bg-zinc-900/50 border-zinc-800'
+                        phaseIsActive ? 'bg-zinc-900' : 'bg-zinc-900/50'
                       }`}
-                      style={phaseIsActive ? { 
-                        shadowColor: '#FF6B35',
+                      style={{ 
+                        borderColor: phaseIsActive ? colors.primary.start : colors.border.dark,
+                        shadowColor: colors.primary.start,
                         shadowOffset: { width: 0, height: 10 },
-                        shadowOpacity: 0.1,
+                        shadowOpacity: phaseIsActive ? 0.1 : 0,
                         shadowRadius: 20,
-                        elevation: 5
-                      } : {}}
+                        elevation: phaseIsActive ? 5 : 0
+                      }}
                       onPress={() => {
                         const targetStudentId = params.id || periodization?.student_id;
                         if (params.id && params.periodizationId) {
@@ -291,12 +331,12 @@ export default function PeriodizationDetailsScreen() {
                             <Text className={`text-lg font-bold font-display ${phaseIsActive ? 'text-white' : 'text-zinc-400'}`}>
                               {phase.name}
                             </Text>
-                            <View className="flex-row items-center mt-1">
-                              <Ionicons name="barbell-outline" size={12} color={phaseIsActive ? "#FF6B35" : "#52525B"} />
-                              <Text className="text-zinc-500 text-[10px] font-bold ml-1 uppercase">
-                                {phase.training_split || 'Split A/B'} • {phase.weekly_frequency}x por semana
-                              </Text>
-                            </View>
+                             <View className="flex-row items-center mt-1">
+                                <Ionicons name="barbell-outline" size={12} color={phaseIsActive ? colors.primary.start : colors.text.muted} />
+                                <Text className="text-zinc-500 text-[10px] font-bold ml-1 uppercase" style={{ color: colors.text.muted }}>
+                                  {phase.training_split || 'Split A/B'} • {phase.weekly_frequency}x por semana
+                                </Text>
+                              </View>
                           </View>
                           
                           <View className={`px-2 py-1 rounded-lg ${
@@ -304,7 +344,9 @@ export default function PeriodizationDetailsScreen() {
                           }`}>
                             <Text className={`text-[9px] font-bold uppercase tracking-wider ${
                               phaseIsActive ? 'text-orange-500' : 'text-zinc-500'
-                            }`}>
+                            }`}
+                            style={phaseIsActive ? { color: colors.primary.start } : {}}
+                            >
                               {phase.status === 'active' ? 'Fase Atual' : getPhaseLabel(phase.type || 'meta')}
                             </Text>
                           </View>
@@ -312,8 +354,8 @@ export default function PeriodizationDetailsScreen() {
                         
                         <View className="flex-row items-center border-t border-zinc-800/50 pt-3 mt-1">
                           <View className="flex-row items-center bg-zinc-800/40 px-2.5 py-1.5 rounded-lg border border-white/5">
-                            <Ionicons name="time-outline" size={12} color="#71717A" />
-                            <Text className="text-zinc-400 text-[10px] font-bold ml-2">
+                            <Ionicons name="time-outline" size={12} color={colors.text.muted} />
+                            <Text className="text-zinc-400 text-[10px] font-bold ml-2" style={{ color: colors.text.secondary }}>
                                 {new Date(phase.start_date).toLocaleDateString('pt-BR', { month: 'short' })} - {new Date(phase.end_date).toLocaleDateString('pt-BR', { month: 'short' })}
                             </Text>
                           </View>
@@ -321,8 +363,8 @@ export default function PeriodizationDetailsScreen() {
                           <View className="flex-1" />
                           
                           <View className="flex-row items-center">
-                            <Text className="text-orange-500 text-[10px] font-bold mr-1">ACESSAR</Text>
-                            <Ionicons name="chevron-forward" size={12} color="#FF6B35" />
+                            <Text className="text-orange-500 text-[10px] font-bold mr-1" style={{ color: colors.primary.start }}>ACESSAR</Text>
+                            <Ionicons name="chevron-forward" size={12} color={colors.primary.start} />
                           </View>
                         </View>
                       </View>
@@ -373,5 +415,28 @@ export default function PeriodizationDetailsScreen() {
         </View>
       </ScrollView>
     </ScreenLayout>
-  );
+
+    {/* Standardized Modals */}
+    <StatusModal
+      visible={statusModal.visible}
+      onClose={() => setStatusModal({ ...statusModal, visible: false })}
+      title={statusModal.title}
+      message={statusModal.message}
+      type={statusModal.type}
+    />
+
+    <ConfirmModal
+      visible={confirmModal.visible}
+      onClose={() => setConfirmModal({ ...confirmModal, visible: false })}
+      onConfirm={() => {
+        setConfirmModal({ ...confirmModal, visible: false });
+        confirmModal.onConfirm();
+      }}
+      title={confirmModal.title}
+      message={confirmModal.message}
+      type={confirmModal.type}
+      confirmText={confirmModal.confirmText}
+    />
+  </>
+);
 }

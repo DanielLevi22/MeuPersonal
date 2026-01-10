@@ -1,5 +1,6 @@
+import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 interface RankListItemProps {
   item: {
@@ -14,97 +15,55 @@ interface RankListItemProps {
 
 export function RankListItem({ item, isCurrentUser }: RankListItemProps) {
   return (
-    <View style={[styles.container, isCurrentUser && styles.currentUserContainer]}>
-      <View style={styles.leftContent}>
-        <Text style={[styles.rank, isCurrentUser && styles.currentUserText]}>
+    <View 
+      className={`flex-row items-center justify-between py-3 px-4 rounded-xl mb-2 border ${
+        isCurrentUser ? 'bg-orange-500/10 border-orange-500/30' : 'bg-zinc-900 border-zinc-800'
+      }`}
+      style={isCurrentUser ? { borderColor: brandColors.primary.start } : {}}
+    >
+      <View className="flex-row items-center flex-1">
+        <Text className={`text-base font-bold w-8 ${isCurrentUser ? 'text-white' : 'text-zinc-400'}`}>
           {item.rank}
         </Text>
         
         {item.avatar_url ? (
-          <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+          <Image 
+            source={{ uri: item.avatar_url }} 
+            className="w-9 h-9 rounded-full mr-3 border"
+            style={{ borderColor: isCurrentUser ? brandColors.primary.start : brandColors.border.dark }} 
+          />
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+          <View 
+            className="w-9 h-9 rounded-full mr-3 items-center justify-center border"
+            style={{ 
+              backgroundColor: isCurrentUser ? brandColors.primary.start + '20' : brandColors.background.elevated, 
+              borderColor: isCurrentUser ? brandColors.primary.start : brandColors.border.dark 
+            }}
+          >
+            <Text className="text-white font-bold text-sm">{item.name.charAt(0)}</Text>
           </View>
         )}
         
-        <Text style={[styles.name, isCurrentUser && styles.currentUserText]} numberOfLines={1}>
+        <Text 
+          className={`text-sm font-semibold flex-1 ${isCurrentUser ? 'text-white' : 'text-zinc-200'}`} 
+          numberOfLines={1}
+        >
           {item.name} {isCurrentUser && '(Você)'}
         </Text>
       </View>
       
-      <View style={styles.rightContent}>
-        <Text style={[styles.points, isCurrentUser && styles.currentUserText]}>
+      <View className="flex-row items-center">
+        <Text 
+          className="text-sm font-bold"
+          style={{ color: brandColors.primary.start }}
+        >
           {item.points} pts
         </Text>
         {isCurrentUser && (
-          <Ionicons name="flame" size={16} color="#FF6B35" style={{ marginLeft: 4 }} />
+          <Ionicons name="flame" size={16} color={brandColors.primary.start} style={{ marginLeft: 4 }} />
         )}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#18181B',
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#27272A',
-  },
-  currentUserContainer: {
-    borderColor: '#FF6B35',
-    backgroundColor: 'rgba(255, 107, 53, 0.1)',
-  },
-  leftContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  rank: {
-    color: '#A1A1AA',
-    fontSize: 16,
-    fontWeight: '700',
-    width: 30,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 12,
-  },
-  avatarPlaceholder: {
-    backgroundColor: '#374151',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  name: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
-  },
-  rightContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  points: {
-    color: '#FF6B35',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  currentUserText: {
-    color: '#FFFFFF',
-  },
-});

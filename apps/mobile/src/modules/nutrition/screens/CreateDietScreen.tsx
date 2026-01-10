@@ -1,14 +1,16 @@
 import { useAuthStore } from '@/auth';
 import { StudentPickerModal } from '@/components/StudentPickerModal';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusModal } from '@/components/ui/StatusModal';
+import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNutritionStore } from '../store/nutritionStore';
 import { calculateDietStrategy, DIET_STRATEGIES, DietStrategyType } from '../utils/dietStrategies';
 
@@ -35,6 +37,18 @@ export default function CreateDietScreen() {
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    onClose?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
   
   const { createDietPlanWithStrategy } = useNutritionStore();
 
@@ -122,12 +136,22 @@ export default function CreateDietScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Erro', 'O nome do plano é obrigatório.');
+      setStatusModal({
+        visible: true,
+        title: 'Campo Obrigatório',
+        message: 'O nome do plano é essencial para a organização.',
+        type: 'warning'
+      });
       return;
     }
 
     if (!studentId) {
-      Alert.alert('Erro', 'Selecione um aluno.');
+      setStatusModal({
+        visible: true,
+        title: 'Seleção Pendente',
+        message: 'Por favor, selecione um aluno para este plano.',
+        type: 'warning'
+      });
       return;
     }
 
@@ -156,17 +180,21 @@ export default function CreateDietScreen() {
 
       await createDietPlanWithStrategy(planData as any, strategyResult);
 
-      Alert.alert('Sucesso', 'Plano alimentar criado com sucesso!', [
-        {
-          text: 'OK',
-          onPress: () => {
-             router.back();
-          },
-        },
-      ]);
+      setStatusModal({
+        visible: true,
+        title: 'Sucesso Total',
+        message: 'Plano alimentar arquitetado e liberado para o aluno!',
+        type: 'success',
+        onClose: () => router.back()
+      });
     } catch (error) {
       console.error('Error creating diet plan:', error);
-      Alert.alert('Erro', 'Não foi possível criar o plano alimentar.');
+      setStatusModal({
+        visible: true,
+        title: 'Falha Técnica',
+        message: 'Não conseguimos salvar o plano no momento. Tente novamente.',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -181,81 +209,99 @@ export default function CreateDietScreen() {
         className="flex-1"
       >
         {/* Header */}
-        <View className="flex-row items-center px-6 py-4">
+        <View 
+          className="flex-row items-center px-6 py-5 border-b"
+          style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+        >
           <TouchableOpacity
             onPress={() => router.back()}
-            className="bg-zinc-800/50 p-2.5 rounded-xl mr-4 border border-zinc-700"
+            className="p-2.5 rounded-xl mr-5 border"
+            style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
           >
-            <Ionicons name="arrow-back" size={24} color="#00D9FF" />
+            <Ionicons name="arrow-back" size={20} color={brandColors.primary.start} />
           </TouchableOpacity>
-          <Text className="text-2xl font-bold text-foreground font-display">
-            Novo Plano Alimentar
-          </Text>
+          <View>
+            <Text className="text-xl font-black text-white font-display tracking-tight italic">NOVO PLANO</Text>
+            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Arquitetura Nutricional</Text>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 0 }}>
           
           {/* Strategy Selector */}
-          <View className="mb-6">
-            <Text className="text-foreground text-sm font-semibold mb-3 font-sans">
-              Estratégia Nutricional
+          <View className="mb-8 mt-6">
+            <Text className="text-zinc-500 font-black text-[10px] tracking-widest uppercase mb-4 ml-1">
+              ESTRATÉGIA NUTRICIONAL
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-              <View className="flex-row gap-3">
-                {(Object.keys(DIET_STRATEGIES) as DietStrategyType[]).map((strategy) => (
-                  <TouchableOpacity
-                    key={strategy}
-                    onPress={() => setSelectedStrategy(strategy)}
-                    className={`p-4 rounded-2xl border w-40 h-48 justify-between ${
-                      selectedStrategy === strategy
-                        ? 'bg-primary-900/20 border-primary-500'
-                        : 'bg-zinc-900/80 border-zinc-800'
-                    }`}
-                  >
-                    <View>
-                      <Ionicons 
-                        name={DIET_STRATEGIES[strategy].icon as any} 
-                        size={32} 
-                        color={selectedStrategy === strategy ? '#00D9FF' : '#71717A'} 
-                      />
-                      <Text className={`mt-3 font-bold text-base ${
-                        selectedStrategy === strategy ? 'text-white' : 'text-zinc-400'
-                      }`}>
-                        {DIET_STRATEGIES[strategy].label}
+              <View className="flex-row gap-4">
+                {(Object.keys(DIET_STRATEGIES) as DietStrategyType[]).map((strategy) => {
+                  const isSelected = selectedStrategy === strategy;
+                  return (
+                    <TouchableOpacity
+                      key={strategy}
+                      onPress={() => setSelectedStrategy(strategy)}
+                      className="p-5 rounded-[32px] border w-44 h-52 justify-between shadow-sm"
+                      style={{ 
+                        backgroundColor: isSelected ? brandColors.background.elevated : brandColors.background.secondary,
+                        borderColor: isSelected ? brandColors.primary.start : brandColors.border.dark
+                      }}
+                    >
+                      <View>
+                        <LinearGradient
+                          colors={isSelected ? brandColors.gradients.primary : ['#27272A', '#18181B']}
+                          className="w-12 h-12 rounded-2xl items-center justify-center mb-4"
+                        >
+                          <Ionicons 
+                            name={DIET_STRATEGIES[strategy].icon as any} 
+                            size={24} 
+                            color={isSelected ? '#FFF' : '#71717A'} 
+                          />
+                        </LinearGradient>
+                        <Text className={`font-black text-base italic font-display uppercase tracking-tight ${
+                          isSelected ? 'text-white' : 'text-zinc-500'
+                        }`}>
+                          {DIET_STRATEGIES[strategy].label}
+                        </Text>
+                      </View>
+                      <Text className="text-zinc-500 text-[10px] leading-4 font-medium italic" numberOfLines={3}>
+                        {DIET_STRATEGIES[strategy].description}
                       </Text>
-                    </View>
-                    <Text className="text-zinc-500 text-xs mt-2" numberOfLines={3}>
-                      {DIET_STRATEGIES[strategy].description}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </ScrollView>
 
             {/* Target Calories Input (Primary Driver) */}
-            <View className="bg-zinc-900/80 p-4 rounded-2xl border border-zinc-700 mb-4">
-               <Text className="text-zinc-400 text-xs mb-3">Meta Calórica Média (Base)</Text>
+            <View 
+              className="p-5 rounded-3xl border mb-6"
+              style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+            >
+               <Text className="text-zinc-500 font-black text-[10px] tracking-widest uppercase mb-3">META CALÓRICA (BASE)</Text>
                <Input
                   value={targetCalories}
                   onChangeText={setTargetCalories}
                   placeholder="2000"
                   keyboardType="numeric"
-                  className="text-xl font-bold text-white h-12"
+                  className="text-2xl font-black font-display italic text-white h-14"
                />
-               <Text className="text-zinc-600 text-xs mt-1">
-                 Isso definirá a base para os cálculos da semana.
+               <Text className="text-zinc-600 text-[10px] font-medium italic mt-2">
+                 * Este valor guiará os cálculos automáticos de P/C/G para a semana.
                </Text>
             </View>
 
             {/* Strategy Preview */}
-            <View className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50">
-              <Text className="text-zinc-400 text-xs font-bold mb-3 uppercase tracking-wider">
-                Resumo da Semana
+            <View 
+              className="p-6 rounded-[32px] border"
+              style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+            >
+              <Text className="text-zinc-500 font-black text-[10px] tracking-widest uppercase mb-5">
+                CRONOGRAMA SEMANAL
               </Text>
               
               {(() => {
                 const preview = calculateDietStrategy(selectedStrategy, parseFloat(targetCalories) || 0);
-                // Group days by label for cleaner display
                  const groupedDays = preview.weeklySchedule.reduce((acc, day) => {
                     if (!acc[day.label]) acc[day.label] = [];
                     acc[day.label].push(day);
@@ -263,23 +309,23 @@ export default function CreateDietScreen() {
                  }, {} as Record<string, typeof preview.weeklySchedule>);
 
                 return (
-                  <View className="gap-2">
+                  <View className="gap-4">
                     {Object.entries(groupedDays).map(([label, days]) => {
                          const representative = days[0];
                          const dayNames = days.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.dayOfWeek]).join(', ');
                          
                          return (
-                           <View key={label} className="flex-row items-center justify-between py-2 border-b border-zinc-800/50">
+                           <View key={label} className="flex-row items-center justify-between py-3 border-b border-zinc-800/30">
                               <View className="flex-1">
-                                <Text className="text-white font-bold text-sm">{label}</Text>
-                                <Text className="text-zinc-500 text-xs">{dayNames}</Text>
+                                <Text className="text-white font-black text-sm font-display italic uppercase tracking-tight">{label}</Text>
+                                <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mt-0.5">{dayNames}</Text>
                               </View>
                               <View className="items-end">
-                                <Text className="text-primary-400 font-bold text-sm">
-                                  {representative.macros.calories} kcal
+                                <Text className="font-black text-sm italic" style={{ color: brandColors.primary.start }}>
+                                  {representative.macros.calories} KCAL
                                 </Text>
-                                <Text className="text-zinc-600 text-[10px]">
-                                   P:{representative.macros.protein}g  C:{representative.macros.carbs}g  G:{representative.macros.fat}g
+                                <Text className="text-zinc-600 text-[9px] font-black uppercase tracking-tighter mt-0.5">
+                                   P:{representative.macros.protein}G | C:{representative.macros.carbs}G | G:{representative.macros.fat}G
                                 </Text>
                               </View>
                            </View>
@@ -435,15 +481,36 @@ export default function CreateDietScreen() {
           </View>
 
           {/* Save Button */}
-          <Button
+          <TouchableOpacity 
+            activeOpacity={0.8}
             onPress={handleSave}
             disabled={loading}
-            variant="primary"
-            label={loading ? 'Salvando...' : 'Criar Plano Alimentar'}
-            className="mb-10"
-          />
+          >
+            <LinearGradient
+              colors={brandColors.gradients.primary}
+              className="rounded-3xl py-6 items-center shadow-2xl mb-10"
+              style={{ shadowColor: brandColors.primary.start, shadowOpacity: 0.4, shadowRadius: 15 }}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white text-base font-black font-display uppercase tracking-widest italic">Consolidar Plano Nutricional</Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <StatusModal 
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={() => {
+          setStatusModal(prev => ({ ...prev, visible: false }));
+          statusModal.onClose?.();
+        }}
+      />
     </ScreenLayout>
   );
 }

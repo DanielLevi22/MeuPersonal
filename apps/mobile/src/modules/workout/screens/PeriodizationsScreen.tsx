@@ -1,10 +1,14 @@
 import { useAuthStore } from '@/auth';
+import { PremiumCard } from '@/components/ui/PremiumCard';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { MuscleFilterCarousel } from '@/components/workout/MuscleFilterCarousel';
+import { colors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, ImageBackground, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 
 const MUSCLE_IMAGES: Record<string, any> = {
@@ -36,14 +40,6 @@ export default function PeriodizationsScreen() {
     return libraryWorkouts.filter(w => w.muscle_group === selectedMuscle);
   }, [libraryWorkouts, selectedMuscle]);
 
-  const muscleFilters = [
-    { name: 'Peito', icon: 'fitness' },
-    { name: 'Costas', icon: 'body' },
-    { name: 'Pernas', icon: 'footsteps' },
-    { name: 'Braços', icon: 'barbell' },
-    { name: 'Ombros', icon: 'shield' },
-    { name: 'Abdominais', icon: 'grid' },
-  ];
 
   useEffect(() => {
     if (user?.id) {
@@ -74,73 +70,28 @@ export default function PeriodizationsScreen() {
   };
 
   const renderItem = ({ item }: { item: any }) => {
-    const bgImage = PERIODIZATION_IMAGES[item.type] || PERIODIZATION_IMAGES['default'];
-    const isActive = item.status === 'active';
-
     return (
-      <TouchableOpacity 
-        activeOpacity={0.8}
+      <PremiumCard
+        title={item.name || 'Sem nome'}
+        subtitle={`Periodização • ${item.phases_count || 0} Fases`}
+        image={PERIODIZATION_IMAGES[item.type] || PERIODIZATION_IMAGES['default']}
         onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as any)}
-        className="mb-6"
+        badge={<StatusBadge status={item.status} />}
+        containerStyle={{ marginBottom: 24 }}
       >
-        <ImageBackground
-          source={bgImage}
-          className="rounded-3xl overflow-hidden border border-zinc-800"
-          resizeMode="cover"
-        >
-          <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
-            className="p-6"
-          >
-            <View className="flex-row justify-between items-start mb-4">
-              <View className="flex-1 mr-4">
-                <View className="flex-row items-center mb-2">
-                  <View className={`px-3 py-1 rounded-full border border-white/10 ${
-                    isActive ? 'bg-emerald-500/20' : 'bg-zinc-800/40'
-                  }`}>
-                    <Text className={`text-[10px] font-bold uppercase tracking-wider ${
-                      isActive ? 'text-emerald-400' : 'text-zinc-400'
-                    }`}>
-                      {isActive ? 'Ativa' : 'Inativa'}
-                    </Text>
-                  </View>
-                  {item.student && (
-                    <View className="bg-black/40 px-3 py-1 rounded-full border border-white/10 ml-2">
-                      <Text className="text-white/60 text-[10px] font-bold">
-                        {typeof item.student === 'string' ? item.student : item.student.full_name}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text className="text-white text-2xl font-extrabold font-display leading-tight">
-                  {item.name}
-                </Text>
-              </View>
-              <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center border border-white/10 backdrop-blur-md">
-                <Ionicons 
-                  name={item.type === 'strength' ? 'flash' : item.type === 'hypertrophy' ? 'flame' : 'analytics'} 
-                  size={24} 
-                  color="white" 
-                />
-              </View>
-            </View>
-
-            <View className="flex-row items-center justify-between mt-4">
-              <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
-                <Ionicons name="calendar-clear-outline" size={14} color="#FF6B35" style={{ marginRight: 8 }} />
-                <Text className="text-white/90 text-xs font-bold">
-                  {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
-                </Text>
-              </View>
-              
-              <View className="flex-row items-center text-orange-500">
-                <Text className="text-orange-500 font-bold text-xs mr-1">ACESSAR</Text>
-                <Ionicons name="chevron-forward" size={14} color="#FF6B35" />
-              </View>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
-      </TouchableOpacity>
+        <View className="flex-row items-center justify-between mt-4">
+          <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
+            <Ionicons name="calendar-outline" size={14} color={colors.primary.start} style={{ marginRight: 8 }} />
+            <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+              {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
+            </Text>
+          </View>
+          <View className="flex-row items-center">
+            <Text className="text-orange-500 font-bold text-xs mr-1 uppercase" style={{ color: colors.primary.start }}>Gerenciar</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
+          </View>
+        </View>
+      </PremiumCard>
     );
   };
 
@@ -149,70 +100,44 @@ export default function PeriodizationsScreen() {
     const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES['Geral'];
 
     return (
-      <TouchableOpacity 
-        activeOpacity={0.8}
+      <PremiumCard
+        title={item.title}
+        subtitle={`${muscleGroup} • ${getDifficultyLabel(item.difficulty)}`}
+        image={bgImage}
         onPress={() => router.push(`/(tabs)/workouts/${item.id}` as any)}
-        className="mb-6"
-      >
-        <ImageBackground
-          source={bgImage}
-          className="rounded-3xl overflow-hidden border border-zinc-800"
-          resizeMode="cover"
-        >
-          <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
-            className="p-6"
+        containerStyle={{ marginBottom: 24 }}
+        badge={
+          <View 
+            className="px-3 py-1 rounded-full border border-white/10 self-start"
+            style={{ backgroundColor: `${getDifficultyColor(item.difficulty)}40` }}
           >
-            <View className="flex-row justify-between items-start mb-4">
-              <View className="flex-1 mr-4">
-                <View className="flex-row items-center mb-2">
-                  <View 
-                    className="px-3 py-1 rounded-full border border-white/10"
-                    style={{ backgroundColor: `${getDifficultyColor(item.difficulty)}40` }}
-                  >
-                    <Text 
-                      className="text-[10px] font-bold uppercase tracking-wider"
-                      style={{ color: getDifficultyColor(item.difficulty) }}
-                    >
-                      {getDifficultyLabel(item.difficulty)}
-                    </Text>
-                  </View>
-                  <View className="bg-black/40 px-3 py-1 rounded-full border border-white/10 ml-2">
-                    <Text className="text-white/60 text-[10px] font-bold uppercase tracking-wider">
-                      {muscleGroup}
-                    </Text>
-                  </View>
-                </View>
-                <Text className="text-white text-2xl font-extrabold font-display leading-tight">
-                  {item.title}
-                </Text>
-              </View>
-              <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center border border-white/10 backdrop-blur-md">
-                <Ionicons name="barbell-outline" size={24} color="white" />
-              </View>
-            </View>
-
-            <View className="flex-row items-center justify-between mt-4">
-              <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
-                <Ionicons name="time-outline" size={14} color="#00D9FF" style={{ marginRight: 8 }} />
-                <Text className="text-white/90 text-xs font-bold">
-                  {item.duration_minutes || 60} MIN
-                </Text>
-                <View className="w-[1px] h-3 bg-white/20 mx-3" />
-                <Ionicons name="apps-outline" size={14} color="#FF6B35" style={{ marginRight: 8 }} />
-                <Text className="text-white/90 text-xs font-bold uppercase">
-                  {(item.items?.length || item.exercises_count || 0)} EXERCÍCIOS
-                </Text>
-              </View>
-              
-              <View className="flex-row items-center">
-                <Text className="text-orange-500 font-bold text-xs mr-1 uppercase">Editar</Text>
-                <Ionicons name="chevron-forward" size={14} color="#FF6B35" />
-              </View>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
-      </TouchableOpacity>
+            <Text 
+              className="text-[10px] font-bold uppercase tracking-wider"
+              style={{ color: getDifficultyColor(item.difficulty) }}
+            >
+              {getDifficultyLabel(item.difficulty)}
+            </Text>
+          </View>
+        }
+      >
+        <View className="flex-row items-center justify-between mt-4">
+          <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
+            <Ionicons name="time-outline" size={14} color={colors.secondary.main} style={{ marginRight: 8 }} />
+            <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+              {item.duration_minutes || 60} MIN
+            </Text>
+            <View className="w-[1px] h-3 bg-white/20 mx-3" />
+            <Ionicons name="apps-outline" size={14} color={colors.primary.start} style={{ marginRight: 8 }} />
+            <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+              {(item.items?.length || item.exercises_count || 0)} EXERCÍCIOS
+            </Text>
+          </View>
+          <View className="flex-row items-center">
+            <Text className="text-orange-500 font-bold text-xs mr-1 uppercase" style={{ color: colors.primary.start }}>Ver</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
+          </View>
+        </View>
+      </PremiumCard>
     );
   };
 
@@ -273,52 +198,11 @@ export default function PeriodizationsScreen() {
 
       {/* Muscle Filters (Visible only in Library mode) */}
       {viewMode === 'library' && (
-        <View className="mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}
-          >
-            <TouchableOpacity
-              onPress={() => setSelectedMuscle(null)}
-              className={`px-5 py-2.5 rounded-2xl border-2 flex-row items-center ${
-                selectedMuscle === null 
-                  ? 'bg-orange-500 border-orange-500' 
-                  : 'bg-zinc-950 border-zinc-800'
-              }`}
-            >
-              <Text className={`font-bold text-[10px] uppercase tracking-widest ${
-                selectedMuscle === null ? 'text-white' : 'text-zinc-500'
-              }`}>
-                Todos
-              </Text>
-            </TouchableOpacity>
-
-            {muscleFilters.map((muscle) => (
-              <TouchableOpacity
-                key={muscle.name}
-                onPress={() => setSelectedMuscle(selectedMuscle === muscle.name ? null : muscle.name)}
-                className={`px-5 py-2.5 rounded-2xl border-2 flex-row items-center ${
-                  selectedMuscle === muscle.name 
-                    ? 'bg-orange-500 border-orange-500' 
-                    : 'bg-zinc-950 border-zinc-800'
-                }`}
-              >
-                <Ionicons 
-                  name={muscle.icon as any} 
-                  size={14} 
-                  color={selectedMuscle === muscle.name ? "white" : "#52525B"}
-                  style={{ marginRight: 6 }}
-                />
-                <Text className={`font-bold text-[10px] uppercase tracking-widest ${
-                  selectedMuscle === muscle.name ? 'text-white' : 'text-zinc-500'
-                }`}>
-                  {muscle.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <MuscleFilterCarousel 
+          selectedMuscle={selectedMuscle} 
+          onSelectMuscle={setSelectedMuscle}
+          containerStyle={{ marginBottom: 24 }}
+        />
       )}
 
       {/* Content */}

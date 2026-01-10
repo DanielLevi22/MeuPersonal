@@ -1,12 +1,14 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { StatusModal, StatusModalType } from '@/components/ui/StatusModal';
+import { colors as brandColors } from '@/constants/colors';
 import { useHealthData } from '@/hooks/useHealthData';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useNutritionStore } from '../store/nutritionStore';
 
 const DAYS = [
@@ -191,7 +193,7 @@ export function StudentNutritionScreen() {
   if (isLoading && !refreshing && !currentDietPlan) {
     return (
       <ScreenLayout className="justify-center items-center">
-        <ActivityIndicator size="large" color="#FF6B35" />
+        <ActivityIndicator size="large" color={brandColors.primary.start} />
       </ScreenLayout>
     );
   }
@@ -201,10 +203,13 @@ export function StudentNutritionScreen() {
       <ScreenLayout>
         <ScrollView 
           contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B35" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.primary.start} />}
         >
-          <View className="bg-zinc-900/50 p-8 rounded-full mb-6 border border-zinc-800">
-            <Ionicons name="restaurant-outline" size={64} color="#52525B" />
+          <View 
+            className="p-8 rounded-full mb-6 border"
+            style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+          >
+            <Ionicons name="restaurant-outline" size={64} color={brandColors.text.disabled} />
           </View>
           <Text className="text-white text-xl font-bold mb-2 text-center font-display">
             Nenhum plano ativo
@@ -231,17 +236,19 @@ export function StudentNutritionScreen() {
         <View className="flex-row gap-3">
              <TouchableOpacity 
                 onPress={() => router.push('/(tabs)/nutrition/shopping-list' as any)}
-                className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
+                className="p-3 rounded-full border shadow-sm"
+                style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
             >
-                <Ionicons name="cart-outline" size={24} color="#FFF" />
+                <Ionicons name="cart-outline" size={24} color={brandColors.text.primary} />
             </TouchableOpacity>
 
             {!isMasquerading && (
             <TouchableOpacity 
                 onPress={() => router.push('/(tabs)/nutrition/scan' as any)}
-                className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
+                className="p-3 rounded-full border shadow-sm"
+                style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
             >
-                <Ionicons name="camera" size={24} color="#FF6B35" />
+                <Ionicons name="camera" size={24} color={brandColors.primary.start} />
             </TouchableOpacity>
             )}
         </View>
@@ -249,29 +256,28 @@ export function StudentNutritionScreen() {
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B35" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.primary.start} />}
       >
         {/* Day Selector */}
-        <View className="px-6 mb-6">
+        <View className="px-6 mb-8">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row gap-2">
+            <View className="flex-row gap-3">
               {DAYS.map((day) => {
-                 // Check if day is future to visually dim it? 
-                 // Optional. For now keeping style same but logic blocks interactions.
                  const isSelected = selectedDay === day.id;
                  return (
                     <TouchableOpacity
                       key={day.id}
                       onPress={() => setSelectedDay(day.id)}
-                      className={`px-4 py-2 rounded-full border ${
-                        isSelected
-                          ? 'bg-orange-500 border-orange-500'
-                          : 'bg-zinc-900 border-zinc-800'
-                      }`}
+                      className="px-5 py-2.5 rounded-2xl border"
+                      style={{ 
+                        backgroundColor: isSelected ? brandColors.primary.start : brandColors.background.secondary,
+                        borderColor: isSelected ? brandColors.primary.start : brandColors.border.dark
+                      }}
                     >
-                      <Text className={`font-bold text-xs ${
-                        isSelected ? 'text-white' : 'text-zinc-400'
-                      }`}>
+                      <Text 
+                        className="font-black text-[10px] tracking-widest uppercase"
+                        style={{ color: isSelected ? 'white' : brandColors.text.muted }}
+                      >
                         {day.label}
                       </Text>
                     </TouchableOpacity>
@@ -281,60 +287,86 @@ export function StudentNutritionScreen() {
           </ScrollView>
         </View>
 
-        {/* Macros Summary */}
-        <View className="px-6 mb-6">
-          <View className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-            <Text className="text-white font-bold mb-4">Resumo do Dia</Text>
+        {/* Macros Summary (Premium Bento Style) */}
+        <View className="px-6 mb-8">
+          <View 
+            className="rounded-3xl p-6 border shadow-2xl relative overflow-hidden"
+            style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+          >
+            {/* Background Accent */}
+            <View 
+              className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-10"
+              style={{ backgroundColor: brandColors.primary.start }}
+            />
+
+            <View className="flex-row justify-between items-center mb-6">
+               <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Resumo do Dia</Text>
+               <View className="bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/10">
+                  <Text className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">Ativo</Text>
+               </View>
+            </View>
             
             {/* Calories Row */}
-            <View className="flex-row justify-between mb-6 bg-zinc-950/50 p-3 rounded-xl">
-              <View className="items-center flex-1 border-r border-zinc-800">
-                <Text className="text-zinc-400 text-xs mb-1">Meta</Text>
-                <Text className="text-white font-bold text-lg">
+            <View className="flex-row justify-between mb-8">
+              <View className="items-start">
+                <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Meta</Text>
+                <Text className="text-white font-black text-3xl font-display">
                   {Math.round(dayTotalMacros.calories)}
                 </Text>
               </View>
-              <View className="items-center flex-1 border-r border-zinc-800">
-                <Text className="text-zinc-400 text-xs mb-1">Consumidas</Text>
-                <Text className="text-orange-500 font-bold text-lg">
-                  {Math.round(consumedMacros.calories)}
-                </Text>
+              <View className="items-center">
+                <View 
+                  className="w-16 h-16 rounded-full items-center justify-center border-4"
+                  style={{ 
+                    borderColor: `${brandColors.primary.start}20`
+                  }}
+                >
+                  <Text className="text-white font-black text-xs font-display">
+                    {Math.min(Math.round((consumedMacros.calories / (dayTotalMacros.calories || 1)) * 100), 100)}%
+                  </Text>
+                </View>
               </View>
-              <View className="items-center flex-1">
-                <Text className="text-zinc-400 text-xs mb-1">Gastas</Text>
-                <Text className="text-emerald-500 font-bold text-lg">
-                  {burnedCalories}
+              <View className="items-end">
+                <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Restam</Text>
+                <Text 
+                  className="font-black text-3xl font-display"
+                  style={{ color: brandColors.primary.start }}
+                >
+                  {Math.max(0, Math.round(dayTotalMacros.calories - consumedMacros.calories))}
                 </Text>
               </View>
             </View>
 
             {/* Macros Row */}
-            <View className="flex-row justify-between mb-4 px-2">
-              <View className="items-center">
-                <Text className="text-zinc-400 text-xs mb-1">Proteína</Text>
-                <Text className="text-emerald-400 font-bold text-base">
-                  {Math.round(consumedMacros.protein)} <Text className="text-zinc-500 text-[10px]">/ {Math.round(dayTotalMacros.protein)}g</Text>
+            <View className="flex-row justify-between px-1">
+              <View className="items-center bg-white/5 p-3 rounded-2xl flex-1 mr-3 border border-white/5">
+                <Text className="text-emerald-500 text-[10px] font-black uppercase tracking-widest mb-1">Prot</Text>
+                <Text className="text-white font-bold text-sm">
+                  {Math.round(consumedMacros.protein)}g
                 </Text>
               </View>
-              <View className="items-center">
-                <Text className="text-zinc-400 text-xs mb-1">Carbo</Text>
-                <Text className="text-purple-400 font-bold text-base">
-                  {Math.round(consumedMacros.carbs)} <Text className="text-zinc-500 text-[10px]">/ {Math.round(dayTotalMacros.carbs)}g</Text>
+              <View className="items-center bg-white/5 p-3 rounded-2xl flex-1 mr-3 border border-white/5">
+                <Text className="text-blue-500 text-[10px] font-black uppercase tracking-widest mb-1">Carb</Text>
+                <Text className="text-white font-bold text-sm">
+                  {Math.round(consumedMacros.carbs)}g
                 </Text>
               </View>
-              <View className="items-center">
-                <Text className="text-zinc-400 text-xs mb-1">Gordura</Text>
-                <Text className="text-amber-400 font-bold text-base">
-                  {Math.round(consumedMacros.fat)} <Text className="text-zinc-500 text-[10px]">/ {Math.round(dayTotalMacros.fat)}g</Text>
+              <View className="items-center bg-white/5 p-3 rounded-2xl flex-1 border border-white/5">
+                <Text className="text-orange-500 text-[10px] font-black uppercase tracking-widest mb-1">Gord</Text>
+                <Text className="text-white font-bold text-sm">
+                  {Math.round(consumedMacros.fat)}g
                 </Text>
               </View>
             </View>
             
-            {/* Progress Bar */}
-            <View className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <View 
-                className="h-full bg-orange-500 rounded-full" 
-                style={{ width: `${Math.min((consumedMacros.calories / (dayTotalMacros.calories || 1)) * 100, 100)}%` }} 
+            {/* Main Progress Bar */}
+            <View className="h-2 bg-white/5 rounded-full overflow-hidden mt-6 border border-white/5">
+              <LinearGradient
+                colors={brandColors.gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="h-full rounded-full"
+                style={{ width: `${Math.min((consumedMacros.calories / (dayTotalMacros.calories || 1)) * 100, 100)}%` }}
               />
             </View>
           </View>
@@ -367,8 +399,13 @@ export function StudentNutritionScreen() {
                    }
                    const items = mealItems[meal.id] || [];
                    if (items.length === 0) {
-                       Alert.alert("Vazio", "Esta refeição não tem alimentos.");
-                       return;
+                        setStatusModal({
+                            visible: true,
+                            title: "Vazio",
+                            message: "esta refeição não tem alimentos cadastrados.",
+                            type: 'info'
+                        });
+                        return;
                    }
                    const ingredients = JSON.stringify(items.map(i => i.food?.name || "Item sem nome"));
                    router.push({
@@ -386,13 +423,18 @@ export function StudentNutritionScreen() {
         </View>
       </ScrollView>
 
-      {/* NutriBot FAB */}
+      {/* NutriBot FAB (Premium Glow) */}
       <TouchableOpacity 
         onPress={() => router.push('/(tabs)/nutrition/bot' as any)}
-        className="absolute bottom-6 right-6 bg-orange-500 w-14 h-14 rounded-full items-center justify-center shadow-lg z-50"
-        style={{ shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 }}
+        activeOpacity={0.9}
+        className="absolute bottom-6 right-6 w-16 h-16 rounded-full items-center justify-center shadow-2xl z-50 overflow-hidden"
       >
-        <Ionicons name="chatbubbles" size={28} color="white" />
+        <LinearGradient
+            colors={brandColors.gradients.primary}
+            className="w-full h-full items-center justify-center"
+        >
+            <Ionicons name="chatbubbles" size={28} color="white" />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Status Modal */}

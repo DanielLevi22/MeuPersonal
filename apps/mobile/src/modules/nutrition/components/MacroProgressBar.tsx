@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { colors as brandColors } from '@/constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Text, View } from 'react-native';
 
 interface MacroProgressBarProps {
   label: string;
@@ -12,71 +14,40 @@ export function MacroProgressBar({ label, consumed, target, unit, color }: Macro
   const percentage = target > 0 ? Math.min(100, (consumed / target) * 100) : 0;
   const isOver = consumed > target;
 
+  // Map simple color names to brand gradients if needed, or use the passed color
+  const getGradient = () => {
+    if (color === '#34C759' || color === '#00C9A7') return brandColors.gradients.success;
+    if (color === '#FF6B35' || color === '#FFB800') return brandColors.gradients.primary;
+    if (color === '#FF2E63' || color === '#FF3B30') return brandColors.gradients.primaryReverse;
+    return [color, color];
+  };
+
   return (
-    <View style={styles.container}>
+    <View className="mb-4">
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={[styles.value, isOver && styles.overValue]}>
-          {consumed.toFixed(0)}{unit} / {target.toFixed(0)}{unit}
+      <View className="flex-row justify-between items-end mb-2 px-1">
+        <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{label}</Text>
+        <Text 
+          className="text-[13px] font-bold font-display"
+          style={{ color: isOver ? brandColors.status.error : brandColors.text.primary }}
+        >
+          {consumed.toFixed(0)}{unit} <Text className="text-zinc-500 font-medium">/ {target.toFixed(0)}{unit}</Text>
         </Text>
       </View>
 
       {/* Progress Bar */}
-      <View style={styles.barContainer}>
-        <View
-          style={[
-            styles.barFill,
-            { width: `${percentage}%`, backgroundColor: color }
-          ]}
+      <View 
+        className="h-3 bg-zinc-900 rounded-full overflow-hidden border"
+        style={{ borderColor: brandColors.border.dark }}
+      >
+        <LinearGradient
+            colors={getGradient() as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="h-full rounded-full"
+            style={{ width: `${percentage}%` }}
         />
       </View>
-
-      {/* Percentage */}
-      <Text style={[styles.percentage, { color }]}>
-        {percentage.toFixed(0)}%
-      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  overValue: {
-    color: '#ff6b6b',
-  },
-  barContainer: {
-    height: 8,
-    backgroundColor: '#27272A',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  percentage: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-});

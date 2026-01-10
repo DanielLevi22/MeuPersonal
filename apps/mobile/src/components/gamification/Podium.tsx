@@ -1,5 +1,6 @@
+import { colors as brandColors } from '@/constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 interface PodiumProps {
   topThree: {
@@ -14,9 +15,12 @@ interface PodiumProps {
 export function Podium({ topThree }: PodiumProps) {
   const getPodiumStyle = (rank: number) => {
     switch (rank) {
+      // Gold
       case 1: return { height: 160, color: ['#FFD700', '#F59E0B'], scale: 1.1 };
-      case 2: return { height: 130, color: ['#C0C0C0', '#9CA3AF'], scale: 1 };
-      case 3: return { height: 110, color: ['#CD7F32', '#A0522D'], scale: 0.9 };
+      // Silver
+      case 2: return { height: 130, color: ['#E2E8F0', '#94A3B8'], scale: 1 };
+      // Bronze (Using Orange-ish bronze from palette or custom)
+      case 3: return { height: 110, color: ['#F97316', '#C2410C'], scale: 0.9 };
       default: return { height: 100, color: ['#374151', '#1F2937'], scale: 1 };
     }
   };
@@ -32,30 +36,45 @@ export function Podium({ topThree }: PodiumProps) {
   ].filter(Boolean);
 
   return (
-    <View style={styles.container}>
+    <View className="flex-row justify-center items-end h-[240px] mb-6 gap-4">
       {visualOrder.map((student: any) => {
         const style = getPodiumStyle(student.rank);
         return (
-          <View key={student.student_id} style={[styles.column, { transform: [{ scale: style.scale }] }]}>
-            <View style={styles.avatarContainer}>
+          <View key={student.student_id} className="items-center w-20" style={{ transform: [{ scale: style.scale }] }}>
+            <View className="mb-2 relative">
               {student.avatar_url ? (
-                <Image source={{ uri: student.avatar_url }} style={styles.avatar} />
+                <Image 
+                    source={{ uri: student.avatar_url }} 
+                    className="w-12 h-12 rounded-full border-2"
+                    style={{ borderColor: brandColors.border.dark }}
+                />
               ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
+                <View 
+                    className="w-12 h-12 rounded-full items-center justify-center border-2 border-zinc-800"
+                    style={{ backgroundColor: brandColors.background.elevated }}
+                >
+                  <Text className="text-white font-bold text-lg">{student.name.charAt(0)}</Text>
                 </View>
               )}
-              <View style={[styles.badge, { backgroundColor: style.color[1] }]}>
-                <Text style={styles.badgeText}>{student.rank}</Text>
+              <View 
+                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full items-center justify-center border border-black"
+                style={{ backgroundColor: style.color[1] }}
+              >
+                <Text className="text-white text-[10px] font-black">{student.rank}</Text>
               </View>
             </View>
             
-            <Text style={styles.name} numberOfLines={1}>{student.name.split(' ')[0]}</Text>
-            <Text style={styles.points}>{student.points} pts</Text>
+            <Text className="text-white text-xs font-semibold mb-0.5" numberOfLines={1}>
+                {student.name.split(' ')[0]}
+            </Text>
+            <Text className="text-[10px] font-bold mb-2" style={{ color: brandColors.primary.start }}>
+                {student.points} pts
+            </Text>
             
             <LinearGradient
               colors={style.color as [string, string]}
-              style={[styles.bar, { height: style.height }]}
+              className="w-full rounded-t-lg opacity-90"
+              style={{ height: style.height }}
             />
           </View>
         );
@@ -63,74 +82,3 @@ export function Podium({ topThree }: PodiumProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    height: 240,
-    marginBottom: 24,
-    gap: 16,
-  },
-  column: {
-    alignItems: 'center',
-    width: 80,
-  },
-  avatarContainer: {
-    marginBottom: 8,
-    position: 'relative',
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#27272A',
-  },
-  avatarPlaceholder: {
-    backgroundColor: '#374151',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 18,
-  },
-  badge: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#09090B',
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  name: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  points: {
-    color: '#FF6B35',
-    fontSize: 10,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  bar: {
-    width: '100%',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    opacity: 0.8,
-  },
-});

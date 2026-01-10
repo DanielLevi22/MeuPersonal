@@ -1,7 +1,8 @@
 import { useAuthStore } from '@/auth';
 import AddFoodQuantityModal from '@/components/AddFoodQuantityModal';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { tailwindColors } from '@/constants/colors';
+import { StatusModal } from '@/components/ui/StatusModal';
+import { colors as brandColors } from '@/constants/colors';
 import { DayActionsModal } from '@/modules/nutrition/components/DayActionsModal';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -269,13 +270,23 @@ export default function DietDetailsScreen() {
       }
       fetchMeals(plan.id);
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao gerar refeições.');
+       setStatusModal({
+         visible: true,
+         title: 'Erro',
+         message: 'Falha ao gerar refeições.',
+         type: 'error'
+       });
     }
   };
 
   const handleCopyDay = async () => {
     await copyDay(selectedDay);
-    Alert.alert('Sucesso', 'Dia copiado com sucesso!');
+    setStatusModal({
+      visible: true,
+      title: 'Sucesso',
+      message: 'Dia copiado com sucesso!',
+      type: 'success'
+    });
   };
 
   const handlePasteDay = async () => {
@@ -426,7 +437,7 @@ export default function DietDetailsScreen() {
   if (isLoading || !plan) {
     return (
       <ScreenLayout className="justify-center items-center">
-        <ActivityIndicator size="large" color={tailwindColors.primary[400]} />
+        <ActivityIndicator size="large" color={brandColors.primary.start} />
       </ScreenLayout>
     );
   }
@@ -480,15 +491,17 @@ export default function DietDetailsScreen() {
           <View className="flex-row items-center justify-between w-full mb-2 z-20 h-11">
             <TouchableOpacity 
               onPress={() => router.back()} 
-              className="bg-background-primary p-2.5 rounded-xl border border-zinc-800"
+              className="p-2.5 rounded-xl border"
+              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
             >
               <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             
             <View className="flex-row gap-2">
               <TouchableOpacity 
-                onPress={() => Alert.alert('Em breve', 'Edição em desenvolvimento')}
-                className="bg-background-primary p-2.5 rounded-xl border border-zinc-800"
+                onPress={() => setStatusModal({ visible: true, title: 'Em breve', message: 'Edição em desenvolvimento', type: 'info' })}
+                className="p-2.5 rounded-xl border"
+                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
               >
                 <Ionicons name="pencil" size={20} color="#FFFFFF" />
               </TouchableOpacity>
@@ -497,37 +510,52 @@ export default function DietDetailsScreen() {
 
           {/* Expanded Content */}
           <Animated.View style={[contentStyle]} className="items-center w-full">
-            <View className="w-20 h-20 rounded-full bg-primary-400/10 items-center justify-center mb-4 border-2 border-primary-400/20">
-              <Ionicons name="restaurant" size={40} color={tailwindColors.primary[400]} />
+            <View 
+              className="w-20 h-20 rounded-full items-center justify-center mb-4 border-2"
+              style={{ backgroundColor: `${brandColors.primary.start}10`, borderColor: `${brandColors.primary.start}20` }}
+            >
+              <Ionicons name="restaurant" size={40} color={brandColors.primary.start} />
             </View>
             
-            <Text className="text-2xl font-extrabold text-white mb-1 font-display text-center">
+            <Text className="text-2xl font-black text-white mb-1 font-display text-center italic">
               {plan.name}
             </Text>
-            <Text className="text-zinc-400 font-sans mb-6 text-center">
+            <Text className="text-zinc-500 font-sans mb-6 text-center text-xs uppercase tracking-widest font-bold">
               {plan.description || 'Sem descrição'}
             </Text>
 
-            {/* Macros Grid */}
+            {/* Macros Grid (Bento Style) */}
             <View className="flex-row gap-3 w-full">
-              <View className="flex-1 bg-background-primary p-4 rounded-2xl border border-zinc-800 items-center">
-                <Text className="text-emerald-400 text-xs font-bold mb-1">PROTEÍNA</Text>
-                <Text className="text-white text-xl font-bold">{plan.target_protein}g</Text>
+              <View 
+                className="flex-1 p-4 rounded-3xl border items-center"
+                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+              >
+                <Text className="text-emerald-500 text-[9px] font-black uppercase tracking-widest mb-1">PROTEÍNA</Text>
+                <Text className="text-white text-xl font-black font-display tracking-tight">{plan.target_protein}g</Text>
               </View>
-              <View className="flex-1 bg-background-primary p-4 rounded-2xl border border-zinc-800 items-center">
-                <Text className="text-purple-400 text-xs font-bold mb-1">CARBO</Text>
-                <Text className="text-white text-xl font-bold">{plan.target_carbs}g</Text>
+              <View 
+                className="flex-1 p-4 rounded-3xl border items-center"
+                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+              >
+                <Text className="text-blue-500 text-[9px] font-black uppercase tracking-widest mb-1">CARBO</Text>
+                <Text className="text-white text-xl font-black font-display tracking-tight">{plan.target_carbs}g</Text>
               </View>
-              <View className="flex-1 bg-background-primary p-4 rounded-2xl border border-zinc-800 items-center">
-                <Text className="text-amber-400 text-xs font-bold mb-1">GORDURA</Text>
-                <Text className="text-white text-xl font-bold">{plan.target_fat}g</Text>
+              <View 
+                className="flex-1 p-4 rounded-3xl border items-center"
+                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+              >
+                <Text className="text-orange-500 text-[9px] font-black uppercase tracking-widest mb-1">GORDURA</Text>
+                <Text className="text-white text-xl font-black font-display tracking-tight">{plan.target_fat}g</Text>
               </View>
             </View>
 
-            <View className="mt-4 bg-background-primary px-6 py-3 rounded-xl border border-zinc-800 flex-row items-center mb-6">
-              <Ionicons name="flame" size={20} color={tailwindColors.primary[400]} style={{ marginRight: 8 }} />
-              <Text className="text-white font-bold text-lg">
-                {plan.target_calories} <Text className="text-zinc-500 font-normal text-sm">kcal/dia</Text>
+            <View 
+              className="mt-5 px-6 py-3 rounded-2xl border flex-row items-center mb-6 shadow-sm"
+              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+            >
+              <Ionicons name="flame" size={20} color={brandColors.primary.start} style={{ marginRight: 10 }} />
+              <Text className="text-white font-black text-xl font-display italic">
+                {plan.target_calories} <Text className="text-zinc-500 font-black text-[10px] uppercase tracking-widest">kcal/dia</Text>
               </Text>
             </View>
           </Animated.View>
@@ -540,8 +568,11 @@ export default function DietDetailsScreen() {
           activeOpacity={0.7}
           hitSlop={{ top: 20, bottom: 20, left: 50, right: 50 }}
         >
-          <Animated.View style={[arrowStyle]} className="bg-zinc-800/50 rounded-full p-1">
-            <Ionicons name="chevron-down" size={24} color="#FFFFFF" />
+          <Animated.View 
+            style={[arrowStyle, { backgroundColor: `${brandColors.background.elevated}80`, borderColor: brandColors.border.dark }]} 
+            className="rounded-full p-1.5 border"
+          >
+            <Ionicons name="chevron-down" size={22} color="#FFFFFF" />
           </Animated.View>
         </TouchableOpacity>
       </Animated.View>
@@ -554,38 +585,43 @@ export default function DietDetailsScreen() {
       >
 
         {/* Day Selector */}
-        <View className="px-6 mt-6 mb-2">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-zinc-400 font-bold text-sm">DIA DA SEMANA</Text>
+        <View className="px-6 mt-8 mb-4">
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="text-zinc-500 font-black text-[10px] tracking-widest uppercase">DIA DA SEMANA</Text>
             {!isMasquerading && (
             <TouchableOpacity 
               onPress={() => setShowDayActions(true)}
-              className="flex-row items-center gap-1 bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700"
+              className="flex-row items-center gap-2 px-4 py-2 rounded-2xl border"
+              style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
             >
-              <Ionicons name="ellipsis-horizontal" size={16} color="#E4E4E7" />
-              <Text className="text-zinc-200 text-xs font-bold">Opções</Text>
+              <Ionicons name="ellipsis-horizontal" size={16} color={brandColors.text.primary} />
+              <Text className="text-white text-xs font-black uppercase tracking-widest">Opções</Text>
             </TouchableOpacity>
             )}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row gap-2">
-              {days.map((day) => (
-                <TouchableOpacity
-                  key={day.id}
-                  onPress={() => setSelectedDay(day.id)}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedDay === day.id
-                      ? 'bg-primary-400 border-primary-400'
-                      : 'bg-background-secondary border-zinc-800'
-                  }`}
-                >
-                  <Text className={`font-bold text-xs ${
-                    selectedDay === day.id ? 'text-white' : 'text-zinc-400'
-                  }`}>
-                    {day.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View className="flex-row gap-3">
+              {days.map((day) => {
+                const isSelected = selectedDay === day.id;
+                return (
+                  <TouchableOpacity
+                    key={day.id}
+                    onPress={() => setSelectedDay(day.id)}
+                    className="px-5 py-2.5 rounded-2xl border"
+                    style={{ 
+                        backgroundColor: isSelected ? brandColors.primary.start : brandColors.background.secondary,
+                        borderColor: isSelected ? brandColors.primary.start : brandColors.border.dark
+                    }}
+                  >
+                    <Text 
+                      className="font-black text-[10px] tracking-widest uppercase"
+                      style={{ color: isSelected ? 'white' : brandColors.text.muted }}
+                    >
+                      {day.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
         </View>
@@ -638,19 +674,22 @@ export default function DietDetailsScreen() {
                   }, 0);
 
                   return (
-                    <View key={existingMeal.id} className="bg-background-secondary rounded-2xl p-4 border border-zinc-800">
+                    <View 
+                      key={existingMeal.id} 
+                      className="rounded-3xl p-5 border mb-1"
+                      style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+                    >
                       <View className="flex-row justify-between items-center mb-3">
                         <TouchableOpacity 
                           className="flex-row items-center flex-1"
                           onPress={() => !isMasquerading && handleEditMealPress(existingMeal)}
                           activeOpacity={isMasquerading ? 1 : 0.7}
                         >
-                          <Ionicons name="chevron-forward" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-                          <Text className="text-white font-bold text-base mr-2">{existingMeal.name}</Text>
+                          <Ionicons name="chevron-forward" size={16} color={brandColors.primary.start} style={{ marginRight: 8 }} />
+                          <Text className="text-white font-black text-base mr-2 font-display italic">{existingMeal.name}</Text>
                         </TouchableOpacity>
                         <View className="flex-row items-center gap-2">
-                          <Text className="text-emerald-400 font-bold text-sm">{Math.round(totalCals)} kcal</Text>
-                          <Text className="text-zinc-500 text-xs">{items.length} item{items.length !== 1 ? 's' : ''}</Text>
+                          <Text className="font-black text-sm font-display tracking-tight" style={{ color: brandColors.primary.start }}>{Math.round(totalCals)} kcal</Text>
                         </View>
                       </View>
                       
@@ -687,13 +726,14 @@ export default function DietDetailsScreen() {
                       )}
                       
                       {!isMasquerading && (
-                        <View className="flex-row gap-2 mt-3">
+                        <View className="flex-row gap-2 mt-5">
                             <TouchableOpacity 
                                 onPress={() => handleAddFoodPress(existingMeal.id)}
-                                className="flex-1 bg-background-primary p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
+                                className="flex-1 py-3 rounded-2xl border flex-row justify-center items-center shadow-sm"
+                                style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
                             >
-                                <Ionicons name="add" size={16} color={tailwindColors.primary[400]} style={{ marginRight: 4 }} />
-                                <Text className="text-primary-400 text-xs font-bold">Adicionar</Text>
+                                <Ionicons name="add" size={16} color={brandColors.primary.start} style={{ marginRight: 8 }} />
+                                <Text className="text-white text-[10px] font-black uppercase tracking-widest">Adicionar Alimento</Text>
                             </TouchableOpacity>
                         </View>
                       )}
@@ -717,10 +757,11 @@ export default function DietDetailsScreen() {
                         setMealTime(stdMeal.defaultTime); // Pre-fill time
                         setShowFoodSearch(true);
                       }}
-                      className="bg-background-secondary/50 p-4 rounded-2xl border border-dashed border-zinc-800 flex-row items-center justify-center mb-2"
+                      className="p-5 rounded-3xl border border-dashed flex-row items-center justify-center mb-2"
+                      style={{ backgroundColor: `${brandColors.background.secondary}50`, borderColor: brandColors.border.dark }}
                     >
-                      <Ionicons name="add-circle-outline" size={24} color={tailwindColors.primary[400]} style={{ marginRight: 8 }} />
-                      <Text className="text-primary-400 font-bold text-base">Adicionar {stdMeal.name}</Text>
+                      <Ionicons name="add-circle-outline" size={24} color={brandColors.primary.start} style={{ marginRight: 10 }} />
+                      <Text className="font-black text-sm uppercase tracking-widest" style={{ color: brandColors.primary.start }}>Adicionar {stdMeal.name}</Text>
                     </TouchableOpacity>
                   );
                 }
@@ -730,11 +771,12 @@ export default function DietDetailsScreen() {
 
           {!isMasquerading && (
             <TouchableOpacity 
-              className="mt-6 border-2 border-dashed border-zinc-700 rounded-2xl p-4 items-center justify-center"
+              className="mt-6 border-2 border-dashed rounded-3xl p-6 items-center justify-center"
+              style={{ borderColor: brandColors.border.dark }}
               onPress={handleAddMealPress}
             >
-              <Ionicons name="add-circle-outline" size={24} color="#71717A" />
-              <Text className="text-zinc-500 font-bold mt-2">Adicionar Refeição</Text>
+              <Ionicons name="add-circle-outline" size={32} color={brandColors.text.disabled} />
+              <Text className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mt-3">Adicionar Nova Refeição</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -942,7 +984,8 @@ export default function DietDetailsScreen() {
                 <Text className="text-zinc-400 font-bold">Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                className="flex-1 bg-primary-400 p-4 rounded-xl items-center"
+                className="flex-1 p-4 rounded-xl items-center"
+                style={{ backgroundColor: brandColors.primary.start }}
                 onPress={handleSaveMeal}
               >
                 <Text className="text-white font-bold">Salvar</Text>
@@ -951,6 +994,14 @@ export default function DietDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      <StatusModal 
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
+      />
 
     </ScreenLayout>
   );

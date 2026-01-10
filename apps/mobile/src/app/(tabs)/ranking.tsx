@@ -2,6 +2,7 @@ import { useAuthStore } from '@/auth';
 import { Podium } from '@/components/gamification/Podium';
 import { RankListItem } from '@/components/gamification/RankListItem';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { useEffect, useState } from 'react';
@@ -77,55 +78,64 @@ export default function LeaderboardScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View className="flex-1 bg-[#0A0A0A] justify-center items-center">
-        <ActivityIndicator size="large" color="#FFB800" />
+      <View className="flex-1 bg-black justify-center items-center">
+        <ActivityIndicator size="large" color={brandColors.primary.start} />
       </View>
     );
   }
 
   return (
     <ScreenLayout>
-      <View className="px-6 pt-4 pb-2">
-        <Text className="text-3xl font-extrabold text-white text-center font-display">
-          Ranking Semanal 🏆
-        </Text>
-        <Text className="text-sm text-zinc-400 text-center mt-1 font-sans">
-          Quem está mais focado essa semana?
-        </Text>
-      </View>
+      <View className="flex-1">
+        {/* Header with Gradient Text Effect */}
+        <View className="px-6 pt-2 pb-4 items-center">
+          <Text className="text-3xl font-black text-white text-center font-display italic tracking-tighter">
+            RANKING DE ELITE 🏆
+          </Text>
+          <Text className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
+            SEMANAL
+          </Text>
+        </View>
 
-      <FlatList
-        data={rest}
-        keyExtractor={(item) => item.student_id}
-        ListHeaderComponent={() => (
-          <View className="mb-4">
-            {topThree.length > 0 ? (
-              <Podium topThree={topThree} />
-            ) : (
-              <View className="h-48 justify-center items-center">
-                <Ionicons name="trophy-outline" size={64} color="#52525B" />
-                <Text className="text-zinc-500 mt-4 font-sans">
-                  Seja o primeiro a pontuar!
+        <FlatList
+          data={rest}
+          keyExtractor={(item) => item.student_id}
+          ListHeaderComponent={() => (
+            <View className="mb-6">
+              {topThree.length > 0 ? (
+                <View className="mt-4">
+                    <Podium topThree={topThree} />
+                    {/* Divider */}
+                    <View className="h-[1px] bg-zinc-800 mx-6 mb-4" />
+                </View>
+              ) : (
+                <View className="h-48 justify-center items-center opacity-50">
+                  <Ionicons name="trophy-outline" size={64} color={brandColors.text.muted} />
+                  <Text className="text-zinc-500 mt-4 font-bold uppercase tracking-wider">
+                    Seja o primeiro a pontuar!
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+          renderItem={({ item }) => (
+            <RankListItem item={item} isCurrentUser={item.student_id === user?.id} />
+          )}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.primary.start} />
+          }
+          ListEmptyComponent={
+            topThree.length === 0 ? null : (
+              <View className="items-center mt-10 opacity-50">
+                <Text className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
+                  A competição começou
                 </Text>
               </View>
-            )}
-          </View>
-        )}
-        renderItem={({ item }) => (
-          <RankListItem item={item} isCurrentUser={item.student_id === user?.id} />
-        )}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFB800" />
-        }
-        ListEmptyComponent={
-          topThree.length === 0 ? null : (
-            <Text className="text-zinc-500 text-center mt-6 font-sans">
-              Nenhum outro aluno pontuou ainda.
-            </Text>
-          )
-        }
-      />
+            )
+          }
+        />
+      </View>
     </ScreenLayout>
   );
 }

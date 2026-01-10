@@ -1,3 +1,4 @@
+import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, TouchableOpacity, View } from 'react-native';
 
@@ -31,21 +32,32 @@ export function MealCard({
   }, 0);
 
   return (
-    <View className={`bg-zinc-900 rounded-2xl p-4 border mb-4 ${isChecked ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-zinc-800'}`}>
+    <View 
+      className={`rounded-2xl p-4 border mb-4 ${isChecked ? 'bg-emerald-500/5' : ''}`}
+      style={{ 
+        backgroundColor: isChecked ? `${brandColors.status.success}08` : brandColors.background.secondary,
+        borderColor: isChecked ? `${brandColors.status.success}40` : brandColors.border.dark
+      }}
+    >
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center flex-1">
           {onToggleCheck && (
             <TouchableOpacity 
               onPress={onToggleCheck}
-              className={`mr-3 w-6 h-6 rounded-full border-2 items-center justify-center ${
-                isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600'
-              }`}
+              className={`mr-3 w-7 h-7 rounded-full border-2 items-center justify-center`}
+              style={{ 
+                backgroundColor: isChecked ? brandColors.status.success : 'transparent',
+                borderColor: isChecked ? brandColors.status.success : brandColors.text.muted
+              }}
             >
-              {isChecked && <Ionicons name="checkmark" size={14} color="#000" />}
+              {isChecked && <Ionicons name="checkmark" size={16} color="#000" />}
             </TouchableOpacity>
           )}
-          <View className="bg-zinc-800 px-2 py-1 rounded-md mr-3">
-            <Text className="text-zinc-400 text-xs font-bold">
+          <View 
+            className="px-2.5 py-1 rounded-lg mr-3 border"
+            style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+          >
+            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
               {meal.meal_time || '00:00'}
             </Text>
           </View>
@@ -59,7 +71,10 @@ export function MealCard({
           )}
         </View>
         <View className="flex-row items-center gap-2">
-          <Text className={`${isChecked ? 'text-zinc-500' : 'text-orange-500'} font-bold text-sm`}>
+          <Text 
+            className="font-black text-sm uppercase tracking-widest font-display"
+            style={{ color: isChecked ? brandColors.text.muted : brandColors.primary.start }}
+          >
             {Math.round(totalCals)} kcal
           </Text>
           {isEditable && (
@@ -97,10 +112,19 @@ export function MealCard({
             {onCook && !isChecked && (
                 <TouchableOpacity 
                     onPress={onCook}
-                    className="flex-row items-center justify-center bg-orange-500/10 py-2 rounded-xl border border-orange-500/20"
+                    className="flex-row items-center justify-center py-2.5 rounded-2xl border"
+                    style={{ 
+                      backgroundColor: `${brandColors.primary.start}10`,
+                      borderColor: `${brandColors.primary.start}20` 
+                    }}
                 >
-                     <Ionicons name="flame-outline" size={16} color="#FF6B35" style={{ marginRight: 6 }} />
-                     <Text className="text-[#FF6B35] text-xs font-bold">Cozinhar Agora</Text>
+                     <Ionicons name="flame-outline" size={16} color={brandColors.primary.start} style={{ marginRight: 8 }} />
+                     <Text 
+                       className="text-[11px] font-black uppercase tracking-widest"
+                       style={{ color: brandColors.primary.start }}
+                     >
+                       Cozinhar Agora
+                     </Text>
                 </TouchableOpacity>
             )}
         </View>

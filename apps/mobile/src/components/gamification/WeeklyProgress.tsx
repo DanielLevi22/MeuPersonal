@@ -1,3 +1,4 @@
+import { colors as brandColors } from '@/constants/colors';
 import { DailyGoal } from '@/services/gamification';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
@@ -25,11 +26,14 @@ export function WeeklyProgress({ weeklyGoals }: WeeklyProgressProps) {
 
   return (
     <View className="mb-8">
-      <Text className="text-zinc-500 text-[13px] font-bold mb-3 font-sans uppercase tracking-widest ml-1">
+      <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest ml-1 mb-3">
         Consistência Semanal
       </Text>
       
-      <View className="flex-row justify-between items-center bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+      <View 
+        className="flex-row justify-between items-center rounded-3xl p-5 border"
+        style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+      >
         {days.map((date, index) => {
           const goal = weeklyGoals.find(g => g.date === date);
           const isToday = date === today;
@@ -42,32 +46,34 @@ export function WeeklyProgress({ weeklyGoals }: WeeklyProgressProps) {
           
           const isSuccess = mealsDone && workoutDone;
           const isFuture = date > today;
-          const isMissed = !isFuture && !isSuccess;
 
           const dayLabel = getDayLabel(date);
 
           return (
             <View key={date} className="items-center gap-2">
-              <Text className={`text-[10px] font-bold ${isToday ? 'text-white' : 'text-zinc-500'}`}>
+              <Text className={`text-[10px] font-black uppercase ${isToday ? 'text-white' : 'text-zinc-600'}`}>
                 {dayLabel}
               </Text>
               
               <View 
-                className={`w-8 h-8 rounded-full items-center justify-center border-2 ${
-                  isToday 
-                    ? 'border-orange-500 bg-orange-500/10' 
-                    : 'border-transparent bg-zinc-800'
-                } ${
-                  isSuccess ? 'bg-emerald-500/20' : ''
-                }`}
-                style={isSuccess && !isToday ? { backgroundColor: 'rgba(16, 185, 129, 0.1)' } : {}}
+                className="w-8 h-8 rounded-full items-center justify-center border-2"
+                style={{
+                  backgroundColor: isToday 
+                    ? brandColors.primary.start + '10' 
+                    : isSuccess ? brandColors.status.success + '10' : 'transparent',
+                  borderColor: isToday 
+                    ? brandColors.primary.start
+                    : isSuccess ? brandColors.status.success : 'transparent',
+                }}
               >
                 {isFuture ? (
-                  <View className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+                  <View className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
                 ) : isSuccess ? (
-                  <Ionicons name="checkmark" size={16} color="#34D399" />
+                  <Ionicons name="checkmark" size={14} color={brandColors.status.success} />
+                ) : isToday ? (
+                   <Ionicons name="flame" size={14} color={brandColors.primary.start} />
                 ) : (
-                  <Ionicons name="close" size={16} color={isToday ? "#FF6B35" : "#71717A"} />
+                  <Ionicons name="close" size={14} color={brandColors.text.muted} />
                 )}
               </View>
             </View>

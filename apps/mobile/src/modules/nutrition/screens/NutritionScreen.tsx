@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,63 +41,91 @@ export default function NutritionScreen() {
         onPress={() => handlePressPlan(item.student_id, item.id)}
         className="mb-4"
       >
-        <View className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 shadow-sm">
-          <View className="flex-row justify-between items-start mb-4">
+        <View 
+          className="rounded-3xl p-6 border shadow-sm"
+          style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+        >
+          <View className="flex-row justify-between items-start mb-6">
             <View className="flex-1 mr-4">
-              <Text className="text-white text-xl font-bold font-display mb-1 leading-tight">
+              <Text className="text-white text-xl font-black font-display mb-1 leading-tight">
                 {item.name}
               </Text>
-              <Text className="text-zinc-400 text-sm font-sans line-clamp-2">
+              <Text className="text-zinc-500 text-sm font-sans line-clamp-2">
                 {item.description || 'Sem descrição'}
               </Text>
               {item.student?.full_name && (
-                <View className="flex-row items-center mt-2">
-                  <Ionicons name="person-circle-outline" size={16} color="#A1A1AA" />
-                  <Text className="text-zinc-400 text-xs ml-1 font-medium">
+                <View className="flex-row items-center mt-3">
+                  <View className="bg-white/5 p-1 rounded-full mr-2">
+                    <Ionicons name="person" size={12} color={brandColors.text.muted} />
+                  </View>
+                  <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
                     {item.student.full_name}
                   </Text>
                 </View>
               )}
             </View>
-            <View className={`px-3 py-1.5 rounded-full ${
-              item.status === 'active' ? 'bg-emerald-500/15' : 'bg-zinc-800'
-            }`}>
-              <Text className={`text-xs font-bold ${
-                item.status === 'active' ? 'text-emerald-400' : 'text-zinc-400'
-              }`}>
+            <View 
+              className="px-3 py-1.5 rounded-full border"
+              style={{ 
+                backgroundColor: item.status === 'active' ? `${brandColors.status.success}15` : brandColors.background.primary,
+                borderColor: item.status === 'active' ? `${brandColors.status.success}30` : brandColors.border.dark
+              }}
+            >
+              <Text 
+                className="text-[10px] font-black uppercase tracking-widest"
+                style={{ color: item.status === 'active' ? brandColors.status.success : brandColors.text.muted }}
+              >
                 {item.status === 'active' ? 'Ativo' : 'Inativo'}
               </Text>
             </View>
           </View>
 
-          {/* Macros Summary - Cleaner Look */}
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1 bg-zinc-950/50 p-3 rounded-xl items-center">
-              <Text className="text-emerald-400 text-xs font-bold mb-0.5">PROT</Text>
-              <Text className="text-white font-semibold text-sm">{item.target_protein}g</Text>
+          {/* Macros Summary - Premium Style */}
+          <View className="flex-row gap-3 mb-6">
+            <View 
+              className="flex-1 p-3 rounded-2xl items-center border"
+              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+            >
+              <Text className="text-emerald-500 text-[9px] font-black uppercase tracking-widest mb-1">PROT</Text>
+              <Text className="text-white font-bold text-sm tracking-tight">{item.target_protein}g</Text>
             </View>
-            <View className="flex-1 bg-zinc-950/50 p-3 rounded-xl items-center">
-              <Text className="text-purple-400 text-xs font-bold mb-0.5">CARB</Text>
-              <Text className="text-white font-semibold text-sm">{item.target_carbs}g</Text>
+            <View 
+              className="flex-1 p-3 rounded-2xl items-center border"
+              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+            >
+              <Text className="text-blue-500 text-[9px] font-black uppercase tracking-widest mb-1">CARB</Text>
+              <Text className="text-white font-bold text-sm tracking-tight">{item.target_carbs}g</Text>
             </View>
-            <View className="flex-1 bg-zinc-950/50 p-3 rounded-xl items-center">
-              <Text className="text-amber-400 text-xs font-bold mb-0.5">GORD</Text>
-              <Text className="text-white font-semibold text-sm">{item.target_fat}g</Text>
+            <View 
+              className="flex-1 p-3 rounded-2xl items-center border"
+              style={{ backgroundColor: brandColors.background.primary, borderColor: brandColors.border.dark }}
+            >
+              <Text className="text-orange-500 text-[9px] font-black uppercase tracking-widest mb-1">GORD</Text>
+              <Text className="text-white font-bold text-sm tracking-tight">{item.target_fat}g</Text>
             </View>
           </View>
 
-          <View className="flex-row justify-between items-center pt-4 border-t border-zinc-800/50">
-            <View className="flex-row items-center bg-orange-500/10 px-2 py-1 rounded-lg">
-              <Ionicons name="flame" size={14} color="#FF6B35" style={{ marginRight: 4 }} />
-              <Text className="text-[#FF6B35] font-bold text-sm">
-                {item.target_calories} <Text className="text-[#FF6B35]/70 font-normal text-xs">kcal</Text>
+          <View 
+            className="flex-row justify-between items-center pt-5 border-t"
+            style={{ borderTopColor: brandColors.border.dark }}
+          >
+            <View 
+              className="flex-row items-center px-3 py-1.5 rounded-xl border"
+              style={{ backgroundColor: `${brandColors.primary.start}08`, borderColor: `${brandColors.primary.start}20` }}
+            >
+              <Ionicons name="flame" size={14} color={brandColors.primary.start} style={{ marginRight: 6 }} />
+              <Text 
+                className="font-black text-sm font-display tracking-tight"
+                style={{ color: brandColors.primary.start }}
+              >
+                {item.target_calories} <Text className="text-[10px] font-bold uppercase tracking-widest">kcal</Text>
               </Text>
             </View>
             <View className="flex-row items-center">
-              <Text className="text-zinc-500 text-xs mr-1 font-medium">
+              <Text className="text-zinc-600 text-[10px] mr-2 font-black uppercase tracking-widest">
                 {new Date(item.start_date).toLocaleDateString()}
               </Text>
-              <Ionicons name="chevron-forward" size={14} color="#52525B" />
+              <Ionicons name="chevron-forward" size={14} color={brandColors.text.disabled} />
             </View>
           </View>
         </View>
@@ -123,10 +152,11 @@ export default function NutritionScreen() {
             onPress={handleCreatePress}
           >
             <LinearGradient
-              colors={['#FF6B35', '#FF2E63']}
+              colors={brandColors.gradients.primary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="h-12 w-12 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
+              className="h-12 w-12 rounded-full items-center justify-center shadow-xl"
+              style={{ shadowColor: brandColors.primary.start, shadowOpacity: 0.3, shadowRadius: 10 }}
             >
               <Ionicons name="add" size={28} color="#FFFFFF" />
             </LinearGradient>
@@ -144,7 +174,7 @@ export default function NutritionScreen() {
           <RefreshControl 
             refreshing={isLoading} 
             onRefresh={() => user?.id && fetchDietPlans(user.id)} 
-            tintColor="#FF6B35" 
+            tintColor={brandColors.primary.start} 
           />
         }
         showsVerticalScrollIndicator={false}
@@ -154,8 +184,11 @@ export default function NutritionScreen() {
               entering={FadeInDown.delay(200).springify()}
               className="flex-1 justify-center items-center py-20"
             >
-              <View className="bg-zinc-900/50 p-8 rounded-full mb-6 border border-zinc-800">
-                <Ionicons name="restaurant-outline" size={64} color="#52525B" />
+              <View 
+                className="p-8 rounded-full mb-6 border"
+                style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
+              >
+                <Ionicons name="restaurant-outline" size={64} color={brandColors.text.disabled} />
               </View>
               <Text className="text-white text-xl font-bold mb-2 text-center font-display">
                 Nenhum plano encontrado
@@ -166,16 +199,17 @@ export default function NutritionScreen() {
               
               <Link href={'/nutrition/create' as any} asChild>
                 <TouchableOpacity 
-                  activeOpacity={0.8}
-                  onPress={handleCreatePress}
+                   activeOpacity={0.8}
+                   onPress={handleCreatePress}
                 >
                   <LinearGradient
-                    colors={['#FF6B35', '#FF2E63']}
+                    colors={brandColors.gradients.primary}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="rounded-2xl py-3.5 px-8 shadow-lg shadow-orange-500/20"
+                    className="rounded-2xl py-4 px-10 shadow-xl"
+                    style={{ shadowColor: brandColors.primary.start, shadowOpacity: 0.3, shadowRadius: 10 }}
                   >
-                    <Text className="text-white text-base font-bold font-display">
+                    <Text className="text-white text-base font-black font-display uppercase tracking-widest">
                       Criar Primeiro Plano
                     </Text>
                   </LinearGradient>
@@ -184,7 +218,7 @@ export default function NutritionScreen() {
             </Animated.View>
           ) : (
             <View className="py-20">
-              <ActivityIndicator size="large" color="#FF6B35" />
+              <ActivityIndicator size="large" color={brandColors.primary.start} />
             </View>
           )
         }
