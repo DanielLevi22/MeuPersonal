@@ -190,7 +190,7 @@ export function DailyNutrition() {
                     className={`w-6 h-6 rounded-full border-2 border-muted-foreground items-center justify-center ${isCompleted ? 'bg-primary border-primary' : ''}`}
                   >
                     {isCompleted && (
-                      <Ionicons name="checkmark" size={16} color="#0A0E1A" />
+                      <Ionicons name="checkmark" size={16} color="#09090B" />
                     )}
                   </View>
                 </View>

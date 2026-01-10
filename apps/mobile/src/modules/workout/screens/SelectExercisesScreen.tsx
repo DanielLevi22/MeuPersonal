@@ -253,7 +253,7 @@ export default function SelectExercisesScreen() {
           <TouchableOpacity 
             onPress={() => router.back()} 
             style={{ 
-              backgroundColor: '#141B2D', 
+              backgroundColor: '#18181B', 
               padding: 10, 
               borderRadius: 12, 
               marginRight: 16 
@@ -263,7 +263,7 @@ export default function SelectExercisesScreen() {
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF' }}>Selecionar Exercícios</Text>
-            <Text style={{ fontSize: 14, color: '#8B92A8', marginTop: 2 }}>
+            <Text style={{ fontSize: 14, color: '#A1A1AA', marginTop: 2 }}>
               {selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}
             </Text>
           </View>
@@ -281,12 +281,12 @@ export default function SelectExercisesScreen() {
 
         {/* Search Bar */}
         <View className="bg-zinc-900 rounded-xl flex-row items-center px-3 mb-3 border border-zinc-800">
-          <Ionicons name="search" size={20} color="#8B92A8" />
+          <Ionicons name="search" size={20} color="#A1A1AA" />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Buscar exercício..."
-            placeholderTextColor="#5A6178"
+            placeholderTextColor="#52525B"
             style={{
               flex: 1,
               color: '#FFFFFF',
@@ -297,7 +297,7 @@ export default function SelectExercisesScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#8B92A8" />
+              <Ionicons name="close-circle" size={20} color="#A1A1AA" />
             </TouchableOpacity>
           )}
         </View>
@@ -325,7 +325,7 @@ export default function SelectExercisesScreen() {
                   }}
                 >
                   <Text style={{ 
-                    color: isActive ? '#FFFFFF' : '#8B92A8', 
+                    color: isActive ? '#FFFFFF' : '#A1A1AA', 
                     fontWeight: '600',
                     fontSize: 13
                   }}>
@@ -342,7 +342,7 @@ export default function SelectExercisesScreen() {
       {isLoading ? (
         <View className="flex-1 justify-center items-center bg-zinc-950">
           <ActivityIndicator size="large" color="#FF6B35" />
-          <Text style={{ color: '#8B92A8', marginTop: 16, fontSize: 15 }}>Carregando exercícios...</Text>
+          <Text style={{ color: '#A1A1AA', marginTop: 16, fontSize: 15 }}>Carregando exercícios...</Text>
         </View>
       ) : (
         <FlatList 
@@ -358,7 +358,7 @@ export default function SelectExercisesScreen() {
           showsVerticalScrollIndicator={false} 
           ListEmptyComponent={
             <View style={{ alignItems: 'center', padding: 32 }}>
-              <Text style={{ color: '#8B92A8', textAlign: 'center' }}>
+              <Text style={{ color: '#A1A1AA', textAlign: 'center' }}>
                 Nenhum exercício encontrado.
               </Text>
             </View>
@@ -421,33 +421,33 @@ export default function SelectExercisesScreen() {
             bottom: 0, 
             left: 0, 
             right: 0, 
-            backgroundColor: '#141B2D', 
+            backgroundColor: '#18181B', 
             borderTopLeftRadius: 24, 
             borderTopRightRadius: 24, 
             padding: 24, 
             paddingBottom: Math.max(insets.bottom, 24), 
             borderTopWidth: 2, 
-            borderTopColor: '#1E2A42', 
+            borderTopColor: '#27272A', 
             maxHeight: '80%' 
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Criar Novo Exercício</Text>
               <TouchableOpacity onPress={handleCloseCreateModal}>
-                <Ionicons name="close" size={28} color="#8B92A8" />
+                <Ionicons name="close" size={28} color="#A1A1AA" />
               </TouchableOpacity>
             </View>
             
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Nome do Exercício</Text>
+              <Text style={{ color: '#A1A1AA', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Nome do Exercício</Text>
               <TextInput 
                 value={newExerciseName} 
                 onChangeText={setNewExerciseName} 
                 placeholder="Ex: Supino Reto" 
-                placeholderTextColor="#5A6178" 
+                placeholderTextColor="#52525B" 
                 style={{ 
-                  backgroundColor: '#0A0E1A', 
+                  backgroundColor: '#09090B', 
                   borderWidth: 2, 
-                  borderColor: '#1E2A42', 
+                  borderColor: '#27272A', 
                   borderRadius: 12, 
                   padding: 16, 
                   color: '#FFFFFF', 
@@ -457,16 +457,16 @@ export default function SelectExercisesScreen() {
             </View>
             
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Grupo Muscular</Text>
+              <Text style={{ color: '#A1A1AA', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Grupo Muscular</Text>
               <TextInput 
                 value={newExerciseMuscle} 
                 onChangeText={setNewExerciseMuscle} 
                 placeholder="Ex: Peitoral" 
-                placeholderTextColor="#5A6178" 
+                placeholderTextColor="#52525B" 
                 style={{ 
-                  backgroundColor: '#0A0E1A', 
+                  backgroundColor: '#09090B', 
                   borderWidth: 2, 
-                  borderColor: '#1E2A42', 
+                  borderColor: '#27272A', 
                   borderRadius: 12, 
                   padding: 16, 
                   color: '#FFFFFF', 
@@ -476,17 +476,17 @@ export default function SelectExercisesScreen() {
             </View>
             
             <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: '#8B92A8', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Link do Vídeo (YouTube)</Text>
+              <Text style={{ color: '#A1A1AA', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Link do Vídeo (YouTube)</Text>
               <TextInput 
                 value={newExerciseVideo} 
                 onChangeText={setNewExerciseVideo} 
                 placeholder="https://youtube.com/..." 
-                placeholderTextColor="#5A6178" 
+                placeholderTextColor="#52525B" 
                 autoCapitalize="none" 
                 style={{ 
-                  backgroundColor: '#0A0E1A', 
+                  backgroundColor: '#09090B', 
                   borderWidth: 2, 
-                  borderColor: '#1E2A42', 
+                  borderColor: '#27272A', 
                   borderRadius: 12, 
                   padding: 16, 
                   color: '#FFFFFF', 

@@ -70,7 +70,7 @@ export function StudentAssignmentModal({
         justifyContent: 'flex-end' 
       }}>
         <View style={{ 
-          backgroundColor: '#0A0E1A', 
+          backgroundColor: '#09090B', 
           borderTopLeftRadius: 24, 
           borderTopRightRadius: 24,
           maxHeight: '80%'
@@ -82,32 +82,32 @@ export function StudentAssignmentModal({
             alignItems: 'center', 
             padding: 24,
             borderBottomWidth: 1,
-            borderBottomColor: '#1E2A42'
+            borderBottomColor: '#27272A'
           }}>
             <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFFFFF' }}>
               Gerenciar Atribuições
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={28} color="#8B92A8" />
+              <Ionicons name="close" size={28} color="#A1A1AA" />
             </TouchableOpacity>
           </View>
 
           {/* Search */}
           <View style={{ padding: 16 }}>
             <View style={{
-              backgroundColor: '#141B2D',
+              backgroundColor: '#18181B',
               borderRadius: 12,
               flexDirection: 'row',
               alignItems: 'center',
               paddingHorizontal: 12,
               marginBottom: 12
             }}>
-              <Ionicons name="search" size={20} color="#8B92A8" />
+              <Ionicons name="search" size={20} color="#A1A1AA" />
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Buscar aluno..."
-                placeholderTextColor="#5A6178"
+                placeholderTextColor="#52525B"
                 style={{
                   flex: 1,
                   color: '#FFFFFF',
@@ -159,8 +159,8 @@ export function StudentAssignmentModal({
           <ScrollView style={{ maxHeight: 400 }}>
             {filteredStudents.length === 0 ? (
               <View style={{ padding: 32, alignItems: 'center' }}>
-                <Ionicons name="people-outline" size={48} color="#5A6178" style={{ marginBottom: 12 }} />
-                <Text style={{ color: '#8B92A8', textAlign: 'center' }}>
+                <Ionicons name="people-outline" size={48} color="#52525B" style={{ marginBottom: 12 }} />
+                <Text style={{ color: '#A1A1AA', textAlign: 'center' }}>
                   {searchQuery ? 'Nenhum aluno encontrado' : 'Nenhum aluno cadastrado'}
                 </Text>
               </View>
@@ -176,7 +176,7 @@ export function StudentAssignmentModal({
                       alignItems: 'center',
                       padding: 16,
                       borderBottomWidth: 1,
-                      borderBottomColor: '#1E2A42',
+                      borderBottomColor: '#27272A',
                       backgroundColor: isSelected ? 'rgba(0, 217, 255, 0.05)' : 'transparent'
                     }}
                   >
@@ -185,7 +185,7 @@ export function StudentAssignmentModal({
                       height: 24,
                       borderRadius: 6,
                       borderWidth: 2,
-                      borderColor: isSelected ? '#00D9FF' : '#5A6178',
+                      borderColor: isSelected ? '#00D9FF' : '#52525B',
                       backgroundColor: isSelected ? '#00D9FF' : 'transparent',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -193,14 +193,14 @@ export function StudentAssignmentModal({
                     }}
                   >
                       {isSelected && (
-                        <Ionicons name="checkmark" size={16} color="#0A0E1A" />
+                        <Ionicons name="checkmark" size={16} color="#09090B" />
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginBottom: 2 }}>
                         {student.full_name || 'Sem nome'}
                       </Text>
-                      <Text style={{ color: '#8B92A8', fontSize: 13 }}>
+                      <Text style={{ color: '#A1A1AA', fontSize: 13 }}>
                         {student.email}
                       </Text>
                     </View>
@@ -214,7 +214,7 @@ export function StudentAssignmentModal({
           <View style={{ 
             padding: 16, 
             borderTopWidth: 1, 
-            borderTopColor: '#1E2A42' 
+            borderTopColor: '#27272A' 
           }}>
             <TouchableOpacity
               onPress={handleConfirm}
@@ -225,7 +225,7 @@ export function StudentAssignmentModal({
                 alignItems: 'center'
               }}
             >
-              <Text style={{ color: '#0A0E1A', fontSize: 16, fontWeight: '700' }}>
+              <Text style={{ color: '#09090B', fontSize: 16, fontWeight: '700' }}>
                 Confirmar Alterações
               </Text>
             </TouchableOpacity>

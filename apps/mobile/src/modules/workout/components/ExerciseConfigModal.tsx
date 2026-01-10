@@ -136,7 +136,7 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
                 onChangeText={setWeight}
                 keyboardType="numeric"
                 placeholder="Ex: 20"
-                placeholderTextColor="#5A6178"
+                placeholderTextColor="#52525B"
                 className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
               />
             </View>
@@ -147,7 +147,7 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
                 value={videoUrl}
                 onChangeText={setVideoUrl}
                 placeholder="https://youtube.com/..."
-                placeholderTextColor="#5A6178"
+                placeholderTextColor="#52525B"
                 autoCapitalize="none"
                 className="bg-muted/30 border-2 border-border rounded-xl p-4 text-foreground text-base mb-3"
               />

@@ -47,7 +47,7 @@ export function DayOptionsModal({
                   Copiar todas as refeições deste dia
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+              <Ionicons name="chevron-forward" size={20} color="#52525B" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -59,7 +59,7 @@ export function DayOptionsModal({
                 <Ionicons
                   name="clipboard-outline"
                   size={24}
-                  color={canPaste ? '#00D9FF' : '#5A6178'}
+                  color={canPaste ? '#00D9FF' : '#52525B'}
                 />
               </View>
               <View style={styles.textContainer}>
@@ -73,7 +73,7 @@ export function DayOptionsModal({
                 </Text>
               </View>
               {canPaste && (
-                <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+                <Ionicons name="chevron-forward" size={20} color="#52525B" />
               )}
             </TouchableOpacity>
 
@@ -89,7 +89,7 @@ export function DayOptionsModal({
                   Remover todas as refeições deste dia
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+              <Ionicons name="chevron-forward" size={20} color="#52525B" />
             </TouchableOpacity>
           </View>
         </View>
@@ -106,11 +106,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   content: {
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B', // Zinc 900
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#1E2A42',
+    borderColor: '#27272A', // Zinc 800
   },
   header: {
     flexDirection: 'row',
@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
+    fontFamily: 'GeneralSans-Bold',
   },
   optionsContainer: {
     gap: 12,
@@ -129,24 +130,26 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#09090B', // Zinc 950
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1E2A42',
+    borderColor: '#27272A', // Zinc 800
   },
   disabledButton: {
     opacity: 0.5,
-    borderColor: '#1E2A42',
+    borderColor: '#27272A', // Zinc 800
   },
   iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B', // Zinc 900
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
+    borderWidth: 1,
+    borderColor: '#27272A', // Zinc 800
   },
   textContainer: {
     flex: 1,
@@ -156,12 +159,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     marginBottom: 4,
+    fontFamily: 'GeneralSans-Semibold',
   },
   disabledText: {
-    color: '#5A6178',
+    color: '#52525B', // Zinc 600
   },
   optionDescription: {
     fontSize: 12,
-    color: '#8B92A8',
+    color: '#A1A1AA', // Zinc 400
+    fontFamily: 'GeneralSans-Regular',
   },
 });

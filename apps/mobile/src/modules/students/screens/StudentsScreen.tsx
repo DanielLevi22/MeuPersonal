@@ -81,7 +81,7 @@ export default function StudentsScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       activeOpacity={0.7}
-      onPress={() => handlePressStudent(item)}
+      onPress={() => handleEnterStudent(item)}
       disabled={false}
       className="mb-3"
     >
@@ -108,12 +108,12 @@ export default function StudentsScreen() {
         </View>
 
         <View className="flex-row items-center gap-2">
-          {/* Enter Button */}
+          {/* Edit Button */}
           <TouchableOpacity 
-            onPress={() => handleEnterStudent(item)}
+            onPress={() => handleEdit(item)}
             className="p-2 bg-zinc-800 rounded-xl"
           >
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            <Ionicons name="pencil" size={20} color="#FF6B35" />
           </TouchableOpacity>
 
           {/* Remove Button */}

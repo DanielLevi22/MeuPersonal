@@ -52,11 +52,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B',
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#1E2A42',
+    borderColor: '#27272A',
   },
   currentUserContainer: {
     borderColor: '#FF6B35',
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rank: {
-    color: '#8B92A8',
+    color: '#A1A1AA',
     fontSize: 16,
     fontWeight: '700',
     width: 30,

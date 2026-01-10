@@ -74,7 +74,7 @@ export default function StudentLoginScreen() {
                     value={code}
                     onChangeText={(text) => setCode(text.toUpperCase())}
                     placeholder="EX: AB12CD"
-                    placeholderTextColor="#5A6178"
+                    placeholderTextColor="#52525B"
                     autoCapitalize="characters"
                     maxLength={6}
                     className="bg-card border-2 border-border rounded-2xl p-5 text-foreground text-2xl font-bold text-center tracking-[4px]"

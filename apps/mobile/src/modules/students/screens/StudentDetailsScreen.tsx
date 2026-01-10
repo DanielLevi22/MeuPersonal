@@ -12,24 +12,58 @@ export default function StudentDetailsScreen() {
   const { students, fetchStudents, isLoading } = useStudentStore();
   const { user } = useAuthStore();
   const [student, setStudent] = useState<any>(null);
+  const [hasTriedFetch, setHasTriedFetch] = useState(false);
+
+  const studentId = Array.isArray(id) ? id[0] : id;
 
   useEffect(() => {
-    if (user?.id && !students.length) {
+    if (!studentId) return;
+
+    const found = students.find(s => s.id === studentId);
+    
+    if (found) {
+      setStudent(found);
+    } else if (user?.id && !isLoading && !hasTriedFetch) {
+      // If student not found locally and haven't tried fetching yet, force a refresh
+      setHasTriedFetch(true);
       fetchStudents(user.id);
     }
-  }, [user]);
+  }, [students, studentId, user, isLoading, hasTriedFetch]);
 
-  useEffect(() => {
-    if (students.length > 0 && id) {
-      const found = students.find(s => s.id === id);
-      setStudent(found);
-    }
-  }, [students, id]);
-
-  if (isLoading || !student) {
+  if (isLoading && !student) {
     return (
       <ScreenLayout className="justify-center items-center">
         <ActivityIndicator size="large" color="#FF6B35" />
+      </ScreenLayout>
+    );
+  }
+
+  if (!student) {
+    return (
+      <ScreenLayout className="justify-center items-center px-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#52525B" />
+        <Text className="text-white text-lg font-bold mt-4 font-display text-center">
+          Aluno não encontrado
+        </Text>
+        <Text className="text-zinc-500 text-center mt-2 mb-8">
+          Não foi possível carregar os dados deste aluno. Ele pode ter sido removido ou você não tem acesso.
+        </Text>
+        <TouchableOpacity 
+          className="bg-primary px-6 py-3 rounded-xl flex-row items-center"
+          onPress={() => {
+            setHasTriedFetch(false);
+            if (user?.id) fetchStudents(user.id);
+          }}
+        >
+          <Ionicons name="refresh-outline" size={20} color="white" />
+          <Text className="text-white font-bold ml-2">Tentar novamente</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          className="mt-6"
+          onPress={() => router.back()}
+        >
+          <Text className="text-zinc-400">Voltar</Text>
+        </TouchableOpacity>
       </ScreenLayout>
     );
   }

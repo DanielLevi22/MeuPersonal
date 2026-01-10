@@ -395,6 +395,15 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
 
       if (error) {
         if (error.code === 'PGRST116') {
+          // DEBUG: Check if ANY plan exists
+          const { data: anyPlan } = await supabase
+            .from('nutrition_plans')
+            .select('id, status')
+            .eq('student_id', studentId)
+            .limit(1);
+            
+          console.log(`🔍 No ACTIVE plan for ${studentId}. Found any?`, anyPlan);
+          
           set({ currentDietPlan: null });
           return;
         }

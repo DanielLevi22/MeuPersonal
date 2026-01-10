@@ -1,6 +1,5 @@
-import { DayOptionsModal } from '@/modules/nutrition/components/DayOptionsModal';
-import { FoodSearchModal } from '@/modules/nutrition/components/FoodSearchModal';
 import { MealCard } from '@/modules/nutrition/components/MealCard';
+import FoodSearchScreen from '@/modules/nutrition/screens/FoodSearchScreen';
 import { Food, useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,11 +8,12 @@ import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -36,7 +36,7 @@ const MEAL_TYPES = [
   { type: 'evening_snack', label: 'Ceia', order: 6 },
 ];
 
-export default function FullDietScreen() {
+export default function DietaCompletaScreen() {
   const { id: studentId } = useLocalSearchParams();
   const router = useRouter();
 
@@ -52,34 +52,25 @@ export default function FullDietScreen() {
     addFoodToMeal,
     updateMealItem,
     removeFoodFromMeal,
-    copyDay,
-    pasteDay,
-    clearDay,
-    copiedDay,
     isLoading,
   } = useNutritionStore();
 
   const [selectedDay, setSelectedDay] = useState(1); // Segunda-feira por padrão
   const [showFoodSearch, setShowFoodSearch] = useState(false);
-  const [showDayOptions, setShowDayOptions] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
 
-  // Set default day based on plan type
   useEffect(() => {
-    if (currentDietPlan?.plan_type === 'unique') {
-      setSelectedDay(-1); // -1 represents "All Days" / "Unique"
-    } else {
-      setSelectedDay(1);
-    }
-  }, [currentDietPlan]);
-
-  useEffect(() => {
+    console.log('🔄 FullDietScreen mounted. StudentId:', studentId);
     loadDietData();
   }, [studentId]);
 
   const loadDietData = async () => {
-    if (!studentId || typeof studentId !== 'string') return;
+    if (!studentId || typeof studentId !== 'string') {
+      console.error('❌ Invalid studentId:', studentId);
+      return;
+    }
 
+    console.log('📡 Fetching diet plan for:', studentId);
     await fetchDietPlan(studentId);
   };
 
@@ -129,13 +120,12 @@ export default function FullDietScreen() {
     setShowFoodSearch(true);
   };
 
-  const handleSelectFood = async (food: Food, quantity?: number) => {
+  const handleSelectFood = async (food: Food) => {
     if (!selectedMealId) return;
 
     try {
-      // Use calculated quantity or default to 100g
-      const finalQuantity = quantity || 100;
-      await addFoodToMeal(selectedMealId, food.id, finalQuantity, 'g');
+      // Por padrão, adiciona 100g do alimento
+      await addFoodToMeal(selectedMealId, food.id, 100, 'g');
       setSelectedMealId(null);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar o alimento.');
@@ -164,58 +154,6 @@ export default function FullDietScreen() {
               await removeFoodFromMeal(itemId);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível remover o alimento.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // Day Operations
-  const handleCopyDay = async () => {
-    await copyDay(selectedDay);
-    setShowDayOptions(false);
-    Alert.alert('Sucesso', 'Dia copiado! Agora você pode colar em outro dia.');
-  };
-
-  const handlePasteDay = () => {
-    Alert.alert(
-      'Colar Dia',
-      'Isso substituirá todas as refeições deste dia. Deseja continuar?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Colar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await pasteDay(selectedDay);
-              setShowDayOptions(false);
-              Alert.alert('Sucesso', 'Refeições coladas com sucesso!');
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível colar as refeições.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleClearDay = () => {
-    Alert.alert(
-      'Limpar Dia',
-      'Tem certeza que deseja remover todas as refeições deste dia?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Limpar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearDay(selectedDay);
-              setShowDayOptions(false);
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível limpar o dia.');
             }
           },
         },
@@ -256,14 +194,17 @@ export default function FullDietScreen() {
   if (!currentDietPlan) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="restaurant-outline" size={80} color="#5A6178" />
+        <Ionicons name="restaurant-outline" size={80} color="#52525B" />
         <Text style={styles.emptyTitle}>Nenhum plano de dieta ativo</Text>
         <Text style={styles.emptyText}>
-          Crie um plano de dieta para este aluno
+          Crie um plano de dieta para começar
         </Text>
-        <TouchableOpacity style={styles.createButton}>
+        <TouchableOpacity 
+          style={styles.createButton} 
+          onPress={() => router.push(`/(tabs)/students/${studentId}/nutrition/create` as any)}
+        >
           <LinearGradient
-            colors={['#00FF88', '#00CC6E']}
+            colors={['#FF6B35', '#FF2E63']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.createButtonGradient}
@@ -290,48 +231,35 @@ export default function FullDietScreen() {
             <Text style={styles.headerTitle}>Dieta Completa</Text>
             <Text style={styles.headerSubtitle}>{currentDietPlan.name}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.optionsButton}
-            onPress={() => setShowDayOptions(true)}
-          >
-            <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
 
-        {/* Day Selector (Only for Cyclic Plans) */}
-        {currentDietPlan.plan_type !== 'unique' ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.daySelector}
-            contentContainerStyle={styles.daySelectorContent}
-          >
-            {DAYS_OF_WEEK.map((day) => (
-              <TouchableOpacity
-                key={day.value}
+        {/* Day Selector */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.daySelector}
+          contentContainerStyle={styles.daySelectorContent}
+        >
+          {DAYS_OF_WEEK.map((day) => (
+            <TouchableOpacity
+              key={day.value}
+              style={[
+                styles.dayButton,
+                selectedDay === day.value && styles.dayButtonActive,
+              ]}
+              onPress={() => setSelectedDay(day.value)}
+            >
+              <Text
                 style={[
-                  styles.dayButton,
-                  selectedDay === day.value && styles.dayButtonActive,
+                  styles.dayButtonText,
+                  selectedDay === day.value && styles.dayButtonTextActive,
                 ]}
-                onPress={() => setSelectedDay(day.value)}
               >
-                <Text
-                  style={[
-                    styles.dayButtonText,
-                    selectedDay === day.value && styles.dayButtonTextActive,
-                  ]}
-                >
-                  {day.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.uniquePlanHeader}>
-            <Ionicons name="repeat" size={20} color="#00FF88" />
-            <Text style={styles.uniquePlanText}>Dieta Padrão (Todos os dias)</Text>
-          </View>
-        )}
+                {day.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* Day Totals */}
         <View style={styles.dayTotals}>
@@ -403,25 +331,20 @@ export default function FullDietScreen() {
         </ScrollView>
 
         {/* Food Search Modal */}
-        <FoodSearchModal
+        <Modal
           visible={showFoodSearch}
-          onClose={() => {
-            setShowFoodSearch(false);
-            setSelectedMealId(null);
-          }}
-          onSelectFood={handleSelectFood}
-        />
-
-        {/* Day Options Modal */}
-        <DayOptionsModal
-          visible={showDayOptions}
-          onClose={() => setShowDayOptions(false)}
-          onCopy={handleCopyDay}
-          onPaste={handlePasteDay}
-          onClear={handleClearDay}
-          canPaste={!!copiedDay}
-          dayName={DAYS_OF_WEEK.find(d => d.value === selectedDay)?.label || ''}
-        />
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowFoodSearch(false)}
+        >
+          <FoodSearchScreen
+            onClose={() => {
+              setShowFoodSearch(false);
+              setSelectedMealId(null);
+            }}
+            onSelect={handleSelectFood}
+          />
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -430,25 +353,25 @@ export default function FullDietScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#09090B', // Zinc 950
   },
   safeArea: {
     flex: 1,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#09090B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#8B92A8',
+    color: '#A1A1AA', // Zinc 400
     marginTop: 16,
     fontSize: 15,
   },
   emptyContainer: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#09090B',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
@@ -459,12 +382,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginTop: 24,
     marginBottom: 8,
+    fontFamily: 'GeneralSans-Bold',
   },
   emptyText: {
     fontSize: 15,
-    color: '#8B92A8',
+    color: '#A1A1AA', // Zinc 400
     textAlign: 'center',
     marginBottom: 32,
+    fontFamily: 'GeneralSans-Regular',
   },
   createButton: {
     borderRadius: 16,
@@ -475,9 +400,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   createButtonText: {
-    color: '#0A0E1A',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'GeneralSans-Bold',
   },
   header: {
     flexDirection: 'row',
@@ -487,16 +413,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B', // Zinc 900
     padding: 10,
     borderRadius: 12,
     marginRight: 16,
-  },
-  optionsButton: {
-    backgroundColor: '#141B2D',
-    padding: 10,
-    borderRadius: 12,
-    marginLeft: 16,
+    borderWidth: 1,
+    borderColor: '#27272A', // Zinc 800
   },
   headerContent: {
     flex: 1,
@@ -505,11 +427,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
+    fontFamily: 'ClashDisplay-Bold',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#8B92A8',
+    color: '#A1A1AA', // Zinc 400
     marginTop: 4,
+    fontFamily: 'GeneralSans-Medium',
   },
   daySelector: {
     maxHeight: 60,
@@ -521,37 +445,39 @@ const styles = StyleSheet.create({
   dayButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B', // Zinc 900
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
+    borderWidth: 1,
+    borderColor: '#27272A', // Zinc 800
   },
   dayButtonActive: {
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    borderColor: '#00FF88',
+    backgroundColor: 'rgba(255, 107, 53, 0.1)', // Orange tint
+    borderColor: '#FF6B35', // Orange
   },
   dayButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8B92A8',
+    color: '#A1A1AA', // Zinc 400
+    fontFamily: 'GeneralSans-Semibold',
   },
   dayButtonTextActive: {
-    color: '#00FF88',
+    color: '#FF6B35', // Orange
   },
   dayTotals: {
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B', // Zinc 900
     marginHorizontal: 24,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
+    borderWidth: 1,
+    borderColor: '#27272A', // Zinc 800
   },
   dayTotalsTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 12,
+    fontFamily: 'GeneralSans-Bold',
   },
   macrosRow: {
     flexDirection: 'row',
@@ -565,10 +491,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
+    fontFamily: 'ClashDisplay-Semibold',
   },
   macroLabel: {
     fontSize: 11,
-    color: '#8B92A8',
+    color: '#A1A1AA', // Zinc 400
+    fontFamily: 'GeneralSans-Medium',
   },
   mealsList: {
     flex: 1,
@@ -582,10 +510,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#141B2D',
+    backgroundColor: '#18181B', // Zinc 900
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#1E2A42',
+    borderWidth: 1,
+    borderColor: '#27272A', // Zinc 800
     borderStyle: 'dashed',
     paddingVertical: 16,
     marginBottom: 12,
@@ -593,27 +521,8 @@ const styles = StyleSheet.create({
   addMealText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#00FF88',
+    color: '#FF6B35',
     marginLeft: 8,
-  },
-  uniquePlanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    marginHorizontal: 24,
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#00FF88',
-    gap: 8,
-  },
-  uniquePlanText: {
-    color: '#00FF88',
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'GeneralSans-Semibold',
   },
 });
-
-

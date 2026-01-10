@@ -325,7 +325,7 @@ export default function WorkoutDetailScreen() {
                 <Text className="text-muted-foreground text-xs">Atribuir ou remover alunos</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#5A6178" />
+            <Ionicons name="chevron-forward" size={20} color="#52525B" />
           </TouchableOpacity>
 
           {/* Exercises Section */}
@@ -395,7 +395,7 @@ export default function WorkoutDetailScreen() {
             ) : (
               <View className="bg-card rounded-2xl p-8 border-2 border-border border-dashed items-center">
                 <View className="bg-muted/20 p-4 rounded-full mb-4">
-                  <Ionicons name="barbell-outline" size={48} color="#5A6178" />
+                  <Ionicons name="barbell-outline" size={48} color="#52525B" />
                 </View>
                 <Text className="text-muted-foreground text-base text-center mb-5">Nenhum exercício adicionado.</Text>
                 <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} className="bg-lime-400/10 border-2 border-lime-400 rounded-xl py-3 px-6">
@@ -435,7 +435,7 @@ export default function WorkoutDetailScreen() {
                 value={editTitle} 
                 onChangeText={setEditTitle} 
                 placeholder="Nome do treino" 
-                placeholderTextColor="#5A6178" 
+                placeholderTextColor="#52525B" 
                 className="bg-background border-2 border-border rounded-xl p-4 text-foreground text-base"
               />
             </View>
@@ -446,7 +446,7 @@ export default function WorkoutDetailScreen() {
                 value={editDescription} 
                 onChangeText={setEditDescription} 
                 placeholder="Descrição do treino (opcional)" 
-                placeholderTextColor="#5A6178"
+                placeholderTextColor="#52525B"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"

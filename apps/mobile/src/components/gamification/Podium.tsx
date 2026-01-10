@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#1E2A42',
+    borderColor: '#27272A',
   },
   avatarPlaceholder: {
     backgroundColor: '#374151',
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#0A0E1A',
+    borderColor: '#09090B',
   },
   badgeText: {
     color: '#FFFFFF',

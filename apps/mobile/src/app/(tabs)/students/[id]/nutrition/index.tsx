@@ -1,282 +1,199 @@
-import { StudentAISummary } from '@/modules/nutrition/components/StudentAISummary';
+import { useAuthStore } from '@/auth';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-// ... rest of imports
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
-export default function NutritionDashboard() {
-  const { id: studentId } = useLocalSearchParams();
+export default function StudentDietPlansScreen() {
+  const { id } = useLocalSearchParams();
   const router = useRouter();
-  const {
-    currentDietPlan,
-    dietPlanHistory,
-    fetchDietPlan,
-    fetchDietPlanHistory,
-    finishDietPlan,
-    checkPlanExpiration,
-    isLoading,
-  } = useNutritionStore();
+  const { user } = useAuthStore();
+  const { dietPlans, isLoading, fetchDietPlans, currentDietPlan, fetchDietPlan } = useNutritionStore();
 
-  const [studentName, setStudentName] = useState("");
+  const studentId = Array.isArray(id) ? id[0] : id;
 
   useEffect(() => {
-    if (studentId && typeof studentId === 'string') {
-      fetchDietPlan(studentId);
-      fetchDietPlanHistory(studentId);
-      checkPlanExpiration(studentId);
-      
-      // Fetch student name separately for the AI Summary
-      supabase.from('profiles').select('full_name').eq('id', studentId).single()
-        .then(({ data }: { data: { full_name: string } | null }) => {
-           if (data) setStudentName(data.full_name);
-        });
+    if (user?.id) {
+      // Fetch all plans for the professional (we will filter locally)
+      fetchDietPlans(user.id);
     }
+  }, [user]);
+
+  // Filter plans for this specific student
+  const studentPlans = dietPlans.filter(p => p.student_id === studentId);
+
+  // Also try to fetch the active one to ensure currentDietPlan is set when entering details
+  useEffect(() => {
+      if (studentId) {
+          fetchDietPlan(studentId);
+      }
   }, [studentId]);
 
-  const calculateDaysRemaining = () => {
-    if (!currentDietPlan?.end_date) return null;
-    const today = new Date();
-    const endDate = new Date(currentDietPlan.end_date);
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const handlePressPlan = (item: any) => {
+      // Use full-diet but ensure we likely want the specific plan.
+      // Current full-diet implementation uses "currentDietPlan" from store.
+      // We might need to select it first if full-diet relies on store state.
+      // However, full-diet fetches active plan on mount.
+      // If we want to view HISTORY plans, full-diet needs to support an ID param or we need a proper details screen.
+      // For now, let's link to full-diet which shows the ACTIVE plan.
+      // IF the user clicks a specific plan, we should probably set it as current?
+      // Re-reading full-diet: It fetches "Active" plan.
+      // If we want to view a specific plan (e.g. history), full-diet might need adjustment.
+      // But user just wants to see "The Diet".
+      
+      router.push(`/(tabs)/students/${studentId}/nutrition/${item.id}` as any);
   };
 
-  const handleFinishPlan = () => {
-    if (!currentDietPlan) return;
-    
-    Alert.alert(
-      'Finalizar Plano',
-      'Tem certeza que deseja finalizar este plano antes do prazo?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Finalizar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await finishDietPlan(currentDietPlan.id);
-              Alert.alert('Sucesso', 'Plano finalizado!');
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível finalizar o plano');
-            }
-          }
-        }
-      ]
-    );
-  };
+  const renderItem = ({ item, index }: { item: any, index: number }) => (
+    <Animated.View 
+      entering={FadeInDown.delay(index * 100).springify()} 
+      layout={Layout.springify()}
+    >
+      <TouchableOpacity 
+        activeOpacity={0.7}
+        onPress={() => handlePressPlan(item)}
+        className="mb-4"
+      >
+        <View className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 shadow-sm">
+          <View className="flex-row justify-between items-start mb-4">
+            <View className="flex-1 mr-4">
+              <Text className="text-white text-xl font-bold font-display mb-1 leading-tight">
+                {item.name}
+              </Text>
+              <Text className="text-zinc-400 text-sm font-sans line-clamp-2">
+                {item.description || 'Sem descrição'}
+              </Text>
+            </View>
+            <View className={`px-3 py-1.5 rounded-full ${
+              item.status === 'active' ? 'bg-emerald-500/15' : 'bg-zinc-800'
+            }`}>
+              <Text className={`text-xs font-bold ${
+                item.status === 'active' ? 'text-emerald-400' : 'text-zinc-400'
+              }`}>
+                {item.status === 'active' ? 'Ativo' : 'Inativo'}
+              </Text>
+            </View>
+          </View>
 
-  const handleCreateNew = () => {
-    // Navigate to create screen
-    // We need to pass the student ID to pre-select them?
-    // The create screen currently selects from a list.
-    // We can pass a param or just let them select.
-    // Ideally, we pass the student ID.
-    router.push({
-      pathname: '/nutrition/create',
-      params: { preselectedStudentId: studentId }
-    } as any);
-  };
+          {/* Macros Summary */}
+          <View className="flex-row gap-3 mb-4">
+            <View className="flex-1 bg-zinc-950/50 p-2 rounded-xl items-center">
+              <Text className="text-emerald-400 text-[10px] font-bold mb-0.5">PROT</Text>
+              <Text className="text-white font-semibold text-xs">{item.target_protein}g</Text>
+            </View>
+            <View className="flex-1 bg-zinc-950/50 p-2 rounded-xl items-center">
+              <Text className="text-purple-400 text-[10px] font-bold mb-0.5">CARB</Text>
+              <Text className="text-white font-semibold text-xs">{item.target_carbs}g</Text>
+            </View>
+            <View className="flex-1 bg-zinc-950/50 p-2 rounded-xl items-center">
+              <Text className="text-amber-400 text-[10px] font-bold mb-0.5">GORD</Text>
+              <Text className="text-white font-semibold text-xs">{item.target_fat}g</Text>
+            </View>
+          </View>
 
-  const handleOpenPlan = (planId: string) => {
-    router.push(`/(tabs)/students/${studentId}/nutrition/full-diet` as any);
-  };
-
-  return (
-    <View className="flex-1 bg-background">
-      <SafeAreaView className="flex-1">
-        {/* Header */}
-        <View className="flex-row items-center px-6 pt-4 pb-4">
-          <TouchableOpacity
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.push(`/(tabs)/students/${studentId}` as any);
-              }
-            }}
-            className="bg-card p-2.5 rounded-xl mr-4"
-          >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View className="flex-1">
-            <Text className="text-2xl font-extrabold text-foreground">Nutrição</Text>
-            <Text className="text-sm text-muted-foreground mt-1">Gerenciar planos</Text>
+          <View className="flex-row justify-between items-center pt-4 border-t border-zinc-800/50">
+            <View className="flex-row items-center bg-orange-500/10 px-2 py-1 rounded-lg">
+              <Ionicons name="flame" size={14} color="#FF6B35" style={{ marginRight: 4 }} />
+              <Text className="text-[#FF6B35] font-bold text-xs">
+                {item.target_calories} kcal
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+                <Text className="text-zinc-500 text-xs mr-1 font-medium">
+                {new Date(item.start_date).toLocaleDateString()}
+                </Text>
+            </View>
           </View>
         </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
-          {/* AI Summary Section */}
-          <StudentAISummary 
-             studentId={studentId as string} 
-             studentName={studentName || "Aluno"}
-             currentPlan={currentDietPlan}
+  return (
+    <ScreenLayout>
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-6 pt-4 pb-6">
+        <View className="flex-row items-center">
+            <TouchableOpacity onPress={() => router.back()} className="mr-4">
+                <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <View>
+                <Text className="text-2xl font-extrabold text-white mb-1 font-display">
+                    Planos Alimentares
+                </Text>
+                <Text className="text-sm text-zinc-400 font-sans">
+                    Histórico e Ativos
+                </Text>
+            </View>
+        </View>
+        
+        <Link href={`/nutrition/create?preselectedStudentId=${studentId}` as any} asChild>
+          <TouchableOpacity activeOpacity={0.8}>
+            <LinearGradient
+              colors={['#FF6B35', '#FF2E63']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="h-12 w-12 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
+            >
+              <Ionicons name="add" size={24} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
+        </Link>
+      </View>
+
+      {/* Content */}
+      <FlatList
+        data={studentPlans}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isLoading} 
+            onRefresh={() => user?.id && fetchDietPlans(user.id)} 
+            tintColor="#FF6B35" 
           />
-
-          {/* Active Plan Section */}
-          <View className="mb-8">
-            <Text className="text-lg font-bold text-foreground mb-4">Plano Ativo</Text>
-            
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#F97316" />
-            ) : currentDietPlan ? (
-              <TouchableOpacity 
-                className="rounded-3xl overflow-hidden border border-orange-500"
-                onPress={() => handleOpenPlan(currentDietPlan.id)}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={['#141B2D', '#1E2A42']}
-                  className="p-5"
-                >
-                  <View className="flex-row justify-between items-start mb-5">
-                    <View>
-                      <Text className="text-xl font-bold text-foreground mb-1">{currentDietPlan.name}</Text>
-                      <Text className="text-sm text-muted-foreground">
-                        Início: {new Date(currentDietPlan.start_date).toLocaleDateString('pt-BR')}
-                      </Text>
-                      {currentDietPlan.end_date && (
-                        <Text className="text-sm text-muted-foreground">
-                          Término: {new Date(currentDietPlan.end_date).toLocaleDateString('pt-BR')}
-                          {calculateDaysRemaining() !== null && (
-                            <Text style={{ color: calculateDaysRemaining()! > 7 ? '#A3E635' : '#FBBF24' }}>
-                              {' '}({calculateDaysRemaining()} dias restantes)
-                            </Text>
-                          )}
-                        </Text>
-                      )}
-                    </View>
-                    <View className="bg-green-500/15 px-2.5 py-1 rounded-lg border border-green-500">
-                      <Text className="text-green-400 text-xs font-bold">
-                        {currentDietPlan.status === 'active' ? 'ATIVO' : 
-                         currentDietPlan.status === 'completed' ? 'CONCLUÍDO' :
-                         currentDietPlan.status === 'finished' ? 'FINALIZADO' : 'RASCUNHO'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View className="flex-row justify-between bg-black/20 p-4 rounded-2xl mb-4">
-                    <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-foreground mb-1">{currentDietPlan.target_calories}</Text>
-                      <Text className="text-xs text-muted-foreground">Kcal</Text>
-                    </View>
-                    <View className="w-px bg-white/10" />
-                    <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-[#00C9A7] mb-1">
-                        {currentDietPlan.target_protein}g
-                      </Text>
-                      <Text className="text-xs text-muted-foreground">Prot</Text>
-                    </View>
-                    <View className="w-px bg-white/10" />
-                    <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-[#9D4EDD] mb-1">
-                        {currentDietPlan.target_carbs}g
-                      </Text>
-                      <Text className="text-xs text-muted-foreground">Carb</Text>
-                    </View>
-                    <View className="w-px bg-white/10" />
-                    <View className="items-center flex-1">
-                      <Text className="text-lg font-bold text-[#FFB800] mb-1">
-                        {currentDietPlan.target_fat}g
-                      </Text>
-                      <Text className="text-xs text-muted-foreground">Gord</Text>
-                    </View>
-                  </View>
-
-                  <View className="flex-row justify-between items-center">
-                    <Text className="text-primary text-sm font-semibold">Toque para editar</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#FF6B35" />
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            ) : (
-              <View className="bg-card rounded-3xl p-8 items-center border-2 border-border border-dashed">
-                <Ionicons name="restaurant-outline" size={48} color="#5A6178" />
-                <Text className="text-muted-foreground mt-3 text-base">Nenhum plano ativo</Text>
+        }
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          !isLoading ? (
+            <View className="flex-1 justify-center items-center py-20">
+              <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
+                <Ionicons name="restaurant-outline" size={64} color="#52525B" />
               </View>
-            )}
-          </View>
-
-          {/* Actions */}
-          {currentDietPlan && currentDietPlan.status === 'active' && (
-            <TouchableOpacity 
-              onPress={handleFinishPlan}
-              activeOpacity={0.8}
-              className="mb-4 rounded-2xl bg-card border-2 border-amber-500"
-            >
-              <View className="flex-row items-center justify-center py-4">
-                <Ionicons name="checkmark-done" size={24} color="#F59E0B" style={{ marginRight: 8 }} />
-                <Text className="text-amber-500 text-base font-bold">Finalizar Plano</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {!currentDietPlan || currentDietPlan.status !== 'active' ? (
-            <TouchableOpacity 
-              onPress={handleCreateNew}
-              activeOpacity={0.8}
-              className="mb-8 rounded-2xl overflow-hidden"
-            >
-              <LinearGradient
-                colors={['#00C9A7', '#00A389']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="flex-row items-center justify-center py-4"
-              >
-                <Ionicons name="add-circle" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text className="text-white text-base font-bold">Criar Novo Plano</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          ) : null}
-
-
-          {/* History Section */}
-          <View className="mb-8">
-            <Text className="text-lg font-bold text-foreground mb-4">Histórico</Text>
-            
-            {dietPlanHistory.length > 0 ? (
-              dietPlanHistory.map((plan) => (
-                <TouchableOpacity
-                  key={plan.id}
-                  className="bg-card rounded-2xl p-4 mb-3 border border-border"
-                  onPress={() => handleOpenPlan(plan.id)}
-                  disabled={true} // For now, maybe we want to view details later
-                >
-                  <View className="flex-row justify-between items-center">
-                    <View>
-                      <Text className="text-base font-bold text-foreground mb-1">{plan.name}</Text>
-                      <Text className="text-xs text-muted-foreground">
-                        {new Date(plan.start_date).toLocaleDateString('pt-BR')} - {plan.end_date ? new Date(plan.end_date).toLocaleDateString('pt-BR') : '...'}
-                      </Text>
-                    </View>
-                    <View className="px-2 py-1 rounded-lg border border-zinc-500 bg-white/10">
-                      <Text className="text-[10px] font-bold text-muted-foreground">
-                        {plan.status === 'completed' ? 'CONCLUÍDO' : 'FINALIZADO'}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text className="text-muted-foreground italic text-center mt-4">
-                Nenhum plano arquivado.
+              <Text className="text-white text-xl font-bold mb-2 text-center font-display">
+                Nenhum plano alimentar
               </Text>
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+              <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
+                Este aluno ainda não possui planos alimentares.
+              </Text>
+              
+              <Link href={`/nutrition/create?preselectedStudentId=${studentId}` as any} asChild>
+                <TouchableOpacity activeOpacity={0.8}>
+                  <LinearGradient
+                    colors={['#FF6B35', '#FF2E63']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="rounded-2xl py-3 px-6 shadow-lg shadow-orange-500/20"
+                  >
+                    <Text className="text-white text-base font-bold font-display">
+                      Criar Plano
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          ) : (
+            <View className="py-20">
+              <ActivityIndicator size="large" color="#FF6B35" />
+            </View>
+          )
+        }
+      />
+    </ScreenLayout>
   );
 }

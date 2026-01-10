@@ -265,16 +265,16 @@ export default function ExecuteWorkoutScreen() {
                   <View className="flex-row flex-wrap gap-x-4 gap-y-2 bg-surface/50 p-3 rounded-xl">
                     {item.reps && (
                       <View className="flex-row items-center">
-                        <Ionicons name="repeat" size={16} color="#8B92A8" />
+                        <Ionicons name="repeat" size={16} color="#A1A1AA" />
                         <Text className="text-muted text-sm ml-1">{item.reps} reps</Text>
                       </View>
                     )}
                     <View className="flex-row items-center bg-background/50 px-2 py-1 rounded-lg border border-border">
-                      <Ionicons name="barbell" size={16} color="#8B92A8" />
+                      <Ionicons name="barbell" size={16} color="#A1A1AA" />
                       <TextInput
                         className="text-white text-sm ml-2 w-16 p-0"
                         placeholder="Carga"
-                        placeholderTextColor="#5A6178"
+                        placeholderTextColor="#52525B"
                         keyboardType="numeric"
                         value={itemProgress?.weight}
                         onChangeText={(text: string) => {
@@ -288,7 +288,7 @@ export default function ExecuteWorkoutScreen() {
                     </View>
                     {item.rest_time && (
                       <View className="flex-row items-center">
-                        <Ionicons name="timer-outline" size={16} color="#8B92A8" />
+                        <Ionicons name="timer-outline" size={16} color="#A1A1AA" />
                         <Text className="text-muted text-sm ml-1">{item.rest_time}s</Text>
                       </View>
                     )}
@@ -315,7 +315,7 @@ export default function ExecuteWorkoutScreen() {
               end={{ x: 1, y: 1 }}
               className="p-5 flex-row items-center justify-center"
             >
-              <Ionicons name="trophy" size={28} color="#0A0E1A" />
+              <Ionicons name="trophy" size={28} color="#09090B" />
               <Text className="text-background font-bold text-xl ml-3">Finalizar Treino 🎉</Text>
             </LinearGradient>
           </TouchableOpacity>

@@ -69,7 +69,7 @@ export function LiveWorkoutOverlay({
                 style={styles.skipButtonGradient}
               >
                 <Text style={styles.skipText}>Pular Descanso</Text>
-                <Ionicons name="play" size={20} color="#0A0E1A" />
+                <Ionicons name="play" size={20} color="#09090B" />
               </LinearGradient>
             </TouchableOpacity>
 
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: CIRCLE_SIZE / 2,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#09090B',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#1E2A42',
+    backgroundColor: '#27272A',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   skipText: {
-    color: '#0A0E1A',
+    color: '#09090B',
     fontWeight: '800',
     fontSize: 16,
     textTransform: 'uppercase',

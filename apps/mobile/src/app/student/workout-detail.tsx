@@ -94,7 +94,7 @@ export default function StudentWorkoutDetailScreen() {
   if (!workout) {
     return (
       <ScreenLayout className="justify-center items-center px-6">
-        <Ionicons name="alert-circle-outline" size={64} color="#5A6178" />
+        <Ionicons name="alert-circle-outline" size={64} color="#52525B" />
         <Text className="text-foreground text-xl font-bold mt-4 mb-6 font-display">Treino não encontrado</Text>
         <Button
           onPress={() => router.back()}
@@ -145,7 +145,7 @@ export default function StudentWorkoutDetailScreen() {
         
         {exercises.length === 0 ? (
           <View className="bg-surface p-8 rounded-2xl items-center border-2 border-dashed border-border">
-            <Ionicons name="barbell-outline" size={48} color="#5A6178" style={{ marginBottom: 12 }} />
+            <Ionicons name="barbell-outline" size={48} color="#52525B" style={{ marginBottom: 12 }} />
             <Text className="text-muted-foreground text-center font-sans">Nenhum exercício neste treino.</Text>
           </View>
         ) : (
@@ -244,7 +244,7 @@ export default function StudentWorkoutDetailScreen() {
                 Como foi o treino?
               </Text>
               <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
-                <Ionicons name="close" size={28} color="#5A6178" />
+                <Ionicons name="close" size={28} color="#52525B" />
               </TouchableOpacity>
             </View>
 
@@ -252,7 +252,7 @@ export default function StudentWorkoutDetailScreen() {
               value={feedback}
               onChangeText={setFeedback}
               placeholder="Deixe suas observações (opcional)"
-              placeholderTextColor="#5A6178"
+              placeholderTextColor="#52525B"
               multiline
               numberOfLines={4}
               className="bg-background rounded-xl p-4 text-foreground text-base h-32 border border-border mb-6 font-sans"

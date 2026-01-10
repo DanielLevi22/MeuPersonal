@@ -1,9 +1,9 @@
-import { RestTimer } from '@/workout';
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { useAuthStore } from '@/auth';
+import { RestTimer } from '@/workout';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -196,7 +196,7 @@ export default function ExerciseDetailScreen() {
   if (!exercise) {
     return (
       <ScreenLayout className="justify-center items-center px-6">
-        <Ionicons name="alert-circle-outline" size={64} color="#5A6178" />
+        <Ionicons name="alert-circle-outline" size={64} color="#52525B" />
         <Text className="text-foreground text-xl font-bold mt-4 mb-6 font-display">Exercício não encontrado</Text>
         <Button
           onPress={() => router.back()}
@@ -349,7 +349,7 @@ export default function ExerciseDetailScreen() {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={isCompleted ? ['#5A6178', '#5A6178'] : ['#CCFF00', '#99CC00']}
+            colors={isCompleted ? ['#52525B', '#52525B'] : ['#CCFF00', '#99CC00']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="rounded-xl py-4 items-center flex-row justify-center shadow-lg shadow-black/20"

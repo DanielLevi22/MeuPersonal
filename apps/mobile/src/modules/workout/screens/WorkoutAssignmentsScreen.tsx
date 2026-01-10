@@ -171,18 +171,18 @@ export default function WorkoutAssignmentsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0E1A' }}>
+    <View style={{ flex: 1, backgroundColor: '#09090B' }}>
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#141B2D', padding: 10, borderRadius: 12, marginRight: 16 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#18181B', padding: 10, borderRadius: 12, marginRight: 16 }}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFFFFF' }} numberOfLines={1}>
               Gerenciar Alunos
             </Text>
-            <Text style={{ fontSize: 14, color: '#8B92A8' }} numberOfLines={1}>
+            <Text style={{ fontSize: 14, color: '#A1A1AA' }} numberOfLines={1}>
               {workoutTitle}
             </Text>
           </View>
@@ -223,11 +223,11 @@ export default function WorkoutAssignmentsScreen() {
               <View style={{ gap: 12 }}>
                 {assignedStudents.map((student) => (
                   <View key={student.id} style={{ 
-                    backgroundColor: '#141B2D', 
+                    backgroundColor: '#18181B', 
                     padding: 16, 
                     borderRadius: 16, 
                     borderWidth: 1, 
-                    borderColor: '#1E2A42', 
+                    borderColor: '#27272A', 
                     flexDirection: 'row', 
                     alignItems: 'center', 
                     justifyContent: 'space-between'
@@ -237,7 +237,7 @@ export default function WorkoutAssignmentsScreen() {
                         width: 40, 
                         height: 40, 
                         borderRadius: 20, 
-                        backgroundColor: '#1E2A42', 
+                        backgroundColor: '#27272A', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
                         marginRight: 12
@@ -248,7 +248,7 @@ export default function WorkoutAssignmentsScreen() {
                       </View>
                       <View>
                         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{student.full_name || 'Aluno'}</Text>
-                        <Text style={{ color: '#8B92A8', fontSize: 12 }}>{student.email}</Text>
+                        <Text style={{ color: '#A1A1AA', fontSize: 12 }}>{student.email}</Text>
                       </View>
                     </View>
                     
@@ -267,8 +267,8 @@ export default function WorkoutAssignmentsScreen() {
               </View>
             ) : (
               <View style={{ alignItems: 'center', padding: 32, opacity: 0.5 }}>
-                <Ionicons name="people-outline" size={48} color="#5A6178" style={{ marginBottom: 12 }} />
-                <Text style={{ color: '#8B92A8', textAlign: 'center' }}>
+                <Ionicons name="people-outline" size={48} color="#52525B" style={{ marginBottom: 12 }} />
+                <Text style={{ color: '#A1A1AA', textAlign: 'center' }}>
                   Nenhum aluno atribuído a este treino.
                 </Text>
               </View>
