@@ -9,14 +9,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, {
-  Extrapolation,
-  interpolate,
-  runOnUI,
-  scrollTo,
-  useAnimatedRef,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue
+    Extrapolation,
+    interpolate,
+    runOnUI,
+    scrollTo,
+    useAnimatedRef,
+    useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue
 } from 'react-native-reanimated';
 import { FoodSearchModal } from '../components';
 import { useNutritionStore } from '../store/nutritionStore';
@@ -24,7 +24,7 @@ import { useNutritionStore } from '../store/nutritionStore';
 export default function DietDetailsScreen() {
   const { id: studentId, planId } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isMasquerading } = useAuthStore();
   const { 
     dietPlans, 
     fetchDietPlans, 
@@ -67,6 +67,18 @@ export default function DietDetailsScreen() {
   const [mealName, setMealName] = useState('');
   const [mealTime, setMealTime] = useState('');
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<ScrollView>();
@@ -545,6 +557,7 @@ export default function DietDetailsScreen() {
         <View className="px-6 mt-6 mb-2">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-zinc-400 font-bold text-sm">DIA DA SEMANA</Text>
+            {!isMasquerading && (
             <TouchableOpacity 
               onPress={() => setShowDayActions(true)}
               className="flex-row items-center gap-1 bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700"
@@ -552,6 +565,7 @@ export default function DietDetailsScreen() {
               <Ionicons name="ellipsis-horizontal" size={16} color="#E4E4E7" />
               <Text className="text-zinc-200 text-xs font-bold">Opções</Text>
             </TouchableOpacity>
+            )}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row gap-2">
@@ -628,7 +642,8 @@ export default function DietDetailsScreen() {
                       <View className="flex-row justify-between items-center mb-3">
                         <TouchableOpacity 
                           className="flex-row items-center flex-1"
-                          onPress={() => handleEditMealPress(existingMeal)}
+                          onPress={() => !isMasquerading && handleEditMealPress(existingMeal)}
+                          activeOpacity={isMasquerading ? 1 : 0.7}
                         >
                           <Ionicons name="chevron-forward" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
                           <Text className="text-white font-bold text-base mr-2">{existingMeal.name}</Text>
@@ -654,8 +669,9 @@ export default function DietDetailsScreen() {
                             <TouchableOpacity 
                               key={idx} 
                               className="flex-row justify-between items-center py-1"
-                              onPress={() => handleEditItemPress(item, existingMeal.id)}
-                              onLongPress={() => handleRemoveItem(item.id, existingMeal.id)}
+                              onPress={() => !isMasquerading && handleEditItemPress(item, existingMeal.id)}
+                              onLongPress={() => !isMasquerading && handleRemoveItem(item.id, existingMeal.id)}
+                              activeOpacity={isMasquerading ? 1 : 0.7}
                             >
                               <Text className="text-zinc-400 text-sm flex-1 mr-2">
                                 {item.food?.name}
@@ -670,21 +686,23 @@ export default function DietDetailsScreen() {
                         <Text className="text-zinc-600 text-xs italic ml-6">Sem alimentos</Text>
                       )}
                       
-                      <View className="flex-row gap-2 mt-3">
-                        <TouchableOpacity 
-                            onPress={() => handleAddFoodPress(existingMeal.id)}
-                            className="flex-1 bg-background-primary p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
-                        >
-                             <Ionicons name="add" size={16} color={tailwindColors.primary[400]} style={{ marginRight: 4 }} />
-                             <Text className="text-primary-400 text-xs font-bold">Adicionar</Text>
-                        </TouchableOpacity>
-
-
-                      </View>
+                      {!isMasquerading && (
+                        <View className="flex-row gap-2 mt-3">
+                            <TouchableOpacity 
+                                onPress={() => handleAddFoodPress(existingMeal.id)}
+                                className="flex-1 bg-background-primary p-2 rounded-xl border border-zinc-800 flex-row justify-center items-center"
+                            >
+                                <Ionicons name="add" size={16} color={tailwindColors.primary[400]} style={{ marginRight: 4 }} />
+                                <Text className="text-primary-400 text-xs font-bold">Adicionar</Text>
+                            </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   );
                 } else {
                   // Render "Add [Meal Name]" button
+                  if (isMasquerading) return null;
+                  
                   return (
                     <TouchableOpacity
                       key={stdMeal.name}
@@ -710,13 +728,15 @@ export default function DietDetailsScreen() {
             })()}
           </View>
 
-          <TouchableOpacity 
-            className="mt-6 border-2 border-dashed border-zinc-700 rounded-2xl p-4 items-center justify-center"
-            onPress={handleAddMealPress}
-          >
-            <Ionicons name="add-circle-outline" size={24} color="#71717A" />
-            <Text className="text-zinc-500 font-bold mt-2">Adicionar Refeição</Text>
-          </TouchableOpacity>
+          {!isMasquerading && (
+            <TouchableOpacity 
+              className="mt-6 border-2 border-dashed border-zinc-700 rounded-2xl p-4 items-center justify-center"
+              onPress={handleAddMealPress}
+            >
+              <Ionicons name="add-circle-outline" size={24} color="#71717A" />
+              <Text className="text-zinc-500 font-bold mt-2">Adicionar Refeição</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </Animated.ScrollView>
 

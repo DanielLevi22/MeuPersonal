@@ -170,18 +170,17 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   fetchPeriodizations: async (userId) => {
     set({ isLoading: true });
     try {
-      // Get user metadata to determine account type
-      const { data: { user } } = await supabase.auth.getUser();
-      let accountType = user?.user_metadata?.account_type;
+      // Use authStore to respect masquerading
+      const { useAuthStore } = await import('../../auth/store/authStore');
+      const authState = useAuthStore.getState();
       
-      // Fallback: check profile table if metadata doesn't have account_type
+      const accountType = authState.accountType;
+      
       if (!accountType) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('account_type')
-          .eq('id', userId)
-          .single();
-        accountType = profile?.account_type;
+        // Fallback or early return if no account type
+         console.warn('fetchPeriodizations: No account type found in authStore');
+         set({ periodizations: [], isLoading: false });
+         return;
       }
       
       // 1. Fetch periodizations based on account type
@@ -199,21 +198,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       }
       
       const { data: periodizations, error } = await query;
-
-      // Debug: try to fetch all periodizations this user can see
-      const { data: allPeriodizations, error: allError } = await supabase
-        .from('training_periodizations')
-        .select('*');
-
+      
       if (error) throw error;
-
-      console.log('fetchPeriodizations - User metadata:', user?.user_metadata);
-      console.log('fetchPeriodizations - Account Type:', accountType);
-      console.log('fetchPeriodizations - User ID:', userId);
-      console.log('fetchPeriodizations - Query field:', accountType === 'professional' ? 'professional_id' : 'student_id');
-      console.log('fetchPeriodizations - Filtered Results:', periodizations);
-      console.log('fetchPeriodizations - ALL accessible periodizations:', allPeriodizations);
-      console.log('fetchPeriodizations - RLS Error?:', allError);
 
       if (!periodizations || periodizations.length === 0) {
         set({ periodizations: [] });
@@ -647,6 +633,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
   saveWorkoutSession: async (sessionData) => {
     try {
+      // Check for masquerade mode
+      const { useAuthStore } = await import('../../auth/store/authStore');
+      if (useAuthStore.getState().isMasquerading) {
+        console.log('🎭 Masquerade Mode: Fake saving workout session', sessionData);
+        // Return a fake ID
+        return 'masquerade-session-id-' + Date.now();
+      }
+
       // 1. Create Workout Session
       const { data: session, error: sessionError } = await supabase
         .from('workout_sessions')
@@ -696,6 +690,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     notes?: string;
   }) => {
     try {
+      // Check for masquerade mode
+      const { useAuthStore } = await import('../../auth/store/authStore');
+      if (useAuthStore.getState().isMasquerading) {
+        console.log('🎭 Masquerade Mode: Fake saving cardio session', sessionData);
+        return;
+      }
+
       // For now, we'll store cardio sessions in a separate table or reuse workout_sessions with null workout_id if allowed.
       // However, workout_sessions.workout_id is NOT NULL in schema.
       // So we should probably create a specific table for cardio logs or ad-hoc workouts.

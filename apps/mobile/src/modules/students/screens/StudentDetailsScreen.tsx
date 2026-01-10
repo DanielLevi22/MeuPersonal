@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { QuickActions } from '@/components/workout/QuickActions';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -131,14 +132,31 @@ export default function StudentDetailsScreen() {
             <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
               <Text className="text-zinc-500 text-xs font-bold mb-1 uppercase tracking-wider">Desde</Text>
               <Text className="text-white text-base font-bold">
-                {new Date(student.created_at).toLocaleDateString()}
+                {student.created_at ? new Date(student.created_at).toLocaleDateString() : 'N/A'}
               </Text>
             </View>
           </View>
         </View>
 
+        {/* Quick Actions Row */}
+        <View className="mt-6 mb-2">
+           <QuickActions 
+            onDownload={() => Alert.alert('Em breve', 'Geração de PDF da ficha completa')}
+            onStudentView={async () => {
+              const { enterStudentView } = useAuthStore.getState();
+              await enterStudentView(student);
+              // Small delay to ensure state propagates before navigation
+              setTimeout(() => {
+                router.push('/(tabs)');
+              }, 100);
+            }}
+            onEvolution={() => router.push(`/(tabs)/students/${id}/history` as any)}
+            onAiPrescription={() => router.push(`/(tabs)/workouts/create-periodization?studentId=${id}` as any)}
+          />
+        </View>
+
         {/* Menu Grid */}
-        <View className="p-6">
+        <View className="p-6 pt-0">
           <Text className="text-white text-lg font-bold mb-4 font-display tracking-wide">
             GERENCIAMENTO
           </Text>

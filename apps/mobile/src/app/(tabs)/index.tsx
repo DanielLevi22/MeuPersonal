@@ -82,7 +82,7 @@ export default function DashboardScreen() {
   }
 
   // Personal Trainer Dashboard (Legacy View)
-  if (accountType === 'professional') {
+  if (accountType === 'professional' && !useAuthStore.getState().isMasquerading) {
     return (
       <ScreenLayout>
         <ScrollView

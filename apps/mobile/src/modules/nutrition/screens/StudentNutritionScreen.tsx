@@ -21,7 +21,7 @@ const DAYS = [
 
 
 export function StudentNutritionScreen() {
-  const { user } = useAuthStore();
+  const { user, isMasquerading } = useAuthStore();
   const { 
     currentDietPlan, 
     fetchDietPlan, 
@@ -110,6 +110,16 @@ export function StudentNutritionScreen() {
   };
 
   const handleToggleCheck = async (mealId: string) => {
+    if (isMasquerading) {
+        setStatusModal({
+            visible: true,
+            title: "Modo Leitura",
+            message: "Você está visualizando como aluno. Não é possível alterar dados.",
+            type: 'info'
+        });
+        return;
+    }
+
     const targetDateObj = getDateOfSelectedDay(selectedDay);
     const today = new Date();
     
@@ -226,12 +236,14 @@ export function StudentNutritionScreen() {
                 <Ionicons name="cart-outline" size={24} color="#FFF" />
             </TouchableOpacity>
 
+            {!isMasquerading && (
             <TouchableOpacity 
                 onPress={() => router.push('/(tabs)/nutrition/scan' as any)}
                 className="bg-zinc-800 p-3 rounded-full border border-zinc-700 shadow-sm"
             >
                 <Ionicons name="camera" size={24} color="#FF6B35" />
             </TouchableOpacity>
+            )}
         </View>
       </View>
 
@@ -344,6 +356,15 @@ export function StudentNutritionScreen() {
                 isChecked={dailyLogs[meal.id]?.completed}
                 onToggleCheck={() => handleToggleCheck(meal.id)}
                 onCook={() => {
+                   if (isMasquerading) {
+                        setStatusModal({
+                            visible: true,
+                            title: "Modo Leitura",
+                            message: "Você está visualizando como aluno.",
+                            type: 'info'
+                        });
+                        return;
+                   }
                    const items = mealItems[meal.id] || [];
                    if (items.length === 0) {
                        Alert.alert("Vazio", "Esta refeição não tem alimentos.");

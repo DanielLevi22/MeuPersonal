@@ -9,7 +9,7 @@ import { useWorkoutStore } from '../store/workoutStore';
 export default function WorkoutDetailsScreen() {
   const { id, workoutId } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, accountType } = useAuthStore();
   const { workouts, fetchWorkoutsForPhase, isLoading, selectedExercises, addWorkoutItems, clearSelectedExercises, fetchWorkoutById } = useWorkoutStore();
   const [workout, setWorkout] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
@@ -175,6 +175,8 @@ export default function WorkoutDetailsScreen() {
             {workout.description || 'Sem descrição'}
           </Text>
         </View>
+
+
 
         {/* Exercises List */}
         <View className="flex-1 px-6">

@@ -21,7 +21,16 @@ export const useVoiceInput = ({ onCommand, continuous = false }: UseVoiceInputPr
     Voice.onSpeechError = onSpeechError;
 
     return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
+      try {
+        if (Voice) {
+            Voice.destroy().then(Voice.removeAllListeners).catch((e) => {
+                console.log('Voice destroy ignored error');
+            });
+        }
+      } catch (e) {
+        // Prepare for the worst (native module missing)
+        console.log('Voice cleanup error ignored');
+      }
       shouldBeListening.current = false;
     };
   }, []);
@@ -80,11 +89,17 @@ export const useVoiceInput = ({ onCommand, continuous = false }: UseVoiceInputPr
   const startListening = async () => {
     try {
       shouldBeListening.current = true;
-      // Stop first to ensure clean state
-      try { await Voice.stop(); } catch {}
-      
-      setResult('');
-      await Voice.start('pt-BR');
+      if (Voice) {
+         // Stop first to ensure clean state
+         try { await Voice.stop(); } catch {}
+         
+         setResult('');
+         try {
+            await Voice.start('pt-BR');
+         } catch (innerError) {
+             console.log('Voice start error ignored', innerError);
+         }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -93,7 +108,14 @@ export const useVoiceInput = ({ onCommand, continuous = false }: UseVoiceInputPr
   const stopListening = async () => {
     try {
       shouldBeListening.current = false;
-      await Voice.stop();
+      if (Voice) {
+         try {
+             await Voice.stop();
+         } catch (innerError) {
+             // Ignore specific null pointer that happens on Android
+             console.log('Voice stop ignored error');
+         }
+      }
     } catch (e) {
       console.error(e);
     }

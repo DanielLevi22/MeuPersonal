@@ -16,7 +16,7 @@ import { useWorkoutStore } from '../store/workoutStore';
 export default function ExecuteWorkoutScreen() {
   const { id, workoutId } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isMasquerading } = useAuthStore();
   const { workouts, fetchWorkouts, isLoading } = useWorkoutStore();
   
   const [workout, setWorkout] = useState<any>(null);
@@ -53,6 +53,16 @@ export default function ExecuteWorkoutScreen() {
     announceResume,
     repeatLastInstruction
   } = useVoiceCoach();
+
+  // Handle proper navigation on exit
+  const handleExit = () => {
+    if (isMasquerading) {
+      // Force navigation to the student's workout tab to avoid going back to professor view
+      router.replace('/(tabs)/workouts');
+    } else {
+      router.back();
+    }
+  };
 
   // Forward declaration for the hook
   const handleVoiceCommand = async (action: any) => {
@@ -231,7 +241,7 @@ export default function ExecuteWorkoutScreen() {
           {
             text: 'Sair',
             onPress: () => {
-              router.back();
+              handleExit();
             }
           },
           {
@@ -370,7 +380,7 @@ export default function ExecuteWorkoutScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => handleExit()}
             className="mt-6 py-3"
           >
             <Text className="text-zinc-500 font-bold">Voltar</Text>
@@ -387,7 +397,7 @@ export default function ExecuteWorkoutScreen() {
                   'Deseja realmente sair? O progresso não salvo será perdido.',
                   [
                     { text: 'Cancelar', style: 'cancel' },
-                    { text: 'Sair', style: 'destructive', onPress: () => router.back() }
+                    { text: 'Sair', style: 'destructive', onPress: () => handleExit() }
                   ]
                 );
               }} 
@@ -575,11 +585,11 @@ export default function ExecuteWorkoutScreen() {
         visible={showShareModal}
         onClose={() => {
           setShowShareModal(false);
-          router.back();
+          handleExit();
         }}
         stats={shareStats}
       />
-
+      
       <WorkoutFeedbackModal
         visible={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}

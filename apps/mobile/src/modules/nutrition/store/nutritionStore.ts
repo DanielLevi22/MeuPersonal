@@ -2,10 +2,10 @@ import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications } from '@/services/notificationService';
 import { useGamificationStore } from '@/store/gamificationStore';
 import type {
-    DietMeal,
-    DietMealItem,
-    DietPlan,
-    Food
+  DietMeal,
+  DietMealItem,
+  DietPlan,
+  Food
 } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
 import { create } from 'zustand';
@@ -138,6 +138,12 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
           [mealId]: optimisticLog
         }
       }));
+
+      // Check for masquerade mode
+      if (useAuthStore.getState().isMasquerading) {
+        console.log('🎭 Masquerade Mode: Fake toggling meal completion');
+        return;
+      }
 
       // Check if log exists
       if (existingLog?.id) {

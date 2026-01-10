@@ -3,14 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { useNutritionStore } from '../store/nutritionStore';
 
 export function DailyNutrition() {
-  const { user } = useAuthStore();
+  const { user, isMasquerading } = useAuthStore();
   const {
     currentDietPlan,
     meals,
@@ -170,8 +171,14 @@ export function DailyNutrition() {
               <TouchableOpacity
                 key={meal.id}
                 className={`bg-card p-4 rounded-2xl border border-border ${isCompleted ? 'opacity-60 border-primary bg-primary/5' : ''}`}
-                onPress={() => toggleMealCompletion(meal.id, today, !isCompleted)}
-                activeOpacity={0.7}
+                onPress={() => {
+                  if (isMasquerading) {
+                    Alert.alert('Modo Leitura', 'Você está visualizando como aluno. Não é possível alterar dados.');
+                    return;
+                  }
+                  toggleMealCompletion(meal.id, today, !isCompleted);
+                }}
+                activeOpacity={isMasquerading ? 1 : 0.7}
               >
                 <View className="flex-row justify-between items-center mb-1">
                   <View className="flex-1">

@@ -1,18 +1,24 @@
 import { useAuthStore } from '@/auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-  const { accountType, abilities } = useAuthStore();
+  const { accountType, abilities, isMasquerading } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  
+  // LOG DEBUG
+  // console.log('Tabs Layout Render:', { accountType, isMasquerading, hasAbilities: !!abilities });
 
 
-  // If accountType is null (loading), default to student to avoid flashing restricted tabs
-  const isStudent = !accountType || accountType === 'managed_student' || accountType === 'autonomous_student';
+  // If accountType is null (loading), default to student to avoid flashing restricted tabs. 
+  // explicitly include isMasquerading to ensure tabs show immediately
+  const isStudent = !accountType || accountType === 'managed_student' || accountType === 'autonomous_student' || isMasquerading;
   
   return (
+    <>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -160,6 +166,40 @@ export default function TabLayout() {
         }}
       />
 
-    </Tabs>
+      </Tabs>
+
+      {/* Masquerade Mode Overlay - Floating Exit Button */}
+      {isStudent && isMasquerading && (
+        <View style={{ 
+          position: 'absolute', 
+          bottom: 100, 
+          right: 20, 
+          zIndex: 999 
+        }}>
+          <TouchableOpacity
+            onPress={() => {
+              useAuthStore.getState().exitStudentView();
+              router.push('/(tabs)/students');
+            }}
+            style={{
+              backgroundColor: '#FF4444',
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              borderRadius: 30,
+              flexDirection: 'row',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4.65,
+              elevation: 8,
+            }}
+          >
+            <MaterialCommunityIcons name="eye-off" size={20} color="white" style={{ marginRight: 8 }} />
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Sair da Visão do Aluno</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
   );
 }
