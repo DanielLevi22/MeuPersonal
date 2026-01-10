@@ -34,44 +34,66 @@ export interface StudentStreak {
 }
 
 export const gamificationService = {
-  async getDailyGoal(date: string) {
-    const { data, error } = await supabase
+  async getDailyGoal(date: string, studentId?: string) {
+    let query = supabase
       .from('daily_goals')
       .select('*')
-      .eq('date', date)
-      .single();
+      .eq('date', date);
+      
+    if (studentId) {
+        query = query.eq('student_id', studentId);
+    }
 
-    if (error && error.code !== 'PGRST116') throw error;
+    const { data, error } = await query.maybeSingle(); // Use maybeSingle to avoid 406 if multiple rows (shouldn't happen but safer) or none.
+
+    if (error) throw error;
     return data as DailyGoal | null;
   },
 
-  async getStreak() {
-    const { data, error } = await supabase
+  async getStreak(studentId?: string) {
+    let query = supabase
       .from('streaks')
-      .select('*')
-      .single();
+      .select('*');
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (studentId) {
+        query = query.eq('student_id', studentId);
+    }
+      
+    const { data, error } = await query.maybeSingle();
+
+    if (error) throw error;
     return data as StudentStreak | null;
   },
 
-  async getAchievements() {
-    const { data, error } = await supabase
+  async getAchievements(studentId?: string) {
+    let query = supabase
       .from('achievements')
       .select('*')
       .order('earned_at', { ascending: false });
+
+    if (studentId) {
+        query = query.eq('student_id', studentId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data as Achievement[];
   },
 
-  async getWeeklyGoals(startDate: string, endDate: string) {
-    const { data, error } = await supabase
+  async getWeeklyGoals(startDate: string, endDate: string, studentId?: string) {
+    let query = supabase
       .from('daily_goals')
       .select('*')
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date', { ascending: true });
+
+    if (studentId) {
+        query = query.eq('student_id', studentId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data as DailyGoal[];

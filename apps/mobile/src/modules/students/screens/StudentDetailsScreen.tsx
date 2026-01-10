@@ -150,7 +150,7 @@ export default function StudentDetailsScreen() {
                 router.push('/(tabs)');
               }, 100);
             }}
-            onEvolution={() => router.push(`/(tabs)/students/${id}/history` as any)}
+            onEvolution={() => router.push(`/(tabs)/students/${id}/analytics` as any)}
             onAiPrescription={() => router.push(`/(tabs)/workouts/create-periodization?studentId=${id}` as any)}
           />
         </View>

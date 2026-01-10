@@ -28,7 +28,7 @@ export function QuickActions({
       gradient: ['#00D9FF', '#00B8D9'], // Blue
     },
     {
-      label: 'Evolução\nde cargas',
+      label: 'Evolução\nGeral',
       icon: 'stats-chart-outline',
       onPress: onEvolution,
       gradient: ['#00D9FF', '#00B8D9'], // Blue

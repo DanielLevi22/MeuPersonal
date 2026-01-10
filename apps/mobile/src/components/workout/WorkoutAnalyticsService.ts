@@ -12,38 +12,55 @@ export const WorkoutAnalyticsService = {
    */
   getWorkoutStats: async (studentId: string): Promise<WorkoutStats> => {
     try {
-      // 1. Fetch Workout History (Sessions + Items + Exercises)
-      // Limit to last 60 days for relevant recent history
-      const { data: history, error } = await supabase
+      // 1. Fetch Workout Sessions (Last 60 days)
+      const { data: sessions, error: sessionError } = await supabase
         .from('workout_sessions')
-        .select(`
-          started_at,
-          completed_at,
-          workout_session_items (
-            check_status,
-            sets: workout_session_sets (
-              reps,
-              weight,
-              completed
-            ),
-            exercise: exercises (
-              muscle_group,
-              name
-            )
-          )
-        `)
+        .select('id, started_at, completed_at, status')
         .eq('student_id', studentId)
         .eq('status', 'completed')
         .order('completed_at', { ascending: true });
 
-      if (error) throw error;
+      if (sessionError) throw sessionError;
+      if (!sessions || sessions.length === 0) {
+        return { volumeByMuscle: [], weeklyLoad: [], stimulus: [] };
+      }
 
-      if (!history || history.length === 0) {
-        return {
-          volumeByMuscle: [],
-          weeklyLoad: [],
-          stimulus: []
-        };
+      const sessionIds = sessions.map(s => s.id);
+
+      // 2. Fetch Session Items (Exercises)
+      const { data: items, error: itemsError } = await supabase
+        .from('workout_session_items')
+        .select('id, workout_session_id, exercise_id, check_status')
+        .in('workout_session_id', sessionIds);
+
+      if (itemsError) throw itemsError;
+
+      const exerciseIds = new Set<string>();
+      items?.forEach((item: any) => {
+        if (item.exercise_id) exerciseIds.add(item.exercise_id);
+      });
+
+      // 3. Fetch Exercises Details
+      const { data: exercises, error: exercisesError } = await supabase
+        .from('exercises')
+        .select('id, name, muscle_group')
+        .in('id', Array.from(exerciseIds));
+
+      if (exercisesError) throw exercisesError;
+      
+      const exerciseMap = new Map();
+      exercises?.forEach(e => exerciseMap.set(e.id, e));
+
+      // 4. Fetch Sets
+      const itemIds = items?.map((i: any) => i.id) || [];
+      const { data: sets, error: setsError } = await supabase
+        .from('workout_session_sets')
+        .select('workout_session_item_id, reps, weight, completed')
+        .in('workout_session_item_id', itemIds);
+
+      if (setsError) {
+          // Fallback if table name is different or query fails
+          console.warn('Could not fetch sets via item_id:', setsError); 
       }
 
       // --- Aggregation Logic ---
@@ -52,35 +69,47 @@ export const WorkoutAnalyticsService = {
       const weeklyLoadMap: Record<string, number> = {};
       const stimulusCounts = { strength: 0, hypertrophy: 0, endurance: 0 };
       let totalSets = 0;
+      
+      // Build lookup maps
+      const setsByItem: Record<string, any[]> = {};
+      sets?.forEach((s: any) => {
+          if (!setsByItem[s.workout_session_item_id]) setsByItem[s.workout_session_item_id] = [];
+          setsByItem[s.workout_session_item_id].push(s);
+      });
 
-      history.forEach(session => {
+      const itemsBySession: Record<string, any[]> = {};
+      items?.forEach((i: any) => {
+          if (!itemsBySession[i.workout_session_id]) itemsBySession[i.workout_session_id] = [];
+          itemsBySession[i.workout_session_id].push(i);
+      });
+
+      // Iterate Sessions
+      sessions.forEach(session => {
         const date = new Date(session.completed_at);
-        // Week key: "Year-Week" (simplified)
-        // A better way is to find the start of the week
         const startOfWeek = new Date(date);
         startOfWeek.setDate(date.getDate() - date.getDay()); // Sunday
         const weekLabel = `${startOfWeek.getDate()}/${startOfWeek.getMonth() + 1}`;
 
-        session.workout_session_items.forEach((item: any) => {
-          if (!item.exercise) return;
-          const muscle = item.exercise.muscle_group || 'Outros';
+        const sessionItems = itemsBySession[session.id] || [];
+        
+        sessionItems.forEach(item => {
+          const exercise = exerciseMap.get(item.exercise_id);
+          if (!exercise) return;
+          
+          const muscle = exercise.muscle_group || 'Outros';
+          const itemSets = setsByItem[item.id] || [];
 
-          item.sets.forEach((set: any) => {
+          itemSets.forEach((set: any) => {
             if (!set.completed) return;
 
             const reps = Number(set.reps) || 0;
-            const weight = Number(set.weight) || 0; // Assuming weight is numeric now, or parsing it
+            const weight = Number(set.weight) || 0;
             
-            // 1. Volume Calculation (Weight * Reps * Sets) - Simplified as 1 set entry per row
             const volume = weight * reps;
             
-            // Add to Muscle Volume
             muscleVolumeMap[muscle] = (muscleVolumeMap[muscle] || 0) + volume;
-
-            // Add to Weekly Load
             weeklyLoadMap[weekLabel] = (weeklyLoadMap[weekLabel] || 0) + volume;
 
-            // 2. Stimulus Check
             totalSets++;
             if (reps <= 6) stimulusCounts.strength++;
             else if (reps <= 12) stimulusCounts.hypertrophy++;
@@ -91,35 +120,29 @@ export const WorkoutAnalyticsService = {
 
       // --- Formatting Results ---
 
-      // 1. Volume by Muscle (Top 5 + Color Mapping)
       const muscleColors: Record<string, string> = {
-        'Peito': '#3B82F6', // Blue
-        'Costas': '#60A5FA', // Light Blue
-        'Pernas': '#A855F7', // Purple
-        'Ombros': '#FACC15', // Yellow
-        'Bíceps': '#FB923C', // Orange
-        'Tríceps': '#F472B6', // Pink
+        'Peito': '#3B82F6', 
+        'Costas': '#60A5FA',
+        'Pernas': '#A855F7',
+        'Ombros': '#FACC15',
+        'Bíceps': '#FB923C',
+        'Tríceps': '#F472B6',
       };
 
       const volumeByMuscle = Object.entries(muscleVolumeMap)
         .map(([label, value]) => ({
           label,
           value,
-          color: muscleColors[label] || '#9CA3AF' // Default Gray
+          color: muscleColors[label] || '#9CA3AF'
         }))
         .sort((a, b) => b.value - a.value)
-        .slice(0, 5); // Limit to top 5
+        .slice(0, 5);
 
-      // 2. Weekly Load (Sorted array)
-      // Extract keys, sort by date context, return array
-      // For simplicity, we assume the query order (ascending) keeps weeks roughly in order or we sort manually.
-      // Since map keys are not ordered, we need to reconstruct.
       const weeklyLoad = Object.entries(weeklyLoadMap).map(([weekLabel, load]) => ({
         weekLabel,
         load
-      })).slice(-7); // Last 7 weeks
+      })).slice(-7);
 
-      // 3. Stimulus Distribution
       const stimulus = [
         { label: 'Força', value: totalSets ? stimulusCounts.strength / totalSets : 0, color: '#FACC15' },
         { label: 'Hipertrofia', value: totalSets ? stimulusCounts.hypertrophy / totalSets : 0, color: '#60A5FA' },
@@ -135,6 +158,109 @@ export const WorkoutAnalyticsService = {
     } catch (err) {
       console.error('Error fetching workout stats:', err);
       return { volumeByMuscle: [], weeklyLoad: [], stimulus: [] };
+    }
+  },
+
+  /**
+   * Fetches history for a specific exercise to track load evolution (Max Weight or 1RM Estimate).
+   */
+  getExerciseHistory: async (studentId: string, exerciseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('workout_session_items')
+        .select(`
+          workout_sessions!inner (
+            completed_at
+          ),
+          sets: workout_session_sets (
+            weight,
+            reps,
+            completed
+          )
+        `)
+        .eq('exercise_id', exerciseId)
+        .eq('workout_sessions.student_id', studentId)
+        .eq('workout_sessions.status', 'completed')
+        .order('created_at', { ascending: true }); // Order by creation (chronological)
+
+      if (error) throw error;
+
+      // Process: Find max weight for each session
+      const history = data.map((item: any) => {
+        const date = new Date(item.workout_sessions.completed_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        
+        let maxWeight = 0;
+        let bestSet = null;
+
+        item.sets.forEach((set: any) => {
+            if (set.completed && Number(set.weight) > maxWeight) {
+                maxWeight = Number(set.weight);
+                bestSet = set;
+            }
+        });
+
+        return {
+            date,
+            weight: maxWeight,
+            rawDate: item.workout_sessions.completed_at
+        };
+      }).filter(h => h.weight > 0);
+
+      return history;
+
+    } catch (error) {
+       console.error('Error fetching exercise history:', error);
+       return [];
+    }
+  },
+
+  /**
+   * Fetches the list of exercises that have history for this student.
+   */
+  getExercisesWithHistory: async (studentId: string) => {
+    try {
+      // Step 1: Get recent session IDs for this student
+      const { data: sessions, error: sessionError } = await supabase
+        .from('workout_sessions')
+        .select('id')
+        .eq('student_id', studentId)
+        .order('completed_at', { ascending: false })
+        .limit(50);
+
+      if (sessionError) throw sessionError;
+      if (!sessions || sessions.length === 0) return [];
+
+      const sessionIds = sessions.map(s => s.id);
+
+      // Step 2: Get exercise IDs from these sessions
+      const { data: items, error: itemsError } = await supabase
+        .from('workout_session_items')
+        .select('exercise_id')
+        .in('workout_session_id', sessionIds);
+
+      if (itemsError) throw itemsError;
+      if (!items || items.length === 0) return [];
+
+      const exerciseIds = new Set<string>();
+      items.forEach((item: any) => {
+          if (item.exercise_id) exerciseIds.add(item.exercise_id);
+      });
+
+      if (exerciseIds.size === 0) return [];
+
+      // Step 3: Fetch details for these unique exercises
+      const { data: exercises, error: exerciseError } = await supabase
+        .from('exercises')
+        .select('id, name, muscle_group')
+        .in('id', Array.from(exerciseIds));
+
+      if (exerciseError) throw exerciseError;
+      
+      return (exercises || []).sort((a, b) => a.name.localeCompare(b.name));
+
+    } catch (error) {
+      console.error('Error fetching exercises with history:', error);
+      return [];
     }
   }
 };

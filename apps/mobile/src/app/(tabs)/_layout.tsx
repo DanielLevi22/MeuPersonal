@@ -1,7 +1,8 @@
 import { useAuthStore } from '@/auth';
+import { TabBar } from '@/components/navigation/TabBar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -20,37 +21,16 @@ export default function TabLayout() {
   return (
     <>
     <Tabs
+      tabBar={props => <TabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#09090B', // Deep Black
-          borderTopWidth: 1,
-          borderTopColor: '#27272A',
-          height: Platform.OS === 'ios' ? 88 : 68 + insets.bottom,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8 + insets.bottom,
-          paddingTop: 8,
-          elevation: 0, // Android shadow removal
-        },
-        tabBarActiveTintColor: '#FF6B35', 
-        tabBarInactiveTintColor: '#A1A1AA', // Zinc-400
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          marginTop: 2,
-        },
+        // We handle styling in the custom component
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'home-variant' : 'home-variant-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
         }}
       />
       
@@ -59,28 +39,15 @@ export default function TabLayout() {
         options={{
           title: 'Treino',
           href: (isStudent || abilities?.can('manage', 'Workout')) ? '/workouts' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'dumbbell' : 'dumbbell'} 
-              size={24} 
-              color={color} 
-            />
-          ),
         }}
       />
 
+      {/* Central Button usually, or just 3rd item */}
       <Tabs.Screen
         name="nutrition"
         options={{
           title: 'Nutrição',
           href: (isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))) ? '/nutrition' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'food-apple' : 'food-apple-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
         }}
       />
 
@@ -89,31 +56,27 @@ export default function TabLayout() {
         options={{
           title: 'Progresso',
           href: isStudent ? '/progress' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'chart-timeline-variant' : 'chart-timeline-variant'} 
-              size={24} 
-              color={color} 
-            />
-          ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          href: '/profile', // Always visible
         }}
       />
 
+      {/* Previously Visible Tabs now Hidden from bar but accessible if needed (or we remove them) */}
        <Tabs.Screen
         name="menu"
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'dots-grid' : 'dots-grid'} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          href: null, // Hide from tab bar, accessed via other means if needed
         }}
       />
-      
-      {/* Hidden Tabs (Accessible via Menu or sub-navigation) */}
+
+      {/* Hidden Screens */}
       <Tabs.Screen
         name="chat"
         options={{
@@ -129,24 +92,10 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="profile"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
         name="cardio/index"
         options={{
           title: 'Cardio',
-          href: isStudent ? '/cardio' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'heart' : 'heart-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          href: null, // Hide from main tabs, maybe access from Home
         }}
       />
       
@@ -156,13 +105,6 @@ export default function TabLayout() {
         options={{
           title: 'Alunos',
           href: (accountType === 'professional' && abilities?.can('manage', 'Workout')) ? '/students' : null,
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons 
-              name={focused ? 'account-group' : 'account-group-outline'} 
-              size={24} 
-              color={color} 
-            />
-          ),
         }}
       />
 
@@ -172,7 +114,7 @@ export default function TabLayout() {
       {isStudent && isMasquerading && (
         <View style={{ 
           position: 'absolute', 
-          bottom: 100, 
+          bottom: 120, // Increased bottom margin to clear the floating tab bar
           right: 20, 
           zIndex: 999 
         }}>

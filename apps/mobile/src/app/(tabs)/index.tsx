@@ -16,7 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 
@@ -70,6 +70,31 @@ export default function DashboardScreen() {
     }
   };
 
+  const renderHeaderAvatar = () => (
+    <TouchableOpacity 
+      onPress={() => router.push('/(tabs)/profile')}
+      activeOpacity={0.8}
+      className="items-center justify-center p-0.5"
+    >
+      <View className="w-12 h-12 rounded-full border-2 border-zinc-800 overflow-hidden items-center justify-center bg-zinc-900 shadow-sm">
+        {profile?.avatar_url ? (
+          <Image 
+            source={{ uri: profile.avatar_url }} 
+            className="w-full h-full"
+            resizeMode="cover"
+          />
+        ) : (
+          <View className="w-full h-full items-center justify-center bg-zinc-800">
+            <Text className="text-orange-500 font-bold text-lg font-display">
+              {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : '?'}
+            </Text>
+          </View>
+        )}
+      </View>
+      <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-zinc-950" />
+    </TouchableOpacity>
+  );
+
   if (isLoading && !profile && !accountType) {
     return (
       <ScreenLayout className="justify-center items-center">
@@ -91,13 +116,16 @@ export default function DashboardScreen() {
                <RefreshControl refreshing={isLoading} onRefresh={loadData} tintColor="#FF6B35" />
              }
         >
-          <View className="mb-8">
-            <Text className="text-4xl font-extrabold text-white mb-2 font-display">
-              Dashboard 🔥
-            </Text>
-            <Text className="text-base text-zinc-400 font-sans">
-              Gerencie seus alunos e treinos
-            </Text>
+          <View className="mb-8 flex-row justify-between items-start">
+            <View>
+              <Text className="text-4xl font-extrabold text-white mb-2 font-display">
+                Dashboard 🔥
+              </Text>
+              <Text className="text-base text-zinc-400 font-sans">
+                Gerencie seus alunos e treinos
+              </Text>
+            </View>
+            {renderHeaderAvatar()}
           </View>
 
           <View>
@@ -190,9 +218,9 @@ export default function DashboardScreen() {
         {/* Header */}
         <Animated.View 
           entering={FadeInDown.delay(100).springify()}
-          className="flex-row justify-between items-end mb-8 mt-2"
+          className="flex-row justify-between items-start mb-8 mt-2"
         >
-          <View>
+          <View className="flex-1">
             <Text className="text-zinc-400 text-[15px] font-medium mb-1 font-sans tracking-wide uppercase">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
@@ -200,16 +228,21 @@ export default function DashboardScreen() {
               Olá, {profile?.full_name?.split(' ')[0] || 'Aluno'}
             </Text>
           </View>
-          <View className="mb-1 flex-row items-center gap-2">
-            {streak?.freeze_available && streak.freeze_available > 0 && (
-              <View className="bg-blue-500/20 px-2 py-1 rounded-full">
-                <Ionicons name="snow" size={12} color="#3B82F6" />
-              </View>
-            )}
-            <StreakCounter 
-              streak={streak?.current_streak || 0} 
-              frozen={streak?.last_freeze_date === new Date().toISOString().split('T')[0]} 
-            />
+          
+          <View className="flex-row items-center gap-4">
+             <View className="items-end gap-1.5">
+                {streak?.freeze_available && streak.freeze_available > 0 && (
+                  <View className="bg-blue-500/20 px-2 py-0.5 rounded-full">
+                    <Ionicons name="snow" size={10} color="#3B82F6" />
+                  </View>
+                )}
+                <StreakCounter 
+                  streak={streak?.current_streak || 0} 
+                  frozen={streak?.last_freeze_date === new Date().toISOString().split('T')[0]} 
+                />
+             </View>
+
+             {renderHeaderAvatar()}
           </View>
         </Animated.View>
 
