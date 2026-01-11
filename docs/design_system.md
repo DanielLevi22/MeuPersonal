@@ -10,12 +10,12 @@ Uma identidade visual "State of the Art" que transmite alta performance, tecnolo
 
 | Token | Cor | Hex | Uso |
 | :--- | :--- | :--- | :--- |
-| **Background** | `Zinc 950` | `#09090B` | Fundo principal. Mais suave e elegante que o preto puro. |
-| **Surface** | `Zinc 900` | `#18181B` | Cards e elementos de fundo secundários. |
+| **Background** | `Deep Black` | `#0A0A0A` | Fundo principal premium. |
+| **Surface** | `Zinc 900` | `#1A1A1A` | Cards e elementos de fundo secundários. |
 | **Surface Glass** | `White/5` | `rgba(255,255,255,0.05)` | Efeito de vidro (backdrop-blur) para cards modernos. |
-| **Primary** | `Neon Lime` | `#CCFF00` | **Ação Principal (CTA)**, destaques, badges de "Novo". Energia pura. |
-| **Secondary** | `Cyber Blue` | `#00F0FF` | Elementos secundários, gráficos, tecnologia. |
-| **Accent** | `Hot Pink` | `#FF0099` | Detalhes de gamificação, notificações urgentes. |
+| **Primary** | `Energy Gradient` | `#FF6B35` → `#FF2E63` | **Ação Principal (CTA)**, energia, calor e movimento. |
+| **Secondary** | `Electric Blue` | `#00D9FF` | Tecnologia, informações e ações secundárias. |
+| **Accent** | `Vibrant Purple` | `#9D4EDD` | Gamificação, raridade e destaques. |
 | **Text Main** | `White` | `#FFFFFF` | Títulos e textos de alta legibilidade. |
 | **Text Muted** | `Zinc 400` | `#A1A1AA` | Textos de apoio, legendas. |
 
@@ -50,17 +50,17 @@ Uma identidade visual "State of the Art" que transmite alta performance, tecnolo
 ### 🏋️‍♂️ Personal Trainer (O Gestor)
 *   **Foco:** Eficiência e Controle.
 *   **Design:** Dashboards limpos (Bento Grid), dados claros, ações rápidas.
-*   **Cor Principal:** `Neon Lime` (Crescimento, Dinheiro, Energia).
+*   **Cor Principal:** `Electric Blue` (Confiança, Gestão, Tecnologia).
 
 ### 🥗 Nutricionista (O Especialista)
 *   **Foco:** Detalhe e Cuidado.
 *   **Design:** Listas organizadas, cards de refeição detalhados, fotos de alimentos vibrantes.
-*   **Cor Principal:** `Cyber Blue` (Ciência, Confiança) + `Fresh Green` (Saúde).
+*   **Cor Principal:** `Electric Blue` (Ciência) + `Vibrant Purple` (Diferencial).
 
 ### 🏃‍♂️ Aluno (O Atleta)
 *   **Foco:** Motivação e Progresso.
 *   **Design:** Gamificação forte, gráficos de evolução, badges brilhantes, timer imersivo.
-*   **Cor Principal:** Dinâmica (muda conforme o nível/intensidade).
+*   **Cor Principal:** `Energy Gradient` (Fogo, Energia, Evolução).
 
 ### 🆓 Freemium (O Visitante)
 *   **Foco:** Conversão (Upsell).

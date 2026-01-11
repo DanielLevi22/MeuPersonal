@@ -4,6 +4,7 @@ import { colors as brandColors } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -11,6 +12,7 @@ export default function ProfileScreen() {
   const { signOut, user } = useAuthStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetchProfile();
@@ -131,6 +133,30 @@ export default function ProfileScreen() {
                     )}
                 </LinearGradient>
             </View>
+
+            {/* 3D Body Map Button */}
+            <TouchableOpacity 
+                onPress={() => router.push('/body-heatmap')}
+                activeOpacity={0.8}
+                className="mb-8 h-[120px] rounded-[32px] overflow-hidden border border-zinc-800 relative bg-zinc-900"
+            >
+                 <LinearGradient
+                    colors={['#18181b', '#09090b']}
+                    className="absolute inset-0 flex-row items-center justify-between p-6"
+                 >
+                    <View className="flex-1 mr-4">
+                        <View className="bg-orange-500/20 self-start px-3 py-1 rounded-full border border-orange-500/30 mb-3">
+                            <Text className="text-orange-500 text-[10px] font-black uppercase tracking-widest">NOVIDADE</Text>
+                        </View>
+                        <Text className="text-white text-xl font-black italic font-display">MAPA 3D</Text>
+                        <Text className="text-zinc-500 text-xs font-medium mt-1">Visualize seus músculos treinados</Text>
+                    </View>
+                    
+                    <View className="w-16 h-16 bg-black/40 rounded-2xl items-center justify-center border border-white/5">
+                        <Ionicons name="cube-outline" size={32} color="#f97316" />
+                    </View>
+                 </LinearGradient>
+            </TouchableOpacity>
 
             {/* Info Section */}
             <View className="mb-8">

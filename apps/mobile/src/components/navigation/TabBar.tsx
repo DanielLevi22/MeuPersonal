@@ -103,7 +103,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { accountType, isMasquerading } = useAuthStore();
   const router = useRouter();
   
-  const routeOrder = ['index', 'workouts', 'students', 'nutrition', 'progress', 'ranking'];
+  const routeOrder = ['index', 'workouts', 'progress', 'nutrition', 'students', 'ranking'];
   
   const sortedRoutes = useMemo(() => state.routes
     .filter((r: any) => {

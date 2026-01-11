@@ -2,7 +2,7 @@ import { useCreateExercise } from '@/hooks/useExerciseMutations';
 import { useExercises } from '@/hooks/useExercises';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,12 +14,18 @@ export default function SelectExercisesScreen() {
   const { data: exercisesData = [], isLoading } = useExercises();
   const createExerciseMutation = useCreateExercise();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   
+  // Hide Tab Bar
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: { display: 'none' },
+    });
+  }, [navigation]);
+
   // State for filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string | null>(null);
-
-
 
   // Extract unique muscle groups
   const muscleGroups = useMemo(() => {
@@ -87,6 +93,11 @@ export default function SelectExercisesScreen() {
       openConfigForNew(exercise);
     }
   }, [selected, editSelectedExercise, openConfigForNew]);
+  
+  const handleDeselect = useCallback((exerciseId: string) => {
+      setSelected(prev => prev.filter(id => id !== exerciseId));
+      setSelectedExercises(prev => prev.filter(ex => ex.id !== exerciseId));
+  }, []);
 
   const handleSaveExercise = useCallback((updatedExercise: SelectedExercise) => {
     if (editingIndex !== null) {
@@ -132,25 +143,11 @@ export default function SelectExercisesScreen() {
         await addWorkoutItems(workoutId as string, items);
         clearSelectedExercises();
         
-        // Check if we should redirect to the Workouts tab (for professionals) or Students tab
-        // We can inspect the current path segment or simpler: always prefer Workouts tab for editing if we are a professional.
-        // However, we don't have accountType here easily without a hook. Let's add the hook.
-        // Or generic approach: If we want to stay in "Edit" mode (WorkoutDetails), we should target that route.
-        // The previous screen (WorkoutDetails) passed studentId.
-        
-        // Changing to redirect to /(tabs)/workouts/... for consistency with the Edit View.
-        // We keep studentId in params so the next screen has context.
         router.replace({
           pathname: `/(tabs)/workouts/details/${workoutId}`,
           params: { id: workoutId, studentId: studentId as string }
         } as any);
 
-        // Previous logic was:
-        // if (studentId) {
-        //   router.replace({
-        //     pathname: `/(tabs)/students/${studentId}/workouts/details/${workoutId}`,
-        //   } as any);
-        // } else if ...
       } catch (error) {
         Alert.alert('Erro', 'Falha ao adicionar exercícios.');
       }
@@ -162,7 +159,6 @@ export default function SelectExercisesScreen() {
       if (router.canGoBack()) {
         router.back();
       } else {
-        console.warn('Cannot go back from SelectExercisesScreen');
         router.replace('/(tabs)/workouts'); 
       }
     }
@@ -186,7 +182,7 @@ export default function SelectExercisesScreen() {
       setShowCreateModal(false);
       Alert.alert('Sucesso', 'Exercício criado com sucesso!');
     } catch (error) {
-      // Error já é tratado no hook
+      // Error is handled in hook
     }
   }, [newExerciseName, newExerciseMuscle, newExerciseVideo, createExerciseMutation]);
 
@@ -205,99 +201,118 @@ export default function SelectExercisesScreen() {
 
   const renderItem = useCallback(({ item }: { item: Exercise }) => {
     const isSelected = selected.includes(item.id);
+    const selectedExerciseData = selectedExercises.find(ex => ex.id === item.id);
+    
     return (
       <TouchableOpacity
-        activeOpacity={0.7}
+        activeOpacity={0.9}
         onPress={() => toggleSelection(item)}
-        style={{
-          backgroundColor: isSelected ? 'rgba(255, 107, 53, 0.1)' : '#18181B',
-          borderRadius: 16,
-          padding: 16,
-          marginBottom: 12,
-          borderWidth: 1,
-          borderColor: isSelected ? '#FF6B35' : '#27272A',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+        className="mb-3"
       >
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }}>{item.name}</Text>
-          {item.muscle_group && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <View style={{ 
-                backgroundColor: 'rgba(0, 217, 255, 0.15)', 
-                paddingHorizontal: 10, 
-                paddingVertical: 4, 
-                borderRadius: 8 
-              }}>
-                <Text style={{ color: '#00D9FF', fontSize: 12, fontWeight: '600' }}>{item.muscle_group}</Text>
-              </View>
+        <LinearGradient
+            colors={isSelected ? ['rgba(249, 115, 22, 0.15)', 'rgba(249, 115, 22, 0.05)'] : ['rgba(39, 39, 42, 0.6)', 'rgba(24, 24, 27, 0.4)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 16 }}
+            className={`overflow-hidden border ${isSelected ? 'border-orange-500/50' : 'border-white/5'}`}
+        >
+        <View className="flex-row items-center p-4 gap-4">
+             {/* Icon/Image Placeholder */}
+            <View className={`w-12 h-12 rounded-xl items-center justify-center border ${isSelected ? 'bg-orange-500 border-orange-400' : 'bg-zinc-800/80 border-white/5'}`}>
+                {isSelected ? (
+                    <Ionicons name="checkmark" size={24} color="white" />
+                ) : (
+                    <Ionicons name="barbell" size={24} color="#52525b" />
+                )}
             </View>
-          )}
+
+            <View className="flex-1">
+                <View className="flex-row items-center gap-2 mb-1.5">
+                    <View className="bg-cyan-500/10 px-2.5 py-0.5 rounded-md self-start border border-cyan-500/20 shadow-sm shadow-cyan-500/10">
+                        <Text className="text-cyan-400 text-[10px] font-bold uppercase tracking-wider">{item.muscle_group || 'GERAL'}</Text>
+                    </View>
+                </View>
+                <Text className={`text-base font-bold tracking-tight ${isSelected ? 'text-orange-100' : 'text-zinc-100'}`}>
+                    {item.name}
+                </Text>
+                
+                {/* Stats Preview if Selected */}
+                {isSelected && selectedExerciseData && (
+                    <View className="flex-row gap-3 mt-2.5 bg-black/20 self-start p-1.5 pr-3 rounded-lg border border-white/5">
+                        <View className="flex-row items-center gap-1.5 ml-1">
+                            <Ionicons name="layers" size={12} color="#fdba74" />
+                            <Text className="text-orange-200 text-xs font-semibold">{selectedExerciseData.sets} séries</Text>
+                        </View>
+                        <View className="w-[1px] h-3 bg-white/10" />
+                        <View className="flex-row items-center gap-1.5">
+                            <Ionicons name="repeat" size={12} color="#fdba74" />
+                            <Text className="text-orange-200 text-xs font-semibold">{selectedExerciseData.reps} reps</Text>
+                        </View>
+                    </View>
+                )}
+            </View>
+
+            {isSelected && (
+                <TouchableOpacity onPress={() => handleDeselect(item.id)} className="p-2 -mr-2">
+                    <LinearGradient
+                        colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+                        className="rounded-full p-1"
+                    >
+                         <Ionicons name="close" size={18} color="#a1a1aa" />
+                    </LinearGradient>
+                </TouchableOpacity>
+            )}
         </View>
-        {isSelected && (
-          <TouchableOpacity onPress={() => editSelectedExercise(item)} style={{ marginLeft: 12 }}>
-            <Ionicons name="pencil" size={20} color="#FFF" />
-          </TouchableOpacity>
-        )}
+        </LinearGradient>
       </TouchableOpacity>
     );
-  }, [selected, toggleSelection, editSelectedExercise]);
+  }, [selected, toggleSelection, selectedExercises, handleDeselect]);
 
   return (
-    <View className="flex-1 bg-zinc-950">
+    <View className="flex-1 bg-black">
+      {/* Background with Gradient */}
+        <LinearGradient
+            colors={['#18181b', '#000000']}
+            className="absolute inset-0"
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 0.8 }}
+        />
+
       {/* Header */}
-      <View className="px-6 pt-4 pb-4 bg-zinc-950 border-b border-zinc-800" style={{ paddingTop: insets.top + 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+      <View style={{ paddingTop: insets.top }} className="px-6 pb-6 border-b border-white/5 z-10">
+        <View className="flex-row items-center justify-between mb-6 mt-2">
           <TouchableOpacity 
             onPress={() => router.back()} 
-            style={{ 
-              backgroundColor: '#18181B', 
-              padding: 10, 
-              borderRadius: 12, 
-              marginRight: 16 
-            }}
+            className="w-10 h-10 items-center justify-center rounded-full bg-zinc-800/50 border border-white/10 shadow-lg shadow-black"
           >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Ionicons name="arrow-back" size={20} color="white" />
           </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF' }}>Selecionar Exercícios</Text>
-            <Text style={{ fontSize: 14, color: '#A1A1AA', marginTop: 2 }}>
-              {selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}
-            </Text>
-          </View>
+          
+          <Text className="text-xl font-black text-white uppercase tracking-wider italic">
+            Exercícios
+          </Text>
+
           <TouchableOpacity 
             onPress={() => setShowCreateModal(true)} 
-            style={{ 
-              backgroundColor: 'rgba(255, 107, 53, 0.15)', 
-              padding: 10, 
-              borderRadius: 12 
-            }}
+            className="w-10 h-10 items-center justify-center rounded-full bg-orange-500/10 border border-orange-500/30 shimmer"
           >
-            <Ionicons name="add" size={24} color="#FF6B35" />
+            <Ionicons name="add" size={22} color="#f97316" />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <View className="bg-zinc-900 rounded-xl flex-row items-center px-3 mb-3 border border-zinc-800">
-          <Ionicons name="search" size={20} color="#A1A1AA" />
+        <View className="flex-row items-center bg-zinc-900/80 border border-white/10 rounded-2xl px-4 py-3.5 mb-5 shadow-sm shadow-black">
+          <Ionicons name="search" size={20} color="#71717a" />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Buscar exercício..."
+            placeholder="Buscar por nome..."
             placeholderTextColor="#52525B"
-            style={{
-              flex: 1,
-              color: '#FFFFFF',
-              fontSize: 16,
-              paddingVertical: 12,
-              paddingHorizontal: 12
-            }}
+            className="flex-1 ml-3 text-white text-base font-medium"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#A1A1AA" />
+              <Ionicons name="close-circle" size={18} color="#52525B" />
             </TouchableOpacity>
           )}
         </View>
@@ -309,28 +324,24 @@ export default function SelectExercisesScreen() {
             data={['Todos', ...muscleGroups]}
             keyExtractor={(item) => item}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
+            contentContainerStyle={{ gap: 10, paddingRight: 24 }}
             renderItem={({ item }) => {
               const isActive = item === 'Todos' ? selectedMuscleGroup === null : selectedMuscleGroup === item;
               return (
                 <TouchableOpacity
                   onPress={() => setSelectedMuscleGroup(item === 'Todos' ? null : item)}
-                  style={{
-                    backgroundColor: isActive ? '#FF6B35' : '#18181B',
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: isActive ? '#FF6B35' : '#27272A'
-                  }}
+                  activeOpacity={0.8}
                 >
-                  <Text style={{ 
-                    color: isActive ? '#FFFFFF' : '#A1A1AA', 
-                    fontWeight: '600',
-                    fontSize: 13
-                  }}>
-                    {item}
-                  </Text>
+                    <LinearGradient
+                        colors={isActive ? ['#f97316', '#ea580c'] : ['rgba(39, 39, 42, 0.5)', 'rgba(39, 39, 42, 0.5)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        className={`px-5 py-2.5 rounded-full border ${isActive ? 'border-orange-400' : 'border-white/10'}`}
+                    >
+                        <Text className={`text-xs font-bold uppercase tracking-wide ${isActive ? 'text-white' : 'text-zinc-400'}`}>
+                            {item}
+                        </Text>
+                    </LinearGradient>
                 </TouchableOpacity>
               );
             }}
@@ -340,9 +351,9 @@ export default function SelectExercisesScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View className="flex-1 justify-center items-center bg-zinc-950">
-          <ActivityIndicator size="large" color="#FF6B35" />
-          <Text style={{ color: '#A1A1AA', marginTop: 16, fontSize: 15 }}>Carregando exercícios...</Text>
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#f97316" />
+          <Text className="text-zinc-500 mt-4 font-medium tracking-wide">Carregando catálogo...</Text>
         </View>
       ) : (
         <FlatList 
@@ -350,52 +361,45 @@ export default function SelectExercisesScreen() {
           renderItem={renderItem} 
           keyExtractor={(item) => item.id} 
           contentContainerStyle={{ 
-            paddingHorizontal: 24, 
-            paddingTop: 16,
-            paddingBottom: insets.bottom + 100, 
+            padding: 24,
+            paddingBottom: insets.bottom + 120, // Extra padding for floating button
           }}
-          className="flex-1 bg-zinc-950"
           showsVerticalScrollIndicator={false} 
           ListEmptyComponent={
-            <View style={{ alignItems: 'center', padding: 32 }}>
-              <Text style={{ color: '#A1A1AA', textAlign: 'center' }}>
-                Nenhum exercício encontrado.
+            <View className="items-center justify-center py-12">
+                <View className="w-20 h-20 bg-zinc-900/50 rounded-full items-center justify-center mb-6 border border-zinc-800 border-dashed">
+                    <Ionicons name="barbell-outline" size={32} color="#3f3f46" />
+                </View>
+              <Text className="text-zinc-400 text-lg font-bold mb-2">
+                Nenhum exercício encontrado
+              </Text>
+              <Text className="text-zinc-600 text-sm text-center px-10">
+                Tente buscar por outro termo ou selecione outro grupo muscular.
               </Text>
             </View>
           }
         />
       )}
 
-      {/* Bottom Button */}
+      {/* Floating Action Confirmation */}
       {selected.length > 0 && (
-        <View style={{ 
-          position: 'absolute', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          padding: 24, 
-          paddingBottom: Math.max(insets.bottom, 24), 
-          backgroundColor: '#09090B', // zinc-950
-          borderTopWidth: 1, 
-          borderTopColor: '#27272A' // zinc-800
-        }}>
-          <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
+        <View 
+            className="absolute bottom-0 left-0 right-0 px-6 pt-4 bg-gradient-to-t from-black via-black/90 to-transparent"
+            style={{ paddingBottom: Math.max(insets.bottom, 24) + 10 }}
+        >
+          <TouchableOpacity onPress={handleConfirm} activeOpacity={0.9}>
             <LinearGradient 
-              colors={['#FF6B35', '#FF2E63']} 
+              colors={['#f97316', '#ea580c']} 
               start={{ x: 0, y: 0 }} 
               end={{ x: 1, y: 1 }} 
-              style={{ 
-                borderRadius: 16, 
-                paddingVertical: 18, 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                flexDirection: 'row' 
-              }}
+              className="rounded-2xl py-4 flex-row items-center justify-center shadow-2xl shadow-orange-500/40 border border-orange-400/20"
             >
-              <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
-                Adicionar {selected.length} {selected.length === 1 ? 'Exercício' : 'Exercícios'}
+              <Text className="text-white text-lg font-black uppercase tracking-widest mr-3">
+                Adicionar {selected.length}
               </Text>
+              <View className="bg-white/20 p-1 rounded-full">
+                  <Ionicons name="arrow-forward" size={16} color="white" />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -405,114 +409,75 @@ export default function SelectExercisesScreen() {
       {showCreateModal && (
         <>
           <TouchableOpacity 
-            style={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0, 
-              backgroundColor: 'rgba(0, 0, 0, 0.8)' 
-            }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
             activeOpacity={1}
             onPress={handleCloseCreateModal}
           />
-          <View style={{ 
-            position: 'absolute', 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
-            backgroundColor: '#18181B', 
-            borderTopLeftRadius: 24, 
-            borderTopRightRadius: 24, 
-            padding: 24, 
-            paddingBottom: Math.max(insets.bottom, 24), 
-            borderTopWidth: 2, 
-            borderTopColor: '#27272A', 
-            maxHeight: '80%' 
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Criar Novo Exercício</Text>
-              <TouchableOpacity onPress={handleCloseCreateModal}>
-                <Ionicons name="close" size={28} color="#A1A1AA" />
-              </TouchableOpacity>
+          <View className="absolute bottom-0 left-0 right-0 bg-zinc-900 rounded-t-[32px] border-t border-white/10 overflow-hidden shadow-2xl shadow-black">
+             
+             {/* Modal Header */}
+             <View className="flex-row justify-between items-center p-6 pb-2 bg-zinc-900 z-10 pt-8">
+                <View>
+                    <Text className="text-xl font-black text-white uppercase italic tracking-wider">Novo Exercício</Text>
+                    <Text className="text-zinc-500 text-xs font-medium mt-1">Adicione ao catalogo global</Text>
+                </View>
+                <TouchableOpacity onPress={handleCloseCreateModal} className="p-2 bg-zinc-800/50 rounded-full border border-white/5">
+                    <Ionicons name="close" size={20} color="#a1a1aa" />
+                </TouchableOpacity>
+             </View>
+
+            <View className="p-6" style={{ paddingBottom: Math.max(insets.bottom, 24) + 24 }}>
+                <View className="mb-4">
+                    <Text className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Nome</Text>
+                    <TextInput 
+                        value={newExerciseName} 
+                        onChangeText={setNewExerciseName} 
+                        placeholder="Ex: Supino Reto" 
+                        placeholderTextColor="#52525B" 
+                        className="bg-black/40 border border-zinc-800 rounded-2xl p-4 text-white text-base font-medium focus:border-orange-500/50"
+                    />
+                </View>
+
+                <View className="mb-4">
+                    <Text className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Grupo Muscular</Text>
+                    <TextInput 
+                        value={newExerciseMuscle} 
+                        onChangeText={setNewExerciseMuscle} 
+                        placeholder="Ex: Peito" 
+                        placeholderTextColor="#52525B" 
+                        className="bg-black/40 border border-zinc-800 rounded-2xl p-4 text-white text-base font-medium focus:border-orange-500/50"
+                    />
+                </View>
+
+                <View className="mb-8">
+                    <Text className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">URL do Vídeo</Text>
+                    <TextInput 
+                        value={newExerciseVideo} 
+                        onChangeText={setNewExerciseVideo} 
+                        placeholder="https://..." 
+                        placeholderTextColor="#52525B" 
+                        autoCapitalize="none"
+                        className="bg-black/40 border border-zinc-800 rounded-2xl p-4 text-white text-base font-medium focus:border-orange-500/50"
+                    />
+                </View>
+
+                <TouchableOpacity 
+                    onPress={handleCreateExercise}
+                    disabled={createExerciseMutation.isPending}
+                    activeOpacity={0.9}
+                >
+                    <LinearGradient
+                        colors={['#f97316', '#ea580c']}
+                        className="rounded-2xl py-4 items-center shadow-lg shadow-orange-500/20"
+                    >
+                        {createExerciseMutation.isPending ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <Text className="text-white text-base font-black uppercase tracking-widest">Salvar Exercício</Text>
+                        )}
+                    </LinearGradient>
+                </TouchableOpacity>
             </View>
-            
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#A1A1AA', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Nome do Exercício</Text>
-              <TextInput 
-                value={newExerciseName} 
-                onChangeText={setNewExerciseName} 
-                placeholder="Ex: Supino Reto" 
-                placeholderTextColor="#52525B" 
-                style={{ 
-                  backgroundColor: '#09090B', 
-                  borderWidth: 2, 
-                  borderColor: '#27272A', 
-                  borderRadius: 12, 
-                  padding: 16, 
-                  color: '#FFFFFF', 
-                  fontSize: 16 
-                }}
-              />
-            </View>
-            
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: '#A1A1AA', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Grupo Muscular</Text>
-              <TextInput 
-                value={newExerciseMuscle} 
-                onChangeText={setNewExerciseMuscle} 
-                placeholder="Ex: Peitoral" 
-                placeholderTextColor="#52525B" 
-                style={{ 
-                  backgroundColor: '#09090B', 
-                  borderWidth: 2, 
-                  borderColor: '#27272A', 
-                  borderRadius: 12, 
-                  padding: 16, 
-                  color: '#FFFFFF', 
-                  fontSize: 16 
-                }}
-              />
-            </View>
-            
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: '#A1A1AA', fontSize: 13, marginBottom: 8, fontWeight: '600' }}>Link do Vídeo (YouTube)</Text>
-              <TextInput 
-                value={newExerciseVideo} 
-                onChangeText={setNewExerciseVideo} 
-                placeholder="https://youtube.com/..." 
-                placeholderTextColor="#52525B" 
-                autoCapitalize="none" 
-                style={{ 
-                  backgroundColor: '#09090B', 
-                  borderWidth: 2, 
-                  borderColor: '#27272A', 
-                  borderRadius: 12, 
-                  padding: 16, 
-                  color: '#FFFFFF', 
-                  fontSize: 16 
-                }}
-              />
-            </View>
-            
-            <TouchableOpacity 
-              onPress={handleCreateExercise} 
-              disabled={createExerciseMutation.isPending} 
-              activeOpacity={0.8} 
-              style={{ 
-                backgroundColor: '#FF6B35', 
-                padding: 12, 
-                borderRadius: 8, 
-                alignItems: 'center',
-                opacity: createExerciseMutation.isPending ? 0.5 : 1
-              }}
-            >
-              {createExerciseMutation.isPending ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>Salvar Exercício</Text>
-              )}
-            </TouchableOpacity>
           </View>
         </>
       )}

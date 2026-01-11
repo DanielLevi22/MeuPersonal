@@ -1,5 +1,6 @@
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,102 +76,173 @@ export const ExerciseConfigModal: React.FC<Props> = ({ visible, onClose, exercis
       animationType="slide" 
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        activeOpacity={1}
-        onPress={onClose}
-        className="flex-1 bg-black/80 justify-end"
-      >
+      <View className="flex-1 bg-black/80 justify-end">
         <TouchableOpacity 
           activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
-          className="bg-zinc-950 rounded-t-3xl p-6 max-h-[90%] border-t border-zinc-800"
-          style={{ paddingBottom: Math.max(insets.bottom, 24) + 16 }}
+          onPress={onClose}
+          className="absolute inset-0"
+        />
+        
+        <View 
+            className="rounded-t-[32px] overflow-hidden"
+            style={{ paddingBottom: Math.max(insets.bottom, 24) + 16 }}
         >
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-2xl font-extrabold text-foreground">Configurar Exercício</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Ionicons name="close" size={28} color="#A1A1AA" />
-              </TouchableOpacity>
-            </View>
+            <LinearGradient
+                colors={['#18181b', '#000000']}
+                className="absolute inset-0"
+            />
             
-            <View className="bg-muted/30 p-4 rounded-2xl mb-6 border-2 border-border">
-              <Text className="text-foreground text-lg font-bold mb-1">{exercise.name}</Text>
-              <Text className="text-secondary text-sm">{exercise.muscle_group}</Text>
+            <View className="p-6">
+                <View className="flex-row justify-between items-center mb-8">
+                <View>
+                    <Text className="text-2xl font-black text-white italic font-display tracking-tighter">
+                        Configurar
+                    </Text>
+                    <Text className="text-zinc-500 text-sm font-medium uppercase tracking-widest">
+                        Detalhes do Exercício
+                    </Text>
+                </View>
+                <TouchableOpacity 
+                    onPress={onClose}
+                    className="w-10 h-10 bg-white/5 border border-white/10 rounded-full items-center justify-center"
+                >
+                    <Ionicons name="close" size={20} color="#E4E4E7" />
+                </TouchableOpacity>
+                </View>
+                
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {/* Exercise Card */}
+                    <View className="bg-white/5 p-4 rounded-2xl mb-8 border border-white/10">
+                        <View className="flex-row items-center gap-3 mb-2">
+                            <View className="bg-orange-500/20 px-2.5 py-1 rounded-lg border border-orange-500/20">
+                                <Text className="text-orange-500 text-[9px] font-black uppercase tracking-widest">
+                                    {exercise.muscle_group || 'Geral'}
+                                </Text>
+                            </View>
+                            <View className="flex-1 h-[1px] bg-white/10" />
+                        </View>
+                        <Text className="text-white text-xl font-bold font-display italic">
+                            {exercise.name}
+                        </Text>
+                    </View>
+                    
+                    {/* Stats Grid */}
+                    <View className="flex-row gap-3 mb-6">
+                        <View className="flex-1">
+                            <Text className="text-zinc-500 text-[10px] uppercase font-bold mb-2 ml-1">Séries</Text>
+                            <View className="bg-black/40 border border-zinc-800 rounded-xl flex-row items-center overflow-hidden h-14">
+                                <View className="w-10 h-full items-center justify-center border-r border-white/5 bg-white/5">
+                                    <Ionicons name="repeat-outline" size={18} color="#A1A1AA" />
+                                </View>
+                                <TextInput
+                                    value={sets}
+                                    onChangeText={setSets}
+                                    keyboardType="number-pad"
+                                    className="flex-1 text-white text-lg font-bold text-center h-full"
+                                    placeholderTextColor="#52525B"
+                                />
+                            </View>
+                        </View>
+
+                        <View className="flex-1">
+                            <Text className="text-zinc-500 text-[10px] uppercase font-bold mb-2 ml-1">Repetições</Text>
+                            <View className="bg-black/40 border border-zinc-800 rounded-xl flex-row items-center overflow-hidden h-14">
+                                <View className="w-10 h-full items-center justify-center border-r border-white/5 bg-white/5">
+                                    <Ionicons name="fitness-outline" size={18} color="#A1A1AA" />
+                                </View>
+                                <TextInput
+                                    value={reps}
+                                    onChangeText={setReps}
+                                    keyboardType="number-pad"
+                                    className="flex-1 text-white text-lg font-bold text-center h-full"
+                                    placeholderTextColor="#52525B"
+                                />
+                            </View>
+                        </View>
+
+                        <View className="flex-1">
+                            <Text className="text-zinc-500 text-[10px] uppercase font-bold mb-2 ml-1">Descanso (s)</Text>
+                            <View className="bg-black/40 border border-zinc-800 rounded-xl flex-row items-center overflow-hidden h-14">
+                                <View className="w-10 h-full items-center justify-center border-r border-white/5 bg-white/5">
+                                    <Ionicons name="timer-outline" size={18} color="#A1A1AA" />
+                                </View>
+                                <TextInput
+                                    value={restSeconds}
+                                    onChangeText={setRestSeconds}
+                                    keyboardType="number-pad"
+                                    className="flex-1 text-white text-lg font-bold text-center h-full"
+                                    placeholderTextColor="#52525B"
+                                />
+                            </View>
+                        </View>
+                    </View>
+                    
+                    {/* Weight Input */}
+                    <View className="mb-6">
+                        <Text className="text-zinc-500 text-[10px] uppercase font-bold mb-2 ml-1">Carga (kg)</Text>
+                        <View className="bg-black/40 border border-zinc-800 rounded-xl flex-row items-center overflow-hidden h-14">
+                            <View className="w-12 h-full items-center justify-center border-r border-white/5 bg-white/5">
+                                <Ionicons name="barbell-outline" size={20} color="#A1A1AA" />
+                            </View>
+                            <TextInput
+                                value={weight}
+                                onChangeText={setWeight}
+                                keyboardType="numeric"
+                                placeholder="0"
+                                placeholderTextColor="#52525B"
+                                className="flex-1 text-white text-lg font-bold px-4 h-full"
+                            />
+                            <Text className="text-zinc-600 font-bold mr-4">KG</Text>
+                        </View>
+                    </View>
+                    
+                    <View className="mb-8">
+                        <Text className="text-zinc-500 text-[10px] uppercase font-bold mb-2 ml-1">Link do Vídeo (YouTube)</Text>
+                        <View className="bg-black/40 border border-zinc-800 rounded-xl flex-row items-center overflow-hidden mb-3 h-14">
+                            <View className="w-12 h-full items-center justify-center border-r border-white/5 bg-white/5">
+                                <Ionicons name="logo-youtube" size={20} color="#ef4444" />
+                            </View>
+                            <TextInput
+                                value={videoUrl}
+                                onChangeText={setVideoUrl}
+                                placeholder="https://youtube.com/..."
+                                placeholderTextColor="#52525B"
+                                autoCapitalize="none"
+                                className="flex-1 text-white text-sm px-4 h-full"
+                            />
+                        </View>
+                        {videoUrl.trim() ? (
+                            <View className="rounded-xl overflow-hidden border border-zinc-800 bg-black">
+                                <VideoPlayer videoUrl={videoUrl.trim()} height={180} />
+                            </View>
+                        ) : null}
+                    </View>
+                    
+                    <TouchableOpacity 
+                        onPress={handleSave} 
+                        activeOpacity={0.8} 
+                        disabled={saving}
+                        className="shadow-lg shadow-orange-500/20"
+                    >
+                        <LinearGradient
+                            colors={saving ? ['#52525b', '#52525b'] : ['#FF6B35', '#E85A2A']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            className="rounded-2xl py-4 items-center"
+                        >
+                            {saving ? (
+                                <ActivityIndicator color="#FFF" />
+                            ) : (
+                                <Text className="text-white text-base font-black uppercase tracking-widest">
+                                {initialData ? 'Salvar Alterações' : 'Adicionar Exercício'}
+                                </Text>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </ScrollView>
             </View>
-            
-            <View className="flex-row gap-3 mb-6">
-              <View className="flex-1">
-                <Text className="text-muted-foreground text-xs mb-2 font-semibold">Séries</Text>
-                <TextInput
-                  value={sets}
-                  onChangeText={setSets}
-                  keyboardType="number-pad"
-                  className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="text-muted-foreground text-xs mb-2 font-semibold">Repetições</Text>
-                <TextInput
-                  value={reps}
-                  onChangeText={setReps}
-                  keyboardType="number-pad"
-                  className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="text-muted-foreground text-xs mb-2 font-semibold">Descanso (s)</Text>
-                <TextInput
-                  value={restSeconds}
-                  onChangeText={setRestSeconds}
-                  keyboardType="number-pad"
-                  className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
-                />
-              </View>
-            </View>
-            
-            <View className="mb-6">
-              <Text className="text-muted-foreground text-xs mb-2 font-semibold">Carga (kg)</Text>
-              <TextInput
-                value={weight}
-                onChangeText={setWeight}
-                keyboardType="numeric"
-                placeholder="Ex: 20"
-                placeholderTextColor="#52525B"
-                className="bg-muted/30 border-2 border-border rounded-xl p-3.5 text-foreground text-lg font-bold text-center"
-              />
-            </View>
-            
-            <View className="mb-6">
-              <Text className="text-muted-foreground text-xs mb-2 font-semibold">Link do Vídeo (YouTube)</Text>
-              <TextInput
-                value={videoUrl}
-                onChangeText={setVideoUrl}
-                placeholder="https://youtube.com/..."
-                placeholderTextColor="#52525B"
-                autoCapitalize="none"
-                className="bg-muted/30 border-2 border-border rounded-xl p-4 text-foreground text-base mb-3"
-              />
-              {videoUrl.trim() ? <VideoPlayer videoUrl={videoUrl.trim()} height={200} /> : null}
-            </View>
-            
-            <TouchableOpacity 
-              onPress={handleSave} 
-              activeOpacity={0.8} 
-              disabled={saving}
-              className={`bg-primary rounded-2xl py-4 items-center ${saving ? 'opacity-50' : ''}`}
-            >
-              {saving ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text className="text-primary-foreground text-base font-bold">
-                  {initialData ? 'Salvar Alterações' : 'Adicionar Exercício'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };

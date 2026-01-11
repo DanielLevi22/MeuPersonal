@@ -3,6 +3,10 @@ const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
 
 const config = getDefaultConfig(__dirname);
+
+// Add support for GLB/GLTF 3D model files
+config.resolver.assetExts.push('glb', 'gltf', 'bin');
+
 // Normalize path to use forward slashes for Windows compatibility
 const inputPath = path.resolve(__dirname, "./src/global.css").replace(/\\/g, "/");
 
@@ -16,3 +20,4 @@ try {
 }
 
 module.exports = finalConfig;
+

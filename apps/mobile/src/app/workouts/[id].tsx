@@ -7,7 +7,7 @@ import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface WorkoutItem {
@@ -284,45 +284,76 @@ export default function WorkoutDetailScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
-      <SafeAreaView className="flex-1">
-        {/* Header */}
-        <View className="flex-row items-center px-6 pt-4 pb-6">
-          <TouchableOpacity onPress={() => router.back()} className="bg-card p-2.5 rounded-xl mr-4">
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text className="text-2xl font-extrabold text-foreground flex-1" numberOfLines={1}>
-            {workout.title}
-          </Text>
-          <TouchableOpacity onPress={handleEditWorkout} className="bg-cyan-400/15 p-2.5 rounded-xl mr-2">
-            <Ionicons name="pencil" size={24} color="#22D3EE" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDeleteWorkout} disabled={deleting} className="bg-red-500/15 p-2.5 rounded-xl mr-2">
-            <Ionicons name="trash-outline" size={24} color="#EF4444" />
-          </TouchableOpacity>
-        </View>
+    <View className="flex-1 bg-black">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Hero Header */}
+        <ImageBackground 
+            source={{ uri: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop' }} 
+            className="h-96 w-full justify-between"
+        >
+            <LinearGradient
+                colors={['transparent', '#000000']}
+                className="absolute inset-0"
+                locations={[0.3, 1]}
+            />
+            
+            {/* Navbar */}
+            <SafeAreaView className="flex-row items-center justify-between px-6 pt-2">
+                <TouchableOpacity onPress={() => router.back()} className="bg-black/30 border border-white/10 p-3 rounded-full backdrop-blur-md">
+                    <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
 
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-          {/* Description */}
-          {workout.description && (
-            <View className="bg-card p-4 rounded-2xl mb-4 border-2 border-border">
-              <Text className="text-muted-foreground text-base leading-6">{workout.description}</Text>
+                <View className="flex-row gap-3">
+                    <TouchableOpacity onPress={handleEditWorkout} className="bg-black/30 border border-white/10 p-3 rounded-full backdrop-blur-md">
+                        <Ionicons name="pencil" size={20} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleDeleteWorkout} disabled={deleting} className="bg-red-500/20 border border-red-500/30 p-3 rounded-full backdrop-blur-md">
+                        <Ionicons name="trash-outline" size={20} color="#f87171" />
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+
+            {/* Title & Info */}
+            <View className="px-6 pb-12">
+                <View className="flex-row gap-2 mb-3">
+                    <View className="bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/30">
+                        <Text className="text-orange-500 text-[10px] font-bold uppercase tracking-widest">Hipertrofia</Text>
+                    </View>
+                    <View className="bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                        <Text className="text-white text-[10px] font-bold uppercase tracking-widest">
+                            {workoutItems.length} Exercícios
+                        </Text>
+                    </View>
+                </View>
+
+                <Text className="text-4xl font-black text-white font-display italic tracking-tighter shadow-lg shadow-black">
+                    {workout.title}
+                </Text>
+                
+                {workout.description && (
+                    <Text className="text-zinc-300 text-sm mt-2 font-medium" numberOfLines={2}>
+                        {workout.description}
+                    </Text>
+                )}
             </View>
-          )}
+        </ImageBackground>
 
+        {/* Content Body */}
+        <View className="flex-1 px-6 -mt-8 pt-2">
+            
           {/* Manage Students Button */}
           <TouchableOpacity 
             onPress={() => router.push(`/workouts/${id}/assignments`)}
             activeOpacity={0.8}
-            className="bg-card p-4 rounded-2xl mb-6 border border-border flex-row items-center justify-between"
+            className="bg-zinc-900/50 p-4 rounded-3xl mb-8 border border-zinc-800 flex-row items-center justify-between"
           >
-            <View className="flex-row items-center">
-              <View className="bg-cyan-400/10 p-2.5 rounded-xl mr-3">
-                <Ionicons name="people" size={24} color="#22D3EE" />
+            <View className="flex-row items-center gap-4">
+              <View className="bg-cyan-500/10 p-3 rounded-full border border-cyan-500/20">
+                <Ionicons name="people" size={22} color="#06b6d4" />
               </View>
               <View>
-                <Text className="text-foreground text-base font-bold">Gerenciar Alunos</Text>
-                <Text className="text-muted-foreground text-xs">Atribuir ou remover alunos</Text>
+                <Text className="text-white text-base font-bold">Gerenciar Alunos</Text>
+                <Text className="text-zinc-500 text-xs">Atribuir este treino</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#52525B" />
@@ -338,80 +369,124 @@ export default function WorkoutDetailScreen() {
             {workoutItems.length > 0 ? (
               <View>
                 {workoutItems.map((item, index) => (
-                  <View key={item.id} className="bg-card p-4 rounded-2xl mb-3 border-2 border-border">
-                    <View className="flex-row items-center mb-2">
-                      <View className="bg-orange-500 w-7 h-7 rounded-full items-center justify-center mr-3">
-                        <Text className="text-white text-sm font-bold">{index + 1}</Text>
-                      </View>
-                      <TouchableOpacity 
-                        className="flex-1"
-                        onPress={() => handleEditExercise(item)}
-                        activeOpacity={0.7}
-                      >
-                        <Text className="text-foreground text-base font-bold">{item.exercise.name}</Text>
-                        <View className="flex-row items-center mt-1">
-                          <View className="bg-cyan-400/15 px-2 py-1 rounded-md">
-                            <Text className="text-cyan-400 text-[11px] font-semibold">{item.exercise.muscle_group}</Text>
-                          </View>
+                  <TouchableOpacity 
+                    key={item.id} 
+                    onPress={() => handleEditExercise(item)}
+                    activeOpacity={0.9}
+                    className="bg-zinc-900 rounded-3xl mb-4 border border-zinc-800 overflow-hidden shadow-sm shadow-black"
+                  >
+                    
+                    {/* Header Row */}
+                    <View className="flex-row justify-between items-start p-4 pb-2">
+                        <View className="flex-1 mr-4">
+                            <View className="flex-row items-center gap-2 mb-1">
+                                <View className="bg-orange-500/10 px-2.5 py-1 rounded-lg border border-orange-500/20">
+                                    <Text className="text-orange-500 text-[9px] font-black uppercase tracking-widest">
+                                        {item.exercise.muscle_group}
+                                    </Text>
+                                </View>
+                                {/* Order Badge */}
+                                <View className="bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700">
+                                    <Text className="text-zinc-400 text-[9px] font-black uppercase">
+                                        #{index + 1}
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text className="text-white text-lg font-bold font-display italic leading-tight">
+                                {item.exercise.name}
+                            </Text>
                         </View>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        onPress={() => handleDeleteExercise(item.id)}
-                        onPressIn={(e) => e.stopPropagation()}
-                      >
-                        <Ionicons name="trash" size={24} color="#EF4444" />
-                      </TouchableOpacity>
+
+                        {/* Actions */}
+                        <View className="flex-row gap-1">
+                            <TouchableOpacity 
+                                onPress={() => handleDeleteExercise(item.id)}
+                                className="w-8 h-8 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20"
+                            >
+                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    {item.exercise.video_url && (
-                      <View className="mt-3 mb-3">
-                        <VideoPlayer videoUrl={item.exercise.video_url} height={200} />
+                    {/* Media / Divider */}
+                    {item.exercise.video_url ? (
+                      <View className="mt-2 h-48 w-full bg-black relative">
+                        <VideoPlayer videoUrl={item.exercise.video_url} height={192} />
+                        <LinearGradient 
+                            colors={['rgba(24,24,27,0)', 'rgba(24,24,27,1)']} 
+                            className="absolute bottom-0 left-0 right-0 h-12"
+                        />
                       </View>
+                    ) : (
+                        <View className="h-[1px] bg-zinc-800 mx-4 my-2" />
                     )}
 
-                    <View className="flex-row gap-3">
-                      <View className="flex-1 bg-background p-2.5 rounded-xl">
-                        <Text className="text-muted-foreground text-[11px] mb-0.5">Séries</Text>
-                        <Text className="text-foreground text-base font-bold">{item.sets}</Text>
+                    {/* Footer Stats */}
+                    <View className="p-4 pt-2 flex-row gap-2 flex-wrap">
+                      <View className="flex-1 min-w-[80px] bg-black/40 border border-zinc-800 p-2.5 rounded-xl items-center justify-center">
+                        <Text className="text-zinc-500 text-[9px] uppercase font-bold mb-0.5">Séries</Text>
+                        <Text className="text-white text-sm font-black italic">{item.sets}</Text>
                       </View>
-                      <View className="flex-1 bg-background p-2.5 rounded-xl">
-                        <Text className="text-muted-foreground text-[11px] mb-0.5">Reps</Text>
-                        <Text className="text-foreground text-base font-bold">{item.reps}</Text>
+
+                      <View className="flex-1 min-w-[80px] bg-black/40 border border-zinc-800 p-2.5 rounded-xl items-center justify-center">
+                        <Text className="text-zinc-500 text-[9px] uppercase font-bold mb-0.5">Reps</Text>
+                        <Text className="text-white text-sm font-black italic">{item.reps}</Text>
                       </View>
-                      <View className="flex-1 bg-background p-2.5 rounded-xl">
-                        <Text className="text-muted-foreground text-[11px] mb-0.5">Descanso</Text>
-                        <Text className="text-foreground text-base font-bold">{item.rest_time}s</Text>
+
+                      <View className="flex-1 min-w-[80px] bg-black/40 border border-zinc-800 p-2.5 rounded-xl items-center justify-center">
+                         <Text className="text-zinc-500 text-[9px] uppercase font-bold mb-0.5">Descanso</Text>
+                         <View className="flex-row items-baseline gap-0.5">
+                            <Text className="text-white text-sm font-black italic">{item.rest_time}</Text>
+                            <Text className="text-zinc-500 text-[10px]">s</Text>
+                         </View>
                       </View>
+
                       {item.weight ? (
-                        <View className="flex-1 bg-background p-2.5 rounded-xl">
-                          <Text className="text-muted-foreground text-[11px] mb-0.5">Carga</Text>
-                          <Text className="text-foreground text-base font-bold">{item.weight}kg</Text>
+                        <View className="flex-1 min-w-[80px] bg-zinc-800/20 border border-orange-500/20 p-2.5 rounded-xl items-center justify-center">
+                           <Text className="text-orange-500/70 text-[9px] uppercase font-bold mb-0.5">Carga</Text>
+                           <View className="flex-row items-baseline gap-0.5">
+                                <Text className="text-orange-500 text-sm font-black italic">{item.weight}</Text>
+                                <Text className="text-orange-500/70 text-[10px]">kg</Text>
+                           </View>
                         </View>
                       ) : null}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             ) : (
-              <View className="bg-card rounded-2xl p-8 border-2 border-border border-dashed items-center">
-                <View className="bg-muted/20 p-4 rounded-full mb-4">
-                  <Ionicons name="barbell-outline" size={48} color="#52525B" />
+                <View className="bg-zinc-900/50 rounded-3xl p-12 border-2 border-dashed border-zinc-800 items-center justify-center min-h-[300px]">
+                    <View className="bg-zinc-900 p-6 rounded-full mb-6 shadow-xl shadow-black">
+                        <Ionicons name="barbell" size={48} color="#f97316" />
+                    </View>
+                    <Text className="text-zinc-500 text-base text-center mb-8 font-medium">
+                        Seu treino está vazio.{"\n"}Comece adicionando exercícios!
+                    </Text>
+                    <TouchableOpacity 
+                        onPress={() => router.push('/workouts/select-exercises' as any)} 
+                        activeOpacity={0.8} 
+                        className="bg-orange-500 rounded-2xl py-4 px-8 shadow-lg shadow-orange-500/20"
+                    >
+                        <Text className="text-white text-base font-black uppercase tracking-widest">Adicionar Exercício</Text>
+                    </TouchableOpacity>
                 </View>
-                <Text className="text-muted-foreground text-base text-center mb-5">Nenhum exercício adicionado.</Text>
-                <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} className="bg-lime-400/10 border-2 border-lime-400 rounded-xl py-3 px-6">
-                  <Text className="text-lime-400 text-base font-bold">Adicionar Exercício</Text>
-                </TouchableOpacity>
-              </View>
             )}
 
-            {/* Add More Button */}
-            <TouchableOpacity onPress={() => router.push('/workouts/select-exercises' as any)} activeOpacity={0.8} className="bg-lime-400/10 border-2 border-lime-400 rounded-2xl py-3.5 items-center flex-row justify-center mt-1">
-              <Ionicons name="add-circle-outline" size={20} color="#A3E635" style={{ marginRight: 8 }} />
-              <Text className="text-lime-400 text-base font-bold">Adicionar Mais Exercícios</Text>
-            </TouchableOpacity>
+            {/* Add More Button (Only show if list not empty) */}
+            {workoutItems.length > 0 && (
+                <TouchableOpacity 
+                    onPress={() => router.push('/workouts/select-exercises' as any)} 
+                    activeOpacity={0.8} 
+                    className="bg-zinc-900 border border-zinc-800 rounded-2xl py-5 items-center flex-row justify-center mt-4 mb-12 shadow-sm shadow-black"
+                >
+                    <Ionicons name="add" size={24} color="white" style={{ marginRight: 8 }} />
+                    <Text className="text-white text-base font-bold uppercase tracking-widest">Adicionar Exercício</Text>
+                </TouchableOpacity>
+            )}
           </View>
-        </ScrollView>
-      </SafeAreaView>
+        </View>
+      </ScrollView>
+
 
       {/* Workout Edit Modal */}
       {showWorkoutEditModal && (
