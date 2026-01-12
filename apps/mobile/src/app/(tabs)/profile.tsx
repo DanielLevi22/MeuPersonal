@@ -158,6 +158,27 @@ export default function ProfileScreen() {
                  </LinearGradient>
             </TouchableOpacity>
 
+            {/* Health Connect Button */}
+            <TouchableOpacity 
+                onPress={() => router.push('/onboarding/health-connect' as any)}
+                activeOpacity={0.8}
+                className="mb-8 h-[100px] rounded-[32px] overflow-hidden border border-zinc-800 relative bg-zinc-900"
+            >
+                 <LinearGradient
+                    colors={['#18181b', '#09090b']}
+                    className="absolute inset-0 flex-row items-center justify-between p-6"
+                 >
+                    <View className="flex-1 mr-4">
+                        <Text className="text-white text-xl font-black italic font-display">SYNC SAÚDE</Text>
+                        <Text className="text-zinc-500 text-xs font-medium mt-1">Conectar Apple Health / Health Connect</Text>
+                    </View>
+                    
+                    <View className="w-14 h-14 bg-rose-500/10 rounded-2xl items-center justify-center border border-rose-500/20">
+                        <Ionicons name="heart-circle-outline" size={32} color="#f43f5e" />
+                    </View>
+                 </LinearGradient>
+            </TouchableOpacity>
+
             {/* Info Section */}
             <View className="mb-8">
                  <Text className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-4 ml-2">DETALHES DA CONTA</Text>

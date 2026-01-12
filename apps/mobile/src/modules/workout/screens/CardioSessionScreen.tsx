@@ -334,7 +334,7 @@ export default function CardioSessionScreen() {
 
   return (
     <ScreenLayout>
-      <View className="flex-1 p-6 justify-between">
+      <View className="flex-1 p-6 pb-32 justify-between">
         {/* Header */}
         <View className="items-center mt-4">
           <Text className="text-zinc-400 text-lg font-sans uppercase tracking-widest">

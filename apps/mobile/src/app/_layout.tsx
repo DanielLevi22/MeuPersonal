@@ -118,7 +118,7 @@ function RootLayoutNav({ loaded }: { loaded: boolean }) {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(professional)" />
             <Stack.Screen name="(auth)" />
-            <Stack.Screen name="onboarding/role-selection" />
+            <Stack.Screen name="onboarding" />
           </Stack>
         </ThemeProvider>
       </QueryClientProvider>

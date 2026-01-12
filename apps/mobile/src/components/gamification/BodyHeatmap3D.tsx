@@ -2,7 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useGLTF } from '@react-three/drei/native';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, PanResponderInstance, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as THREE from 'three';
 
@@ -25,138 +25,110 @@ const getDistance = (touches: any[]) => {
   );
 };
 
-// Helper function to get color based on intensity
-const getIntensityColor = (intensity: number): THREE.Color => {
-  const r = Math.min(1, intensity * 1.2);
-  const g = intensity * 0.42;
-  const b = intensity * 0.21;
-  return new THREE.Color(r, g, b);
-};
-
 // Muscle group metadata
 const muscleGroups: Array<{ id: MuscleGroup; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
-  { id: 'chest', label: 'Chest', icon: 'body-outline' },
-  { id: 'abs', label: 'Abs', icon: 'fitness-outline' },
-  { id: 'back', label: 'Back', icon: 'body-outline' },
-  { id: 'shoulders', label: 'Shoulders', icon: 'body-outline' },
-  { id: 'biceps', label: 'Biceps', icon: 'barbell-outline' },
-  { id: 'triceps', label: 'Triceps', icon: 'barbell-outline' },
-  { id: 'forearms', label: 'Forearms', icon: 'hand-left-outline' },
-  { id: 'quadriceps', label: 'Quadriceps', icon: 'walk-outline' },
-  { id: 'hamstrings', label: 'Hamstrings', icon: 'walk-outline' },
-  { id: 'calves', label: 'Calves', icon: 'footsteps-outline' },
-  { id: 'trapezius', label: 'Trapezius', icon: 'body-outline' },
-  { id: 'lats', label: 'Lats', icon: 'body-outline' },
-  { id: 'glutes', label: 'Glutes', icon: 'body-outline' },
+  { id: 'chest', label: 'Peito', icon: 'body-outline' },
+  { id: 'abs', label: 'Abdômen', icon: 'fitness-outline' },
+  { id: 'back', label: 'Costas', icon: 'body-outline' },
+  { id: 'shoulders', label: 'Ombros', icon: 'body-outline' },
+  { id: 'biceps', label: 'Bíceps', icon: 'barbell-outline' },
+  { id: 'triceps', label: 'Tríceps', icon: 'barbell-outline' },
+  { id: 'forearms', label: 'Antebraços', icon: 'hand-left-outline' },
+  { id: 'quadriceps', label: 'Quadríceps', icon: 'walk-outline' },
+  { id: 'hamstrings', label: 'Posteriores', icon: 'walk-outline' },
+  { id: 'calves', label: 'Panturrilhas', icon: 'footsteps-outline' },
+  { id: 'trapezius', label: 'Trapézio', icon: 'body-outline' },
+  { id: 'lats', label: 'Dorsais', icon: 'body-outline' },
+  { id: 'glutes', label: 'Glúteos', icon: 'body-outline' },
 ];
 
-// Mapping of mesh names in the GLB to muscle groups
-// This will need to be adjusted based on the actual mesh names in the model
-const meshToMuscleMap: Record<string, MuscleGroup> = {
-  // Chest
-  'pectoralis': 'chest',
-  'chest': 'chest',
-  'pecs': 'chest',
+// Mapping of muscles to their ideal viewing angle (Y-rotation) in Radians
+// 0 = Front, PI = Back
+const muscleRotationMap: Record<MuscleGroup, number> = {
+  // Front View (0)
+  chest: 0,
+  abs: 0,
+  shoulders: 0,
+  biceps: 0,
+  forearms: 0,
+  quadriceps: 0,
   
-  // Abs
-  'abs': 'abs',
-  'rectus_abdominis': 'abs',
-  'abdominals': 'abs',
-  
-  // Back
-  'back': 'back',
-  'erector_spinae': 'back',
-  
-  // Shoulders
-  'deltoid': 'shoulders',
-  'shoulders': 'shoulders',
-  'delts': 'shoulders',
-  
-  // Arms
-  'biceps': 'biceps',
-  'bicep': 'biceps',
-  'triceps': 'triceps',
-  'tricep': 'triceps',
-  'forearm': 'forearms',
-  'forearms': 'forearms',
-  
-  // Legs
-  'quadriceps': 'quadriceps',
-  'quads': 'quadriceps',
-  'hamstrings': 'hamstrings',
-  'hamstring': 'hamstrings',
-  'calves': 'calves',
-  'calf': 'calves',
-  'gastrocnemius': 'calves',
-  
-  // Back muscles
-  'trapezius': 'trapezius',
-  'trap': 'trapezius',
-  'latissimus': 'lats',
-  'lats': 'lats',
-  'lat': 'lats',
-  
-  // Glutes
-  'glutes': 'glutes',
-  'gluteus': 'glutes',
-  'glute': 'glutes',
+  // Back View (PI)
+  back: Math.PI,
+  triceps: Math.PI,
+  hamstrings: Math.PI,
+  calves: Math.PI,
+  trapezius: Math.PI,
+  lats: Math.PI,
+  glutes: Math.PI,
 };
 
-
+// Mapping of mesh names in the GLB to muscle groups
+const meshToMuscleMap: Record<string, MuscleGroup> = {
+  'pectoralis': 'chest', 'chest': 'chest', 'pecs': 'chest',
+  'abs': 'abs', 'rectus_abdominis': 'abs', 'abdominals': 'abs',
+  'back': 'back', 'erector_spinae': 'back', 'rhomboid': 'back', 'teres': 'back', 'infraspinatus': 'back', 'dorsal': 'back', 'lumbar': 'back', 'spine': 'back',
+  'deltoid': 'shoulders', 'shoulders': 'shoulders', 'delts': 'shoulders',
+  'biceps': 'biceps', 'bicep': 'biceps', 'triceps': 'triceps', 'tricep': 'triceps', 'forearm': 'forearms', 'forearms': 'forearms',
+  'quadriceps': 'quadriceps', 'quads': 'quadriceps', 'hamstrings': 'hamstrings', 'hamstring': 'hamstrings',
+  'calves': 'calves', 'calf': 'calves', 'gastrocnemius': 'calves',
+  'trapezius': 'trapezius', 'trap': 'trapezius', 'latissimus': 'lats', 'lats': 'lats', 'lat': 'lats',
+  'glutes': 'glutes', 'gluteus': 'glutes', 'glute': 'glutes',
+};
 
 // Muscle hitbox definitions (position and scale relative to model)
-const muscleHitboxes: Record<MuscleGroup, { position: [number, number, number], scale: [number, number, number] }[]> = {
+const muscleHitboxes: Record<MuscleGroup, { position: [number, number, number]; scale: [number, number, number] }[]> = {
   chest: [
-    { position: [0.18, 1.45, 0.15], scale: [0.25, 0.25, 0.15] }, // Left pec
-    { position: [-0.18, 1.45, 0.15], scale: [0.25, 0.25, 0.15] }, // Right pec
+    { position: [0.18, 1.45, 0.12], scale: [0.15, 0.22, 0.06] },
+    { position: [-0.18, 1.45, 0.12], scale: [0.15, 0.22, 0.06] },
   ],
   abs: [
-    { position: [0, 1.15, 0.12], scale: [0.25, 0.45, 0.15] },
+    { position: [0, 1.05, 0.09], scale: [0.18, 0.32, 0.08] },
   ],
   back: [
-    { position: [0, 1.4, -0.15], scale: [0.4, 0.5, 0.2] }, // Upper back
-    { position: [0, 1.05, -0.12], scale: [0.3, 0.3, 0.15] }, // Lower back
+    { position: [0, 1.45, -0.15], scale: [0.25, 0.4, 0.06] },
+    { position: [0, 1.15, -0.12], scale: [0.2, 0.4, 0.06] },
   ],
   shoulders: [
-    { position: [0.45, 1.55, 0], scale: [0.2, 0.2, 0.2] }, // Left
-    { position: [-0.45, 1.55, 0], scale: [0.2, 0.2, 0.2] }, // Right
+    { position: [0.45, 1.55, 0], scale: [0.22, 0.22, 0.20] },
+    { position: [-0.45, 1.55, 0], scale: [0.22, 0.22, 0.20] },
   ],
   biceps: [
-    { position: [0.55, 1.3, 0.05], scale: [0.15, 0.25, 0.15] }, // Left
-    { position: [-0.55, 1.3, 0.05], scale: [0.15, 0.25, 0.15] }, // Right
-    { position: [0.55, 1.3, -0.05], scale: [0.15, 0.25, 0.15] }, // Triceps overlap (simplified)
-    { position: [-0.55, 1.3, -0.05], scale: [0.15, 0.25, 0.15] },
+    { position: [0.55, 1.3, 0.05], scale: [0.14, 0.24, 0.14] },
+    { position: [-0.55, 1.3, 0.05], scale: [0.14, 0.24, 0.14] },
+    { position: [0.55, 1.3, -0.05], scale: [0.14, 0.24, 0.14] },
+    { position: [-0.55, 1.3, -0.05], scale: [0.14, 0.24, 0.14] },
   ],
   triceps: [
-    { position: [0.6, 1.3, -0.1], scale: [0.12, 0.25, 0.12] }, // Left
-    { position: [-0.6, 1.3, -0.1], scale: [0.12, 0.25, 0.12] }, // Right
+    { position: [0.65, 1.3, -0.1], scale: [0.12, 0.24, 0.12] },
+    { position: [-0.65, 1.3, -0.1], scale: [0.12, 0.24, 0.12] },
   ],
   forearms: [
-    { position: [0.75, 1.0, 0], scale: [0.12, 0.35, 0.12] }, // Left
-    { position: [-0.75, 1.0, 0], scale: [0.12, 0.35, 0.12] }, // Right
+    { position: [0.75, 1.0, 0], scale: [0.11, 0.35, 0.11] },
+    { position: [-0.75, 1.0, 0], scale: [0.11, 0.35, 0.11] },
   ],
   glutes: [
-    { position: [0.15, 0.9, -0.15], scale: [0.2, 0.25, 0.2] }, // Left
-    { position: [-0.15, 0.9, -0.15], scale: [0.2, 0.25, 0.2] }, // Right
+    { position: [0.15, 0.9, -0.18], scale: [0.18, 0.22, 0.15] },
+    { position: [-0.15, 0.9, -0.18], scale: [0.18, 0.22, 0.15] },
   ],
   quadriceps: [
-    { position: [0.15, 0.6, 0.1], scale: [0.18, 0.4, 0.18] }, // Left
-    { position: [-0.15, 0.6, 0.1], scale: [0.18, 0.4, 0.18] }, // Right
+    { position: [0.15, 0.55, 0.12], scale: [0.16, 0.38, 0.12] },
+    { position: [-0.15, 0.55, 0.12], scale: [0.16, 0.38, 0.12] },
   ],
   hamstrings: [
-    { position: [0.15, 0.6, -0.1], scale: [0.18, 0.4, 0.18] }, // Left
-    { position: [-0.15, 0.6, -0.1], scale: [0.18, 0.4, 0.18] }, // Right
+    { position: [0.15, 0.55, -0.12], scale: [0.16, 0.38, 0.12] },
+    { position: [-0.15, 0.55, -0.12], scale: [0.16, 0.38, 0.12] },
   ],
   calves: [
-    { position: [0.15, 0.25, -0.05], scale: [0.12, 0.3, 0.12] }, // Left
-    { position: [-0.15, 0.25, -0.05], scale: [0.12, 0.3, 0.12] }, // Right
+    { position: [0.15, 0.25, -0.08], scale: [0.11, 0.28, 0.11] },
+    { position: [-0.15, 0.25, -0.08], scale: [0.11, 0.28, 0.11] },
   ],
   trapezius: [
-    { position: [0, 1.6, -0.1], scale: [0.3, 0.15, 0.1] },
+    { position: [0, 1.55, -0.1], scale: [0.35, 0.15, 0.08] },
   ],
   lats: [
-    { position: [0.3, 1.3, -0.1], scale: [0.15, 0.3, 0.1] }, // Left
-    { position: [-0.3, 1.3, -0.1], scale: [0.15, 0.3, 0.1] }, // Right
+    { position: [0.3, 1.25, -0.12], scale: [0.15, 0.35, 0.1] },
+    { position: [-0.3, 1.25, -0.12], scale: [0.15, 0.35, 0.1] },
   ],
 };
 
@@ -165,10 +137,9 @@ function CameraRig({ zoom }: { zoom: React.MutableRefObject<number> }) {
   const { camera } = useThree();
   
   useFrame(() => {
-    // Smoothly interpolate camera position or just set it
-    // Clamping zoom limits (1.5 = Close up, 8 = Far away)
+    // Smoothly interpolate camera position
     const z = Math.max(1.5, Math.min(8, zoom.current));
-    camera.position.z = z;
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, z, 0.1);
   });
   return null;
 }
@@ -178,52 +149,72 @@ interface AnatomyModelProps {
   rotationY: React.MutableRefObject<number>;
   selectedMuscle: MuscleGroup | null;
   onSelectMuscle: (muscle: MuscleGroup) => void;
+  isAutoRotating: React.MutableRefObject<boolean>;
 }
 
-function AnatomyModel({ intensities, rotationY, selectedMuscle, onSelectMuscle }: AnatomyModelProps) {
+function AnatomyModel({ intensities, rotationY, selectedMuscle, onSelectMuscle, isAutoRotating }: AnatomyModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const modelUrl = 'https://drive.google.com/uc?export=download&id=1erWb8aMRMaOJgfsWmMlGQ9v-snMsCYXA';
   const gltf = useGLTF(modelUrl) as any;
   const scene = gltf.scene as THREE.Group;
   
-  // Apply rotation directly from shared value for performance
+  // Target rotation reference for smooth animation
+  const targetRotation = useRef(0);
+  
+  // Clone scene to avoid mutation issues across re-renders
+  const clonedScene = useMemo(() => scene.clone(), [scene]);
+
+  // Update target rotation when muscle selection changes
+  useEffect(() => {
+    if (selectedMuscle) {
+      targetRotation.current = muscleRotationMap[selectedMuscle];
+      isAutoRotating.current = true;
+    }
+  }, [selectedMuscle]);
+
+  // Frame loop for rotation animation
   useFrame(() => {
     if (groupRef.current) {
+      if (isAutoRotating.current) {
+        if (Math.abs(rotationY.current - targetRotation.current) > 0.01) {
+          rotationY.current = THREE.MathUtils.lerp(rotationY.current, targetRotation.current, 0.1);
+        } else {
+          rotationY.current = targetRotation.current;
+          isAutoRotating.current = false;
+        }
+      }
       groupRef.current.rotation.y = rotationY.current;
     }
   });
-  
-  // Clone scene to avoid mutation issues
-  const clonedScene = useMemo(() => scene.clone(), [scene]);
 
   return (
     <group ref={groupRef} scale={1.2} position={[0, -0.9, 0]}>
       {/* The Realistic 3D Model */}
       <primitive object={clonedScene} />
-      
-      {/* Dynamic Highlight Light */}
-      {selectedMuscle && (() => {
-        // Find the specific hitbox for the selected muscle to position the light
-        // We use the first hitbox of the group as the light target
-        const target = muscleHitboxes[selectedMuscle][0];
-        if (target) {
-          return (
-            <pointLight 
-              position={[target.position[0], target.position[1], target.position[2] + 0.5]} 
-              color="#ff6b35" 
-              intensity={2} 
-              distance={2}
-              decay={2}
-            />
-          );
-        }
-        return null;
-      })()}
-      
-      {/* Interactive Hitboxes (Invisible) */}
+
+      {/* Holographic Overlay for Selected Muscle */}
+      {selectedMuscle && muscleHitboxes[selectedMuscle] && (
+         <>
+           {muscleHitboxes[selectedMuscle].map((hitbox, index) => (
+             <mesh key={index} position={hitbox.position} scale={hitbox.scale}>
+               <sphereGeometry args={[1, 16, 16]} />
+               <meshStandardMaterial
+                 color="#ff6b35"
+                 transparent
+                 opacity={0.4}
+                 blending={THREE.AdditiveBlending}
+                 depthWrite={false}
+                 emissive="#ff6b35"
+                 emissiveIntensity={1.5}
+               />
+             </mesh>
+           ))}
+         </>
+      )}
+
+      {/* Invisible Interactive Hitboxes for Clicking */}
       {Object.entries(muscleHitboxes).map(([muscleKey, hitboxes]) => {
         const muscle = muscleKey as MuscleGroup;
-        
         return hitboxes.map((hitbox, index) => (
           <mesh 
             key={`${muscle}-${index}`}
@@ -231,17 +222,12 @@ function AnatomyModel({ intensities, rotationY, selectedMuscle, onSelectMuscle }
             scale={hitbox.scale}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Clicked muscle:', muscle);
               onSelectMuscle(muscle);
             }}
+            visible={false} 
           >
             <sphereGeometry args={[1, 8, 8]} />
-            <meshBasicMaterial 
-              color="red"
-              transparent={true}
-              opacity={0} // Invisible, just for clicks
-              depthWrite={false}
-            />
+            <meshBasicMaterial color="red" />
           </mesh>
         ));
       })}
@@ -270,6 +256,7 @@ export function BodyHeatmap3D({ intensities = {
   // Rotation
   const rotationY = useRef(0);
   const startRotationY = useRef(0);
+  const isAutoRotating = useRef(false);
   
   // Zoom
   const zoom = useRef(4.0);
@@ -282,6 +269,9 @@ export function BodyHeatmap3D({ intensities = {
       onMoveShouldSetPanResponder: () => true,
       
       onPanResponderGrant: (evt, gestureState) => {
+        // Stop auto rotation on user interaction
+        isAutoRotating.current = false;
+
         // Store initial values
         startRotationY.current = rotationY.current;
         
@@ -304,8 +294,6 @@ export function BodyHeatmap3D({ intensities = {
           const currentDistance = getDistance(evt.nativeEvent.touches);
           if (startDistance.current > 0) {
             const scale = currentDistance / startDistance.current;
-            // Invert scale for intuitive zoom: pinch out (scale > 1) -> zoom in (reduce Z)
-            // But we want natural feel: pinch out -> bigger model (camera gets closer, Z decreases)
             const zoomDelta = (1 - scale) * 3; 
             zoom.current = Math.max(1.5, Math.min(8.0, startZoom.current + zoomDelta));
           }
@@ -314,15 +302,10 @@ export function BodyHeatmap3D({ intensities = {
       
       onPanResponderRelease: () => {
         // Cleanup if needed
-      },
-      onPanResponderTerminate: () => {
-        // Helper
       }
     })
   ).current;
 
-  // Gestures are now combined in useMemo above
-  
   return (
     <View style={styles.container}>
       <View style={styles.hint} pointerEvents="none">
@@ -331,7 +314,6 @@ export function BodyHeatmap3D({ intensities = {
       
       <View style={styles.content}>
         {/* 3D Model */}
-        {/* We attach PanResponder handlers to this Container View */}
         <View 
           style={[styles.canvasContainer, { backgroundColor: 'transparent' }]} 
           collapsable={false}
@@ -339,14 +321,13 @@ export function BodyHeatmap3D({ intensities = {
         >
           <Canvas
             camera={{ position: [0, 0.5, 4.0], fov: 50 }}
-            // Block all events on Canvas to let PanResponder handle them
             events={undefined} 
           >
             <CameraRig zoom={zoom} />
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[5, 5, 5]} intensity={1.0} />
-            <directionalLight position={[-5, 3, -3]} intensity={0.4} />
-            <pointLight position={[0, 2, 2]} intensity={0.6} color="#ff8855" />
+            <ambientLight intensity={0.7} />
+            <directionalLight position={[5, 10, 5]} intensity={2.0} />
+            <directionalLight position={[-5, 5, -5]} intensity={1.0} />
+            <pointLight position={[0, 2, 3]} intensity={1.5} color="#ffffff" />
             
             <Suspense fallback={null}>
               <AnatomyModel 
@@ -354,9 +335,12 @@ export function BodyHeatmap3D({ intensities = {
                 rotationY={rotationY}
                 selectedMuscle={selectedMuscle}
                 onSelectMuscle={(m) => setSelectedMuscle(m === selectedMuscle ? null : m)}
+                isAutoRotating={isAutoRotating}
               />
             </Suspense>
           </Canvas>
+
+          {/* DEBUG OVERLAY - REMOVED */}
         </View>
         
         {/* Muscle Selection Menu */}

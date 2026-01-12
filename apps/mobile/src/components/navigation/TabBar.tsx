@@ -102,7 +102,12 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { accountType, isMasquerading } = useAuthStore();
   const router = useRouter();
-  
+
+  const focusedRoute = state.routes[state.index];
+  const focusedDescriptor = descriptors[focusedRoute.key];
+  const focusedOptions = focusedDescriptor.options;
+
+
   const routeOrder = ['index', 'workouts', 'progress', 'nutrition', 'students', 'ranking'];
   
   const sortedRoutes = useMemo(() => state.routes
@@ -131,7 +136,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     switch (action) {
       case 'workout': router.push('/(tabs)/workouts'); break;
       case 'meal': router.push('/(tabs)/nutrition'); break;
-      case 'water': router.push('/(tabs)/nutrition'); break;
+      case 'cardio': router.push('/(tabs)/cardio'); break;
     }
     activeActionShared.value = null;
   };
@@ -152,7 +157,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       let currentAction = null;
       if (targetY < -40) currentAction = 'workout';
       else if (targetX < -40) currentAction = 'meal';
-      else if (targetX > 40) currentAction = 'water';
+      else if (targetX > 40) currentAction = 'cardio';
 
       // Haptic Trigger
       if (currentAction !== activeActionShared.value) {
@@ -165,7 +170,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       // Magnetic Attraction Logic
       if (currentAction === 'workout') targetY -= attractionForce;
       else if (currentAction === 'meal') targetX -= attractionForce;
-      else if (currentAction === 'water') targetX += attractionForce;
+      else if (currentAction === 'cardio') targetX += attractionForce;
 
       const distance = Math.sqrt(targetX ** 2 + targetY ** 2);
       if (distance < maxDistance + attractionForce) {
@@ -191,7 +196,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         runOnJS(triggerAction)('meal');
       } else if (x > 42) {
         runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
-        runOnJS(triggerAction)('water');
+        runOnJS(triggerAction)('cardio');
       }
 
       translateX.value = withSpring(0, { damping: 15, stiffness: 120 });
@@ -216,21 +221,13 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     };
   });
 
-  const actionIndicatorStyle = (action: string) => useAnimatedStyle(() => {
-    const isActive = activeActionShared.value === action;
+  // 1. Workout Styles
+  const workoutIndicatorStyle = useAnimatedStyle(() => {
+    const isActive = activeActionShared.value === 'workout';
     const baseOpacity = withSpring(isDragging.value === 1 ? 1 : 0, { damping: 20 });
-    
-    // Use solid colors for maximum visibility and brand clarity
-    let activeBg = '#FFFFFF';
-    if (isActive) {
-      if (action === 'workout') activeBg = "#FF6B35";
-      else if (action === 'meal') activeBg = "#FF2E63";
-      else if (action === 'water') activeBg = "#00D9FF";
-    }
-
     return {
       opacity: isActive ? 1 : baseOpacity,
-      backgroundColor: withSpring(isActive ? activeBg : 'rgba(255, 255, 255, 0.35)'),
+      backgroundColor: withSpring(isActive ? '#FF6B35' : 'rgba(255, 255, 255, 0.35)'),
       transform: [
         { scale: isActive ? withSpring(1.8, { damping: 10 }) : withSpring(1.1) },
         { translateY: isActive ? -22 : 0 }
@@ -238,13 +235,64 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       borderWidth: isActive ? 3 : 1.5,
       borderColor: "#FFFFFF",
       zIndex: isActive ? 999 : 1,
-      elevation: isActive ? 12 : 6, // Stronger elevation for pop
+      elevation: isActive ? 12 : 6,
       pointerEvents: isDragging.value ? 'auto' : 'none',
     } as any;
   });
+  const workoutLabelStyle = useAnimatedStyle(() => {
+    const isActive = activeActionShared.value === 'workout';
+    return {
+      opacity: withSpring(isActive ? 1 : 0),
+      transform: [{ translateY: withSpring(isActive ? -22 : 0) }, { scale: withSpring(isActive ? 1 : 0.5) }]
+    };
+  });
 
-  const labelStyle = (action: string) => useAnimatedStyle(() => {
-    const isActive = activeActionShared.value === action;
+  // 2. Meal Styles
+  const mealIndicatorStyle = useAnimatedStyle(() => {
+    const isActive = activeActionShared.value === 'meal';
+    const baseOpacity = withSpring(isDragging.value === 1 ? 1 : 0, { damping: 20 });
+    return {
+      opacity: isActive ? 1 : baseOpacity,
+      backgroundColor: withSpring(isActive ? '#FF2E63' : 'rgba(255, 255, 255, 0.35)'),
+      transform: [
+        { scale: isActive ? withSpring(1.8, { damping: 10 }) : withSpring(1.1) },
+        { translateY: isActive ? -22 : 0 }
+      ],
+      borderWidth: isActive ? 3 : 1.5,
+      borderColor: "#FFFFFF",
+      zIndex: isActive ? 999 : 1,
+      elevation: isActive ? 12 : 6,
+      pointerEvents: isDragging.value ? 'auto' : 'none',
+    } as any;
+  });
+  const mealLabelStyle = useAnimatedStyle(() => {
+    const isActive = activeActionShared.value === 'meal';
+    return {
+      opacity: withSpring(isActive ? 1 : 0),
+      transform: [{ translateY: withSpring(isActive ? -22 : 0) }, { scale: withSpring(isActive ? 1 : 0.5) }]
+    };
+  });
+
+  // 3. Cardio Styles
+  const cardioIndicatorStyle = useAnimatedStyle(() => {
+    const isActive = activeActionShared.value === 'cardio';
+    const baseOpacity = withSpring(isDragging.value === 1 ? 1 : 0, { damping: 20 });
+    return {
+      opacity: isActive ? 1 : baseOpacity,
+      backgroundColor: withSpring(isActive ? '#00D9FF' : 'rgba(255, 255, 255, 0.35)'),
+      transform: [
+        { scale: isActive ? withSpring(1.8, { damping: 10 }) : withSpring(1.1) },
+        { translateY: isActive ? -22 : 0 }
+      ],
+      borderWidth: isActive ? 3 : 1.5,
+      borderColor: "#FFFFFF",
+      zIndex: isActive ? 999 : 1,
+      elevation: isActive ? 12 : 6,
+      pointerEvents: isDragging.value ? 'auto' : 'none',
+    } as any;
+  });
+  const cardioLabelStyle = useAnimatedStyle(() => {
+    const isActive = activeActionShared.value === 'cardio';
     return {
       opacity: withSpring(isActive ? 1 : 0),
       transform: [{ translateY: withSpring(isActive ? -22 : 0) }, { scale: withSpring(isActive ? 1 : 0.5) }]
@@ -255,31 +303,31 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     <View key="plus-button" style={styles.centerButtonContainer} pointerEvents="box-none">
       {/* Action Indicators */}
       <View style={{ position: 'absolute' }} pointerEvents="box-none">
-        <Animated.View style={[styles.actionIndicator, { top: -95 }, actionIndicatorStyle('workout')]}>
+        <Animated.View style={[styles.actionIndicator, { top: -95 }, workoutIndicatorStyle]}>
           <MaterialCommunityIcons 
             name="dumbbell" 
             size={22} 
             color="white" 
           />
-          <Animated.Text style={[styles.actionLabel, labelStyle('workout'), { bottom: -25 }]}>Treino</Animated.Text>
+          <Animated.Text style={[styles.actionLabel, workoutLabelStyle, { bottom: -25 }]}>Treino</Animated.Text>
         </Animated.View>
         
-        <Animated.View style={[styles.actionIndicator, { left: -105 }, actionIndicatorStyle('meal')]}>
+        <Animated.View style={[styles.actionIndicator, { left: -105 }, mealIndicatorStyle]}>
           <MaterialCommunityIcons 
             name="food-apple" 
             size={22} 
             color="white" 
           />
-          <Animated.Text style={[styles.actionLabel, labelStyle('meal'), { bottom: -25 }]}>Dieta</Animated.Text>
+          <Animated.Text style={[styles.actionLabel, mealLabelStyle, { bottom: -25 }]}>Dieta</Animated.Text>
         </Animated.View>
         
-        <Animated.View style={[styles.actionIndicator, { right: -105 }, actionIndicatorStyle('water')]}>
+        <Animated.View style={[styles.actionIndicator, { right: -105 }, cardioIndicatorStyle]}>
           <MaterialCommunityIcons 
-            name="water" 
+            name="speedometer" 
             size={22} 
             color="white" 
           />
-          <Animated.Text style={[styles.actionLabel, labelStyle('water'), { bottom: -25 }]}>Água</Animated.Text>
+          <Animated.Text style={[styles.actionLabel, cardioLabelStyle, { bottom: -25 }]}>Cardio</Animated.Text>
         </Animated.View>
       </View>
 
@@ -297,6 +345,11 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       </GestureDetector>
     </View>
   );
+
+  // @ts-ignore
+  if (focusedOptions.tabBarStyle?.display === 'none') {
+    return null;
+  }
 
   return (
     <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? insets.bottom : insets.bottom + 10 }]}>

@@ -369,6 +369,33 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInDown.delay(250).springify()} className="mb-8">
            <WeeklyProgress weeklyGoals={weeklyGoals} />
 
+           {/* Cardio Entry */}
+           <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/cardio')}
+              activeOpacity={0.8}
+              className="mt-4 mb-0"
+            >
+              <View
+                className="rounded-[24px] p-5 flex-row items-center justify-between border bg-zinc-900"
+                style={{ borderColor: brandColors.border.default }}
+              >
+                <View className="flex-row items-center gap-4">
+                   <View className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
+                     <Ionicons name="speedometer" size={24} color="#3B82F6" />
+                   </View>
+                   <View>
+                     <Text className="text-white text-lg font-black font-display tracking-tight">
+                       Sessão de Cardio
+                     </Text>
+                     <Text className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase font-sans">
+                       Correr, Pedalar, Caminhar
+                     </Text>
+                   </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={brandColors.text.muted} />
+              </View>
+            </TouchableOpacity>
+
            {/* Ranking Entry for Students */}
            <TouchableOpacity 
               onPress={() => router.push('/(tabs)/ranking')}

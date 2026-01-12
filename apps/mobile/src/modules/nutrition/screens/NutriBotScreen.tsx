@@ -150,7 +150,7 @@ export default function NutriBotScreen() {
 
         {/* Input Area */}
         <View 
-          className="p-5 border-t flex-row items-center"
+          className="p-5 pb-32 border-t flex-row items-center"
           style={{ backgroundColor: brandColors.background.secondary, borderColor: brandColors.border.dark }}
         >
             <View 

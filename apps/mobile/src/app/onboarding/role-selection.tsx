@@ -1,7 +1,7 @@
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
-import { useAuthStore } from '@/auth';
 import { Ionicons } from '@expo/vector-icons';
 import type { AccountType } from '@meupersonal/supabase';
 import { supabase } from '@meupersonal/supabase';
@@ -44,7 +44,7 @@ export default function RoleSelectionScreen() {
       if (selectedRole === 'professional') {
         router.replace('/(professional)' as any);
       } else {
-        router.replace('/(tabs)' as any);
+        router.push('/onboarding/health-connect' as any);
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message);
