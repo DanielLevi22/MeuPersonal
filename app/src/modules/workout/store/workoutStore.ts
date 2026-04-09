@@ -590,7 +590,15 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       if (workoutError) throw workoutError;
 
       // B. Prepare Exercises for all workouts
-      const itemsToInsert: any[] = [];
+      const itemsToInsert: {
+        workout_id: string;
+        exercise_id: string;
+        sets: number;
+        reps: string;
+        rest_time: number;
+        notes: string;
+        order: number;
+      }[] = [];
       aiWorkouts.forEach((aiWorkout, wIndex) => {
         // Find the matched workout from the DB insertions to get the valid UUID
         // Usually Supabase returns bulk inserts in the same order, but let's be safe
