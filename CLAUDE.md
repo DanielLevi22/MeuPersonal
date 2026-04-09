@@ -478,12 +478,18 @@ scoop install maestro
 
 | Documento | Localização |
 |---|---|
-| Status do projeto | `PROJECT_STATUS.md` |
-| Decisões de arquitetura | `dicision.md` |
+| Índice completo da documentação | `docs/README.md` |
+| Status do projeto | `docs/PROJECT_STATUS.md` |
+| Decisões de arquitetura | `docs/decisions.md` |
+| Masterplan arquitetural | `docs/ARCHITECTURE_MASTERPLAN.md` |
 | Arquitetura técnica | `docs/architecture.md` |
+| Arquitetura modular (mobile) | `docs/architecture/mobile-modules.md` |
+| Arquitetura modular (web) | `docs/architecture/web-modules.md` |
 | Regras de negócio | `docs/business_rules.md` |
 | Controle de acesso | `docs/access_control.md` + `docs/CASL_GUIDE.md` |
 | Boas práticas de código | `docs/best_practices.md` |
 | Design system | `docs/design_system.md` |
 | Schema do banco | `docs/database-schema.md` |
 | Monorepo | `docs/MONOREPO.md` |
+| Fluxo de desenvolvimento | `docs/WORKFLOW.md` |
+| Regras de IA | `docs/AI_MANDATORY_RULES.md` |
