@@ -44,7 +44,7 @@ SaaS para Personal Trainers gerenciarem alunos, treinos e nutrição.
 
 ### Estrutura de módulos (feature-based)
 
-Cada feature é um módulo isolado:
+Cada feature é um módulo isolado. **Nunca crie arquivos fora dessa estrutura sem aprovação.**
 
 ```
 src/modules/<feature>/
@@ -54,34 +54,102 @@ src/modules/<feature>/
   store/        → Zustand store
   services/     → Lógica de negócio / chamadas Supabase
   types.ts      → Tipos do módulo
-  index.ts      → API pública do módulo
+  index.ts      → API pública — único ponto de entrada
 ```
 
-**Não importe diretamente de dentro de outro módulo.** Use o `index.ts` público.
+### Regras de comunicação entre módulos
+
+```
+✅ Módulo → shared/
+✅ Módulo → @meupersonal/core ou @meupersonal/supabase
+✅ Screen  → Módulo (via index.ts)
+❌ Módulo  → Módulo (importação direta proibida)
+❌ shared/ → Módulo
+```
+
+Comunicação entre módulos: via Zustand store global ou props. Auth é exceção (global).
 
 ### Path aliases
 
 ```ts
 // Mobile (app/)
-@/*                 → ./src/*
-@/modules/*         → ./src/modules/*
-@/nutrition         → ./src/modules/nutrition
-@/workout           → ./src/modules/workout
-@/students          → ./src/modules/students
-@/auth              → ./src/modules/auth
-@meupersonal/core   → ./src/packages/core
+@/*                   → ./src/*
+@/modules/*           → ./src/modules/*
+@/nutrition           → ./src/modules/nutrition
+@/workout             → ./src/modules/workout
+@/students            → ./src/modules/students
+@/auth                → ./src/modules/auth
+@meupersonal/core     → ./src/packages/core
 @meupersonal/supabase → ./src/packages/supabase
 
 // Web (web/)
-@/*                 → ./src/*
-@/workout           → ./src/modules/workouts  (pasta é plural)
-@/nutrition         → ./src/modules/nutrition
-@meupersonal/core   → ./src/packages/core
+@/*                   → ./src/*
+@/workout             → ./src/modules/workouts  (pasta é plural no web)
+@/nutrition           → ./src/modules/nutrition
+@meupersonal/core     → ./src/packages/core
 ```
+
+### Naming conventions
+
+| Tipo | Convenção | Exemplo |
+|---|---|---|
+| Módulos/pastas | lowercase | `workout`, `nutrition` |
+| Componentes | PascalCase | `MealCard`, `RestTimer` |
+| Hooks | camelCase + prefixo `use` | `useWorkoutTimer` |
+| Stores | camelCase + sufixo `Store` | `nutritionStore` |
+| Services | PascalCase + sufixo `Service` | `WorkoutAIService` |
+| Tipos/interfaces | PascalCase | `WorkoutItem`, `DietPlan` |
 
 ---
 
-## Convenções de código
+## Regras do agente — comportamento obrigatório
+
+### Antes de implementar qualquer coisa
+1. **Ler contexto**: Verificar `CLAUDE.md` e o arquivo relevante do módulo
+2. **Propor abordagem**: "Minha proposta é X — concordas?" antes de qualquer mudança estrutural
+3. **Confirmar antes de**: criar novos arquivos, instalar libs, modificar schema do banco
+
+### Durante a implementação
+- Fazer **exatamente o que foi pedido** — não refatorar B ou C enquanto resolve A
+- **Não inventar features** — se ficou ambíguo, perguntar
+- Ao terminar, verificar se não deixou arquivos temporários ou console.log de debug
+- **Nunca usar `any`** — se o tipo não é conhecido, criar interface ou usar `unknown`
+
+### Sinalizar antes de prosseguir se
+- A mudança afeta mais de um módulo
+- Vai instalar uma nova dependência
+- O arquivo resultante vai ter mais de 300 linhas
+- A abordagem parece over-engineered para o problema
+
+---
+
+## Convenções de código — Mobile (Expo)
+
+### Expo Router — rotas
+
+```tsx
+// ✅ SEMPRE tipado
+router.push('/(tabs)/workouts' as never);
+// ou melhor:
+import { ROUTES } from '@/shared/constants/routes';
+router.push(ROUTES.WORKOUTS);
+
+// ❌ NUNCA string solta
+router.push('/workouts');
+```
+
+**Nunca use string literal solta em `router.push`.** Rotas são tipadas ou constantes.
+
+### Ícones
+
+Usar exclusivamente `@expo/vector-icons`:
+```tsx
+import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+// ✅ Correto
+<Ionicons name="barbell-outline" size={24} color="#FF6B35" />
+```
 
 ### Estilização — REGRA ABSOLUTA no mobile
 
@@ -106,11 +174,60 @@ import { cn } from '@/lib/utils'; // mobile
 import { cn } from '@/shared/utils/cn'; // web
 ```
 
+## Convenções de código — Web (Next.js)
+
+### Server vs Client Components
+
+```tsx
+// Client component — marcar SEMPRE explicitamente quando necessário
+'use client';
+export function LoginForm() { ... }
+
+// Server component — padrão no App Router, sem diretiva
+export function UserTable() { ... }  // server por padrão
+
+// Regra: só use 'use client' quando precisar de:
+// useState, useEffect, event handlers, browser APIs
+```
+
+### App Router — estrutura de rotas
+
+```
+web/src/app/
+  (auth)/         → grupo de rotas de auth (sem prefixo na URL)
+  (admin)/        → grupo de rotas admin
+  dashboard/      → rotas do dashboard
+  api/            → API routes
+  layout.tsx      → layout raiz
+  page.tsx        → página inicial
+```
+
+### Data fetching no web
+
+```tsx
+// Server Component — fetch direto (sem TanStack Query)
+async function Page() {
+  const data = await supabase.from('workouts').select('*');
+  return <WorkoutList data={data} />;
+}
+
+// Client Component — TanStack Query
+'use client';
+function WorkoutList() {
+  const { data } = useWorkouts(userId);
+  return ...;
+}
+```
+
+---
+
+## Convenções de código — Compartilhadas
+
 ### Estado
 
 | Tipo | Use |
 |---|---|
-| Estado do servidor (dados do Supabase) | TanStack Query |
+| Estado do servidor (dados do Supabase) | TanStack Query (client) / fetch direto (server) |
 | Estado global da aplicação (auth, UI) | Zustand |
 | Estado local do componente | useState |
 
