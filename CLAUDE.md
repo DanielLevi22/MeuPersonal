@@ -182,6 +182,102 @@ git tag web/v0.5.0   # release só do web
 
 ---
 
+## Variáveis de ambiente
+
+### Mobile (`app/`)
+
+Arquivo local: `app/.env.development` (ignorado pelo git, não commitar)
+Referência: `app/.env.example`
+
+| Variável | Propósito |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Chave pública do Supabase (safe para expor no cliente) |
+| `EXPO_PUBLIC_GEMINI_API_KEY` | Chave da API Google Gemini (AI features) |
+| `EXPO_PUBLIC_APP_ENV` | Ambiente atual: `development`, `preview`, `production` |
+
+Arquivos por ambiente: `.env.development`, `.env.preview`, `.env.production`
+
+### Web (`web/`)
+
+Arquivo local: `web/.env` ou `web/.env.local` (ignorado pelo git)
+
+| Variável | Propósito |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública do Supabase |
+| `EXPO_PUBLIC_DATABASE_URL` | URL PostgreSQL direto — **apenas para migrations Drizzle, nunca expor no cliente** |
+
+> ⚠️ O cliente Supabase compartilhado (`@meupersonal/supabase`) aceita ambos os prefixos `EXPO_PUBLIC_` e `NEXT_PUBLIC_`. Prefira `NEXT_PUBLIC_` no web para clareza.
+
+### CI/CD (GitHub Secrets)
+
+| Secret | Usado em |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL_DEV` / `_PREVIEW` / `_PROD` | Builds EAS e testes |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV` / `_PREVIEW` / `_PROD` | Builds EAS e testes |
+| `NEXT_PUBLIC_SUPABASE_URL_DEV` / `_PREVIEW` / `_PROD` | Deploy web |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV` / `_PREVIEW` / `_PROD` | Deploy web |
+| `EXPO_PUBLIC_GEMINI_API_KEY` | Testes com AI |
+| `EXPO_TOKEN` | Autenticação EAS (Expo Application Services) |
+
+---
+
+## Design patterns
+
+### Criar um novo módulo
+
+```
+src/modules/<nome>/
+  index.ts          ← exporta apenas a API pública
+  types.ts          ← tipos do módulo
+  services/         ← lógica de negócio, chamadas Supabase
+  store/            ← Zustand store (apenas estado global necessário)
+  hooks/            ← custom hooks (wrappam TanStack Query)
+  components/       ← componentes UI
+  screens/          ← telas completas
+```
+
+### Fetch de dados (padrão TanStack Query)
+
+```ts
+// hook no módulo
+export function useWorkouts(userId: string) {
+  return useQuery({
+    queryKey: ['workouts', userId],
+    queryFn: () => WorkoutService.fetchByUser(userId),
+    enabled: !!userId,
+  });
+}
+
+// mutation
+export function useCreateWorkout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: WorkoutService.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workouts'] }),
+  });
+}
+```
+
+### Nova tabela no Supabase — checklist obrigatório
+
+- [ ] Migration SQL com `drizzle-kit`
+- [ ] RLS habilitado na tabela (`alter table X enable row level security`)
+- [ ] Políticas RLS para cada role que precisa de acesso
+- [ ] Tipos TypeScript atualizados em `@meupersonal/supabase/types.ts`
+- [ ] CASL abilities atualizadas se necessário
+
+### Checklist pós-feature
+
+- [ ] Testes unitários para lógica de negócio crítica
+- [ ] `biome check .` limpo
+- [ ] `tsc --noEmit` limpo
+- [ ] Branch mergeada com PR (não commitar direto na main/develop)
+- [ ] Issue fechada no GitHub
+
+---
+
 ## Gates de qualidade — tudo obrigatório
 
 Antes de qualquer commit:
@@ -213,12 +309,51 @@ Antes de qualquer commit:
 
 ---
 
-## Issues conhecidos
+## Common hurdles — problemas já resolvidos
 
-- Android build no Windows: requer "Long Paths" habilitado no registro
-- Maestro no Windows: requer Scoop ou instalação manual
+### Android build falha no Windows (path too long)
+**Sintoma:** Build falha com erro de path length no Gradle.
+**Solução:** Habilitar Long Paths no Windows:
+```
+regedit → HKLM\SYSTEM\CurrentControlSet\Control\FileSystem → LongPathsEnabled = 1
+```
+Ou via PowerShell admin: `New-ItemProperty -Path "HKLM:\SYSTEM\..." -Name LongPathsEnabled -Value 1`
+
+### Maestro não instala no Windows
+**Sintoma:** `maestro` command not found após tentativa de instalação.
+**Solução:** Instalar via Scoop:
+```bash
+scoop install maestro
+```
+
+### commitlint bloqueia commit com siglas maiúsculas
+**Sintoma:** `subject must be lower-case` — bloqueia commits com "CI/CD", "API", "RLS", etc.
+**Solução:** Usar minúsculas no subject: `ci/cd`, `api`, `rls`. Corpo do commit pode ter maiúsculas.
+
+### Biome suppression comments tornam-se inválidos ao atualizar versão
+**Sintoma:** `suppression comment has no effect` após upgrade do Biome.
+**Solução:** Remover os comentários `// biome-ignore` que não têm mais efeito. A regra foi removida ou o código foi corrigido.
+
+### LF/CRLF warnings no Windows ao commitar
+**Sintoma:** `warning: LF will be replaced by CRLF` em todo arquivo novo.
+**Impacto:** Apenas warning, não bloqueia. Git converte automaticamente.
+**Solução permanente (opcional):** `git config core.autocrlf true` no repositório local.
+
+### web/.env usa prefixo errado
+**Sintoma:** Variáveis com `EXPO_PUBLIC_` no web não são reconhecidas pelo Next.js nativamente.
+**Solução:** Usar `NEXT_PUBLIC_` no web. O cliente Supabase compartilhado aceita ambos como fallback, mas `NEXT_PUBLIC_` é o correto para Next.js.
+
+### Hooks chamados após early return
+**Sintoma:** Biome/ESLint reporta `useHookAtTopLevel` — hook declarado após `if (loading) return`.
+**Solução:** Mover todos os `useCallback`/`useMemo`/`useEffect` para antes de qualquer early return.
+
+---
+
+## Issues em aberto
+
 - Notificações push: infraestrutura pronta, integração pendente
 - Gamificação: migrations no Supabase Dashboard ainda não aplicadas
+- Staging Supabase: dev e prod usam o mesmo projeto por enquanto (separar antes do lançamento)
 
 ---
 
