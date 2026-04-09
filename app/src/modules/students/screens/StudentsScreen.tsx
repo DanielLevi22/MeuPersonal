@@ -1,0 +1,379 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Link, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useAuthStore } from '@/auth';
+import { ScreenLayout } from '@/components/ui/ScreenLayout';
+import { StudentEditModal } from '../components/StudentEditModal';
+import { useStudentStore } from '../store/studentStore';
+
+export default function StudentsScreen() {
+  const { students, isLoading, fetchStudents, removeStudent, cancelInvite, updateStudent } =
+    useStudentStore();
+  const { user } = useAuthStore();
+  const router = useRouter();
+
+  const [selectedStudent, setSelectedStudent] = useState<{
+    id: string;
+    full_name: string;
+    email: string;
+    status: string;
+    invite_code?: string;
+    created_at: string;
+  } | null>(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sortBy, setBy] = useState<'full_name' | 'created_at'>('full_name');
+  const [sortOrder, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
+  const { totalCount } = useStudentStore();
+
+  // Search Debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
+  useEffect(() => {
+    if (user?.id) {
+      fetchStudents(user.id, {
+        search: debouncedSearch,
+        sortBy,
+        sortOrder,
+        page: 1,
+        append: false,
+      });
+      setPage(1);
+    }
+  }, [user, debouncedSearch, sortBy, sortOrder]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
+  const loadMore = useCallback(() => {
+    if (!isLoading && students.length < totalCount && user?.id) {
+      const nextPage = page + 1;
+      fetchStudents(user.id, {
+        search: debouncedSearch,
+        sortBy,
+        sortOrder,
+        page: nextPage,
+        append: true,
+      });
+      setPage(nextPage);
+    }
+  }, [isLoading, students.length, totalCount, user?.id, debouncedSearch, sortBy, sortOrder, page]);
+
+  const handleRemove = (item: { id: string; status?: string; full_name?: string }) => {
+    const isInvite = item.status === 'invited';
+    const title = isInvite ? 'Cancelar Convite' : 'Remover Aluno';
+    const message = isInvite
+      ? `Tem certeza que deseja cancelar o convite para ${item.full_name || 'este aluno'}?`
+      : `Tem certeza que deseja remover ${item.full_name || 'este aluno'}? Ele perderá o acesso aos treinos.`;
+
+    Alert.alert(title, message, [
+      { text: 'Voltar', style: 'cancel' },
+      {
+        text: isInvite ? 'Cancelar Convite' : 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          if (user?.id && item?.id) {
+            if (isInvite) {
+              await cancelInvite(item.id);
+            } else {
+              await removeStudent(user.id, item.id);
+            }
+          } else {
+            Alert.alert('Erro', 'ID do aluno não encontrado.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEdit = (student: { id: string; full_name?: string }) => {
+    setSelectedStudent(
+      student as {
+        id: string;
+        full_name: string;
+        email: string;
+        status: string;
+        invite_code?: string;
+        created_at: string;
+      }
+    );
+    setIsEditModalVisible(true);
+  };
+
+  const _handlePressStudent = (student: { id: string; full_name?: string }) => {
+    handleEdit(student);
+  };
+
+  const handleEnterStudent = (student: { id: string }) => {
+    router.push(`/(tabs)/students/${student.id}` as never);
+  };
+
+  const handleSaveEdit = async (data: Record<string, unknown>) => {
+    if (selectedStudent) {
+      const result = await updateStudent(selectedStudent.id, data);
+      if (result.success) {
+        setIsEditModalVisible(false);
+        setSelectedStudent(null);
+      } else {
+        Alert.alert('Erro', result.error || 'Falha ao atualizar aluno');
+      }
+    }
+  };
+
+  const isExpired = (createdAt?: string) => {
+    if (!createdAt) return false;
+    const created = new Date(createdAt);
+    const now = new Date();
+    const diff = now.getTime() - created.getTime();
+    const days = diff / (1000 * 60 * 60 * 24);
+    return days > 7;
+  };
+
+  const renderItem = ({
+    item,
+  }: {
+    item: {
+      id: string;
+      full_name?: string;
+      email?: string;
+      status?: string;
+      invite_code?: string;
+      created_at?: string;
+    };
+  }) => {
+    const expired = item.status === 'invited' && isExpired(item.created_at);
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => !expired && handleEnterStudent(item)}
+        disabled={expired}
+        className="mb-3"
+      >
+        <View
+          className={`p-4 rounded-2xl border flex-row items-center justify-between ${
+            expired ? 'bg-zinc-900/50 border-zinc-900 opacity-60' : 'bg-zinc-900 border-zinc-800'
+          }`}
+        >
+          <View className="flex-row items-center flex-1">
+            {/* Avatar */}
+            <View className="h-14 w-14 rounded-full items-center justify-center mr-4 bg-zinc-800">
+              <Ionicons
+                name={expired ? 'calendar-outline' : 'person'}
+                size={28}
+                color={expired ? '#52525B' : '#A1A1AA'}
+              />
+            </View>
+
+            {/* Info */}
+            <View className="flex-1 mr-2">
+              <View className="flex-row items-center gap-2 mb-1">
+                <Text className="text-white text-lg font-bold font-display" numberOfLines={1}>
+                  {item.full_name || 'Aluno sem nome'}
+                </Text>
+                {expired && (
+                  <View className="bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">
+                    <Text className="text-red-500 text-[10px] font-bold uppercase">Expirado</Text>
+                  </View>
+                )}
+                {item.status === 'invited' && !expired && (
+                  <View className="bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md">
+                    <Text className="text-orange-500 text-[10px] font-bold uppercase">
+                      Pendente
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className="text-zinc-400 text-sm font-sans" numberOfLines={1}>
+                {item.email || (item.invite_code ? `Código: ${item.invite_code}` : 'Sem contato')}
+              </Text>
+            </View>
+          </View>
+
+          <View className="flex-row items-center gap-2">
+            {/* Edit Button */}
+            <TouchableOpacity
+              onPress={() => handleEdit(item)}
+              className={`p-2 rounded-xl ${expired ? 'bg-zinc-900' : 'bg-zinc-800'}`}
+            >
+              <Ionicons name="pencil" size={20} color={expired ? '#52525B' : '#FF6B35'} />
+            </TouchableOpacity>
+
+            {/* Remove Button */}
+            <TouchableOpacity onPress={() => handleRemove(item)} className="p-2">
+              <Ionicons name="trash-outline" size={20} color={expired ? '#52525B' : '#FF4444'} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <ScreenLayout>
+      {/* Header */}
+      <View className="px-6 pt-4 pb-4">
+        <View className="flex-row justify-between items-center mb-6">
+          <View>
+            <Text
+              testID="students-header-title"
+              className="text-4xl font-extrabold text-white mb-1 font-display"
+            >
+              Meus Alunos
+            </Text>
+            <Text className="text-base text-zinc-400 font-sans">
+              {totalCount} {totalCount === 1 ? 'aluno' : 'alunos'}
+            </Text>
+          </View>
+
+          <Link href={'/(tabs)/students/create' as never} asChild>
+            <TouchableOpacity activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#FF6B35', '#FF2E63']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="h-14 w-14 rounded-full items-center justify-center shadow-lg shadow-orange-500/20"
+              >
+                <Ionicons name="add" size={28} color="#FFFFFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
+        {/* Search and Sort */}
+        <View className="flex-row gap-3 mb-2">
+          <View className="flex-1 flex-row items-center px-4 h-12 rounded-xl bg-zinc-900 border border-zinc-800">
+            <Ionicons name="search" size={18} color="#71717A" />
+            <TextInput
+              placeholder="Buscar aluno..."
+              placeholderTextColor="#71717A"
+              value={search}
+              onChangeText={setSearch}
+              className="flex-1 ml-3 text-white font-sans text-sm"
+              style={{ padding: 0 }}
+            />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+            className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 items-center justify-center"
+          >
+            <Ionicons
+              name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'}
+              size={18}
+              color="#FF6B35"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row gap-2">
+          <TouchableOpacity
+            onPress={() => setBy('full_name')}
+            className={`px-4 py-1.5 rounded-full border ${sortBy === 'full_name' ? 'bg-orange-500/10 border-orange-500' : 'bg-transparent border-zinc-800'}`}
+          >
+            <Text
+              className={`text-xs font-bold ${sortBy === 'full_name' ? 'text-orange-500' : 'text-zinc-500'}`}
+            >
+              NOME (A-Z)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setBy('created_at')}
+            className={`px-4 py-1.5 rounded-full border ${sortBy === 'created_at' ? 'bg-orange-500/10 border-orange-500' : 'bg-transparent border-zinc-800'}`}
+          >
+            <Text
+              className={`text-xs font-bold ${sortBy === 'created_at' ? 'text-orange-500' : 'text-zinc-500'}`}
+            >
+              RECENTES
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Content */}
+      {students.length === 0 && !isLoading ? (
+        <View className="flex-1 justify-center items-center px-6">
+          <View className="bg-zinc-900 p-8 rounded-full mb-6 border border-zinc-800">
+            <Ionicons name="people-outline" size={80} color="#52525B" />
+          </View>
+          <Text className="text-white text-2xl font-bold mb-2 text-center font-display">
+            Nenhum aluno ainda
+          </Text>
+          <Text className="text-zinc-400 text-center px-8 text-base mb-8 font-sans">
+            Comece cadastrando seu primeiro aluno
+          </Text>
+
+          <Link href={'/(tabs)/students/create' as never} asChild>
+            <TouchableOpacity activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#FF6B35', '#FF2E63']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-2xl py-4 px-8 shadow-lg shadow-orange-500/20"
+              >
+                <Text className="text-white text-base font-bold font-display">Novo Aluno</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      ) : (
+        <FlatList
+          data={students}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item.id || `student-${index}`}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() =>
+            isLoading && students.length > 0 ? (
+              <View className="py-4">
+                <ActivityIndicator color="#FF6B35" />
+              </View>
+            ) : null
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && students.length === 0}
+              onRefresh={() =>
+                user?.id &&
+                fetchStudents(user.id, {
+                  search: debouncedSearch,
+                  sortBy,
+                  sortOrder,
+                  page: 1,
+                  append: false,
+                })
+              }
+              tintColor="#FF6B35"
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      <StudentEditModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        onSave={handleSaveEdit}
+        student={selectedStudent}
+      />
+    </ScreenLayout>
+  );
+}

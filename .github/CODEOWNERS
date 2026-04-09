@@ -1,0 +1,19 @@
+# CODEOWNERS - Define quem deve revisar cada parte do código
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: Daniel revisa tudo
+*                                       @DanielLevi22
+
+# CI/CD & Infra
+.github/                                @DanielLevi22
+
+# App mobile (módulos core)
+app/src/modules/auth/                   @DanielLevi22
+app/src/modules/students/               @DanielLevi22
+app/src/modules/workout/                @DanielLevi22
+app/src/modules/nutrition/              @DanielLevi22
+app/src/modules/ai/                     @DanielLevi22
+
+# Documentação
+docs/                                   @DanielLevi22
+*.md                                    @DanielLevi22

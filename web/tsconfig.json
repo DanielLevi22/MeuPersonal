@@ -1,0 +1,76 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2017",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/modules/*": [
+        "./src/modules/*"
+      ],
+      "@/shared/*": [
+        "./src/shared/*"
+      ],
+      "@/shared": [
+        "./src/shared"
+      ],
+      "@/auth": [
+        "./src/modules/auth"
+      ],
+      "@/admin": [
+        "./src/modules/admin"
+      ],
+      "@/dashboard": [
+        "./src/modules/dashboard"
+      ],
+      "@/nutrition": [
+        "./src/modules/nutrition"
+      ],
+      "@/workouts": [
+        "./src/modules/workouts"
+      ],
+      "@/training-plans": [
+        "./src/modules/training-plans"
+      ],
+      "@meupersonal/core": [
+        "./src/packages/core"
+      ],
+      "@meupersonal/supabase": [
+        "./src/packages/supabase"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

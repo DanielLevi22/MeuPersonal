@@ -1,0 +1,1194 @@
+import type { DietMeal, DietMealItem, DietPlan, Food } from '@meupersonal/core';
+import { supabase } from '@meupersonal/supabase';
+import { create } from 'zustand';
+import { useAuthStore } from '@/auth';
+import { cancelPlanNotifications } from '@/services/notificationService';
+import { useGamificationStore } from '@/store/gamificationStore';
+import type { StrategyResult } from '../utils/dietStrategies';
+export type { Food };
+
+interface NutritionStore {
+  // Foods
+  foods: Food[];
+  searchFoods: (query: string, page?: number, pageSize?: number) => Promise<Food[]>;
+  createCustomFood: (food: Omit<Food, 'id' | 'is_custom' | 'created_by'>) => Promise<void>;
+
+  // Diet Plans
+  currentDietPlan: DietPlan | null;
+  dietPlans: DietPlan[]; // List of plans for the professional view
+  dietPlanHistory: DietPlan[];
+  fetchDietPlans: (professionalId: string) => Promise<void>;
+  fetchDietPlan: (studentId: string) => Promise<void>;
+  fetchDietPlanHistory: (studentId: string) => Promise<void>;
+  createDietPlan: (
+    plan: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>,
+    sourcePlanId?: string
+  ) => Promise<void>;
+  finishDietPlan: (planId: string) => Promise<void>;
+  checkPlanExpiration: (studentId: string) => Promise<void>;
+  updateDietPlan: (id: string, updates: Partial<DietPlan>) => Promise<void>;
+  createDietPlanWithStrategy: (
+    planData: Omit<DietPlan, 'id' | 'version' | 'is_active' | 'status'>,
+    strategyData: StrategyResult
+  ) => Promise<void>;
+
+  // Meals
+  meals: DietMeal[];
+  fetchMeals: (dietPlanId: string) => Promise<void>;
+  addMeal: (meal: Omit<DietMeal, 'id'>) => Promise<DietMeal>;
+  updateMeal: (id: string, updates: Partial<DietMeal>) => Promise<void>;
+
+  // Meal Items
+  mealItems: Record<string, DietMealItem[]>; // Keyed by meal_id
+  fetchMealItems: (mealId: string) => Promise<void>;
+  addFoodToMeal: (mealId: string, foodId: string, quantity: number, unit: string) => Promise<void>;
+  addFoodsToMeal: (
+    mealId: string,
+    items: Array<{ foodId: string; quantity: number; unit: string }>
+  ) => Promise<void>;
+  updateMealItem: (itemId: string, updates: Partial<DietMealItem>) => Promise<void>;
+  removeFoodFromMeal: (itemId: string) => Promise<void>;
+  substituteFood: (
+    mealId: string,
+    date: string,
+    originalItemId: string,
+    newFood: Food,
+    quantity: number,
+    unit: string
+  ) => Promise<void>;
+
+  // Day Operations
+  copiedDay: { meals: DietMeal[]; items: Record<string, DietMealItem[]> } | null;
+  copyDay: (dayOfWeek: number) => Promise<void>;
+  pasteDay: (targetDay: number, dietPlanId?: string) => Promise<void>;
+  clearDay: (dayOfWeek: number, dietPlanId?: string) => Promise<void>;
+
+  // Daily Logs
+  dailyLogs: Record<string, DailyLog>; // Keyed by meal_id
+  fetchDailyLogs: (studentId: string, date: string) => Promise<void>;
+  toggleMealCompletion: (mealId: string, date: string, isCompleted: boolean) => Promise<void>;
+
+  // Loading states
+  isLoading: boolean;
+
+  // Reset
+  reset: () => void; // Clear all state on logout
+}
+
+export interface DailyLog {
+  id: string;
+  student_id: string;
+  diet_plan_id?: string;
+  diet_meal_id?: string;
+  logged_date: string;
+  completed: boolean;
+  actual_items?: {
+    id: string;
+    quantity: number;
+    unit?: string;
+    is_substitution?: boolean;
+    food?: {
+      id: string;
+      name: string;
+      serving_size?: number;
+      serving_unit?: string;
+      calories?: number;
+      protein?: number;
+      carbs?: number;
+      fat?: number;
+    };
+  }[];
+  notes?: string;
+  photo_url?: string;
+}
+
+export const useNutritionStore = create<NutritionStore>((set, get) => ({
+  foods: [],
+  currentDietPlan: null,
+  dietPlans: [],
+  dietPlanHistory: [],
+  meals: [],
+  mealItems: {},
+  isLoading: false,
+  copiedDay: null,
+  dailyLogs: {},
+
+  // ... (existing actions)
+
+  // Fetch daily logs
+  fetchDailyLogs: async (studentId: string, date: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('diet_logs')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('logged_date', date);
+
+      if (error) throw error;
+
+      // Convert array to record keyed by diet_meal_id
+      const logsRecord: Record<string, DailyLog> = {};
+      data?.forEach((log) => {
+        if (log.diet_meal_id) {
+          logsRecord[log.diet_meal_id] = log;
+        }
+      });
+
+      set({ dailyLogs: logsRecord });
+    } catch (error) {
+      console.error('Error fetching daily logs:', error);
+    }
+  },
+
+  // Toggle meal completion
+  toggleMealCompletion: async (mealId: string, date: string, isCompleted: boolean) => {
+    const { currentDietPlan, dailyLogs } = get();
+    if (!currentDietPlan) return;
+
+    try {
+      // Optimistic update
+      const existingLog = dailyLogs[mealId];
+      const _optimisticLog = {
+        ...existingLog,
+        diet_meal_id: mealId,
+        logged_date: date,
+        completed: isCompleted,
+        student_id: currentDietPlan.student_id,
+      } as DailyLog;
+
+      set((state) => {
+        const currentLog = state.dailyLogs[mealId];
+        return {
+          dailyLogs: {
+            ...state.dailyLogs,
+            [mealId]: {
+              ...currentLog,
+              diet_meal_id: mealId,
+              logged_date: date,
+              completed: isCompleted,
+              student_id: currentDietPlan.student_id,
+              // Keep actual_items if it already exists
+              actual_items: currentLog?.actual_items || null,
+            } as DailyLog,
+          },
+        };
+      });
+
+      // Check for masquerade mode
+      if (useAuthStore.getState().isMasquerading) {
+        console.log('🎭 Masquerade Mode: Fake toggling meal completion');
+        return;
+      }
+
+      // Check if log exists
+      if (existingLog?.id) {
+        // Update
+        const { error } = await supabase
+          .from('diet_logs')
+          .update({ completed: isCompleted })
+          .eq('id', existingLog.id);
+
+        if (error) throw error;
+      } else {
+        // Insert
+        const { data, error } = await supabase
+          .from('diet_logs')
+          .insert({
+            student_id: currentDietPlan.student_id,
+            diet_plan_id: currentDietPlan.id,
+            diet_meal_id: mealId,
+            logged_date: date,
+            completed: isCompleted,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Update with real ID
+        set((state) => ({
+          dailyLogs: {
+            ...state.dailyLogs,
+            [mealId]: data,
+          },
+        }));
+      }
+
+      // Sync with Gamification Store AFTER persistence to avoid race conditions with Dashboard recalculation
+      const updatedLogs = get().dailyLogs;
+      const completedCount = Object.values(updatedLogs).filter((log) => log.completed).length;
+
+      // We import it dynamically or use the imported store if no cycle is confirmed.
+      useGamificationStore.getState().updateMealProgress(completedCount, date);
+    } catch (error) {
+      console.error('Error toggling meal completion:', error);
+      // Revert on error (could be improved)
+      get().fetchDailyLogs(currentDietPlan.student_id, date);
+    }
+  },
+
+  // Copy Day
+  copyDay: async (dayOfWeek: number) => {
+    const { meals, mealItems } = get();
+    const dayMeals = meals.filter((m) => m.day_of_week === dayOfWeek);
+
+    // Ensure we have items for these meals
+    const dayItems: Record<string, DietMealItem[]> = {};
+    for (const meal of dayMeals) {
+      if (mealItems[meal.id]) {
+        dayItems[meal.id] = mealItems[meal.id];
+      }
+    }
+
+    set({ copiedDay: { meals: dayMeals, items: dayItems } });
+  },
+
+  // Paste Day
+  pasteDay: async (targetDay: number, dietPlanId?: string) => {
+    // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
+    const { copiedDay, currentDietPlan, clearDay } = get();
+
+    if (!copiedDay) {
+      throw new Error('Nenhum dia copiado para colar.');
+    }
+
+    const targetPlanId = dietPlanId || currentDietPlan?.id;
+    if (!targetPlanId) {
+      throw new Error('Plano de dieta não identificado.');
+    }
+
+    set({ isLoading: true });
+    set({ isLoading: true });
+    try {
+      // Prepare payload for RPC
+      const mealsPayload = copiedDay.meals.map((meal) => ({
+        name: meal.name,
+        meal_time: meal.meal_time,
+        meal_type: meal.meal_type,
+        meal_order: meal.meal_order,
+        target_calories: meal.target_calories,
+        items: (copiedDay.items[meal.id] || []).map((item) => ({
+          food_id: item.food_id,
+          quantity: item.quantity,
+          unit: item.unit,
+          order_index: item.order_index,
+        })),
+      }));
+
+      const { error } = await supabase.rpc('paste_diet_day', {
+        p_diet_plan_id: targetPlanId,
+        p_day_of_week: targetDay,
+        p_meals: mealsPayload,
+      });
+
+      if (error) throw error;
+
+      // Refresh meals (now fetches everything deep)
+      await get().fetchMeals(targetPlanId);
+    } catch (error) {
+      console.error('Error pasting day:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Clear Day
+  clearDay: async (dayOfWeek: number, dietPlanId?: string) => {
+    const { currentDietPlan } = get();
+    const targetPlanId = dietPlanId || currentDietPlan?.id;
+
+    if (!targetPlanId) {
+      throw new Error('Plano de dieta não identificado.');
+    }
+
+    try {
+      // Delete all meals for this day (Cascade should handle items)
+      const { error } = await supabase
+        .from('meals')
+        .delete()
+        .eq('diet_plan_id', targetPlanId)
+        .eq('day_of_week', dayOfWeek);
+
+      if (error) throw error;
+
+      // Update local state
+      set((state) => ({
+        meals: state.meals.filter((m) => m.day_of_week !== dayOfWeek),
+        // We could clean up mealItems but it's not strictly necessary and complex to filter by day here
+      }));
+    } catch (error) {
+      console.error('Error clearing day:', error);
+      throw error;
+    }
+  },
+
+  // Search foods with full-text search and pagination
+  searchFoods: async (query: string, page = 0, pageSize = 10) => {
+    try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error } = await supabase
+        .from('foods')
+        .select('*')
+        .or(`name.ilike.%${query}%,search_vector.fts.${query}`)
+        .range(from, to);
+
+      if (error) throw error;
+
+      set((state) => ({
+        foods: page === 0 ? data || [] : [...state.foods, ...(data || [])],
+      }));
+      return data || [];
+    } catch (error) {
+      console.error('Error searching foods:', error);
+      return [];
+    }
+  },
+
+  // Create custom food
+  createCustomFood: async (food) => {
+    try {
+      const { data, error } = await supabase
+        .from('foods')
+        .insert({
+          ...food,
+          is_custom: true,
+          source: 'Manual',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to local state
+      set((state) => ({
+        foods: [...state.foods, data],
+      }));
+    } catch (error) {
+      console.error('Error creating custom food:', error);
+      throw error;
+    }
+  },
+
+  // Fetch diet plans for a professional
+  fetchDietPlans: async (professionalId: string) => {
+    set({ isLoading: true });
+    try {
+      // 1. Fetch diet plans
+      const { data: plans, error } = await supabase
+        .from('nutrition_plans')
+        .select('*')
+        .eq('personal_id', professionalId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!plans || plans.length === 0) {
+        set({ dietPlans: [] });
+        return;
+      }
+
+      // 2. Extract unique student IDs
+      const studentIds = [...new Set(plans.map((p) => p.student_id))];
+
+      // 3. Fetch student details (Active & Pending)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      const { data: pendingStudents } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      // 4. Create a map of ID -> Name
+      const studentMap = new Map<string, { full_name: string }>();
+
+      // biome-ignore lint/suspicious/useIterableCallbackReturn: map is intended purely for side-effect collection here
+      profiles?.forEach((p) => studentMap.set(p.id, { full_name: p.full_name }));
+      // biome-ignore lint/suspicious/useIterableCallbackReturn: map is intended purely for side-effect collection here
+      pendingStudents?.forEach((p) => studentMap.set(p.id, { full_name: p.full_name }));
+
+      // 5. Merge data
+      const plansWithStudent = plans.map((p) => ({
+        ...p,
+        student: studentMap.get(p.student_id),
+      }));
+
+      set({ dietPlans: plansWithStudent });
+    } catch (error) {
+      console.error('Error fetching diet plans:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Fetch diet plan for a student
+  fetchDietPlan: async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('nutrition_plans')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // DEBUG: Check if ANY plan exists
+          const { data: anyPlan } = await supabase
+            .from('nutrition_plans')
+            .select('id, status')
+            .eq('student_id', studentId)
+            .limit(1);
+
+          console.log(`🔍 No ACTIVE plan for ${studentId}. Found any?`, anyPlan);
+
+          set({ currentDietPlan: null });
+          return;
+        }
+        throw error;
+      }
+
+      set({ currentDietPlan: data });
+
+      // Schedule notifications for this student's diet plan on THEIR device
+      // CRITICAL: Only schedule if the current user is the student (not the professor viewing the plan)
+      const currentUser = useAuthStore.getState().user;
+
+      // Debounce scheduling: Schedule only once per hour to avoid spamming
+      const lastScheduled =
+        (get() as unknown as { lastNotificationSchedule?: number }).lastNotificationSchedule || 0;
+      const now = Date.now();
+      const ONE_HOUR = 60 * 60 * 1000;
+
+      if (data?.id && currentUser?.id === studentId && now - lastScheduled > ONE_HOUR) {
+        // Update timestamp immediately to prevent race conditions
+        set({ lastNotificationSchedule: now } as unknown as Partial<NutritionStore>);
+
+        // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
+        const { data: mealsWithTimes } = await supabase
+          .from('meals')
+          .select(`
+            id, 
+            name, 
+            meal_time, 
+            day_of_week,
+            meal_foods (
+              food:foods (
+                name
+              )
+            )
+          `)
+          .eq('diet_plan_id', data.id)
+          .not('meal_time', 'is', null);
+
+        // DISABLE NOTIFICATIONS - User Request (Kill Switch)
+        // const mealNotifications = mealsWithTimes.map(meal => {
+        //   // Extract food names safely
+        //   const foodNames = meal.meal_foods
+        //     ?.map((item: any) => item.food?.name)
+        //     .filter((name: any) => !!name) || [];
+
+        //   return {
+        //     mealId: meal.id,
+        //     mealName: meal.name || 'Refeição',
+        //     mealTime: meal.meal_time,
+        //     dayOfWeek: Number(meal.day_of_week),
+        //     foodNames
+        //   };
+        // });
+
+        // await scheduleMealNotifications(data.id, mealNotifications);
+
+        // NUCLEAR OPTION: Ensure we kill anything running
+        await cancelPlanNotifications(data.id);
+        console.log(`🚫 Notifications DISABLED indefinitely for plan ${data.id}`);
+      }
+    } catch (error) {
+      console.error('Error fetching diet plan:', error);
+      set({ currentDietPlan: null });
+    }
+  },
+
+  // Fetch diet plan history
+  fetchDietPlanHistory: async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('nutrition_plans')
+        .select('*')
+        .eq('student_id', studentId)
+        .neq('status', 'active')
+        .order('end_date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      set({ dietPlanHistory: data || [] });
+    } catch (error) {
+      console.error('Error fetching diet plan history:', error);
+      set({ dietPlanHistory: [] });
+    }
+  },
+
+  // Create new diet plan
+  createDietPlan: async (plan, sourcePlanId) => {
+    try {
+      // Check if there's already an active plan
+      const { data: existingActive } = await supabase
+        .from('nutrition_plans')
+        .select('id')
+        .eq('student_id', plan.student_id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingActive) {
+        throw new Error(
+          'Já existe um plano ativo para este aluno. Finalize o plano atual antes de criar um novo.'
+        );
+      }
+
+      // Create new plan
+      const { data: newPlan, error } = await supabase
+        .from('nutrition_plans')
+        .insert({
+          ...plan,
+          version: 1,
+          is_active: true,
+          status: 'active',
+          plan_type: plan.plan_type || 'cyclic',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // If sourcePlanId is provided, clone meals and items
+      if (sourcePlanId) {
+        // 1. Fetch source meals
+        const { data: sourceMeals, error: mealsError } = await supabase
+          .from('meals')
+          .select('*')
+          .eq('diet_plan_id', sourcePlanId);
+
+        if (mealsError) throw mealsError;
+
+        if (sourceMeals && sourceMeals.length > 0) {
+          for (const sourceMeal of sourceMeals) {
+            // 2. Create new meal
+            const { data: newMeal, error: newMealError } = await supabase
+              .from('meals')
+              .insert({
+                diet_plan_id: newPlan.id,
+                day_of_week: sourceMeal.day_of_week,
+                meal_type: sourceMeal.meal_type,
+                meal_order: sourceMeal.meal_order,
+                name: sourceMeal.name,
+                target_calories: sourceMeal.target_calories,
+                meal_time: sourceMeal.meal_time,
+              })
+              .select()
+              .single();
+
+            if (newMealError) throw newMealError;
+
+            // 3. Fetch source items for this meal
+            const { data: sourceItems, error: itemsError } = await supabase
+              .from('meal_foods')
+              .select('*')
+              .eq('diet_meal_id', sourceMeal.id);
+
+            if (itemsError) throw itemsError;
+
+            if (sourceItems && sourceItems.length > 0) {
+              // 4. Create new items
+              const itemsToInsert = sourceItems.map((item) => ({
+                diet_meal_id: newMeal.id,
+                food_id: item.food_id,
+                quantity: item.quantity,
+                unit: item.unit,
+                order_index: item.order_index,
+              }));
+
+              const { error: insertItemsError } = await supabase
+                .from('meal_foods')
+                .insert(itemsToInsert);
+
+              if (insertItemsError) throw insertItemsError;
+            }
+          }
+        }
+      }
+
+      // NOTE: Notifications are NOT scheduled here because this runs on the professor's device.
+      // Notifications will be scheduled on the STUDENT'S device when they fetch their diet plan.
+
+      // Fetch student name for the local state update
+      let studentName = '';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', plan.student_id)
+        .single();
+
+      if (profile) {
+        studentName = profile.full_name;
+      } else {
+        const { data: pending } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', plan.student_id)
+          .single();
+        if (pending) studentName = pending.full_name;
+      }
+
+      const newPlanWithStudent = {
+        ...newPlan,
+        student: { full_name: studentName },
+      };
+
+      set((state) => ({
+        currentDietPlan: newPlan,
+        dietPlans: [newPlanWithStudent, ...state.dietPlans],
+      }));
+    } catch (error) {
+      console.error('Error creating diet plan:', error);
+      throw error;
+    }
+  },
+
+  // Finish diet plan manually
+  finishDietPlan: async (planId: string) => {
+    try {
+      // Cancel all notifications for this plan
+      await cancelPlanNotifications(planId);
+      console.log(`✅ Cancelled notifications for diet plan ${planId}`);
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('nutrition_plans')
+        .update({
+          status: 'finished',
+          is_active: false,
+          end_date: today,
+        })
+        .eq('id', planId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set((state) => ({
+        currentDietPlan: state.currentDietPlan?.id === planId ? null : state.currentDietPlan,
+        dietPlanHistory: [data, ...state.dietPlanHistory],
+      }));
+    } catch (error) {
+      console.error('Error finishing diet plan:', error);
+      throw error;
+    }
+  },
+
+  // Check and update expired plans
+  checkPlanExpiration: async (studentId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: expiredPlans, error } = await supabase
+        .from('nutrition_plans')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .lt('end_date', today);
+
+      if (error) throw error;
+
+      if (expiredPlans && expiredPlans.length > 0) {
+        const { error: updateError } = await supabase
+          .from('nutrition_plans')
+          .update({
+            status: 'completed',
+            is_active: false,
+          })
+          .in(
+            'id',
+            expiredPlans.map((p) => p.id)
+          );
+
+        if (updateError) throw updateError;
+
+        await get().fetchDietPlan(studentId);
+      }
+    } catch (error) {
+      console.error('Error checking plan expiration:', error);
+    }
+  },
+
+  // Update diet plan
+  updateDietPlan: async (id, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('nutrition_plans')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set({ currentDietPlan: data });
+    } catch (error) {
+      console.error('Error updating diet plan:', error);
+      throw error;
+    }
+  },
+
+  createDietPlanWithStrategy: async (plan, strategyData) => {
+    // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
+    const { dietPlans } = get();
+    try {
+      // 1. Create the plan using existing logic
+
+      // Check active
+      const { data: existingActive } = await supabase
+        .from('nutrition_plans')
+        .select('id')
+        .eq('student_id', plan.student_id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingActive) {
+        throw new Error(
+          'Já existe um plano ativo para este aluno. Finalize o plano atual antes de criar um novo.'
+        );
+      }
+
+      // Insert Plan
+      const { data: newPlan, error } = await supabase
+        .from('nutrition_plans')
+        .insert({
+          ...plan,
+          version: 1,
+          is_active: true,
+          status: 'active',
+          plan_type: plan.plan_type || 'cyclic',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 2. Generate Meals from Strategy
+      const { weeklySchedule } = strategyData;
+
+      for (const day of weeklySchedule) {
+        for (const mealTemplate of day.meals) {
+          const { error: mealError } = await supabase.from('meals').insert({
+            diet_plan_id: newPlan.id,
+            day_of_week: day.dayOfWeek,
+            meal_type: mealTemplate.type,
+            meal_order: day.meals.indexOf(mealTemplate),
+            name: mealTemplate.name,
+            target_calories: 0,
+            meal_time: mealTemplate.time,
+          });
+
+          if (mealError) throw mealError;
+        }
+      }
+
+      // Fetch student name for the local state update
+      let studentName = '';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', plan.student_id)
+        .single();
+
+      if (profile) {
+        studentName = profile.full_name;
+      } else {
+        const { data: pending } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', plan.student_id)
+          .single();
+        if (pending) studentName = pending.full_name;
+      }
+
+      const newPlanWithStudent = {
+        ...newPlan,
+        student: { full_name: studentName },
+      };
+
+      set((state) => ({
+        currentDietPlan: newPlan,
+        dietPlans: [newPlanWithStudent, ...state.dietPlans],
+      }));
+    } catch (error) {
+      console.error('Error creating strategy diet plan:', error);
+      throw error;
+    }
+  },
+
+  // Fetch meals (optimized deep fetch)
+  fetchMeals: async (dietPlanId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('meals')
+        .select(`
+          *,
+          meal_foods (
+            *,
+            food:foods (*)
+          )
+        `)
+        .eq('diet_plan_id', dietPlanId)
+        .order('day_of_week', { ascending: true })
+        .order('meal_order', { ascending: true });
+
+      if (error) throw error;
+
+      // Separate meals from items for the state structure
+      const mealsValues: DietMeal[] = [];
+      const itemsMap: Record<string, DietMealItem[]> = {};
+
+      data?.forEach((row: DietMeal & { meal_foods?: DietMealItem[] }) => {
+        const { meal_foods, ...mealData } = row;
+        mealsValues.push(mealData);
+        // Sort items by order_index
+        itemsMap[mealData.id] = (meal_foods || []).sort(
+          (a: { order_index?: number }, b: { order_index?: number }) =>
+            (a.order_index || 0) - (b.order_index || 0)
+        );
+      });
+
+      set((state) => ({
+        meals: mealsValues,
+        mealItems: {
+          ...state.mealItems,
+          ...itemsMap,
+        },
+      }));
+    } catch (error) {
+      console.error('Error fetching meals:', error);
+    }
+  },
+
+  // Update meal
+  updateMeal: async (id, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('meals')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set((state) => ({
+        meals: state.meals.map((meal) => (meal.id === id ? { ...meal, ...data } : meal)),
+      }));
+
+      // NOTE: Notifications are NOT re-scheduled here because this runs on the professor's device.
+      // The student's device will handle notification scheduling when they fetch their diet plan.
+    } catch (error) {
+      console.error('Error updating meal:', error);
+      throw error;
+    }
+  },
+
+  // Add meal to diet plan
+  addMeal: async (meal) => {
+    try {
+      const { data, error } = await supabase.from('meals').insert(meal).select().single();
+
+      if (error) throw error;
+
+      set((state) => ({
+        meals: [...state.meals, data],
+      }));
+      return data;
+    } catch (error) {
+      console.error('Error adding meal:', error);
+      throw error;
+    }
+  },
+
+  // Fetch meal items
+  fetchMealItems: async (mealId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('meal_foods')
+        .select(`
+          *,
+          food:foods (*)
+        `)
+        .eq('diet_meal_id', mealId)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+
+      set((state) => ({
+        mealItems: {
+          ...state.mealItems,
+          [mealId]: data || [],
+        },
+      }));
+    } catch (error) {
+      console.error('Error fetching meal items:', error);
+    }
+  },
+
+  // Add food to meal
+  addFoodToMeal: async (mealId, foodId, quantity, unit) => {
+    try {
+      const currentItems = get().mealItems[mealId] || [];
+      const nextOrder = currentItems.length;
+
+      const { data, error } = await supabase
+        .from('meal_foods')
+        .insert({
+          diet_meal_id: mealId,
+          food_id: foodId,
+          quantity,
+          unit,
+          order_index: nextOrder,
+        })
+        .select(`
+          *,
+          food:foods (*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      set((state) => ({
+        mealItems: {
+          ...state.mealItems,
+          [mealId]: [...(state.mealItems[mealId] || []), data],
+        },
+      }));
+    } catch (error) {
+      console.error('Error adding food to meal:', error);
+      throw error;
+    }
+  },
+
+  // Add multiple foods to meal (Batch)
+  addFoodsToMeal: async (mealId, items) => {
+    try {
+      const currentItems = get().mealItems[mealId] || [];
+      const startOrder = currentItems.length;
+
+      const itemsToInsert = items.map((item, index) => ({
+        diet_meal_id: mealId, // Correct column (meal_foods)
+        food_id: item.foodId, // Correct column (meal_foods)
+        quantity: item.quantity,
+        unit: item.unit,
+        order_index: startOrder + index,
+      }));
+
+      const { data, error } = await supabase
+        .from('meal_foods')
+        .insert(itemsToInsert)
+        .select(`
+          *,
+          food:foods (*)
+        `);
+
+      if (error) throw error;
+
+      set((state) => ({
+        mealItems: {
+          ...state.mealItems,
+          [mealId]: [...(state.mealItems[mealId] || []), ...(data || [])],
+        },
+      }));
+    } catch (error) {
+      console.error('Error adding foods to meal:', error);
+      throw error;
+    }
+  },
+
+  // Update meal item
+  updateMealItem: async (itemId, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('meal_foods')
+        .update(updates)
+        .eq('id', itemId)
+        .select(`
+          *,
+          food:foods (*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      set((state) => {
+        const newMealItems = { ...state.mealItems };
+        // Find which meal this item belongs to
+        const mealId = data.diet_meal_id;
+
+        if (newMealItems[mealId]) {
+          newMealItems[mealId] = newMealItems[mealId].map((item) =>
+            item.id === itemId ? data : item
+          );
+        }
+
+        return { mealItems: newMealItems };
+      });
+    } catch (error) {
+      console.error('Error updating meal item:', error);
+      throw error;
+    }
+  },
+
+  // Remove food from meal
+  removeFoodFromMeal: async (itemId: string) => {
+    try {
+      const { error } = await supabase.from('meal_foods').delete().eq('id', itemId);
+
+      if (error) throw error;
+
+      // Remove from local state
+      set((state) => {
+        const newMealItems = { ...state.mealItems };
+        Object.keys(newMealItems).forEach((mealId) => {
+          newMealItems[mealId] = newMealItems[mealId].filter((item) => item.id !== itemId);
+        });
+        return { mealItems: newMealItems };
+      });
+    } catch (error) {
+      console.error('Error removing food from meal:', error);
+      throw error;
+    }
+  },
+
+  // Substitute food in a specific log entry
+  substituteFood: async (mealId, date, originalItemId, newFood, quantity, unit) => {
+    const { currentDietPlan, dailyLogs, mealItems } = get();
+    if (!currentDietPlan) return;
+
+    try {
+      const existingLog = dailyLogs[mealId];
+      let actualItems: Array<{
+        id: string;
+        quantity: number;
+        unit?: string;
+        is_substitution?: boolean;
+        food?: {
+          id: string;
+          name: string;
+          serving_size?: number;
+          serving_unit?: string;
+          calories?: number;
+          protein?: number;
+          carbs?: number;
+          fat?: number;
+        };
+      }> = [];
+
+      if (existingLog?.actual_items && Array.isArray(existingLog.actual_items)) {
+        // Use existing substituted items
+        actualItems = [...existingLog.actual_items];
+      } else {
+        // Initialize from original meal items
+        const originalItems = mealItems[mealId] || [];
+        actualItems = originalItems.map((item) => ({
+          id: item.id,
+          food_id: item.food_id,
+          quantity: item.quantity,
+          unit: item.unit,
+          food: item.food,
+        }));
+      }
+
+      // Perform substitution
+      const substitutionIndex = actualItems.findIndex((i) => i.id === originalItemId);
+      const newItem = {
+        id: `sub_${Date.now()}`,
+        food_id: newFood.id,
+        quantity,
+        unit,
+        food: newFood,
+        is_substitution: true,
+        substituted_for: originalItemId,
+      };
+
+      if (substitutionIndex > -1) {
+        actualItems[substitutionIndex] = newItem;
+      } else {
+        actualItems.push(newItem);
+      }
+
+      // Persist to Supabase
+      if (existingLog?.id) {
+        const { error } = await supabase
+          .from('diet_logs')
+          .update({ actual_items: actualItems })
+          .eq('id', existingLog.id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('diet_logs')
+          .insert({
+            student_id: currentDietPlan.student_id,
+            diet_plan_id: currentDietPlan.id,
+            diet_meal_id: mealId,
+            logged_date: date,
+            completed: false, // Start as uncompleted if new
+            actual_items: actualItems,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+
+        // Update local state with new log
+        set((state) => ({
+          dailyLogs: {
+            ...state.dailyLogs,
+            [mealId]: data,
+          },
+        }));
+      }
+
+      // Locally update logs if it was an update
+      if (existingLog?.id) {
+        set((state) => ({
+          dailyLogs: {
+            ...state.dailyLogs,
+            [mealId]: {
+              ...existingLog,
+              actual_items: actualItems,
+            },
+          },
+        }));
+      }
+    } catch (error) {
+      console.error('Error substituting food:', error);
+      throw error;
+    }
+  },
+
+  // Reset all state on logout
+  reset: () => {
+    set({
+      foods: [],
+      currentDietPlan: null,
+      dietPlans: [],
+      dietPlanHistory: [],
+      meals: [],
+      mealItems: {},
+      copiedDay: null,
+      dailyLogs: {},
+      isLoading: false,
+    });
+  },
+}));

@@ -1,0 +1,172 @@
+import { createMMKV } from 'react-native-mmkv';
+import { create } from 'zustand';
+import { createJSONStorage, persist, StateStorage } from 'zustand/middleware';
+import { AIBodyScanService } from '../services/aiBodyScan';
+import { AnamnesisService } from '../services/anamnesisService';
+import { AnamnesisResponse, AssessmentStatus, BodyScanResult } from '../types/assessment';
+
+const storage = createMMKV();
+
+const clientStorage: StateStorage = {
+  getItem: (name) => {
+    const value = storage.getString(name);
+    return value ?? null;
+  },
+  setItem: (name, value) => {
+    storage.set(name, value);
+  },
+  removeItem: (name) => {
+    storage.remove(name);
+  },
+};
+
+interface AssessmentState {
+  status: AssessmentStatus;
+  studentId: string | null;
+  lastResult: BodyScanResult | null;
+  history: BodyScanResult[];
+  capturedImages: {
+    front?: string;
+    side_right?: string;
+    back?: string;
+    side_left?: string;
+  };
+  // Anamnesis State
+  anamnesisResponses: Record<string, AnamnesisResponse>;
+  currentSectionIndex: number;
+  isAnamnesisSubmitted: boolean; // Flag to track completion
+
+  setStudentId: (id: string) => void;
+  startScan: () => Promise<void>;
+  setCapturedImage: (type: 'front' | 'side_right' | 'back' | 'side_left', uri: string) => void;
+  submitScan: () => Promise<void>;
+
+  // Anamnesis Actions
+  setAnamnesisResponse: (questionId: string, value: string | number | string[] | boolean) => void;
+  setSectionIndex: (index: number) => void;
+  submitAnamnesis: () => Promise<void>;
+  syncAnamnesis: (studentId: string) => Promise<void>;
+
+  reset: () => void;
+}
+
+export const useAssessmentStore = create<AssessmentState>()(
+  persist(
+    (set, get) => ({
+      status: AssessmentStatus.IDLE,
+      studentId: null,
+      lastResult: null,
+      history: [],
+      capturedImages: {},
+      anamnesisResponses: {},
+      currentSectionIndex: 0,
+      isAnamnesisSubmitted: false, // Default false
+
+      setStudentId: (id: string) => set({ studentId: id }),
+
+      startScan: async () => {
+        set({ status: AssessmentStatus.SCANNING, capturedImages: {} }); // Keep studentId
+      },
+
+      setCapturedImage: (type: 'front' | 'side_right' | 'back' | 'side_left', uri: string) => {
+        console.log('[AssessmentStore] Setting captured image:', type, uri);
+        set((state) => {
+          const newImages = { ...state.capturedImages, [type]: uri };
+          console.log('[AssessmentStore] Updated images:', newImages);
+          return { capturedImages: newImages };
+        });
+      },
+
+      submitScan: async () => {
+        set({ status: AssessmentStatus.ANALYZING });
+        try {
+          const capturedImages = get().capturedImages;
+          console.log('Starting AI Analysis with images:', Object.keys(capturedImages));
+
+          const result = await AIBodyScanService.analyzeImages(capturedImages);
+
+          set((state) => ({
+            status: AssessmentStatus.COMPLETED,
+            lastResult: result,
+            history: [result, ...state.history],
+          }));
+        } catch (error) {
+          set({ status: AssessmentStatus.ERROR });
+          console.error('Body scan failed', error);
+        }
+      },
+
+      setAnamnesisResponse: (questionId, value) => {
+        set((state) => ({
+          anamnesisResponses: {
+            ...state.anamnesisResponses,
+            [questionId]: { questionId, value },
+          },
+        }));
+      },
+
+      setSectionIndex: (index) => set({ currentSectionIndex: index }),
+
+      syncAnamnesis: async (studentId: string) => {
+        if (!studentId) return;
+
+        console.log('Syncing anamnesis for:', studentId);
+        const data = await AnamnesisService.getAnamnesis(studentId);
+
+        if (data?.responses) {
+          console.log('Found existing anamnesis data, populating store...');
+          set({
+            anamnesisResponses: data.responses,
+            isAnamnesisSubmitted: !!data.completedAt,
+            studentId: studentId,
+          });
+        }
+      },
+
+      submitAnamnesis: async () => {
+        const state = get();
+        const { studentId, anamnesisResponses } = state;
+
+        if (!studentId) {
+          console.error('Cannot submit anamnesis: No student ID found in store.');
+          return;
+        }
+
+        console.log('Submitting Anamnesis for student:', studentId);
+
+        set({ status: AssessmentStatus.ANALYZING }); // Reuse ANALYZING status or add a new SAVING status
+
+        const result = await AnamnesisService.saveAnamnesis(studentId, anamnesisResponses, true);
+
+        if (result.success) {
+          console.log('Anamnesis submitted successfully to Supabase');
+          set({ isAnamnesisSubmitted: true, status: AssessmentStatus.COMPLETED });
+        } else {
+          console.error('Failed to submit anamnesis:', result.error);
+          set({ status: AssessmentStatus.ERROR });
+        }
+      },
+
+      reset: () => {
+        set({
+          status: AssessmentStatus.IDLE,
+          lastResult: null,
+          capturedImages: {},
+          studentId: null,
+          anamnesisResponses: {},
+          currentSectionIndex: 0,
+          isAnamnesisSubmitted: false,
+        });
+      },
+    }),
+    {
+      name: 'assessment-storage',
+      storage: createJSONStorage(() => clientStorage),
+      partialize: (state) => ({
+        anamnesisResponses: state.anamnesisResponses,
+        currentSectionIndex: state.currentSectionIndex,
+        isAnamnesisSubmitted: state.isAnamnesisSubmitted,
+      }),
+    }
+  )
+);

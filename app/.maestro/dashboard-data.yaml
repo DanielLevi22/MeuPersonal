@@ -1,0 +1,10 @@
+appId: com.meupersonal.app
+---
+- runFlow: student-login.yaml
+- assertVisible: "Olá,.*"
+- assertVisible: "Minha Jornada"
+- assertVisible: "Dieta & Macronutrientes"
+- assertVisible: "Meta de Treino"
+- assertVisible: "Sessão de Cardio"
+- assertVisible: "Ranking de Elite"
+- stopApp

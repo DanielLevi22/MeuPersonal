@@ -1,0 +1,299 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  Easing,
+  Extrapolate,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/constants/colors';
+import { useAssessmentStore } from '../store/assessmentStore';
+
+// Import local image using require to ensure resolution
+const bodyScanImage = require('@/assets/images/body-scan-hologram-v3.png');
+
+const { width: _width } = Dimensions.get('window');
+
+// Types for Orbiting Card
+interface OrbitingCardProps {
+  label: string;
+  value: string;
+  unit?: string;
+  color: string;
+  initialAngle: number; // in radians
+  radiusX: number;
+  yPos: number; // Base Y position
+  duration?: number;
+}
+
+const OrbitingInfoCard = ({
+  label,
+  value,
+  unit,
+  color,
+  initialAngle,
+  radiusX,
+  yPos,
+  duration = 8000,
+}: OrbitingCardProps) => {
+  const progress = useSharedValue(initialAngle);
+
+  useEffect(() => {
+    progress.value = withRepeat(
+      withTiming(initialAngle + 2 * Math.PI, {
+        duration: duration,
+        easing: Easing.linear,
+      }),
+      -1, // Infinite
+      false // No reverse
+    );
+  }, [duration, initialAngle, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const angle = progress.value;
+
+    // Calculate position
+    // Sin for Z-depth (front/back), Cos for X-position (left/right) -> making it rotate
+    // Using Sin for depth: 1 is front, -1 is back
+    const sinVal = Math.sin(angle);
+    const cosVal = Math.cos(angle);
+
+    const translateX = cosVal * radiusX;
+
+    // Vertical oscillation (bobbing)
+    const bobbing = Math.sin(angle * 2) * 15;
+    const translateY = yPos + bobbing;
+
+    // Scale based on depth (larger when in front)
+    const scale = interpolate(sinVal, [-1, 1], [0.7, 1.1], Extrapolate.CLAMP);
+
+    // Opacity based on depth (faded when back)
+    const opacity = interpolate(sinVal, [-1, 1], [0.4, 1], Extrapolate.CLAMP);
+
+    // Z-Index: > 0 means in front of body (body zIndex usually 0 or 10)
+    // We'll set the body container to specific zIndex.
+    const zIndex = sinVal > 0 ? 20 : 1;
+
+    return {
+      transform: [{ translateX }, { translateY }, { scale }],
+      opacity,
+      zIndex,
+      position: 'absolute',
+      // Center horizontally initially
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle} pointerEvents="none">
+      {/* Wrapper to center the content at the point */}
+      <View className="items-center justify-center w-[100px]">
+        <View
+          className="bg-black/80 border border-white/20 p-3 rounded-2xl backdrop-blur-md shadow-lg shadow-black/50 items-center justify-center"
+          style={{ borderColor: `${color}40` }} // 25% opacity border of the theme color
+        >
+          <Text className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color }}>
+            {label}
+          </Text>
+          <Text className="text-white text-xl font-black">
+            {value}
+            <Text className="text-sm text-zinc-400 font-normal">{unit}</Text>
+          </Text>
+
+          {/* Connecting Dot */}
+          <View
+            className="absolute -bottom-2 w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: color }}
+          />
+        </View>
+      </View>
+    </Animated.View>
+  );
+};
+
+export default function BodyScanIntroduction({ hideHeader = false }: { hideHeader?: boolean }) {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { studentId, id } = useLocalSearchParams<{ studentId?: string; id?: string }>();
+  const { startScan, setStudentId } = useAssessmentStore();
+
+  const handleStart = async () => {
+    const targetId = studentId || id;
+
+    console.log('🔍 BodyScanIntro | Params:', { studentId, id });
+    console.log('🔍 BodyScanIntro | Target ID:', targetId);
+
+    if (targetId) {
+      setStudentId(targetId as string);
+      const stored = useAssessmentStore.getState().studentId;
+      console.log('✅ BodyScanIntro | Store Updated:', stored);
+    } else {
+      console.warn('⚠️ BodyScanIntro | No ID found to set in store!');
+    }
+
+    // Navigate to grid for photo capture
+    await startScan(); // Initialize session
+
+    // Explicitly pass ID via params for robustness
+    router.push({
+      pathname: '/(professional)/assessment/grid',
+      params: { studentId: targetId },
+    } as never);
+  };
+
+  return (
+    <View className="flex-1 bg-black">
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={[colors.background.primary, '#0f172a', '#000000']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: 'absolute', width: '100%', height: '100%' }}
+      />
+
+      {/* Top ambient glow */}
+      <View className="absolute top-[-100px] left-[-100px] w-[300px] h-[300px] bg-primary-start opacity-10 blur-[100px] rounded-full" />
+      <View className="absolute bottom-[-50px] right-[-50px] w-[300px] h-[300px] bg-secondary-main opacity-5 blur-[100px] rounded-full" />
+
+      <View style={{ paddingTop: hideHeader ? 0 : insets.top }} className="flex-1">
+        {/* Header - Conditionally Rendered */}
+        {!hideHeader && (
+          <View className="flex-row justify-between items-center px-6 py-4 z-10">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="w-10 h-10 rounded-full bg-white/5 items-center justify-center border border-white/10"
+            >
+              <Ionicons name="arrow-back" size={20} color="white" />
+            </TouchableOpacity>
+            <View className="bg-white/5 px-3 py-1 rounded-full border border-white/10 flex-row items-center gap-2">
+              <View className="w-2 h-2 rounded-full bg-secondary anim-pulse" />
+              <Text className="text-white/80 text-xs font-bold uppercase tracking-widest">
+                AI Vision
+              </Text>
+            </View>
+            <TouchableOpacity className="w-10 h-10 rounded-full bg-white/5 items-center justify-center border border-white/10">
+              <Ionicons name="help" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="px-6 mt-2 items-center">
+            <View className="bg-purple-500/20 px-3 py-1 rounded-md mb-4 border border-purple-500/30">
+              <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-widest">
+                Tecnologia IA
+              </Text>
+            </View>
+            <Text className="text-white text-3xl font-black font-display text-center leading-tight">
+              Escaneamento <Text style={{ color: colors.primary.start }}>Corporal</Text>
+            </Text>
+            <Text className="text-zinc-400 text-center text-sm mt-3 px-4 leading-relaxed">
+              O escaneamento corporal por IA é um método extremamente preciso para coleta de
+              medidas.
+            </Text>
+          </View>
+
+          {/* MAIN VISUALIZER CONTAINER */}
+          <View className="items-center justify-center h-[620px] relative mt-4">
+            {/* Realistic Holographic Body Image */}
+            {/* ZIndex 10 ensures it sits between background and front orbiting items */}
+            <View style={{ zIndex: 10, elevation: 10 }}>
+              <Image
+                source={bodyScanImage}
+                style={{
+                  width: 380,
+                  height: 600,
+                  resizeMode: 'contain',
+                  opacity: 0.9,
+                }}
+              />
+            </View>
+
+            {/* Orbiting Metrics */}
+            {/* Center Point for logic is roughly center of this container */}
+
+            {/* Biceps - Orbiting */}
+            <OrbitingInfoCard
+              label="Biceps"
+              value="32"
+              unit="cm"
+              color={colors.secondary.main}
+              initialAngle={0}
+              radiusX={150}
+              yPos={-140}
+              duration={9000}
+            />
+
+            {/* Weight - Orbiting */}
+            <OrbitingInfoCard
+              label="Massa Magra"
+              value="62"
+              unit="kg"
+              color={colors.status.warning}
+              initialAngle={Math.PI / 2}
+              radiusX={160}
+              yPos={-60}
+              duration={10000}
+            />
+
+            {/* Fat - Orbiting */}
+            <OrbitingInfoCard
+              label="Gordura"
+              value="17"
+              unit="%"
+              color={colors.status.success}
+              initialAngle={Math.PI}
+              radiusX={150}
+              yPos={50}
+              duration={9500}
+            />
+
+            {/* IMC - Orbiting */}
+            <OrbitingInfoCard
+              label="IMC"
+              value="22.1"
+              unit=""
+              color={colors.status.error}
+              initialAngle={(3 * Math.PI) / 2}
+              radiusX={160}
+              yPos={130}
+              duration={11000}
+            />
+          </View>
+
+          {/* Instructions successfully moved to grid screen */}
+
+          {/* CTA Button */}
+          <View className="px-6 mt-8 z-20">
+            <TouchableOpacity onPress={handleStart} activeOpacity={0.8}>
+              <LinearGradient
+                colors={
+                  colors.gradients.primary as unknown as readonly [string, string, ...string[]]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="py-4 rounded-2xl items-center shadow-lg shadow-primary-solid/20"
+              >
+                <Text className="text-white font-black text-lg uppercase tracking-widest">
+                  Avançar
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
