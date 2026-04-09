@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -28,6 +28,34 @@ const MUSCLE_IMAGES: Record<string, ImageSourcePropType> = {
   Geral: require('../../../../assets/workouts/back.jpg'),
 };
 
+const getDifficultyColor = (difficulty: string) => {
+  switch (difficulty) {
+    case 'beginner':
+      return colors.status.success;
+    case 'intermediate':
+      return colors.status.warning;
+    case 'advanced':
+      return colors.status.error;
+    default:
+      return colors.secondary.main;
+  }
+};
+
+const getDifficultyLabel = (difficulty: string) => {
+  switch (difficulty) {
+    case 'beginner':
+      return 'Iniciante';
+    case 'intermediate':
+      return 'Intermediário';
+    case 'advanced':
+      return 'Avançado';
+    default:
+      return difficulty;
+  }
+};
+
+type WorkoutItem = ReturnType<typeof useWorkoutStore.getState>['workouts'][0];
+
 export default function WorkoutsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -48,105 +76,78 @@ export default function WorkoutsScreen() {
     { name: 'Abdominais', icon: 'grid' },
   ];
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (user?.id) {
       fetchWorkouts(user.id);
     }
-  }, [user]);
+  }, [user?.id, fetchWorkouts]);
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return colors.status.success;
-      case 'intermediate':
-        return colors.status.warning;
-      case 'advanced':
-        return colors.status.error;
-      default:
-        return colors.secondary.main;
-    }
-  };
+  const renderItem = useCallback(
+    ({ item }: { item: WorkoutItem }) => {
+      const muscleGroup = item.muscle_group || 'Geral';
+      const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES.Geral;
 
-  const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return 'Iniciante';
-      case 'intermediate':
-        return 'Intermediário';
-      case 'advanced':
-        return 'Avançado';
-      default:
-        return difficulty;
-    }
-  };
+      const duration = item.duration_minutes || 60;
+      const exercisesCount = item.items?.length || item.exercises_count || 0;
 
-  type WorkoutItem = ReturnType<typeof useWorkoutStore.getState>['workouts'][0];
-
-  const renderItem = ({ item }: { item: WorkoutItem }) => {
-    const muscleGroup = item.muscle_group || 'Geral';
-    // biome-ignore lint/complexity/useLiteralKeys: auto-suppressed during final sweep
-    const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES['Geral'];
-
-    return (
-      <PremiumCard
-        title={item.title}
-        subtitle={`${muscleGroup} • ${getDifficultyLabel(item.difficulty || '')}`}
-        image={bgImage}
-        onPress={() => router.push(`/(tabs)/workouts/${item.id}` as never)}
-        containerStyle={{ marginBottom: 24 }}
-        badge={
-          <View
-            className="px-3 py-1 rounded-full border border-white/10 self-start"
-            style={{ backgroundColor: `${getDifficultyColor(item.difficulty || '')}40` }}
-          >
-            <Text
-              className="text-[10px] font-bold uppercase tracking-wider"
-              style={{ color: getDifficultyColor(item.difficulty || '') }}
+      return (
+        <PremiumCard
+          title={item.title}
+          subtitle={`${muscleGroup} • ${getDifficultyLabel(item.difficulty || '')}`}
+          image={bgImage}
+          onPress={() => router.push(`/(tabs)/workouts/${item.id}` as never)}
+          containerStyle={{ marginBottom: 24 }}
+          badge={
+            <View
+              className="px-3 py-1 rounded-full border border-white/10 self-start"
+              style={{ backgroundColor: `${getDifficultyColor(item.difficulty || '')}40` }}
             >
-              {getDifficultyLabel(item.difficulty || '')}
-            </Text>
+              <Text
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: getDifficultyColor(item.difficulty || '') }}
+              >
+                {getDifficultyLabel(item.difficulty || '')}
+              </Text>
+            </View>
+          }
+        >
+          <View className="flex-row items-center justify-between mt-4">
+            <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={colors.secondary.main}
+                style={{ marginRight: 8 }}
+              />
+              <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+                {duration} MIN
+              </Text>
+              <View className="w-[1px] h-3 bg-white/20 mx-3" />
+              <Ionicons
+                name="apps-outline"
+                size={14}
+                color={colors.primary.start}
+                style={{ marginRight: 8 }}
+              />
+              <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+                {exercisesCount} EXERCÍCIOS
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+              <Text
+                className="font-bold text-xs mr-1 uppercase"
+                style={{ color: colors.primary.start }}
+              >
+                Detalhes
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
+            </View>
           </View>
-        }
-      >
-        <View className="flex-row items-center justify-between mt-4">
-          <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
-            <Ionicons
-              name="time-outline"
-              size={14}
-              color={colors.secondary.main}
-              style={{ marginRight: 8 }}
-            />
-            <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
-              {(item as unknown as { duration_minutes?: number }).duration_minutes || 60} MIN
-            </Text>
-            <View className="w-[1px] h-3 bg-white/20 mx-3" />
-            <Ionicons
-              name="apps-outline"
-              size={14}
-              color={colors.primary.start}
-              style={{ marginRight: 8 }}
-            />
-            <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
-              {item.items?.length ||
-                (item as unknown as { exercises_count?: number }).exercises_count ||
-                0}{' '}
-              EXERCÍCIOS
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text
-              className="font-bold text-xs mr-1 uppercase"
-              style={{ color: colors.primary.start }}
-            >
-              Detalhes
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
-          </View>
-        </View>
-      </PremiumCard>
-    );
-  };
+        </PremiumCard>
+      );
+    },
+    [router]
+  );
 
   return (
     <ScreenLayout>

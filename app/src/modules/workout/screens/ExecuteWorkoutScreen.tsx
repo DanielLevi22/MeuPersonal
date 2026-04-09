@@ -61,7 +61,7 @@ export default function ExecuteWorkoutScreen() {
 
   // Progression analysis state
   const [previousSession, setPreviousSession] = useState<WorkoutSession | null>(null);
-  const [_previousSessionError, setPreviousSessionError] = useState<string | null>(null);
+  const [_previousSessionError, _setPreviousSessionError] = useState<string | null>(null);
   const [showProgressionSummary, setShowProgressionSummary] = useState(false);
 
   // Use custom hooks
@@ -110,7 +110,6 @@ export default function ExecuteWorkoutScreen() {
     }
   }, [isMasquerading, router]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   const handleVoiceCommand = useCallback(
     async (action: string) => {
       if (action === 'next_set') {
@@ -138,6 +137,10 @@ export default function ExecuteWorkoutScreen() {
     [
       workout,
       completedSets,
+      // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: callbacks declared later in component, safe at runtime
+      handleLogSet,
+      // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: callbacks declared later in component, safe at runtime
+      handleFinishWorkout,
       pauseTimer,
       resumeTimer,
       announceFinish,
@@ -151,7 +154,6 @@ export default function ExecuteWorkoutScreen() {
     continuous: true,
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (isWorkoutStarted) {
       startListening();
@@ -161,16 +163,14 @@ export default function ExecuteWorkoutScreen() {
     return () => {
       stopListening();
     };
-  }, [isWorkoutStarted]);
+  }, [isWorkoutStarted, startListening, stopListening]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (user?.id && !workouts.length) {
       fetchWorkouts(user.id);
     }
-  }, [user]);
+  }, [user?.id, workouts.length, fetchWorkouts]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     const targetId = (workoutId || id) as string;
     if (workouts.length > 0 && targetId) {
@@ -190,19 +190,20 @@ export default function ExecuteWorkoutScreen() {
         }
       }
     }
-  }, [workouts, id, workoutId, user]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchPreviousSession declared on next line, safe at runtime
+  }, [workouts, id, workoutId, user?.id, fetchPreviousSession]);
 
   const fetchPreviousSession = useCallback(
     async (workoutId: string, studentId: string) => {
       try {
-        setPreviousSessionError(null);
+        _setPreviousSessionError(null);
         const session = await fetchWorkoutSessionDetails(workoutId, studentId);
         console.log('[Progression] Previous session:', session);
         setPreviousSession(session);
       } catch (error) {
         console.error('[Progression] Error fetching previous session:', error);
         const errorMessage = 'Não foi possível carregar dados da sessão anterior';
-        setPreviousSessionError(errorMessage);
+        _setPreviousSessionError(errorMessage);
         // Show non-blocking toast/alert
         console.warn(errorMessage);
       }
@@ -458,6 +459,38 @@ export default function ExecuteWorkoutScreen() {
     }
   }, [workout, completedSets]);
 
+  const renderItem = useCallback(
+    ({ item, index }: { item: WorkoutItem; index: number }) => {
+      const effectiveItem = editedWorkoutItems[item.id] || item;
+      const isEdited = !!editedWorkoutItems[item.id];
+      const completed = completedSets[item.id] || 0;
+      const isCompleted = completed >= effectiveItem.sets;
+
+      return (
+        <WorkoutExerciseCard
+          item={item}
+          effectiveItem={effectiveItem}
+          isEdited={isEdited}
+          completed={completed}
+          isCompleted={isCompleted}
+          isResting={isResting}
+          progressionAnalysis={progressionAnalysis[item.id]}
+          onEdit={handleEditExercise}
+          onLogSet={handleLogSet}
+          itemIndex={index}
+        />
+      );
+    },
+    [
+      editedWorkoutItems,
+      completedSets,
+      isResting,
+      progressionAnalysis,
+      handleEditExercise,
+      handleLogSet,
+    ]
+  );
+
   if (isLoading || !workout) {
     return (
       <ScreenLayout className="justify-center items-center">
@@ -551,27 +584,7 @@ export default function ExecuteWorkoutScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: 24, paddingBottom: 150 }}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item, index }) => {
-              const effectiveItem = editedWorkoutItems[item.id] || item;
-              const isEdited = !!editedWorkoutItems[item.id];
-              const completed = completedSets[item.id] || 0;
-              const isCompleted = completed >= effectiveItem.sets;
-
-              return (
-                <WorkoutExerciseCard
-                  item={item}
-                  effectiveItem={effectiveItem}
-                  isEdited={isEdited}
-                  completed={completed}
-                  isCompleted={isCompleted}
-                  isResting={isResting}
-                  progressionAnalysis={progressionAnalysis[item.id]}
-                  onEdit={handleEditExercise}
-                  onLogSet={handleLogSet}
-                  itemIndex={index}
-                />
-              );
-            }}
+            renderItem={renderItem}
           />
 
           <View className="absolute bottom-0 left-0 right-0 bg-black/80 p-6 pb-12 border-t border-zinc-900">

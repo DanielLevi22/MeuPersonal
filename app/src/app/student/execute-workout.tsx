@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/auth';
@@ -51,25 +51,10 @@ export default function ExecuteWorkoutScreen() {
   const { incrementWorkoutProgress } = useGamificationStore();
   const router = useRouter();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when id changes
-  useEffect(() => {
-    if (id) {
-      fetchWorkoutAndStartSession();
-    }
-  }, [id]);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    if (restTimer > 0) {
-      interval = setInterval(() => {
-        setRestTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [restTimer]);
-
-  const fetchWorkoutAndStartSession = async () => {
+  const fetchWorkoutAndStartSession = useCallback(async () => {
     try {
+      if (!id) return;
+
       const { data: workoutData } = await supabase
         .from('workouts')
         .select('*')
@@ -100,13 +85,24 @@ export default function ExecuteWorkoutScreen() {
         };
       });
       setProgress(initialProgress);
-
-      // Removed the immediate creation of 'workout_executions' to align with store logic which saves at the end.
-      // If we need "live" tracking, we might re-add it differently later.
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchWorkoutAndStartSession();
+  }, [fetchWorkoutAndStartSession]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    if (restTimer > 0) {
+      interval = setInterval(() => {
+        setRestTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [restTimer]);
 
   const handleSetComplete = (exerciseId: string, restTime: number) => {
     setProgress((prev) => {

@@ -151,25 +151,35 @@ export const GeminiService = {
     }
 
     // Use non-streaming API (reliable on React Native) + simulate streaming
-    const modelName = config?.model || 'gemini-2.5-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    const primaryModel = config?.model || 'gemini-2.5-flash';
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    try {
+    const tryFetch = async (modelName: string) => {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+        throw new Error(`API Error (${modelName}): ${response.status} - ${errorText}`);
+      }
+      return response.json();
+    };
+
+    try {
+      let data: Record<string, unknown> | null = null;
+      try {
+        data = await tryFetch(primaryModel);
+      } catch {
+        console.log('GeminiService stream: Primary model failed, switching to fallback (gemini-2.0-flash)...');
+        data = await tryFetch('gemini-2.0-flash');
       }
 
-      const data = await response.json();
-      const candidate = data.candidates?.[0]?.content?.parts?.[0];
+      // biome-ignore lint/suspicious/noExplicitAny: Gemini API response shape
+      const candidate = (data as any)?.candidates?.[0]?.content?.parts?.[0];
 
       // If it's a function call, return immediately (no streaming needed)
       if (candidate?.functionCall) {

@@ -8,10 +8,10 @@ on:
 
 jobs:
   # ─────────────────────────────────────────
-  # 1. LINT
+  # APP — 1. LINT
   # ─────────────────────────────────────────
   lint:
-    name: 🔍 Lint & Format
+    name: 🔍 [App] Lint & Format
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,10 +34,10 @@ jobs:
         run: npm run lint
 
   # ─────────────────────────────────────────
-  # 2. TYPE CHECK
+  # APP — 2. TYPE CHECK
   # ─────────────────────────────────────────
   typecheck:
-    name: 🔎 TypeScript Check
+    name: 🔎 [App] TypeScript Check
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,10 +60,10 @@ jobs:
         run: npx tsc --noEmit
 
   # ─────────────────────────────────────────
-  # 3. UNIT TESTS
+  # APP — 3. UNIT TESTS
   # ─────────────────────────────────────────
   test:
-    name: 🧪 Unit Tests
+    name: 🧪 [App] Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -98,3 +98,84 @@ jobs:
           name: coverage-report
           path: app/coverage/
           retention-days: 7
+
+  # ─────────────────────────────────────────
+  # WEB — 4. LINT
+  # ─────────────────────────────────────────
+  web-lint:
+    name: 🔍 [Web] Lint & Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Biome lint
+        run: npm run lint
+
+  # ─────────────────────────────────────────
+  # WEB — 5. TYPE CHECK
+  # ─────────────────────────────────────────
+  web-typecheck:
+    name: 🔎 [Web] TypeScript Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+  # ─────────────────────────────────────────
+  # WEB — 6. UNIT TESTS
+  # ─────────────────────────────────────────
+  web-test:
+    name: 🧪 [Web] Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_DEV }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV }}

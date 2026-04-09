@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -33,12 +33,11 @@ export default function PeriodizationsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (user?.id) {
       fetchPeriodizations(user.id);
     }
-  }, [user]);
+  }, [user?.id, fetchPeriodizations]);
 
   const filteredPeriodizations = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -60,46 +59,54 @@ export default function PeriodizationsScreen() {
     phases?: unknown[];
   };
 
-  const renderItem = ({ item }: { item: PeriodizationItem }) => {
-    // Get phases count from the periodization object
-    const phaseCount = item.phases?.length || 0;
+  const onRefresh = useCallback(() => {
+    if (user?.id) {
+      fetchPeriodizations(user.id);
+    }
+  }, [user?.id, fetchPeriodizations]);
 
-    return (
-      <PremiumCard
-        title={item.name || 'Sem nome'}
-        subtitle={`${item.student?.full_name || 'Aluno'} • ${phaseCount} ${phaseCount === 1 ? 'Fase' : 'Fases'}`}
-        // biome-ignore lint/complexity/useLiteralKeys: auto-suppressed during final sweep
-        image={PERIODIZATION_IMAGES[item.type as string] || PERIODIZATION_IMAGES['default']}
-        onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as never)}
-        badge={<StatusBadge status={item.status} />}
-        containerStyle={{ marginBottom: 24 }}
-      >
-        <View className="flex-row items-center justify-between mt-4">
-          <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
-            <Ionicons
-              name="calendar-outline"
-              size={14}
-              color={colors.primary.start}
-              style={{ marginRight: 8 }}
-            />
-            <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
-              {new Date(item.start_date).toLocaleDateString()} -{' '}
-              {new Date(item.end_date).toLocaleDateString()}
-            </Text>
+  const renderItem = useCallback(
+    ({ item }: { item: PeriodizationItem }) => {
+      // Get phases count from the periodization object
+      const phaseCount = item.phases?.length || 0;
+
+      return (
+        <PremiumCard
+          title={item.name || 'Sem nome'}
+          subtitle={`${item.student?.full_name || 'Aluno'} • ${phaseCount} ${phaseCount === 1 ? 'Fase' : 'Fases'}`}
+          image={PERIODIZATION_IMAGES[item.type as string] || PERIODIZATION_IMAGES.default}
+          onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as never)}
+          badge={<StatusBadge status={item.status} />}
+          containerStyle={{ marginBottom: 24 }}
+        >
+          <View className="flex-row items-center justify-between mt-4">
+            <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
+              <Ionicons
+                name="calendar-outline"
+                size={14}
+                color={colors.primary.start}
+                style={{ marginRight: 8 }}
+              />
+              <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+                {new Date(item.start_date).toLocaleDateString()} -{' '}
+                {new Date(item.end_date).toLocaleDateString()}
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+              <Text
+                className="text-orange-500 font-bold text-xs mr-1 uppercase"
+                style={{ color: colors.primary.start }}
+              >
+                Gerenciar
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
+            </View>
           </View>
-          <View className="flex-row items-center">
-            <Text
-              className="text-orange-500 font-bold text-xs mr-1 uppercase"
-              style={{ color: colors.primary.start }}
-            >
-              Gerenciar
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
-          </View>
-        </View>
-      </PremiumCard>
-    );
-  };
+        </PremiumCard>
+      );
+    },
+    [router]
+  );
 
   return (
     <ScreenLayout>
@@ -153,15 +160,7 @@ export default function PeriodizationsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={() => {
-              if (user?.id) {
-                fetchPeriodizations(user.id);
-              }
-            }}
-            tintColor="#FF6B35"
-          />
+          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor="#FF6B35" />
         }
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={

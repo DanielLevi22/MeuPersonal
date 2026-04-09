@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -55,12 +55,9 @@ export default function PhaseDetailsScreen() {
   const {
     currentPeriodizationPhases,
     updateTrainingPlan,
-    // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
     deleteTrainingPlan,
     createWorkout,
     fetchWorkoutsForPhase,
-    // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
-    generateWorkoutsForPhase,
     workouts,
     libraryWorkouts,
     fetchLastWorkoutSession,
@@ -111,32 +108,33 @@ export default function PhaseDetailsScreen() {
     type: 'info',
   });
 
-  const showAlert = (
-    title: string,
-    message: string,
-    type: 'success' | 'error' | 'warning' | 'info' = 'info'
-  ) => {
-    setStatusModal({ visible: true, title, message, type });
-  };
+  const showAlert = useCallback(
+    (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+      setStatusModal({ visible: true, title, message, type });
+    },
+    []
+  );
 
-  const showConfirm = (
-    title: string,
-    message: string,
-    onConfirm: () => void,
-    type: 'danger' | 'warning' | 'info' = 'info',
-    confirmText?: string
-  ) => {
-    setConfirmModal({ visible: true, title, message, onConfirm, type, confirmText });
-  };
+  const showConfirm = useCallback(
+    (
+      title: string,
+      message: string,
+      onConfirm: () => void,
+      type: 'danger' | 'warning' | 'info' = 'info',
+      confirmText?: string
+    ) => {
+      setConfirmModal({ visible: true, title, message, onConfirm, type, confirmText });
+    },
+    []
+  );
 
   const { fetchWorkouts } = useWorkoutStore();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (showLibraryModal && user?.id) {
       fetchWorkouts(user.id);
     }
-  }, [showLibraryModal, user]);
+  }, [showLibraryModal, user?.id, fetchWorkouts]);
 
   const libraryWorkoutsFiltered = useMemo(() => {
     return libraryWorkouts.filter((w) => {
@@ -149,14 +147,12 @@ export default function PhaseDetailsScreen() {
 
   const splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF'];
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (phase?.id) {
       fetchWorkoutsForPhase(phase.id);
     }
-  }, [phase?.id]);
+  }, [phase?.id, fetchWorkoutsForPhase]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     const determineSuggested = async () => {
       if (!user?.id || workouts.length === 0) return;
@@ -197,122 +193,137 @@ export default function PhaseDetailsScreen() {
     };
 
     determineSuggested();
-  }, [workouts, user?.id]);
+  }, [workouts, user?.id, fetchLastWorkoutSession]);
 
-  const _handleUpdateDate = async (type: 'start' | 'end', date: Date) => {
-    if (!phase) return;
-    try {
-      await updateTrainingPlan(phase.id, {
-        [type === 'start' ? 'start_date' : 'end_date']: date.toISOString().split('T')[0],
-      });
-    } catch (_error) {
-      Alert.alert('Erro', 'Não foi possível atualizar a data.');
-    }
-  };
-
-  const handleSelectSplit = async (split?: string) => {
-    if (!phase || !user?.id) return;
-
-    const finalSplit = split || customSplit.toUpperCase().trim();
-
-    if (!finalSplit) {
-      showAlert('Atenção', 'Digite uma divisão de treino válida.', 'warning');
-      return;
-    }
-
-    // Validate that split only contains letters
-    if (!/^[A-Z]+$/.test(finalSplit)) {
-      showAlert('Erro', 'A divisão deve conter apenas letras (A-Z).', 'error');
-      return;
-    }
-
-    // Whether it's a new split or changing an existing one, we present the choice
-    // via the Warning/Selection Modal
-    setPendingSplit(finalSplit);
-    setShowWarningModal(true);
-    if (showSplitModal) setShowSplitModal(false);
-  };
-
-  const executeSplitChange = async (finalSplit: string) => {
-    if (!phase || !user?.id) return;
-
-    setIsGenerating(true);
-    try {
-      // Create empty workouts for each letter in the split
-      await updateTrainingPlan(phase.id, { training_split: finalSplit });
-
-      // Delete old workouts first
-      const { error: deleteError } = await supabase
-        .from('workouts')
-        .delete()
-        .eq('training_plan_id', phase.id);
-
-      if (deleteError) throw deleteError;
-
-      // Create empty workouts for each letter
-      for (const letter of finalSplit.split('')) {
-        await createWorkout({
-          training_plan_id: phase.id,
-          title: `Treino ${letter}`,
-          description: '',
-          personal_id: user.id,
+  const _handleUpdateDate = useCallback(
+    async (type: 'start' | 'end', date: Date) => {
+      if (!phase) return;
+      try {
+        await updateTrainingPlan(phase.id, {
+          [type === 'start' ? 'start_date' : 'end_date']: date.toISOString().split('T')[0],
         });
+      } catch (_error: unknown) {
+        Alert.alert('Erro', 'Não foi possível atualizar a data.');
+      }
+    },
+    [phase, updateTrainingPlan]
+  );
+
+  const handleSelectSplit = useCallback(
+    async (split?: string) => {
+      if (!phase || !user?.id) return;
+
+      const finalSplit = split || customSplit.toUpperCase().trim();
+
+      if (!finalSplit) {
+        showAlert('Atenção', 'Digite uma divisão de treino válida.', 'warning');
+        return;
       }
 
-      await fetchWorkoutsForPhase(phase.id);
+      // Validate that split only contains letters
+      if (!/^[A-Z]+$/.test(finalSplit)) {
+        showAlert('Erro', 'A divisão deve conter apenas letras (A-Z).', 'error');
+        return;
+      }
+
+      // Whether it's a new split or changing an existing one, we present the choice
+      // via the Warning/Selection Modal
+      setPendingSplit(finalSplit);
+      setShowWarningModal(true);
+      if (showSplitModal) setShowSplitModal(false);
+    },
+    [phase, user?.id, customSplit, showAlert, showSplitModal]
+  );
+
+  const executeSplitChange = useCallback(
+    async (finalSplit: string) => {
+      if (!phase || !user?.id) return;
+
+      setIsGenerating(true);
+      try {
+        // Create empty workouts for each letter in the split
+        await updateTrainingPlan(phase.id, { training_split: finalSplit });
+
+        // Delete old workouts first
+        const { error: deleteError } = await supabase
+          .from('workouts')
+          .delete()
+          .eq('training_plan_id', phase.id);
+
+        if (deleteError) throw deleteError;
+
+        // Create empty workouts for each letter
+        for (const letter of finalSplit.split('')) {
+          await createWorkout({
+            training_plan_id: phase.id,
+            title: `Treino ${letter}`,
+            description: '',
+            personal_id: user.id,
+          });
+        }
+
+        await fetchWorkoutsForPhase(phase.id);
+        setShowSplitModal(false);
+        setCustomSplit('');
+        showAlert(
+          'Sucesso! 🏋️',
+          `Treinos vazios criados para divisão ${finalSplit}. Adicione exercícios manualmente ou use o Co-Pilot.`,
+          'success'
+        );
+      } catch (_error: unknown) {
+        showAlert('Erro', 'Não foi possível criar os treinos.', 'error');
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [phase, user?.id, updateTrainingPlan, createWorkout, fetchWorkoutsForPhase, showAlert]
+  );
+
+  const handleAIAssist = useCallback(
+    async (split?: string) => {
+      if (!phase) return;
+
+      const finalSplit = split || customSplit.toUpperCase().trim();
+
+      if (!finalSplit) {
+        showAlert('Atenção', 'Selecione ou digite uma divisão primeiro.', 'warning');
+        return;
+      }
+
+      // Update the split first
+      await updateTrainingPlan(phase.id, { training_split: finalSplit });
       setShowSplitModal(false);
       setCustomSplit('');
-      showAlert(
-        'Sucesso! 🏋️',
-        `Treinos vazios criados para divisão ${finalSplit}. Adicione exercícios manualmente ou use o Co-Pilot.`,
-        'success'
-      );
-    } catch (_error) {
-      showAlert('Erro', 'Não foi possível criar os treinos.', 'error');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+      setShowAIModal(true);
+    },
+    [phase, customSplit, showAlert, updateTrainingPlan]
+  );
 
-  const handleAIAssist = async (split?: string) => {
-    if (!phase) return;
-
-    const finalSplit = split || customSplit.toUpperCase().trim();
-
-    if (!finalSplit) {
-      showAlert('Atenção', 'Selecione ou digite uma divisão primeiro.', 'warning');
-      return;
-    }
-
-    // Update the split first
-    await updateTrainingPlan(phase.id, { training_split: finalSplit });
-    setShowSplitModal(false);
-    setCustomSplit('');
-    setShowAIModal(true);
-  };
-
-  const _handleToggleStatus = async () => {
+  const _handleToggleStatus = useCallback(() => {
     if (!phase) return;
 
     setShowStatusModalMenu(true);
-  };
+  }, [phase]);
 
-  const handleUpdateStatus = async (newStatus: 'draft' | 'active' | 'completed') => {
-    if (!phase) return;
+  const handleUpdateStatus = useCallback(
+    async (newStatus: 'draft' | 'active' | 'completed') => {
+      if (!phase) return;
 
-    const statusLabel =
-      newStatus === 'draft' ? 'Rascunho' : newStatus === 'active' ? 'Ativo' : 'Concluído';
+      const statusLabel =
+        newStatus === 'draft' ? 'Rascunho' : newStatus === 'active' ? 'Ativo' : 'Concluído';
 
-    try {
-      await updateTrainingPlan(phase.id, { status: newStatus });
-      setShowStatusModalMenu(false);
-      showAlert('Sucesso! ✨', `O status da fase foi alterado para ${statusLabel}.`, 'success');
-    } catch (_error) {
-      showAlert('Erro', 'Houve um problema ao atualizar o status.', 'error');
-    }
-  };
+      try {
+        await updateTrainingPlan(phase.id, { status: newStatus });
+        setShowStatusModalMenu(false);
+        showAlert('Sucesso! ✨', `O status da fase foi alterado para ${statusLabel}.`, 'success');
+      } catch (_error: unknown) {
+        showAlert('Erro', 'Houve um problema ao atualizar o status.', 'error');
+      }
+    },
+    [phase, updateTrainingPlan, showAlert]
+  );
 
-  const handleDeletePhase = async () => {
+  const handleDeletePhase = useCallback(async () => {
     if (!phase) return;
 
     showConfirm(
@@ -320,7 +331,7 @@ export default function PhaseDetailsScreen() {
       `Tem certeza que deseja excluir a fase "${phase.name}"? Todos os treinos desta fase serão perdidos permanentemente.`,
       async () => {
         try {
-          await useWorkoutStore.getState().deleteTrainingPlan(phase.id);
+          await deleteTrainingPlan(phase.id);
           // Small delay for the confirm modal to disappear
           setTimeout(() => {
             showAlert(
@@ -330,16 +341,16 @@ export default function PhaseDetailsScreen() {
             );
             router.back();
           }, 500);
-        } catch (_error) {
+        } catch (_error: unknown) {
           showAlert('Erro', 'Não foi possível excluir a fase no momento.', 'error');
         }
       },
       'danger',
       'Excluir'
     );
-  };
+  }, [phase, showConfirm, deleteTrainingPlan, showAlert, router]);
 
-  const _handleCreateWorkout = async () => {
+  const _handleCreateWorkout = useCallback(async () => {
     if (!phase || !user?.id) return;
     try {
       await createWorkout({
@@ -349,10 +360,10 @@ export default function PhaseDetailsScreen() {
         personal_id: user.id,
       });
       showAlert('Treino Criado 🏋️', 'Novo treino adicionado com sucesso à sua fase.', 'success');
-    } catch (_error) {
+    } catch (_error: unknown) {
       showAlert('Erro', 'Ocorreu um erro ao criar o treino.', 'error');
     }
-  };
+  }, [phase, user?.id, createWorkout, showAlert]);
 
   if (!phase) {
     return (

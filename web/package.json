@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@casl/ability": "^6.8.0",
@@ -19,9 +24,9 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "framer-motion": "^11.0.0",
-    "jspdf": "^3.0.4",
+    "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.2",
-    "next": "16.0.3",
+    "next": "^16.2.3",
     "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -32,14 +37,21 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.0",
+    "@biomejs/biome": "2.4.10",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-is": "^19",
+    "@vitejs/plugin-react": "^4.5.2",
+    "@vitest/coverage-v8": "^3.2.0",
     "babel-plugin-react-compiler": "1.0.0",
+    "jsdom": "^26.1.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.0"
   }
 }
