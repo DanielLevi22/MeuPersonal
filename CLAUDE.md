@@ -493,3 +493,22 @@ scoop install maestro
 | Monorepo | `docs/MONOREPO.md` |
 | Fluxo de desenvolvimento | `docs/WORKFLOW.md` |
 | Regras de IA | `docs/AI_MANDATORY_RULES.md` |
+
+---
+
+## Agent Skills — quando usar
+
+Skills ficam em `.agent/skills/` na raiz do monorepo. São ativados via `/nome-do-skill` no Claude Code ou referenciados pelo agente quando o contexto se aplica.
+
+| Skill | Quando aplicar |
+|---|---|
+| `vercel-react-best-practices` | Ao escrever, revisar ou refatorar qualquer componente React ou página Next.js. Contém 45 regras em 8 categorias (waterfalls, bundle size, re-renders, SSR performance, etc.). **Prioridade CRÍTICA** para features em `web/`. |
+| `web-design-guidelines` | Ao revisar UI — acessibilidade, UX, conformidade de design. Aciona quando pedido: "revise minha UI", "audit design", "check acessibilidade". |
+
+### Regras de maior impacto (vercel-react-best-practices)
+
+Sempre verificar ao trabalhar no `web/`:
+- **Waterfalls**: usar `Promise.all()` para fetches independentes, Suspense para streaming
+- **Bundle**: importar direto (nunca barrel files), `next/dynamic` para componentes pesados
+- **Re-renders**: `useMemo`/`useCallback` com dependências primitivas, functional setState
+- **SSR**: `React.cache()` para deduplicação por request, `after()` para operações não-bloqueantes
