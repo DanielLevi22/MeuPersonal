@@ -38,9 +38,11 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
 
   // Mark messages as read
   useEffect(() => {
-    conversationMessages
-      .filter((msg) => msg.receiver_id === user?.id && !msg.read_at)
-      .forEach((msg) => markAsRead(msg.id));
+    for (const msg of conversationMessages) {
+      if (msg.receiver_id === user?.id && !msg.read_at) {
+        markAsRead(msg.id);
+      }
+    }
   }, [conversationMessages, user?.id, markAsRead]);
 
   // Auto-scroll to bottom

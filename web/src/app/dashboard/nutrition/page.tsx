@@ -325,9 +325,9 @@ function AllStudentsView({ students }: { students: any[] }) {
 function AllStudentsStats({ students }: { students: any[] }) {
   // Fetch stats for all students
   const statsArray = students.map((student) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    // biome-ignore lint/correctness/useHookAtTopLevel: hooks-in-map pattern required for per-student TanStack Query — TODO: extract StudentPlanStats component
     const { data: plans = [] } = useDietPlans(student.id);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    // biome-ignore lint/correctness/useHookAtTopLevel: hooks-in-map pattern required for per-student TanStack Query — TODO: extract StudentPlanStats component
     const { data: stats } = useStudentNutritionStats(student.id);
     return { plans, stats };
   });

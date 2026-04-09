@@ -51,7 +51,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   getOrCreateConversation: async (personalId: string, studentId: string) => {
     try {
       // Check if conversation already exists
-      const { data: existing, error: fetchError } = await supabase
+      const { data: existing, error: _fetchError } = await supabase
         .from("conversations")
         .select("id")
         .eq("personal_id", personalId)

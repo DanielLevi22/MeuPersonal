@@ -14,9 +14,9 @@ export default function NutritionOverviewPage() {
   // Get all students with their nutrition data
   const studentsWithData = useMemo(() => {
     return students.map((student) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
+      // biome-ignore lint/correctness/useHookAtTopLevel: hooks-in-map pattern required for per-student TanStack Query — TODO: extract StudentNutritionRow component
       const { data: plans = [] } = useDietPlans(student.id);
-      // eslint-disable-next-line react-hooks/rules-of-hooks
+      // biome-ignore lint/correctness/useHookAtTopLevel: hooks-in-map pattern required for per-student TanStack Query — TODO: extract StudentNutritionRow component
       const { data: stats } = useStudentNutritionStats(student.id);
 
       const activePlan = plans.find((p) => p.status === "active");

@@ -6,7 +6,7 @@ import { useAuth, useAuthStore } from "@/modules/auth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, accountType, abilities, services, isLoading } = useAuth();
+  const { user, abilities, services, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !user) {

@@ -37,12 +37,6 @@ export default function UserDetailsPage() {
   });
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    if (userId) {
-      loadUser();
-    }
-  }, [userId, loadUser]);
-
   const loadUser = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -59,6 +53,12 @@ export default function UserDetailsPage() {
       setIsLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadUser();
+    }
+  }, [userId, loadUser]);
 
   async function saveNotes() {
     try {

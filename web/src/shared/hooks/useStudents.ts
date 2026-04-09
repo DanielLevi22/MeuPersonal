@@ -150,7 +150,7 @@ export function useFindStudentByCode() {
         if (error.code === "PGRST116") {
           // Not found
           // Try to find in active profiles too
-          const { data: profile, error: profileError } = await supabase
+          const { data: _profile, error: _profileError } = await supabase
             .from("profiles")
             .select("id, full_name, email")
             .eq("invite_code", code.toUpperCase()); // Assuming profiles also have invite_code now?
@@ -385,7 +385,7 @@ export function useAssociateStudent() {
     mutationFn: async ({
       studentId,
       services,
-      isPending,
+      isPending: _isPending,
     }: {
       studentId: string;
       services: string[];

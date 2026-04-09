@@ -250,6 +250,7 @@ export default function ExecuteWorkoutScreen() {
 
                       return (
                         <TouchableOpacity
+                          // biome-ignore lint/suspicious/noArrayIndexKey: setIndex is appropriate here as sets are indexed by order and don't have unique IDs
                           key={`${item.id}-set-${setIndex}`}
                           className={`px-5 py-3 rounded-xl border-2 ${
                             isCompleted

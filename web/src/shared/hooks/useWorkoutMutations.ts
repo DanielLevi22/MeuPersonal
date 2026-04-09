@@ -2,7 +2,6 @@
 
 import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 
 export interface CreateWorkoutInput {
   title: string;

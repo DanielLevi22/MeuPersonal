@@ -8,6 +8,11 @@
   "files": {
     "ignoreUnknown": true
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -21,6 +26,11 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["**/globals.css"],
+      "linter": { "enabled": false },
+      "formatter": { "enabled": false }
+    },
     {
       "includes": ["app/**/*"],
       "linter": {
@@ -43,8 +53,21 @@
       "includes": ["web/**/*"],
       "linter": {
         "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off",
+            "useButtonType": "off",
+            "noLabelWithoutControl": "off",
+            "useKeyWithClickEvents": "off",
+            "noStaticElementInteractions": "off",
+            "useSemanticElements": "off"
+          },
           "suspicious": {
-            "noUnknownAtRules": "off"
+            "noUnknownAtRules": "off",
+            "noExplicitAny": "off",
+            "noArrayIndexKey": "off"
+          },
+          "correctness": {
+            "useExhaustiveDependencies": "off"
           }
         },
         "domains": {

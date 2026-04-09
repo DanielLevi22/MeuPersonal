@@ -658,7 +658,7 @@ export function useStudentNutritionStats(studentId: string) {
       if (logsError) throw logsError;
 
       // Get latest weight
-      const { data: latestProgress, error: progressError } = await supabase
+      const { data: latestProgress, error: _progressError } = await supabase
         .from("nutrition_progress")
         .select("weight, recorded_date")
         .eq("student_id", studentId)

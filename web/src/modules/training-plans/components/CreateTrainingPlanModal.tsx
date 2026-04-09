@@ -237,7 +237,12 @@ export function CreateTrainingPlanModal({
                 type="text"
                 value={newGoal}
                 onChange={(e) => setNewGoal(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddGoal())}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddGoal();
+                  }
+                }}
                 placeholder="Ex: Aumentar carga em 10%"
                 className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 disabled={isLoading}

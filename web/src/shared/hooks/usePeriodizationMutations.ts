@@ -2,7 +2,11 @@
 
 import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Periodization, PeriodizationObjective, PeriodizationStatus } from "./usePeriodizations";
+import type {
+  Periodization,
+  PeriodizationObjective,
+  PeriodizationStatus,
+} from "./usePeriodizations";
 
 export interface CreatePeriodizationInput {
   student_id: string;

@@ -31,6 +31,12 @@ export default function PendingApprovalPage() {
     refetchOnWindowFocus: true,
   });
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    router.push("/auth/login");
+  };
+
   // Redirect if approved or rejected
   useEffect(() => {
     if (profile?.account_status === "active") {
@@ -39,12 +45,6 @@ export default function PendingApprovalPage() {
       handleLogout();
     }
   }, [profile, router, handleLogout]);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    await supabase.auth.signOut();
-    router.push("/auth/login");
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
