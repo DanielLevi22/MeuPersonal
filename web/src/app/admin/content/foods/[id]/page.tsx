@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function EditFoodPage() {
   const router = useRouter();
@@ -12,10 +12,10 @@ export default function EditFoodPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    category: 'protein',
+    name: "",
+    category: "protein",
     serving_size: 100,
-    serving_unit: 'g',
+    serving_unit: "g",
     calories: 0,
     protein: 0,
     carbs: 0,
@@ -24,16 +24,12 @@ export default function EditFoodPage() {
 
   useEffect(() => {
     loadFood();
-  }, [id]);
+  }, [loadFood]);
 
   async function loadFood() {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('foods')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from("foods").select("*").eq("id", id).single();
 
       if (error) throw error;
 
@@ -48,9 +44,9 @@ export default function EditFoodPage() {
         fat: data.fat,
       });
     } catch (error) {
-      console.error('Error loading food:', error);
-      alert('Falha ao carregar alimento');
-      router.push('/admin/content/foods');
+      console.error("Error loading food:", error);
+      alert("Falha ao carregar alimento");
+      router.push("/admin/content/foods");
     } finally {
       setIsLoading(false);
     }
@@ -61,38 +57,33 @@ export default function EditFoodPage() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('foods')
-        .update(formData)
-        .eq('id', id);
+      const { error } = await supabase.from("foods").update(formData).eq("id", id);
 
       if (error) throw error;
 
-      alert('Alimento atualizado com sucesso');
-      router.push('/admin/content/foods');
+      alert("Alimento atualizado com sucesso");
+      router.push("/admin/content/foods");
     } catch (error) {
-      console.error('Error updating food:', error);
-      alert('Falha ao atualizar alimento');
+      console.error("Error updating food:", error);
+      alert("Falha ao atualizar alimento");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm('Tem certeza que deseja deletar este alimento? Esta ação não pode ser desfeita.')) return;
+    if (!confirm("Tem certeza que deseja deletar este alimento? Esta ação não pode ser desfeita."))
+      return;
 
     try {
-      const { error } = await supabase
-        .from('foods')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("foods").delete().eq("id", id);
 
       if (error) throw error;
 
-      router.push('/admin/content/foods');
+      router.push("/admin/content/foods");
     } catch (error) {
-      console.error('Error deleting food:', error);
-      alert('Falha ao deletar alimento');
+      console.error("Error deleting food:", error);
+      alert("Falha ao deletar alimento");
     }
   }
 
@@ -130,8 +121,11 @@ export default function EditFoodPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Nome</label>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+              Nome
+            </label>
             <input
+              id="name"
               type="text"
               required
               value={formData.name}
@@ -142,8 +136,11 @@ export default function EditFoodPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Categoria</label>
+              <label htmlFor="category" className="block text-sm font-medium text-foreground mb-1">
+                Categoria
+              </label>
               <select
+                id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -160,18 +157,32 @@ export default function EditFoodPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Porção Padrão (g/ml)</label>
+                <label
+                  htmlFor="serving_size"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Porção Padrão (g/ml)
+                </label>
                 <input
+                  id="serving_size"
                   type="number"
                   required
                   value={formData.serving_size}
-                  onChange={(e) => setFormData({ ...formData, serving_size: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, serving_size: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Unidade da Porção</label>
+                <label
+                  htmlFor="serving_unit"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Unidade da Porção
+                </label>
                 <select
+                  id="serving_unit"
                   value={formData.serving_unit}
                   onChange={(e) => setFormData({ ...formData, serving_unit: e.target.value })}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -187,31 +198,49 @@ export default function EditFoodPage() {
           </div>
 
           <div className="border-t border-border pt-4">
-            <h2 className="text-xl font-bold text-foreground pt-4">Informação Nutricional (por 100g)</h2>
+            <h2 className="text-xl font-bold text-foreground pt-4">
+              Informação Nutricional (por 100g)
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Calorias (kcal)</label>
+                <label
+                  htmlFor="calories"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Calorias (kcal)
+                </label>
                 <input
+                  id="calories"
                   type="number"
                   required
                   value={formData.calories}
-                  onChange={(e) => setFormData({ ...formData, calories: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, calories: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Proteínas (g)</label>
+                <label htmlFor="protein" className="block text-sm font-medium text-foreground mb-1">
+                  Proteínas (g)
+                </label>
                 <input
+                  id="protein"
                   type="number"
                   required
                   value={formData.protein}
-                  onChange={(e) => setFormData({ ...formData, protein: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, protein: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Carboidratos (g)</label>
+                <label htmlFor="carbs" className="block text-sm font-medium text-foreground mb-1">
+                  Carboidratos (g)
+                </label>
                 <input
+                  id="carbs"
                   type="number"
                   required
                   value={formData.carbs}
@@ -220,8 +249,11 @@ export default function EditFoodPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Gorduras (g)</label>
+                <label htmlFor="fat" className="block text-sm font-medium text-foreground mb-1">
+                  Gorduras (g)
+                </label>
                 <input
+                  id="fat"
                   type="number"
                   required
                   value={formData.fat}
@@ -246,7 +278,7 @@ export default function EditFoodPage() {
             disabled={isSaving}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium disabled:opacity-50"
           >
-            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+            {isSaving ? "Salvando..." : "Salvar Alterações"}
           </button>
         </div>
       </form>

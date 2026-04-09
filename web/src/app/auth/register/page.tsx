@@ -1,40 +1,40 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roleParam = searchParams.get('role');
-  
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const roleParam = searchParams.get("role");
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Validate roles
-  const roles = roleParam ? roleParam.split(',') : ['personal_trainer'];
-  
+  const roles = roleParam ? roleParam.split(",") : ["personal_trainer"];
+
   const getRoleLabel = () => {
     const labels = [];
-    if (roles.includes('personal_trainer')) labels.push('Personal Trainer');
-    if (roles.includes('nutritionist')) labels.push('Nutricionista');
-    return labels.join(' & ');
+    if (roles.includes("personal_trainer")) labels.push("Personal Trainer");
+    if (roles.includes("nutritionist")) labels.push("Nutricionista");
+    return labels.join(" & ");
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const services = [];
-      if (roles.includes('personal_trainer')) services.push('personal_training');
-      if (roles.includes('nutritionist')) services.push('nutrition_consulting');
+      if (roles.includes("personal_trainer")) services.push("personal_training");
+      if (roles.includes("nutritionist")) services.push("nutrition_consulting");
 
       const { data, error: authError } = await supabase.auth.signUp({
         email,
@@ -42,7 +42,7 @@ function RegisterContent() {
         options: {
           data: {
             full_name: fullName,
-            account_type: 'professional',
+            account_type: "professional",
             services: services,
           },
         },
@@ -51,10 +51,10 @@ function RegisterContent() {
       if (authError) throw authError;
 
       if (data.user) {
-        router.push('/auth/pending-approval');
+        router.push("/auth/pending-approval");
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta');
+      setError(err.message || "Erro ao criar conta");
     } finally {
       setLoading(false);
     }
@@ -134,20 +134,26 @@ function RegisterContent() {
             disabled={loading}
             className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg shadow-lg shadow-primary/50 hover:shadow-primary/70 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
           >
-            {loading ? 'Criando conta...' : 'Criar Conta'}
+            {loading ? "Criando conta..." : "Criar Conta"}
           </button>
         </form>
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground space-y-2">
           <p>
-            <Link href="/auth/role-selection" className="text-primary hover:text-primary/80 font-medium transition-colors">
+            <Link
+              href="/auth/role-selection"
+              className="text-primary hover:text-primary/80 font-medium transition-colors"
+            >
               ← Alterar Perfil
             </Link>
           </p>
           <p>
-            Já tem uma conta?{' '}
-            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+            Já tem uma conta?{" "}
+            <Link
+              href="/auth/login"
+              className="text-primary hover:text-primary/80 font-medium transition-colors"
+            >
               Fazer Login
             </Link>
           </p>
@@ -162,10 +168,13 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
       {/* Animated Background Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
-      
+
       {/* Glow Effects */}
       <div className="absolute top-1/4 -right-48 w-96 h-96 bg-primary/20 rounded-full blur-[128px] animate-pulse" />
-      <div className="absolute bottom-1/4 -left-48 w-96 h-96 bg-secondary/20 rounded-full blur-[128px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div
+        className="absolute bottom-1/4 -left-48 w-96 h-96 bg-secondary/20 rounded-full blur-[128px] animate-pulse"
+        style={{ animationDelay: "1s" }}
+      />
 
       <Suspense fallback={<div>Carregando...</div>}>
         <RegisterContent />

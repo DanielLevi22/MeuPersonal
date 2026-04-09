@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function EditExercisePage() {
   const router = useRouter();
@@ -12,26 +12,22 @@ export default function EditExercisePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    category: 'strength',
-    muscle_group: '',
-    equipment: 'none',
-    difficulty: 'beginner',
-    instructions: '',
+    name: "",
+    category: "strength",
+    muscle_group: "",
+    equipment: "none",
+    difficulty: "beginner",
+    instructions: "",
   });
 
   useEffect(() => {
     loadExercise();
-  }, [id]);
+  }, [loadExercise]);
 
   async function loadExercise() {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from("exercises").select("*").eq("id", id).single();
 
       if (error) throw error;
 
@@ -41,12 +37,12 @@ export default function EditExercisePage() {
         muscle_group: data.muscle_group,
         equipment: data.equipment,
         difficulty: data.difficulty,
-        instructions: data.instructions || '',
+        instructions: data.instructions || "",
       });
     } catch (error) {
-      console.error('Error loading exercise:', error);
-      alert('Falha ao carregar exercício');
-      router.push('/admin/content/exercises');
+      console.error("Error loading exercise:", error);
+      alert("Falha ao carregar exercício");
+      router.push("/admin/content/exercises");
     } finally {
       setIsLoading(false);
     }
@@ -57,38 +53,33 @@ export default function EditExercisePage() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('exercises')
-        .update(formData)
-        .eq('id', id);
+      const { error } = await supabase.from("exercises").update(formData).eq("id", id);
 
       if (error) throw error;
 
-      alert('Exercício atualizado com sucesso');
-      router.push('/admin/content/exercises');
+      alert("Exercício atualizado com sucesso");
+      router.push("/admin/content/exercises");
     } catch (error) {
-      console.error('Error updating exercise:', error);
-      alert('Falha ao atualizar exercício');
+      console.error("Error updating exercise:", error);
+      alert("Falha ao atualizar exercício");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm('Tem certeza que deseja deletar este exercício? Esta ação não pode ser desfeita.')) return;
+    if (!confirm("Tem certeza que deseja deletar este exercício? Esta ação não pode ser desfeita."))
+      return;
 
     try {
-      const { error } = await supabase
-        .from('exercises')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("exercises").delete().eq("id", id);
 
       if (error) throw error;
 
-      router.push('/admin/content/exercises');
+      router.push("/admin/content/exercises");
     } catch (error) {
-      console.error('Error deleting exercise:', error);
-      alert('Falha ao deletar exercício');
+      console.error("Error deleting exercise:", error);
+      alert("Falha ao deletar exercício");
     }
   }
 
@@ -126,8 +117,11 @@ export default function EditExercisePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Nome</label>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+              Nome
+            </label>
             <input
+              id="name"
               type="text"
               required
               value={formData.name}
@@ -138,8 +132,11 @@ export default function EditExercisePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Categoria</label>
+              <label htmlFor="category" className="block text-sm font-medium text-foreground mb-1">
+                Categoria
+              </label>
               <select
+                id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -152,8 +149,14 @@ export default function EditExercisePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Dificuldade</label>
+              <label
+                htmlFor="difficulty"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Dificuldade
+              </label>
               <select
+                id="difficulty"
                 value={formData.difficulty}
                 onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -167,8 +170,14 @@ export default function EditExercisePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Grupo Muscular</label>
+              <label
+                htmlFor="muscle_group"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Grupo Muscular
+              </label>
               <input
+                id="muscle_group"
                 type="text"
                 required
                 value={formData.muscle_group}
@@ -178,8 +187,11 @@ export default function EditExercisePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Equipamento</label>
+              <label htmlFor="equipment" className="block text-sm font-medium text-foreground mb-1">
+                Equipamento
+              </label>
               <input
+                id="equipment"
                 type="text"
                 required
                 value={formData.equipment}
@@ -190,8 +202,14 @@ export default function EditExercisePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Instruções</label>
+            <label
+              htmlFor="instructions"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
+              Instruções
+            </label>
             <textarea
+              id="instructions"
               rows={4}
               value={formData.instructions}
               onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
@@ -213,7 +231,7 @@ export default function EditExercisePage() {
             disabled={isSaving}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium disabled:opacity-50"
           >
-            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+            {isSaving ? "Salvando..." : "Salvar Alterações"}
           </button>
         </div>
       </form>

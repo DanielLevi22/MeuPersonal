@@ -103,6 +103,7 @@ export const LoadEvolutionChart = ({ studentId }: { studentId: string }) => {
     return (
       <View>
         <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+          <title>Gráfico de Evolução de Carga</title>
           <Defs>
             <LinearGradient id="evoGradient" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={isPositive ? '#34D399' : '#F87171'} stopOpacity="0.3" />

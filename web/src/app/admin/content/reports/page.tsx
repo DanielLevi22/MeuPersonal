@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Report {
   id: string;
@@ -10,7 +10,7 @@ interface Report {
   target_type: string;
   target_id: string;
   reason: string;
-  status: 'pending' | 'resolved' | 'dismissed';
+  status: "pending" | "resolved" | "dismissed";
   created_at: string;
   reporter?: {
     email: string;
@@ -22,18 +22,18 @@ export default function ReportsPage() {
   const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
 
   useEffect(() => {
     loadReports();
-  }, [statusFilter]);
+  }, [loadReports]);
 
   async function loadReports() {
     try {
       setIsLoading(true);
-      
+
       let query = supabase
-        .from('content_reports')
+        .from("content_reports")
         .select(`
           *,
           reporter:reporter_id (
@@ -41,10 +41,10 @@ export default function ReportsPage() {
             full_name
           )
         `)
-        .order('created_at', { ascending: false });
+        .order("created_at", { ascending: false });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
       }
 
       const { data, error } = await query;
@@ -53,31 +53,31 @@ export default function ReportsPage() {
 
       setReports(data || []);
     } catch (error) {
-      console.error('Error loading reports:', error);
+      console.error("Error loading reports:", error);
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function updateStatus(id: string, newStatus: 'resolved' | 'dismissed') {
+  async function updateStatus(id: string, newStatus: "resolved" | "dismissed") {
     try {
       const { error } = await supabase
-        .from('content_reports')
-        .update({ 
+        .from("content_reports")
+        .update({
           status: newStatus,
           resolved_at: new Date().toISOString(),
-          resolved_by: (await supabase.auth.getUser()).data.user?.id
+          resolved_by: (await supabase.auth.getUser()).data.user?.id,
         })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
-      setReports(prev => prev.map(report => 
-        report.id === id ? { ...report, status: newStatus } : report
-      ));
+      setReports((prev) =>
+        prev.map((report) => (report.id === id ? { ...report, status: newStatus } : report)),
+      );
     } catch (error) {
-      console.error('Error updating report status:', error);
-      alert('Falha ao atualizar status do relatório');
+      console.error("Error updating report status:", error);
+      alert("Falha ao atualizar status do relatório");
     }
   }
 
@@ -98,9 +98,7 @@ export default function ReportsPage() {
         <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">
           Relatórios de Conteúdo
         </h1>
-        <p className="text-muted-foreground">
-          Revise e gerencie conteúdo reportado
-        </p>
+        <p className="text-muted-foreground">Revise e gerencie conteúdo reportado</p>
       </div>
 
       {/* Filters */}
@@ -127,58 +125,74 @@ export default function ReportsPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                    report.target_type === 'exercise' ? 'bg-blue-500/20 text-blue-400' :
-                    report.target_type === 'food' ? 'bg-green-500/20 text-green-400' :
-                    'bg-purple-500/20 text-purple-400'
-                  }`}>
-                    {report.target_type === 'exercise' ? 'exercício' : report.target_type === 'food' ? 'alimento' : report.target_type}
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                      report.target_type === "exercise"
+                        ? "bg-blue-500/20 text-blue-400"
+                        : report.target_type === "food"
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-purple-500/20 text-purple-400"
+                    }`}
+                  >
+                    {report.target_type === "exercise"
+                      ? "exercício"
+                      : report.target_type === "food"
+                        ? "alimento"
+                        : report.target_type}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    Reportado por {report.reporter?.full_name || report.reporter?.email || 'Desconhecido'}
+                    Reportado por{" "}
+                    {report.reporter?.full_name || report.reporter?.email || "Desconhecido"}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     • {new Date(report.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-foreground">
-                  Motivo: {report.reason}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  ID do Alvo: {report.target_id}
-                </p>
+                <h3 className="text-lg font-bold text-foreground">Motivo: {report.reason}</h3>
+                <p className="text-sm text-muted-foreground mt-1">ID do Alvo: {report.target_id}</p>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${
-                  report.status === 'resolved' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                  report.status === 'dismissed' ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' :
-                  'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
-                }`}>
-                  {report.status === 'pending' ? 'pendente' : report.status === 'resolved' ? 'resolvido' : 'dispensado'}
+                <span
+                  className={`px-2 py-1 rounded-md text-xs font-medium border ${
+                    report.status === "resolved"
+                      ? "bg-green-500/20 text-green-400 border-green-500/50"
+                      : report.status === "dismissed"
+                        ? "bg-gray-500/20 text-gray-400 border-gray-500/50"
+                        : "bg-yellow-500/20 text-yellow-400 border-yellow-500/50"
+                  }`}
+                >
+                  {report.status === "pending"
+                    ? "pendente"
+                    : report.status === "resolved"
+                      ? "resolvido"
+                      : "dispensado"}
                 </span>
               </div>
             </div>
 
-            {report.status === 'pending' && (
+            {report.status === "pending" && (
               <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-border">
                 <button
-                  onClick={() => updateStatus(report.id, 'dismissed')}
+                  onClick={() => updateStatus(report.id, "dismissed")}
                   className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 font-medium text-sm"
                 >
                   Dispensar
                 </button>
                 <button
-                  onClick={() => updateStatus(report.id, 'resolved')}
+                  onClick={() => updateStatus(report.id, "resolved")}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium text-sm"
                 >
                   Marcar como Resolvido
                 </button>
                 <button
                   onClick={() => {
-                    const path = report.target_type === 'exercise' ? `/admin/content/exercises/${report.target_id}` :
-                               report.target_type === 'food' ? `/admin/content/foods/${report.target_id}` :
-                               `/admin/users/${report.target_id}`;
+                    const path =
+                      report.target_type === "exercise"
+                        ? `/admin/content/exercises/${report.target_id}`
+                        : report.target_type === "food"
+                          ? `/admin/content/foods/${report.target_id}`
+                          : `/admin/users/${report.target_id}`;
                     router.push(path);
                   }}
                   className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 font-medium text-sm"

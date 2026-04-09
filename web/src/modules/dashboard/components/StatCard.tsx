@@ -1,32 +1,32 @@
-import { type ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface StatCardProps {
   title: string;
   value: number | string;
   icon: ReactNode;
-  color: 'primary' | 'secondary' | 'accent';
+  color: "primary" | "secondary" | "accent";
   trend?: {
     value: number;
-    direction: 'up' | 'down';
+    direction: "up" | "down";
   };
   loading?: boolean;
 }
 
 const colorClasses = {
   primary: {
-    text: 'text-primary',
-    glow: 'shadow-primary/50',
-    bg: 'bg-primary/10',
+    text: "text-primary",
+    glow: "shadow-primary/50",
+    bg: "bg-primary/10",
   },
   secondary: {
-    text: 'text-secondary',
-    glow: 'shadow-secondary/50',
-    bg: 'bg-secondary/10',
+    text: "text-secondary",
+    glow: "shadow-secondary/50",
+    bg: "bg-secondary/10",
   },
   accent: {
-    text: 'text-accent',
-    glow: 'shadow-accent/50',
-    bg: 'bg-accent/10',
+    text: "text-accent",
+    glow: "shadow-accent/50",
+    bg: "bg-accent/10",
   },
 };
 
@@ -52,16 +52,18 @@ export function StatCard({ title, value, icon, color, trend, loading }: StatCard
             {trend && (
               <span
                 className={`text-sm font-medium flex items-center gap-1 ${
-                  trend.direction === 'up' ? 'text-green-500' : 'text-red-500'
+                  trend.direction === "up" ? "text-green-500" : "text-red-500"
                 }`}
               >
-                {trend.direction === 'up' ? '↑' : '↓'}
+                {trend.direction === "up" ? "↑" : "↓"}
                 {trend.value}%
               </span>
             )}
           </div>
         </div>
-        <div className={`p-3 rounded-lg bg-white/5 ${colors.text} group-hover:scale-110 transition-transform duration-300`}>
+        <div
+          className={`p-3 rounded-lg bg-white/5 ${colors.text} group-hover:scale-110 transition-transform duration-300`}
+        >
           {icon}
         </div>
       </div>

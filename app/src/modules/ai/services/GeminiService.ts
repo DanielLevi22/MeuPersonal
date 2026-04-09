@@ -174,7 +174,9 @@ export const GeminiService = {
       try {
         data = await tryFetch(primaryModel);
       } catch {
-        console.log('GeminiService stream: Primary model failed, switching to fallback (gemini-2.0-flash)...');
+        console.log(
+          'GeminiService stream: Primary model failed, switching to fallback (gemini-2.0-flash)...'
+        );
         data = await tryFetch('gemini-2.0-flash');
       }
 

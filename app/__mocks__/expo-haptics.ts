@@ -1,4 +1,3 @@
-
 export const notificationAsync = jest.fn();
 export const selectionAsync = jest.fn();
 export const impactAsync = jest.fn();

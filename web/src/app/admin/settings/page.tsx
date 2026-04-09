@@ -1,8 +1,7 @@
+"use client";
 
-'use client';
-
-import { supabase } from '@meupersonal/supabase';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useEffect, useState } from "react";
 
 interface SystemSetting {
   id: string;
@@ -21,22 +20,22 @@ interface FeatureFlag {
 }
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'general' | 'features'>('general');
+  const [activeTab, setActiveTab] = useState<"general" | "features">("general");
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   async function loadData() {
     try {
       setIsLoading(true);
-      
+
       const [settingsResult, flagsResult] = await Promise.all([
-        supabase.from('system_settings').select('*').order('setting_key'),
-        supabase.from('feature_flags').select('*').order('flag_key')
+        supabase.from("system_settings").select("*").order("setting_key"),
+        supabase.from("feature_flags").select("*").order("flag_key"),
       ]);
 
       if (settingsResult.error) throw settingsResult.error;
@@ -45,7 +44,7 @@ export default function SettingsPage() {
       setSettings(settingsResult.data || []);
       setFeatureFlags(flagsResult.data || []);
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error("Error loading settings:", error);
     } finally {
       setIsLoading(false);
     }
@@ -54,36 +53,36 @@ export default function SettingsPage() {
   async function updateSetting(key: string, value: any) {
     try {
       const { error } = await supabase
-        .from('system_settings')
+        .from("system_settings")
         .update({ setting_value: value })
-        .eq('setting_key', key);
+        .eq("setting_key", key);
 
       if (error) throw error;
 
-      setSettings(prev => prev.map(s => 
-        s.setting_key === key ? { ...s, setting_value: value } : s
-      ));
+      setSettings((prev) =>
+        prev.map((s) => (s.setting_key === key ? { ...s, setting_value: value } : s)),
+      );
     } catch (error) {
-      console.error('Error updating setting:', error);
-      alert('Failed to update setting');
+      console.error("Error updating setting:", error);
+      alert("Failed to update setting");
     }
   }
 
   async function toggleFeatureFlag(id: string, currentState: boolean) {
     try {
       const { error } = await supabase
-        .from('feature_flags')
+        .from("feature_flags")
         .update({ is_enabled: !currentState })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
-      setFeatureFlags(prev => prev.map(f => 
-        f.id === id ? { ...f, is_enabled: !currentState } : f
-      ));
+      setFeatureFlags((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, is_enabled: !currentState } : f)),
+      );
     } catch (error) {
-      console.error('Error updating feature flag:', error);
-      alert('Failed to update feature flag');
+      console.error("Error updating feature flag:", error);
+      alert("Failed to update feature flag");
     }
   }
 
@@ -104,29 +103,27 @@ export default function SettingsPage() {
         <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">
           Configurações
         </h1>
-        <p className="text-muted-foreground">
-          Gerencie configurações do sistema e feature flags
-        </p>
+        <p className="text-muted-foreground">Gerencie configurações do sistema e feature flags</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-4 mb-8 border-b border-border">
         <button
-          onClick={() => setActiveTab('general')}
+          onClick={() => setActiveTab("general")}
           className={`pb-4 px-4 font-medium border-b-2 transition-colors ${
-            activeTab === 'general'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === "general"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Configurações Gerais
         </button>
         <button
-          onClick={() => setActiveTab('features')}
+          onClick={() => setActiveTab("features")}
           className={`pb-4 px-4 font-medium border-b-2 transition-colors ${
-            activeTab === 'features'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === "features"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Feature Flags
@@ -134,27 +131,32 @@ export default function SettingsPage() {
       </div>
 
       {/* General Settings */}
-      {activeTab === 'general' && (
+      {activeTab === "general" && (
         <div className="grid gap-6">
           {settings.map((setting) => (
             <div key={setting.id} className="bg-surface border border-border rounded-xl p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-foreground capitalize">
-                    {setting.setting_key.replace(/_/g, ' ')}
+                    {setting.setting_key.replace(/_/g, " ")}
                   </h3>
                   <p className="text-sm text-muted-foreground">{setting.description}</p>
                 </div>
               </div>
 
               <div className="mt-4">
-                {setting.setting_key === 'maintenance_mode' && (
+                {setting.setting_key === "maintenance_mode" && (
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={setting.setting_value.enabled}
-                        onChange={(e) => updateSetting(setting.setting_key, { ...setting.setting_value, enabled: e.target.checked })}
+                        onChange={(e) =>
+                          updateSetting(setting.setting_key, {
+                            ...setting.setting_value,
+                            enabled: e.target.checked,
+                          })
+                        }
                         className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
                       />
                       <span className="text-foreground">Ativar Modo de Manutenção</span>
@@ -163,7 +165,12 @@ export default function SettingsPage() {
                       <input
                         type="text"
                         value={setting.setting_value.message}
-                        onChange={(e) => updateSetting(setting.setting_key, { ...setting.setting_value, message: e.target.value })}
+                        onChange={(e) =>
+                          updateSetting(setting.setting_key, {
+                            ...setting.setting_value,
+                            message: e.target.value,
+                          })
+                        }
                         placeholder="Mensagem de manutenção..."
                         className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground"
                       />
@@ -171,49 +178,73 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {setting.setting_key === 'registration_enabled' && (
+                {setting.setting_key === "registration_enabled" && (
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={setting.setting_value.enabled}
-                      onChange={(e) => updateSetting(setting.setting_key, { ...setting.setting_value, enabled: e.target.checked })}
+                      onChange={(e) =>
+                        updateSetting(setting.setting_key, {
+                          ...setting.setting_value,
+                          enabled: e.target.checked,
+                        })
+                      }
                       className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
                     />
                     <span className="text-foreground">Permitir Novos Registros</span>
                   </label>
                 )}
 
-                {setting.setting_key === 'max_students_per_professional' && (
+                {setting.setting_key === "max_students_per_professional" && (
                   <div className="flex items-center gap-4">
                     <label className="text-foreground">Limite:</label>
                     <input
                       type="number"
                       value={setting.setting_value.limit}
-                      onChange={(e) => updateSetting(setting.setting_key, { ...setting.setting_value, limit: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        updateSetting(setting.setting_key, {
+                          ...setting.setting_value,
+                          limit: parseInt(e.target.value, 10),
+                        })
+                      }
                       className="w-32 px-4 py-2 bg-background border border-border rounded-lg text-foreground"
                     />
                   </div>
                 )}
 
-                {setting.setting_key === 'subscription_prices' && (
+                {setting.setting_key === "subscription_prices" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">Preço Assinatura Básica (R$)</label>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        Preço Assinatura Básica (R$)
+                      </label>
                       <input
                         type="number"
                         step="0.01"
                         value={setting.setting_value.basic}
-                        onChange={(e) => updateSetting(setting.setting_key, { ...setting.setting_value, basic: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          updateSetting(setting.setting_key, {
+                            ...setting.setting_value,
+                            basic: parseFloat(e.target.value),
+                          })
+                        }
                         className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">Preço Assinatura Premium (R$)</label>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        Preço Assinatura Premium (R$)
+                      </label>
                       <input
                         type="number"
                         step="0.01"
                         value={setting.setting_value.premium}
-                        onChange={(e) => updateSetting(setting.setting_key, { ...setting.setting_value, premium: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          updateSetting(setting.setting_key, {
+                            ...setting.setting_value,
+                            premium: parseFloat(e.target.value),
+                          })
+                        }
                         className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
                       />
                     </div>
@@ -232,10 +263,13 @@ export default function SettingsPage() {
       )}
 
       {/* Feature Flags */}
-      {activeTab === 'features' && (
+      {activeTab === "features" && (
         <div className="grid gap-6">
           {featureFlags.map((flag) => (
-            <div key={flag.id} className="bg-surface border border-border rounded-xl p-6 flex items-center justify-between">
+            <div
+              key={flag.id}
+              className="bg-surface border border-border rounded-xl p-6 flex items-center justify-between"
+            >
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-lg font-bold text-foreground">{flag.flag_name}</h3>
@@ -254,12 +288,12 @@ export default function SettingsPage() {
                 <button
                   onClick={() => toggleFeatureFlag(flag.id, flag.is_enabled)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    flag.is_enabled ? 'bg-primary' : 'bg-muted'
+                    flag.is_enabled ? "bg-primary" : "bg-muted"
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      flag.is_enabled ? 'translate-x-6' : 'translate-x-1'
+                      flag.is_enabled ? "translate-x-6" : "translate-x-1"
                     }`}
                   />
                 </button>

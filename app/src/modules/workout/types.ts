@@ -31,6 +31,8 @@ export interface Workout {
   personal_id?: string;
   created_at?: string;
   updated_at?: string;
+  duration_minutes?: number;
+  exercises_count?: number;
 }
 
 export interface SessionItem {

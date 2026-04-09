@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
-export type PeriodizationObjective = 
-  | 'hypertrophy' 
-  | 'strength' 
-  | 'endurance' 
-  | 'weight_loss' 
-  | 'conditioning' 
-  | 'general_fitness';
+export type PeriodizationObjective =
+  | "hypertrophy"
+  | "strength"
+  | "endurance"
+  | "weight_loss"
+  | "conditioning"
+  | "general_fitness";
 
-export type PeriodizationStatus = 'planned' | 'active' | 'completed' | 'cancelled';
+export type PeriodizationStatus = "planned" | "active" | "completed" | "cancelled";
 
 export interface Periodization {
   id: string;
@@ -37,23 +37,25 @@ export interface Periodization {
 
 export function usePeriodizations() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'personal' | 'student' | null>(null);
+  const [userRole, setUserRole] = useState<"personal" | "student" | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        
+
         // Get user role
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
           .single();
-        
+
         if (profile) {
-          setUserRole(profile.role as 'personal' | 'student');
+          setUserRole(profile.role as "personal" | "student");
         }
       }
     };
@@ -62,12 +64,12 @@ export function usePeriodizations() {
   }, []);
 
   return useQuery({
-    queryKey: ['periodizations', userId, userRole],
+    queryKey: ["periodizations", userId, userRole],
     queryFn: async () => {
       if (!userId || !userRole) return [];
 
       let query = supabase
-        .from('periodizations')
+        .from("periodizations")
         .select(`
           *,
           student:profiles!periodizations_student_id_fkey (
@@ -76,13 +78,13 @@ export function usePeriodizations() {
             email
           )
         `)
-        .order('created_at', { ascending: false });
+        .order("created_at", { ascending: false });
 
       // Filter based on role
-      if (userRole === 'personal') {
-        query = query.eq('personal_id', userId);
+      if (userRole === "personal") {
+        query = query.eq("personal_id", userId);
       } else {
-        query = query.eq('student_id', userId);
+        query = query.eq("student_id", userId);
       }
 
       const { data, error } = await query;
@@ -93,15 +95,15 @@ export function usePeriodizations() {
       const periodizationsWithCounts = await Promise.all(
         (data || []).map(async (periodization) => {
           const { count } = await supabase
-            .from('training_plans')
-            .select('*', { count: 'exact', head: true })
-            .eq('periodization_id', periodization.id);
+            .from("training_plans")
+            .select("*", { count: "exact", head: true })
+            .eq("periodization_id", periodization.id);
 
           return {
             ...periodization,
             training_plans_count: count || 0,
           };
-        })
+        }),
       );
 
       return periodizationsWithCounts as Periodization[];
@@ -113,10 +115,10 @@ export function usePeriodizations() {
 
 export function usePeriodization(id: string) {
   return useQuery({
-    queryKey: ['periodization', id],
+    queryKey: ["periodization", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('periodizations')
+        .from("periodizations")
         .select(`
           *,
           student:profiles!periodizations_student_id_fkey (
@@ -125,7 +127,7 @@ export function usePeriodization(id: string) {
             email
           )
         `)
-        .eq('id', id)
+        .eq("id", id)
         .maybeSingle(); // Changed from .single() to .maybeSingle() to handle RLS
 
       if (error) throw error;
@@ -133,9 +135,9 @@ export function usePeriodization(id: string) {
 
       // Get training plans count
       const { count } = await supabase
-        .from('training_plans')
-        .select('*', { count: 'exact', head: true })
-        .eq('periodization_id', id);
+        .from("training_plans")
+        .select("*", { count: "exact", head: true })
+        .eq("periodization_id", id);
 
       return {
         ...data,
@@ -148,10 +150,10 @@ export function usePeriodization(id: string) {
 
 export function useActivePeriodization(studentId: string) {
   return useQuery({
-    queryKey: ['active-periodization', studentId],
+    queryKey: ["active-periodization", studentId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('periodizations')
+        .from("periodizations")
         .select(`
           *,
           student:profiles!periodizations_student_id_fkey (
@@ -160,9 +162,9 @@ export function useActivePeriodization(studentId: string) {
             email
           )
         `)
-        .eq('student_id', studentId)
-        .eq('status', 'active')
-        .order('start_date', { ascending: false })
+        .eq("student_id", studentId)
+        .eq("status", "active")
+        .order("start_date", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -172,9 +174,9 @@ export function useActivePeriodization(studentId: string) {
 
       // Get training plans count
       const { count } = await supabase
-        .from('training_plans')
-        .select('*', { count: 'exact', head: true })
-        .eq('periodization_id', data.id);
+        .from("training_plans")
+        .select("*", { count: "exact", head: true })
+        .eq("periodization_id", data.id);
 
       return {
         ...data,

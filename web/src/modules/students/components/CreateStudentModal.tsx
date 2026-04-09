@@ -1,7 +1,14 @@
-'use client';
+"use client";
 
-import { useAssociateStudent, useCheckStudentRelationship, useCreateStudent, useFindStudentByCode, useProfessionalServices, useTransferStudent } from '@/shared/hooks/useStudents';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import {
+  useAssociateStudent,
+  useCheckStudentRelationship,
+  useCreateStudent,
+  useFindStudentByCode,
+  useProfessionalServices,
+  useTransferStudent,
+} from "@/shared/hooks/useStudents";
 
 interface CreateStudentModalProps {
   isOpen: boolean;
@@ -9,33 +16,35 @@ interface CreateStudentModalProps {
 }
 
 export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps) {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState(''); // Optional now
-  const [phone, setPhone] = useState('');
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [notes, setNotes] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState(""); // Optional now
+  const [phone, setPhone] = useState("");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [notes, setNotes] = useState("");
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [existingProfile, setExistingProfile] = useState<{ id: string; full_name: string } | null>(null);
+  const [existingProfile, setExistingProfile] = useState<{ id: string; full_name: string } | null>(
+    null,
+  );
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isPendingProfile, setIsPendingProfile] = useState(false);
   const [hasCode, setHasCode] = useState(false);
-  const [searchCode, setSearchCode] = useState('');
-  
+  const [searchCode, setSearchCode] = useState("");
+
   const createStudent = useCreateStudent();
   const associateStudent = useAssociateStudent();
   const findStudent = useFindStudentByCode();
   const checkRelationship = useCheckStudentRelationship();
   const transferStudent = useTransferStudent();
   const { data: fetchedServices = [], isLoading: isLoadingServices } = useProfessionalServices();
-  
+
   const availableServices = fetchedServices;
 
   const serviceLabels: Record<string, string> = {
-    training: 'Treinos',
-    nutrition: 'Nutrição',
-    physiotherapy: 'Fisioterapia',
-    psychology: 'Psicologia'
+    training: "Treinos",
+    nutrition: "Nutrição",
+    physiotherapy: "Fisioterapia",
+    psychology: "Psicologia",
   };
 
   // Auto-select service if only one is available
@@ -46,18 +55,18 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
   }, [availableServices, selectedServices.length]);
 
   const handleClose = () => {
-    setFullName('');
-    setEmail('');
-    setPhone('');
-    setWeight('');
-    setHeight('');
-    setNotes('');
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setWeight("");
+    setHeight("");
+    setNotes("");
     setInviteCode(null);
     setExistingProfile(null);
     setSelectedServices([]);
     setIsPendingProfile(false);
     setHasCode(false);
-    setSearchCode('');
+    setSearchCode("");
     createStudent.reset();
     associateStudent.reset();
     findStudent.reset();
@@ -76,9 +85,11 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
         <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-xl text-center">
           <h3 className="text-xl font-bold text-foreground mb-2">Configure seus Serviços</h3>
           <p className="text-muted-foreground mb-6">
-            Para adicionar alunos, você precisa primeiro configurar quais serviços você oferece (ex: Personal Trainer, Nutricionista) no seu perfil.
+            Para adicionar alunos, você precisa primeiro configurar quais serviços você oferece (ex:
+            Personal Trainer, Nutricionista) no seu perfil.
           </p>
           <button
+            type="button"
             onClick={onClose}
             className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors"
           >
@@ -99,25 +110,25 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
         setExistingProfile(student);
         setIsPendingProfile(true); // Assuming code search finds pending students mostly
       } else {
-        alert('Aluno não encontrado com este código.');
+        alert("Aluno não encontrado com este código.");
       }
     } catch (error) {
-      console.error('Error finding student:', error);
-      alert('Erro ao buscar aluno.');
+      console.error("Error finding student:", error);
+      alert("Erro ao buscar aluno.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedServices.length === 0) {
-      alert('Selecione pelo menos um serviço.');
+      alert("Selecione pelo menos um serviço.");
       return;
     }
 
     try {
-      const result = await createStudent.mutateAsync({ 
-        fullName, 
-        email, 
+      const result = await createStudent.mutateAsync({
+        fullName,
+        email,
         services: selectedServices,
         phone,
         weight,
@@ -126,64 +137,65 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
         initial_assessment: {
           weight: weight ? parseFloat(weight) : null,
           height: height ? parseFloat(height) : null,
-          notes
-        }
+          notes,
+        },
       });
-      
-      if (result.status === 'created' && result.data) {
+
+      if (result.status === "created" && result.data) {
         setInviteCode(result.data.invite_code);
       }
     } catch (error) {
-      console.error('Error creating student:', error);
+      console.error("Error creating student:", error);
     }
   };
 
   const handleAssociate = async () => {
     if (!existingProfile) return;
     if (selectedServices.length === 0) {
-      alert('Selecione pelo menos um serviço.');
+      alert("Selecione pelo menos um serviço.");
       return;
     }
 
     try {
       // Check for conflicts for each selected service
       for (const service of selectedServices) {
-        const conflict = await checkRelationship.mutateAsync({ 
-          studentId: existingProfile.id, 
-          service 
+        const conflict = await checkRelationship.mutateAsync({
+          studentId: existingProfile.id,
+          service,
         });
 
         if (conflict) {
-          // @ts-ignore - Supabase types might return array or object depending on generation
-          const professionalName = Array.isArray(conflict.profiles) ? conflict.profiles[0]?.full_name : conflict.profiles?.full_name;
-          
+          const professionalName = Array.isArray(conflict.profiles)
+            ? conflict.profiles[0]?.full_name
+            : conflict.profiles?.full_name;
+
           const confirmTransfer = window.confirm(
-            `O aluno já possui um profissional (${professionalName}) para ${serviceLabels[service]}. Deseja solicitar a transferência?`
+            `O aluno já possui um profissional (${professionalName}) para ${serviceLabels[service]}. Deseja solicitar a transferência?`,
           );
 
           if (confirmTransfer) {
             await transferStudent.mutateAsync({
               studentId: existingProfile.id,
               currentProfessionalId: conflict.professional_id,
-              service
+              service,
             });
             alert(`Solicitação de transferência enviada para ${serviceLabels[service]}!`);
           }
-          continue; 
+          continue;
         }
 
         // If no conflict, associate directly
-        await associateStudent.mutateAsync({ 
-          studentId: existingProfile.id, 
+        await associateStudent.mutateAsync({
+          studentId: existingProfile.id,
           services: [service], // Associate one by one to handle mixed states
-          isPending: isPendingProfile 
+          isPending: isPendingProfile,
         });
       }
-      
+
       handleClose();
     } catch (error) {
-      console.error('Error associating/transferring student:', error);
-      alert('Erro ao processar associação.');
+      console.error("Error associating/transferring student:", error);
+      alert("Erro ao processar associação.");
     }
   };
 
@@ -194,26 +206,42 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
   };
 
   const toggleService = (service: string) => {
-    setSelectedServices(prev => 
-      prev.includes(service) 
-        ? prev.filter(s => s !== service)
-        : [...prev, service]
+    setSelectedServices((prev) =>
+      prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service],
     );
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-student-title"
+    >
       <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-xl">
         {existingProfile ? (
           <div className="text-center space-y-6">
             <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-8 h-8 text-blue-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-            
+
             <div>
-              <h3 className="text-xl font-bold text-foreground mb-2">Aluno Encontrado</h3>
+              <h3 id="create-student-title" className="text-xl font-bold text-foreground mb-2">
+                Aluno Encontrado
+              </h3>
               <p className="text-muted-foreground">
                 Aluno: <strong>{existingProfile.full_name}</strong>
                 <br />
@@ -228,15 +256,15 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
                   Serviços a oferecer:
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {availableServices.map(service => (
+                  {availableServices.map((service) => (
                     <button
                       key={service}
                       type="button"
                       onClick={() => toggleService(service)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
                         selectedServices.includes(service)
-                          ? 'bg-primary/20 text-primary border-primary/50'
-                          : 'bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10'
+                          ? "bg-primary/20 text-primary border-primary/50"
+                          : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"
                       }`}
                     >
                       {serviceLabels[service] || service}
@@ -248,30 +276,46 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
 
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setExistingProfile(null)}
                 className="flex-1 py-3 bg-white/5 text-foreground font-semibold rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Voltar para busca"
               >
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleAssociate}
                 disabled={associateStudent.isPending || selectedServices.length === 0}
                 className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
-                {associateStudent.isPending ? 'Associando...' : 'Associar'}
+                {associateStudent.isPending ? "Associando..." : "Associar"}
               </button>
             </div>
           </div>
         ) : inviteCode ? (
           <div className="text-center space-y-6">
             <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-8 h-8 text-emerald-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            
+
             <div>
-              <h3 className="text-xl font-bold text-foreground mb-2">Aluno Cadastrado!</h3>
+              <h3 id="create-student-title" className="text-xl font-bold text-foreground mb-2">
+                Aluno Cadastrado!
+              </h3>
               <p className="text-muted-foreground">
                 Envie o código abaixo para o aluno completar o cadastro no app.
               </p>
@@ -282,17 +326,31 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
                 {inviteCode}
               </code>
               <button
+                type="button"
                 onClick={handleCopyCode}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                 title="Copiar código"
+                aria-label="Copiar código de convite"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                  />
                 </svg>
               </button>
             </div>
 
             <button
+              type="button"
               onClick={handleClose}
               className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors"
             >
@@ -302,15 +360,28 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">
-                {hasCode ? 'Associar Aluno' : 'Novo Aluno'}
+              <h3 id="create-student-title" className="text-xl font-bold text-foreground">
+                {hasCode ? "Associar Aluno" : "Novo Aluno"}
               </h3>
               <button
+                type="button"
                 onClick={handleClose}
                 className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Fechar modal"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -318,17 +389,23 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
             {/* Toggle between Create and Associate */}
             <div className="flex p-1 bg-white/5 rounded-lg mb-6">
               <button
+                type="button"
                 onClick={() => setHasCode(false)}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  !hasCode ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  !hasCode
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Criar Novo
               </button>
               <button
+                type="button"
                 onClick={() => setHasCode(true)}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  hasCode ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  hasCode
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Tenho Código
@@ -358,7 +435,7 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
                   disabled={findStudent.isPending}
                   className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {findStudent.isPending ? 'Buscando...' : 'Buscar Aluno'}
+                  {findStudent.isPending ? "Buscando..." : "Buscar Aluno"}
                 </button>
               </form>
             ) : (
@@ -456,15 +533,15 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
                       Serviços a oferecer:
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {availableServices.map(service => (
+                      {availableServices.map((service) => (
                         <button
                           key={service}
                           type="button"
                           onClick={() => toggleService(service)}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
                             selectedServices.includes(service)
-                              ? 'bg-primary/20 text-primary border-primary/50'
-                              : 'bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10'
+                              ? "bg-primary/20 text-primary border-primary/50"
+                              : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"
                           }`}
                         >
                           {serviceLabels[service] || service}
@@ -481,14 +558,30 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
                 >
                   {createStudent.isPending ? (
                     <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Criando...
                     </>
                   ) : (
-                    'Criar Aluno'
+                    "Criar Aluno"
                   )}
                 </button>
               </form>

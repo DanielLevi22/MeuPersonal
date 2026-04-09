@@ -1,13 +1,15 @@
-'use client';
+"use client";
 
-import type { Activity } from '@/dashboard';
-import { supabase } from '@meupersonal/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@meupersonal/supabase";
+import { useQuery } from "@tanstack/react-query";
+import type { Activity } from "@/dashboard";
 
 async function fetchRecentActivity(): Promise<Activity[]> {
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
   const activities: Activity[] = [];
 
@@ -16,7 +18,7 @@ async function fetchRecentActivity(): Promise<Activity[]> {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const { data: workoutSessions } = await supabase
-    .from('workout_executions')
+    .from("workout_executions")
     .select(`
       id,
       completed_at,
@@ -25,19 +27,26 @@ async function fetchRecentActivity(): Promise<Activity[]> {
       workouts!inner(professional_id, title),
       profiles!student_id(full_name)
     `)
-    .eq('workouts.professional_id', user.id)
-    .not('completed_at', 'is', null)
-    .gte('completed_at', oneWeekAgo.toISOString())
-    .order('completed_at', { ascending: false })
+    .eq("workouts.professional_id", user.id)
+    .not("completed_at", "is", null)
+    .gte("completed_at", oneWeekAgo.toISOString())
+    .order("completed_at", { ascending: false })
     .limit(5);
 
   if (workoutSessions) {
-    workoutSessions.forEach((session: any) => {
+    interface WorkoutSession {
+      id: string;
+      completed_at: string;
+      profiles: { full_name: string } | null;
+      workouts: { title: string } | null;
+    }
+
+    (workoutSessions as unknown as WorkoutSession[]).forEach((session) => {
       activities.push({
         id: `workout-${session.id}`,
-        type: 'workout_completed',
-        studentName: session.profiles?.full_name || 'Aluno',
-        description: `Completou o treino "${session.workouts?.title || 'Treino'}"`,
+        type: "workout_completed",
+        studentName: session.profiles?.full_name || "Aluno",
+        description: `Completou o treino "${session.workouts?.title || "Treino"}"`,
         timestamp: new Date(session.completed_at),
       });
     });
@@ -45,24 +54,30 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
   // Fetch new students (last 7 days)
   const { data: newStudents } = await supabase
-    .from('coachings')
+    .from("coachings")
     .select(`
       id,
       created_at,
       profiles!client_id(full_name)
     `)
-    .eq('professional_id', user.id)
-    .gte('created_at', oneWeekAgo.toISOString())
-    .order('created_at', { ascending: false })
+    .eq("professional_id", user.id)
+    .gte("created_at", oneWeekAgo.toISOString())
+    .order("created_at", { ascending: false })
     .limit(3);
 
   if (newStudents) {
-    newStudents.forEach((student: any) => {
+    interface NewStudent {
+      id: string;
+      created_at: string;
+      profiles: { full_name: string } | null;
+    }
+
+    (newStudents as unknown as NewStudent[]).forEach((student) => {
       activities.push({
         id: `student-${student.id}`,
-        type: 'student_added',
-        studentName: student.profiles?.full_name || 'Novo Aluno',
-        description: 'Foi adicionado como aluno',
+        type: "student_added",
+        studentName: student.profiles?.full_name || "Novo Aluno",
+        description: "Foi adicionado como aluno",
         timestamp: new Date(student.created_at),
       });
     });
@@ -70,24 +85,30 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
   // Fetch new diet plans (last 7 days)
   const { data: dietPlans } = await supabase
-    .from('nutrition_plans')
+    .from("nutrition_plans")
     .select(`
       id,
       created_at,
       profiles!student_id(full_name)
     `)
-    .eq('professional_id', user.id)
-    .gte('created_at', oneWeekAgo.toISOString())
-    .order('created_at', { ascending: false })
+    .eq("professional_id", user.id)
+    .gte("created_at", oneWeekAgo.toISOString())
+    .order("created_at", { ascending: false })
     .limit(3);
 
   if (dietPlans) {
-    dietPlans.forEach((plan: any) => {
+    interface DietPlanActivity {
+      id: string;
+      created_at: string;
+      profiles: { full_name: string } | null;
+    }
+
+    (dietPlans as unknown as DietPlanActivity[]).forEach((plan) => {
       activities.push({
         id: `diet-${plan.id}`,
-        type: 'diet_created',
-        studentName: plan.profiles?.full_name || 'Aluno',
-        description: 'Recebeu um novo plano de dieta',
+        type: "diet_created",
+        studentName: plan.profiles?.full_name || "Aluno",
+        description: "Recebeu um novo plano de dieta",
         timestamp: new Date(plan.created_at),
       });
     });
@@ -102,7 +123,7 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
 export function useRecentActivity() {
   return useQuery({
-    queryKey: ['recent-activity'],
+    queryKey: ["recent-activity"],
     queryFn: fetchRecentActivity,
     staleTime: 1000 * 60 * 2, // 2 minutes
     retry: 1,

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications } from '@/services/notificationService';
 import { useGamificationStore } from '@/store/gamificationStore';
 import type { StrategyResult } from '../utils/dietStrategies';
+
 export type { Food };
 
 interface NutritionStore {

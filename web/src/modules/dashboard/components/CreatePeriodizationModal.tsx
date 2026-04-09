@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useCreatePeriodization } from '@/shared/hooks/usePeriodizationMutations';
-import type { PeriodizationObjective } from '@/shared/hooks/usePeriodizations';
-import { useStudents } from '@/shared/hooks/useStudents';
-import { useState } from 'react';
+import { useState } from "react";
+import { useCreatePeriodization } from "@/shared/hooks/usePeriodizationMutations";
+import type { PeriodizationObjective } from "@/shared/hooks/usePeriodizations";
+import { useStudents } from "@/shared/hooks/useStudents";
 
 interface CreatePeriodizationModalProps {
   isOpen: boolean;
@@ -11,21 +11,25 @@ interface CreatePeriodizationModalProps {
 }
 
 const objectives: { value: PeriodizationObjective; label: string; description: string }[] = [
-  { value: 'hypertrophy', label: 'Hipertrofia', description: 'Ganho de massa muscular' },
-  { value: 'strength', label: 'Força', description: 'Aumento de força máxima' },
-  { value: 'endurance', label: 'Resistência', description: 'Melhora da resistência muscular' },
-  { value: 'weight_loss', label: 'Emagrecimento', description: 'Perda de gordura corporal' },
-  { value: 'conditioning', label: 'Condicionamento', description: 'Melhora do condicionamento físico' },
-  { value: 'general_fitness', label: 'Fitness Geral', description: 'Saúde e bem-estar geral' },
+  { value: "hypertrophy", label: "Hipertrofia", description: "Ganho de massa muscular" },
+  { value: "strength", label: "Força", description: "Aumento de força máxima" },
+  { value: "endurance", label: "Resistência", description: "Melhora da resistência muscular" },
+  { value: "weight_loss", label: "Emagrecimento", description: "Perda de gordura corporal" },
+  {
+    value: "conditioning",
+    label: "Condicionamento",
+    description: "Melhora do condicionamento físico",
+  },
+  { value: "general_fitness", label: "Fitness Geral", description: "Saúde e bem-estar geral" },
 ];
 
 export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizationModalProps) {
-  const [studentId, setStudentId] = useState('');
-  const [name, setName] = useState('');
-  const [objective, setObjective] = useState<PeriodizationObjective>('hypertrophy');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [notes, setNotes] = useState('');
+  const [studentId, setStudentId] = useState("");
+  const [name, setName] = useState("");
+  const [objective, setObjective] = useState<PeriodizationObjective>("hypertrophy");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [notes, setNotes] = useState("");
 
   const { data: students = [] } = useStudents();
   const createMutation = useCreatePeriodization();
@@ -46,18 +50,18 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
         end_date: endDate,
         notes: notes || undefined,
       });
-      
+
       // Reset form
-      setStudentId('');
-      setName('');
-      setObjective('hypertrophy');
-      setStartDate('');
-      setEndDate('');
-      setNotes('');
-      
+      setStudentId("");
+      setName("");
+      setObjective("hypertrophy");
+      setStartDate("");
+      setEndDate("");
+      setNotes("");
+
       onClose();
     } catch (error) {
-      console.error('Error creating periodization:', error);
+      console.error("Error creating periodization:", error);
     }
   };
 
@@ -66,24 +70,26 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground">
-            Nova Periodização
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <h2 className="text-2xl font-bold text-foreground">Nova Periodização</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <svg
+              className="w-5 h-5 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -104,11 +110,13 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
               disabled={isLoading}
             >
               <option value="">Selecione um aluno</option>
-              {students.filter((s) => !s.is_invite).map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.full_name}
-                </option>
-              ))}
+              {students
+                .filter((s) => !s.is_invite)
+                .map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.full_name}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -131,9 +139,7 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
 
           {/* Objective */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-3">
-              Objetivo *
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-3">Objetivo *</label>
             <div className="grid grid-cols-2 gap-3">
               {objectives.map((obj) => (
                 <button
@@ -142,8 +148,8 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
                   onClick={() => setObjective(obj.value)}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
                     objective === obj.value
-                      ? 'bg-primary/10 border-primary'
-                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                      ? "bg-primary/10 border-primary"
+                      : "bg-white/5 border-white/10 hover:border-white/20"
                   }`}
                   disabled={isLoading}
                 >
@@ -207,7 +213,7 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
           {createMutation.isError && (
             <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-3">
               <p className="text-sm text-destructive">
-                {(createMutation.error as Error)?.message || 'Erro ao criar periodização'}
+                {(createMutation.error as Error)?.message || "Erro ao criar periodização"}
               </p>
             </div>
           )}
@@ -227,7 +233,7 @@ export function CreatePeriodizationModal({ isOpen, onClose }: CreatePeriodizatio
               className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || !studentId || !name || !startDate || !endDate}
             >
-              {isLoading ? 'Criando...' : 'Criar Periodização'}
+              {isLoading ? "Criando..." : "Criar Periodização"}
             </button>
           </div>
         </form>

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface Food {
   id: string;
@@ -14,7 +14,7 @@ interface Food {
   fat: number;
   serving_unit: string;
   serving_size: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   is_verified: boolean;
   created_by: string | null;
 }
@@ -23,78 +23,71 @@ export default function FoodsPage() {
   const router = useRouter();
   const [foods, setFoods] = useState<Food[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  useEffect(() => {
-    loadFoods();
-  }, []);
-
-  async function loadFoods() {
+  const loadFoods = useCallback(async () => {
     try {
       setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .from('foods')
-        .select('*')
-        .order('name');
+
+      const { data, error } = await supabase.from("foods").select("*").order("name");
 
       if (error) throw error;
 
       setFoods(data || []);
     } catch (error) {
-      console.error('Error loading foods:', error);
+      console.error("Error loading foods:", error);
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  async function updateStatus(id: string, newStatus: 'approved' | 'rejected') {
+  useEffect(() => {
+    loadFoods();
+  }, [loadFoods]);
+
+  async function updateStatus(id: string, newStatus: "approved" | "rejected") {
     try {
-      const { error } = await supabase
-        .from('foods')
-        .update({ status: newStatus })
-        .eq('id', id);
+      const { error } = await supabase.from("foods").update({ status: newStatus }).eq("id", id);
 
       if (error) throw error;
 
-      setFoods(prev => prev.map(food => 
-        food.id === id ? { ...food, status: newStatus } : food
-      ));
+      setFoods((prev) =>
+        prev.map((food) => (food.id === id ? { ...food, status: newStatus } : food)),
+      );
     } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Failed to update status');
+      console.error("Error updating status:", error);
+      alert("Failed to update status");
     }
   }
 
   async function toggleVerified(id: string, current: boolean) {
     try {
-      const { error } = await supabase
-        .from('foods')
-        .update({ is_verified: !current })
-        .eq('id', id);
+      const { error } = await supabase.from("foods").update({ is_verified: !current }).eq("id", id);
 
       if (error) throw error;
 
-      setFoods(prev => prev.map(food => 
-        food.id === id ? { ...food, is_verified: !current } : food
-      ));
+      setFoods((prev) =>
+        prev.map((food) => (food.id === id ? { ...food, is_verified: !current } : food)),
+      );
     } catch (error) {
-      console.error('Error updating verification:', error);
-      alert('Failed to update verification');
+      console.error("Error updating verification:", error);
+      alert("Failed to update verification");
     }
   }
 
   const filteredFoods = foods.filter((food) => {
     const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || food.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || food.category === categoryFilter;
+    const matchesStatus = statusFilter === "all" || food.status === statusFilter;
+    const matchesCategory = categoryFilter === "all" || food.category === categoryFilter;
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const categories = Array.from(new Set(foods.map(f => f.category))).filter(Boolean).sort();
+  const categories = Array.from(new Set(foods.map((f) => f.category)))
+    .filter(Boolean)
+    .sort();
 
   if (isLoading) {
     return (
@@ -113,12 +106,11 @@ export default function FoodsPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">
             Alimentos
           </h1>
-          <p className="text-muted-foreground">
-            Gerencie e modere alimentos
-          </p>
+          <p className="text-muted-foreground">Gerencie e modere alimentos</p>
         </div>
         <button
-          onClick={() => router.push('/admin/content/foods/create')}
+          type="button"
+          onClick={() => router.push("/admin/content/foods/create")}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium"
         >
           + Novo Alimento
@@ -129,7 +121,11 @@ export default function FoodsPage() {
       <div className="bg-surface border border-border rounded-xl p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
+            <label htmlFor="search-foods" className="sr-only">
+              Buscar alimentos
+            </label>
             <input
+              id="search-foods"
               type="text"
               placeholder="Buscar alimentos..."
               value={searchQuery}
@@ -138,27 +134,41 @@ export default function FoodsPage() {
             />
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Todos os Status</option>
-            <option value="pending">Pendente</option>
-            <option value="approved">Aprovado</option>
-            <option value="rejected">Rejeitado</option>
-          </select>
+          <div>
+            <label htmlFor="status-filter" className="sr-only">
+              Filtrar por status
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Todos os Status</option>
+              <option value="pending">Pendente</option>
+              <option value="approved">Aprovado</option>
+              <option value="rejected">Rejeitado</option>
+            </select>
+          </div>
 
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Todas as Categorias</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+          <div>
+            <label htmlFor="category-filter" className="sr-only">
+              Filtrar por categoria
+            </label>
+            <select
+              id="category-filter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Todas as Categorias</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -168,8 +178,12 @@ export default function FoodsPage() {
           <thead className="bg-muted border-b border-border">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Nome</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Categoria</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Macros (por 100g)</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                Categoria
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                Macros (por 100g)
+              </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">Ações</th>
             </tr>
@@ -181,11 +195,14 @@ export default function FoodsPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{food.name}</span>
                     {food.is_verified && (
-                      <span className="text-blue-400" title="Verificado">✓</span>
+                      <span className="text-blue-400" title="Verificado">
+                        ✓
+                      </span>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {food.serving_size}{food.serving_unit} serving
+                    {food.serving_size}
+                    {food.serving_unit} serving
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-muted-foreground">{food.category}</td>
@@ -198,27 +215,33 @@ export default function FoodsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-md text-xs font-medium border ${
-                    food.status === 'approved' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                    food.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
-                    'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
-                  }`}>
-                    {food.status || 'approved'}
+                  <span
+                    className={`px-2 py-1 rounded-md text-xs font-medium border ${
+                      food.status === "approved"
+                        ? "bg-green-500/20 text-green-400 border-green-500/50"
+                        : food.status === "rejected"
+                          ? "bg-red-500/20 text-red-400 border-red-500/50"
+                          : "bg-yellow-500/20 text-yellow-400 border-yellow-500/50"
+                    }`}
+                  >
+                    {food.status || "approved"}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    {food.status === 'pending' && (
+                    {food.status === "pending" && (
                       <>
                         <button
-                          onClick={() => updateStatus(food.id, 'approved')}
+                          type="button"
+                          onClick={() => updateStatus(food.id, "approved")}
                           className="p-1 text-green-400 hover:bg-green-500/10 rounded"
                           title="Aprovar"
                         >
                           ✓
                         </button>
                         <button
-                          onClick={() => updateStatus(food.id, 'rejected')}
+                          type="button"
+                          onClick={() => updateStatus(food.id, "rejected")}
                           className="p-1 text-red-400 hover:bg-red-500/10 rounded"
                           title="Rejeitar"
                         >
@@ -227,13 +250,15 @@ export default function FoodsPage() {
                       </>
                     )}
                     <button
+                      type="button"
                       onClick={() => toggleVerified(food.id, food.is_verified)}
-                      className={`p-1 rounded ${food.is_verified ? 'text-blue-400' : 'text-muted-foreground hover:text-blue-400'}`}
+                      className={`p-1 rounded ${food.is_verified ? "text-blue-400" : "text-muted-foreground hover:text-blue-400"}`}
                       title="Alternar Verificado"
                     >
                       ★
                     </button>
                     <button
+                      type="button"
                       onClick={() => router.push(`/admin/content/foods/${food.id}`)}
                       className="text-primary hover:text-primary/80 font-medium text-sm ml-2"
                     >

@@ -1,6 +1,6 @@
-import { useCreateDietPlan } from '@/shared/hooks/useNutrition';
-import { useStudents } from '@/shared/hooks/useStudents';
-import { useState } from 'react';
+import { useState } from "react";
+import { useCreateDietPlan } from "@/shared/hooks/useNutrition";
+import { useStudents } from "@/shared/hooks/useStudents";
 
 interface CreateDietModalProps {
   isOpen: boolean;
@@ -8,11 +8,11 @@ interface CreateDietModalProps {
 }
 
 export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
-  const [name, setName] = useState('');
-  const [studentId, setStudentId] = useState('');
-  const [planType, setPlanType] = useState<'unique' | 'cyclic'>('cyclic');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState('');
+  const [name, setName] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [planType, setPlanType] = useState<"unique" | "cyclic">("cyclic");
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, _setEndDate] = useState("");
   const [targetCalories, setTargetCalories] = useState(2000);
   const [targetProtein, setTargetProtein] = useState(150);
   const [targetCarbs, setTargetCarbs] = useState(200);
@@ -29,10 +29,12 @@ export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
       await createMutation.mutateAsync({
         name,
         student_id: studentId,
-        personal_id: '', // Handled by hook
+        personal_id: "", // Handled by hook
         plan_type: planType,
         start_date: startDate,
-        end_date: endDate || new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+        end_date:
+          endDate ||
+          new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split("T")[0],
         target_calories: targetCalories,
         target_protein: targetProtein,
         target_carbs: targetCarbs,
@@ -41,14 +43,14 @@ export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
       onClose();
       resetForm();
     } catch (error) {
-      console.error('Error creating diet plan:', error);
+      console.error("Error creating diet plan:", error);
     }
   };
 
   const resetForm = () => {
-    setName('');
-    setStudentId('');
-    setPlanType('cyclic');
+    setName("");
+    setStudentId("");
+    setPlanType("cyclic");
     setTargetCalories(2000);
   };
 
@@ -57,14 +59,23 @@ export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative bg-surface border border-white/10 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="flex justify-between items-center border-b border-white/10 pb-4">
             <h2 className="text-2xl font-bold text-foreground">Criar Plano Alimentar</h2>
-            <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -103,7 +114,7 @@ export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
               <label className="text-sm font-medium text-muted-foreground">Tipo de Plano</label>
               <select
                 value={planType}
-                onChange={(e) => setPlanType(e.target.value as 'unique' | 'cyclic')}
+                onChange={(e) => setPlanType(e.target.value as "unique" | "cyclic")}
                 className="w-full bg-background border border-white/10 rounded-lg px-4 py-2 text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="cyclic">Cíclica (Dias da semana)</option>
@@ -145,7 +156,9 @@ export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Carboidratos (g)</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Carboidratos (g)
+                </label>
                 <input
                   type="number"
                   value={targetCarbs}
@@ -178,7 +191,7 @@ export function CreateDietModal({ isOpen, onClose }: CreateDietModalProps) {
               disabled={createMutation.isPending}
               className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {createMutation.isPending ? 'Criando...' : 'Criar Plano'}
+              {createMutation.isPending ? "Criando..." : "Criar Plano"}
             </button>
           </div>
         </form>

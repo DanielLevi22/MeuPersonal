@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export interface SelectedExercise {
   id: string;
@@ -35,14 +35,14 @@ export function ExerciseConfigModal({
 }: ExerciseConfigModalProps) {
   const [sets, setSets] = useState(initialData?.sets || 3);
   const [reps, setReps] = useState(initialData?.reps || 12);
-  const [weight, setWeight] = useState(initialData?.weight || '');
+  const [weight, setWeight] = useState(initialData?.weight || "");
   const [restSeconds, setRestSeconds] = useState(initialData?.rest_seconds || 60);
 
   const handleSave = () => {
     onSave({
       id: exercise.id,
       name: exercise.name,
-      muscle_group: exercise.muscle_group || '',
+      muscle_group: exercise.muscle_group || "",
       sets,
       reps,
       weight,
@@ -57,18 +57,13 @@ export function ExerciseConfigModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            Configurar Exercício
-          </h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Configurar Exercício</h2>
           <p className="text-lg text-foreground font-semibold">{exercise.name}</p>
           {exercise.muscle_group && (
             <span className="inline-block mt-2 px-3 py-1 bg-secondary/10 text-secondary rounded-lg text-sm">
@@ -81,13 +76,11 @@ export function ExerciseConfigModal({
         <div className="space-y-4">
           {/* Sets */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Séries
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">Séries</label>
             <input
               type="number"
               value={sets}
-              onChange={(e) => setSets(parseInt(e.target.value) || 0)}
+              onChange={(e) => setSets(parseInt(e.target.value, 10) || 0)}
               min="1"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
@@ -95,13 +88,11 @@ export function ExerciseConfigModal({
 
           {/* Reps */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Repetições
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">Repetições</label>
             <input
               type="number"
               value={reps}
-              onChange={(e) => setReps(parseInt(e.target.value) || 0)}
+              onChange={(e) => setReps(parseInt(e.target.value, 10) || 0)}
               min="1"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
@@ -129,7 +120,7 @@ export function ExerciseConfigModal({
             <input
               type="number"
               value={restSeconds}
-              onChange={(e) => setRestSeconds(parseInt(e.target.value) || 0)}
+              onChange={(e) => setRestSeconds(parseInt(e.target.value, 10) || 0)}
               min="0"
               step="15"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"

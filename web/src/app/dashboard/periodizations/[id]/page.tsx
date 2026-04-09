@@ -1,16 +1,19 @@
-'use client';
+"use client";
 
-import { useUpdatePeriodizationStatus } from '@/shared/hooks/usePeriodizationMutations';
-import { usePeriodization } from '@/shared/hooks/usePeriodizations';
-import { useStudents } from '@/shared/hooks/useStudents';
-import { useCloneTrainingPlan, useDeleteTrainingPlan } from '@/shared/hooks/useTrainingPlanMutations';
-import { useTrainingPlans } from '@/shared/hooks/useTrainingPlans';
-import { exportPeriodizationToPDF } from '@/shared/utils/exportPeriodizationPDF';
-import { CreateTrainingPlanModal, ExpandableTrainingPlanCard } from '@/training-plans';
-import { differenceInDays, format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useRouter } from 'next/navigation';
-import { use, useState } from 'react';
+import { differenceInDays, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
+import { useUpdatePeriodizationStatus } from "@/shared/hooks/usePeriodizationMutations";
+import { usePeriodization } from "@/shared/hooks/usePeriodizations";
+import { useStudents } from "@/shared/hooks/useStudents";
+import {
+  useCloneTrainingPlan,
+  useDeleteTrainingPlan,
+} from "@/shared/hooks/useTrainingPlanMutations";
+import { useTrainingPlans } from "@/shared/hooks/useTrainingPlans";
+import { exportPeriodizationToPDF } from "@/shared/utils/exportPeriodizationPDF";
+import { CreateTrainingPlanModal, ExpandableTrainingPlanCard } from "@/training-plans";
 
 export default function PeriodizationDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -39,7 +42,8 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">Periodização não encontrada</h2>
           <button
-            onClick={() => router.push('/dashboard/periodizations')}
+            type="button"
+            onClick={() => router.push("/dashboard/periodizations")}
             className="text-primary hover:underline"
           >
             Voltar para periodizações
@@ -62,7 +66,7 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
         await deletePlanMutation.mutateAsync(planId);
         setDeleteConfirm(null);
       } catch (error) {
-        console.error('Error deleting training plan:', error);
+        console.error("Error deleting training plan:", error);
       }
     } else {
       setDeleteConfirm(planId);
@@ -74,53 +78,59 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
     try {
       await clonePlanMutation.mutateAsync(planId);
     } catch (error) {
-      console.error('Error cloning training plan:', error);
+      console.error("Error cloning training plan:", error);
     }
   };
 
   const handleActivate = async () => {
     try {
-      await updateStatusMutation.mutateAsync({ id, status: 'active' });
+      await updateStatusMutation.mutateAsync({ id, status: "active" });
     } catch (error) {
-      console.error('Error activating periodization:', error);
+      console.error("Error activating periodization:", error);
     }
   };
 
   const handleComplete = async () => {
     try {
-      await updateStatusMutation.mutateAsync({ id, status: 'completed' });
+      await updateStatusMutation.mutateAsync({ id, status: "completed" });
     } catch (error) {
-      console.error('Error completing periodization:', error);
+      console.error("Error completing periodization:", error);
     }
   };
 
   const handleExportPDF = async () => {
     if (!periodization) return;
-    
+
     try {
-      const student = students.find(s => s.id === periodization.student_id);
-      const studentName = student?.full_name || 'Aluno';
-      
+      const student = students.find((s) => s.id === periodization.student_id);
+      const studentName = student?.full_name || "Aluno";
+
       // Transform training plans into phases format
       const phases = trainingPlans.map((plan: any, index: number) => ({
         id: plan.id,
         name: `Fase ${index + 1}`,
         start_week: index * 4 + 1,
         end_week: (index + 1) * 4,
-        description: plan.description || '',
+        description: plan.description || "",
         workouts: Array.isArray(plan.workouts) ? plan.workouts : [],
       }));
-      
+
       // Create periodization object with required fields
       const periodizationData = {
         ...periodization,
-        duration_weeks: (periodization as any).duration_weeks || Math.ceil((new Date(periodization.end_date).getTime() - new Date(periodization.start_date).getTime()) / (7 * 24 * 60 * 60 * 1000)),
+        duration_weeks:
+          (periodization as any).duration_weeks ||
+          Math.ceil(
+            (new Date(periodization.end_date).getTime() -
+              new Date(periodization.start_date).getTime()) /
+              (7 * 24 * 60 * 60 * 1000),
+          ),
       };
-      
+
       await exportPeriodizationToPDF(periodizationData as any, phases, studentName);
     } catch (error) {
-      console.error('Error exporting PDF:', error);
-      alert('Erro ao exportar PDF');
+      console.error("Error exporting PDF:", error);
+      alert("Erro ao exportar PDF");
     }
   };
 
@@ -133,11 +143,23 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <button
-          onClick={() => router.push('/dashboard/periodizations')}
+          type="button"
+          onClick={() => router.push("/dashboard/periodizations")}
           className="mb-6 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Voltar
         </button>
@@ -155,24 +177,38 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
             </div>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleExportPDF}
                 className="px-4 py-2 bg-surface border border-white/10 text-foreground rounded-lg font-medium hover:bg-white/5 transition-all flex items-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
                 Exportar PDF
               </button>
-              {periodization.status === 'planned' && (
+              {periodization.status === "planned" && (
                 <button
+                  type="button"
                   onClick={handleActivate}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:scale-[1.02] transition-all"
                 >
                   Ativar
                 </button>
               )}
-              {periodization.status === 'active' && (
+              {periodization.status === "active" && (
                 <button
+                  type="button"
                   onClick={handleComplete}
                   className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:scale-[1.02] transition-all"
                 >
@@ -183,7 +219,7 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
           </div>
 
           {/* Progress */}
-          {periodization.status === 'active' && (
+          {periodization.status === "active" && (
             <div className="mb-6">
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
                 <span>Progresso</span>
@@ -235,11 +271,23 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">Fichas de Treino</h2>
             <button
+              type="button"
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-secondary/50 transition-all flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
               </svg>
               Nova Ficha
             </button>
@@ -249,7 +297,10 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
           {plansLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2].map((i) => (
-                <div key={i} className="h-[350px] bg-surface/50 backdrop-blur-xl border border-white/10 rounded-2xl animate-pulse" />
+                <div
+                  key={i}
+                  className="h-[350px] bg-surface/50 backdrop-blur-xl border border-white/10 rounded-2xl animate-pulse"
+                />
               ))}
             </div>
           )}
@@ -258,13 +309,26 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
           {!plansLoading && trainingPlans.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 bg-surface/50 backdrop-blur-xl border border-white/10 rounded-2xl">
               <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="w-8 h-8 text-secondary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">Nenhuma ficha criada</h3>
-              <p className="text-muted-foreground mb-4">Crie a primeira ficha de treino para esta periodização</p>
+              <p className="text-muted-foreground mb-4">
+                Crie a primeira ficha de treino para esta periodização
+              </p>
               <button
+                type="button"
                 onClick={() => setShowCreateModal(true)}
                 className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:scale-[1.02] transition-all"
               >
@@ -280,7 +344,7 @@ export default function PeriodizationDetailsPage({ params }: { params: Promise<{
                 <ExpandableTrainingPlanCard
                   key={plan.id}
                   trainingPlan={plan}
-                  onEdit={() => console.log('Edit', plan.id)}
+                  onEdit={() => console.log("Edit", plan.id)}
                   onDelete={() => handleDeletePlan(plan.id)}
                   onClone={() => handleClonePlan(plan.id)}
                 />

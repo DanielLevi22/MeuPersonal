@@ -1,5 +1,5 @@
-import { supabase } from '@meupersonal/supabase';
-import { achievementService } from './achievementService';
+import { supabase } from "@meupersonal/supabase";
+import { achievementService } from "./achievementService";
 
 export const streakService = {
   /**
@@ -10,12 +10,12 @@ export const streakService = {
     try {
       // 1. Buscar streak atual
       const { data: currentStreak, error: fetchError } = await supabase
-        .from('student_streaks')
-        .select('*')
-        .eq('student_id', studentId)
+        .from("student_streaks")
+        .select("*")
+        .eq("student_id", studentId)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+      if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
 
       const today = new Date(date);
       const yesterday = new Date(today);
@@ -31,7 +31,7 @@ export const streakService = {
 
         if (lastActivityDate) {
           const daysDiff = Math.floor(
-            (today.getTime() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24)
+            (today.getTime() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24),
           );
 
           if (daysDiff === 0) {
@@ -50,19 +50,19 @@ export const streakService = {
 
         // 2. Atualizar streak
         const { error: updateError } = await supabase
-          .from('student_streaks')
+          .from("student_streaks")
           .update({
             current_streak: newStreak,
             longest_streak: longestStreak,
             last_activity_date: date,
             updated_at: new Date().toISOString(),
           })
-          .eq('student_id', studentId);
+          .eq("student_id", studentId);
 
         if (updateError) throw updateError;
       } else {
         // 3. Criar novo streak
-        const { error: insertError } = await supabase.from('student_streaks').insert({
+        const { error: insertError } = await supabase.from("student_streaks").insert({
           student_id: studentId,
           current_streak: newStreak,
           longest_streak: longestStreak,
@@ -77,7 +77,7 @@ export const streakService = {
 
       return { current_streak: newStreak, longest_streak: longestStreak };
     } catch (error) {
-      console.error('Error updating streak:', error);
+      console.error("Error updating streak:", error);
       throw error;
     }
   },
@@ -89,34 +89,34 @@ export const streakService = {
   async checkStreakBreak(studentId: string) {
     try {
       const { data: streak, error } = await supabase
-        .from('student_streaks')
-        .select('*')
-        .eq('student_id', studentId)
+        .from("student_streaks")
+        .select("*")
+        .eq("student_id", studentId)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      if (!streak || !streak.last_activity_date) return;
+      if (error && error.code !== "PGRST116") throw error;
+      if (!streak?.last_activity_date) return;
 
       const today = new Date();
       const lastActivity = new Date(streak.last_activity_date);
       const daysDiff = Math.floor(
-        (today.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+        (today.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // Se passou mais de 1 dia sem atividade, resetar streak
       if (daysDiff > 1 && streak.current_streak > 0) {
         await supabase
-          .from('student_streaks')
+          .from("student_streaks")
           .update({
             current_streak: 0,
             updated_at: new Date().toISOString(),
           })
-          .eq('student_id', studentId);
+          .eq("student_id", studentId);
 
         console.log(`Streak broken for student ${studentId}`);
       }
     } catch (error) {
-      console.error('Error checking streak break:', error);
+      console.error("Error checking streak break:", error);
     }
   },
 
@@ -125,12 +125,12 @@ export const streakService = {
    */
   async getStreakInfo(studentId: string) {
     const { data, error } = await supabase
-      .from('student_streaks')
-      .select('*')
-      .eq('student_id', studentId)
+      .from("student_streaks")
+      .select("*")
+      .eq("student_id", studentId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
 
     return (
       data || {
@@ -146,16 +146,16 @@ export const streakService = {
    * Retorna true se ainda não completou a meta de hoje
    */
   async isStreakAtRisk(studentId: string) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     const { data: todayGoal, error } = await supabase
-      .from('daily_goals')
-      .select('completed')
-      .eq('student_id', studentId)
-      .eq('date', today)
+      .from("daily_goals")
+      .select("completed")
+      .eq("student_id", studentId)
+      .eq("date", today)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
 
     // Em risco se não completou a meta de hoje
     return !todayGoal?.completed;

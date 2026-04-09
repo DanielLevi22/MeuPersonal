@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function CreateExercisePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    category: 'strength',
-    muscle_group: '',
-    equipment: 'none',
-    difficulty: 'beginner',
-    instructions: '',
+    name: "",
+    category: "strength",
+    muscle_group: "",
+    equipment: "none",
+    difficulty: "beginner",
+    instructions: "",
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -21,20 +21,20 @@ export default function CreateExercisePage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('exercises')
-        .insert([{
+      const { error } = await supabase.from("exercises").insert([
+        {
           ...formData,
-          status: 'approved', // Admins create approved exercises by default
+          status: "approved", // Admins create approved exercises by default
           is_verified: true,
-        }]);
+        },
+      ]);
 
       if (error) throw error;
 
-      router.push('/admin/content/exercises');
+      router.push("/admin/content/exercises");
     } catch (error) {
-      console.error('Error creating exercise:', error);
-      alert('Falha ao criar exercício');
+      console.error("Error creating exercise:", error);
+      alert("Falha ao criar exercício");
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +55,11 @@ export default function CreateExercisePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Nome</label>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+              Nome
+            </label>
             <input
+              id="name"
               type="text"
               required
               value={formData.name}
@@ -68,8 +71,11 @@ export default function CreateExercisePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Categoria</label>
+              <label htmlFor="category" className="block text-sm font-medium text-foreground mb-1">
+                Categoria
+              </label>
               <select
+                id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -82,8 +88,14 @@ export default function CreateExercisePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Dificuldade</label>
+              <label
+                htmlFor="difficulty"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Dificuldade
+              </label>
               <select
+                id="difficulty"
                 value={formData.difficulty}
                 onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -97,8 +109,14 @@ export default function CreateExercisePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Grupo Muscular</label>
+              <label
+                htmlFor="muscle_group"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Grupo Muscular
+              </label>
               <input
+                id="muscle_group"
                 type="text"
                 required
                 value={formData.muscle_group}
@@ -109,8 +127,11 @@ export default function CreateExercisePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Equipamento</label>
+              <label htmlFor="equipment" className="block text-sm font-medium text-foreground mb-1">
+                Equipamento
+              </label>
               <input
+                id="equipment"
                 type="text"
                 required
                 value={formData.equipment}
@@ -122,8 +143,14 @@ export default function CreateExercisePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Instruções</label>
+            <label
+              htmlFor="instructions"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
+              Instruções
+            </label>
             <textarea
+              id="instructions"
               rows={4}
               value={formData.instructions}
               onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
@@ -146,7 +173,7 @@ export default function CreateExercisePage() {
             disabled={isLoading}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium disabled:opacity-50"
           >
-            {isLoading ? 'Criando...' : 'Criar Exercício'}
+            {isLoading ? "Criando..." : "Criar Exercício"}
           </button>
         </div>
       </form>

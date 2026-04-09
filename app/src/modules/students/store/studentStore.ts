@@ -292,7 +292,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         throw error;
       }
 
-      if (!result || !result.success) {
+      if (!result?.success) {
         console.error('❌ RPC returned error:', result?.error);
         throw new Error(result?.error || 'Failed to create student');
       }

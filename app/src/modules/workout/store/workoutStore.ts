@@ -5,7 +5,7 @@ import { AIWorkoutItem, WorkoutAIService } from '../services/WorkoutAIService';
 import type { Exercise, Workout, WorkoutItem, WorkoutSession } from '../types';
 
 // Re-export for backwards compatibility
-export type { Workout, WorkoutItem, Exercise, WorkoutSession };
+export type { Exercise, Workout, WorkoutItem, WorkoutSession };
 
 export interface SelectedExercise {
   id: string;
@@ -609,7 +609,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         if (aiWorkout.exercises && aiWorkout.exercises.length > 0) {
           aiWorkout.exercises.forEach((item: AIWorkoutItem, index: number) => {
             const exercise = availableExercises.find(
-              (e) => e.name.toLowerCase() === item.exerciseName.toLowerCase()
+              (e: Exercise) => e.name.toLowerCase() === item.exerciseName.toLowerCase()
             );
 
             if (exercise) {

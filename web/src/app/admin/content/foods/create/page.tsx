@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function CreateFoodPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    category: 'protein',
+    name: "",
+    category: "protein",
     serving_size: 100,
-    serving_unit: 'g',
+    serving_unit: "g",
     calories: 0,
     protein: 0,
     carbs: 0,
@@ -23,20 +23,20 @@ export default function CreateFoodPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('foods')
-        .insert([{
+      const { error } = await supabase.from("foods").insert([
+        {
           ...formData,
-          status: 'approved',
+          status: "approved",
           is_verified: true,
-        }]);
+        },
+      ]);
 
       if (error) throw error;
 
-      router.push('/admin/content/foods');
+      router.push("/admin/content/foods");
     } catch (error) {
-      console.error('Error creating food:', error);
-      alert('Falha ao criar alimento');
+      console.error("Error creating food:", error);
+      alert("Falha ao criar alimento");
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +57,11 @@ export default function CreateFoodPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Nome</label>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+              Nome
+            </label>
             <input
+              id="name"
               type="text"
               required
               value={formData.name}
@@ -70,8 +73,11 @@ export default function CreateFoodPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Categoria</label>
+              <label htmlFor="category" className="block text-sm font-medium text-foreground mb-1">
+                Categoria
+              </label>
               <select
+                id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -88,18 +94,32 @@ export default function CreateFoodPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Porção Padrão (g/ml)</label>
+                <label
+                  htmlFor="serving_size"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Porção Padrão (g/ml)
+                </label>
                 <input
+                  id="serving_size"
                   type="number"
                   required
                   value={formData.serving_size}
-                  onChange={(e) => setFormData({ ...formData, serving_size: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, serving_size: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Unidade da Porção</label>
+                <label
+                  htmlFor="serving_unit"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Unidade da Porção
+                </label>
                 <select
+                  id="serving_unit"
                   value={formData.serving_unit}
                   onChange={(e) => setFormData({ ...formData, serving_unit: e.target.value })}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -115,31 +135,49 @@ export default function CreateFoodPage() {
           </div>
 
           <div className="border-t border-border pt-4">
-            <h2 className="text-xl font-bold text-foreground pt-4">Informação Nutricional (por 100g)</h2>
+            <h2 className="text-xl font-bold text-foreground pt-4">
+              Informação Nutricional (por 100g)
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Calorias (kcal)</label>
+                <label
+                  htmlFor="calories"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Calorias (kcal)
+                </label>
                 <input
+                  id="calories"
                   type="number"
                   required
                   value={formData.calories}
-                  onChange={(e) => setFormData({ ...formData, calories: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, calories: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Proteínas (g)</label>
+                <label htmlFor="protein" className="block text-sm font-medium text-foreground mb-1">
+                  Proteínas (g)
+                </label>
                 <input
+                  id="protein"
                   type="number"
                   required
                   value={formData.protein}
-                  onChange={(e) => setFormData({ ...formData, protein: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, protein: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Carboidratos (g)</label>
+                <label htmlFor="carbs" className="block text-sm font-medium text-foreground mb-1">
+                  Carboidratos (g)
+                </label>
                 <input
+                  id="carbs"
                   type="number"
                   required
                   value={formData.carbs}
@@ -148,8 +186,11 @@ export default function CreateFoodPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Gorduras (g)</label>
+                <label htmlFor="fat" className="block text-sm font-medium text-foreground mb-1">
+                  Gorduras (g)
+                </label>
                 <input
+                  id="fat"
                   type="number"
                   required
                   value={formData.fat}
@@ -174,7 +215,7 @@ export default function CreateFoodPage() {
             disabled={isLoading}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium disabled:opacity-50"
           >
-            {isLoading ? 'Criando...' : 'Criar Alimento'}
+            {isLoading ? "Criando..." : "Criar Alimento"}
           </button>
         </div>
       </form>

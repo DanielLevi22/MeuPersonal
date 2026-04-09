@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PeriodizationObjective, PeriodizationStatus } from './usePeriodizations';
+import { supabase } from "@meupersonal/supabase";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Periodization, PeriodizationObjective, PeriodizationStatus } from "./usePeriodizations";
 
 export interface CreatePeriodizationInput {
   student_id: string;
@@ -15,7 +15,7 @@ export interface CreatePeriodizationInput {
 
 export interface UpdatePeriodizationInput {
   id: string;
-  data: Partial<Omit<CreatePeriodizationInput, 'student_id'>>;
+  data: Partial<Omit<CreatePeriodizationInput, "student_id">>;
 }
 
 export interface UpdatePeriodizationStatusInput {
@@ -28,15 +28,17 @@ export function useCreatePeriodization() {
 
   return useMutation({
     mutationFn: async (input: CreatePeriodizationInput) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
-        .from('periodizations')
+        .from("periodizations")
         .insert({
           ...input,
           personal_id: user.id,
-          status: 'planned',
+          status: "planned",
         })
         .select()
         .single();
@@ -45,7 +47,7 @@ export function useCreatePeriodization() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['periodizations'] });
+      queryClient.invalidateQueries({ queryKey: ["periodizations"] });
     },
   });
 }
@@ -56,18 +58,18 @@ export function useUpdatePeriodization() {
   return useMutation({
     mutationFn: async ({ id, data }: UpdatePeriodizationInput) => {
       const { data: result, error } = await supabase
-        .from('periodizations')
+        .from("periodizations")
         .update(data)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-      return result;
+      return result as Periodization;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['periodizations'] });
-      queryClient.invalidateQueries({ queryKey: ['periodization', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["periodizations"] });
+      queryClient.invalidateQueries({ queryKey: ["periodization", variables.id] });
     },
   });
 }
@@ -78,9 +80,9 @@ export function useUpdatePeriodizationStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: UpdatePeriodizationStatusInput) => {
       const { data, error } = await supabase
-        .from('periodizations')
+        .from("periodizations")
         .update({ status })
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -88,9 +90,9 @@ export function useUpdatePeriodizationStatus() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['periodizations'] });
-      queryClient.invalidateQueries({ queryKey: ['periodization', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['active-periodization'] });
+      queryClient.invalidateQueries({ queryKey: ["periodizations"] });
+      queryClient.invalidateQueries({ queryKey: ["periodization", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["active-periodization"] });
     },
   });
 }
@@ -100,15 +102,12 @@ export function useDeletePeriodization() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('periodizations')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("periodizations").delete().eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['periodizations'] });
+      queryClient.invalidateQueries({ queryKey: ["periodizations"] });
     },
   });
 }
@@ -120,21 +119,21 @@ export function useActivatePeriodization() {
     mutationFn: async (id: string) => {
       // First, deactivate any other active periodizations for the same student
       const { data: periodization } = await supabase
-        .from('periodizations')
-        .select('student_id')
-        .eq('id', id)
+        .from("periodizations")
+        .select("student_id")
+        .eq("id", id)
         .single();
 
       if (periodization) {
         await supabase
-          .from('periodizations')
-          .update({ status: 'completed' })
-          .eq('student_id', periodization.student_id)
-          .eq('status', 'active');
+          .from("periodizations")
+          .update({ status: "completed" })
+          .eq("student_id", periodization.student_id)
+          .eq("status", "active");
       }
 
       // Then activate this one
-      return updateStatus.mutateAsync({ id, status: 'active' });
+      return updateStatus.mutateAsync({ id, status: "active" });
     },
   });
 }
@@ -144,7 +143,7 @@ export function useCompletePeriodization() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return updateStatus.mutateAsync({ id, status: 'completed' });
+      return updateStatus.mutateAsync({ id, status: "completed" });
     },
   });
 }

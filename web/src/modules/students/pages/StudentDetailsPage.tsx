@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useStudents } from '@/shared/hooks/useStudents';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useStudents } from "@/shared/hooks/useStudents";
 
 export default function StudentDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.id as string;
   const { data: students = [], isLoading } = useStudents();
-  
-  const student = students.find(s => s.id === studentId);
+
+  const student = students.find((s) => s.id === studentId);
 
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
@@ -21,7 +21,7 @@ export default function StudentDetailsPage() {
       <div className="text-center py-12">
         <h3 className="text-lg font-medium text-foreground mb-2">Aluno não encontrado</h3>
         <button
-          onClick={() => router.push('/dashboard/students')}
+          onClick={() => router.push("/dashboard/students")}
           className="text-primary hover:underline"
         >
           Voltar para lista de alunos
@@ -40,10 +40,15 @@ export default function StudentDetailsPage() {
             className="p-2 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
-          
+
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
               {student.full_name.charAt(0).toUpperCase()}
@@ -91,14 +96,19 @@ export default function StudentDetailsPage() {
       {/* Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Nutrition Module */}
-        <Link 
+        <Link
           href={`/dashboard/students/${studentId}/nutrition`}
           className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-secondary/50 transition-all hover:shadow-lg hover:shadow-secondary/5"
         >
           <div className="flex items-start justify-between mb-6">
             <div className="p-3 rounded-xl bg-secondary/10 text-secondary group-hover:scale-110 transition-transform">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                />
               </svg>
             </div>
             <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground group-hover:bg-secondary/10 group-hover:text-secondary transition-colors">
@@ -116,14 +126,19 @@ export default function StudentDetailsPage() {
         </Link>
 
         {/* Workouts Module */}
-        <Link 
+        <Link
           href={`/dashboard/students/${studentId}/workouts`}
           className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5"
         >
           <div className="flex items-start justify-between mb-6">
             <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
               </svg>
             </div>
             <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">

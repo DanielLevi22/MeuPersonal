@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@meupersonal/supabase";
+import { useQuery } from "@tanstack/react-query";
 
 export interface Exercise {
   id: string;
@@ -13,22 +13,19 @@ export interface Exercise {
 
 export function useExercises() {
   return useQuery({
-    queryKey: ['exercises'],
+    queryKey: ["exercises"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .order('name');
+      const { data, error } = await supabase.from("exercises").select("*").order("name");
 
       if (error) throw error;
-      
+
       // Filter out invalid exercises (like mobile does)
       return (data || []).filter(
         (ex) =>
           ex.name &&
-          ex.name.trim() !== '' &&
-          !ex.name.toLowerCase().includes('adicionar exercício') &&
-          !ex.name.toLowerCase().includes('adicionar exercicios')
+          ex.name.trim() !== "" &&
+          !ex.name.toLowerCase().includes("adicionar exercício") &&
+          !ex.name.toLowerCase().includes("adicionar exercicios"),
       ) as Exercise[];
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -37,13 +34,9 @@ export function useExercises() {
 
 export function useExercise(id: string) {
   return useQuery({
-    queryKey: ['exercise', id],
+    queryKey: ["exercise", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from("exercises").select("*").eq("id", id).single();
 
       if (error) throw error;
       return data as Exercise;

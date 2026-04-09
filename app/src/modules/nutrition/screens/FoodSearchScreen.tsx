@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -68,6 +68,15 @@ interface MacroTargets {
   calories?: string;
 }
 
+const DEFAULT_TIMES: Record<string, string> = {
+  'Café da Manhã': '08:00',
+  'Lanche da Manhã': '10:00',
+  Almoço: '12:00',
+  'Lanche da Tarde': '16:00',
+  Jantar: '20:00',
+  Ceia: '22:00',
+};
+
 export default function FoodSearchScreen({
   mealId,
   initialData,
@@ -81,6 +90,7 @@ export default function FoodSearchScreen({
 }: FoodSearchScreenProps) {
   const insets = useSafeAreaInsets();
   const { searchFoods, foods, meals, mealItems, fetchMealItems } = useNutritionStore();
+  const isLoadingRef = useRef(false);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -173,16 +183,6 @@ export default function FoodSearchScreen({
     setLocalItems(localItems.filter((i) => i.id !== itemId));
   };
 
-  // Default Meal Times
-  const DEFAULT_TIMES: Record<string, string> = {
-    'Café da Manhã': '08:00',
-    'Lanche da Manhã': '10:00',
-    Almoço: '12:00',
-    'Lanche da Tarde': '16:00',
-    Jantar: '20:00',
-    Ceia: '22:00',
-  };
-
   // Auto-fill time if empty and name matches
   useEffect(() => {
     if (!mealTime && mealName && onTimeChange) {
@@ -240,35 +240,38 @@ export default function FoodSearchScreen({
   const [activeMacros, setActiveMacros] = useState<MacroType[]>([]);
   const [showCalculator, setShowCalculator] = useState(true);
 
-  const loadFoods = async (reset = false) => {
-    if (isLoading) return;
+  const loadFoods = useCallback(
+    async (reset = false) => {
+      if (isLoadingRef.current) return;
 
-    const nextPage = reset ? 0 : page + 1;
-    setIsLoading(true);
+      const nextPage = reset ? 0 : page + 1;
+      setIsLoading(true);
+      isLoadingRef.current = true;
 
-    try {
-      const results = await searchFoods(query, nextPage, 10);
-      if (reset) {
-        setPage(0);
-        setHasMore(results.length === 10);
-      } else {
-        setPage(nextPage);
-        setHasMore(results.length === 10);
+      try {
+        const results = await searchFoods(query, nextPage, 10);
+        if (reset) {
+          setPage(0);
+          setHasMore(results.length === 10);
+        } else {
+          setPage(nextPage);
+          setHasMore(results.length === 10);
+        }
+      } finally {
+        setIsLoading(false);
+        isLoadingRef.current = false;
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [page, query, searchFoods]
+  );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: loadFoods has internal state checks, avoiding useCallback cascade
   useEffect(() => {
     const timer = setTimeout(() => {
       loadFoods(true);
     }, 500);
 
     return () => clearTimeout(timer);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: Intentional debounce on query change
-  }, [query, loadFoods]);
+  }, [loadFoods]);
 
   // --- Reverse Calculator Logic ---
 

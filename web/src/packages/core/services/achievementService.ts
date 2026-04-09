@@ -1,18 +1,19 @@
-import { supabase } from '@meupersonal/supabase';
+import { supabase } from "@meupersonal/supabase";
+
 // Replace expo-notifications for the web build
 const Notifications = {
   scheduleNotificationAsync: async (options: any) => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        new Notification(options.content?.title || 'Notification', { body: options.content?.body });
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        new Notification(options.content?.title || "Notification", { body: options.content?.body });
       }
     }
-  }
+  },
 };
 
 export interface AchievementDefinition {
   id: string;
-  type: 'streak' | 'milestone' | 'challenge';
+  type: "streak" | "milestone" | "challenge";
   title: string;
   description: string;
   icon: string;
@@ -29,65 +30,65 @@ export interface AchievementDefinition {
 // Definições de conquistas
 const ACHIEVEMENTS: AchievementDefinition[] = [
   {
-    id: 'streak_3',
-    type: 'streak',
-    title: '3 Dias Seguidos! 🔥',
-    description: 'Manteve sua sequência por 3 dias',
-    icon: '🔥',
+    id: "streak_3",
+    type: "streak",
+    title: "3 Dias Seguidos! 🔥",
+    description: "Manteve sua sequência por 3 dias",
+    icon: "🔥",
     points: 50,
     condition: (data) => (data.streak || 0) >= 3,
   },
   {
-    id: 'streak_7',
-    type: 'streak',
-    title: '7 Dias Seguidos! 🔥🔥',
-    description: 'Uma semana inteira de dedicação!',
-    icon: '🔥',
+    id: "streak_7",
+    type: "streak",
+    title: "7 Dias Seguidos! 🔥🔥",
+    description: "Uma semana inteira de dedicação!",
+    icon: "🔥",
     points: 100,
     condition: (data) => (data.streak || 0) >= 7,
   },
   {
-    id: 'streak_30',
-    type: 'streak',
-    title: '30 Dias Seguidos! 🔥🔥🔥',
-    description: 'Um mês de consistência incrível!',
-    icon: '🔥',
+    id: "streak_30",
+    type: "streak",
+    title: "30 Dias Seguidos! 🔥🔥🔥",
+    description: "Um mês de consistência incrível!",
+    icon: "🔥",
     points: 300,
     condition: (data) => (data.streak || 0) >= 30,
   },
   {
-    id: 'first_week_complete',
-    type: 'milestone',
-    title: 'Primeira Semana Completa! 🥇',
-    description: '100% das metas alcançadas na semana',
-    icon: '🥇',
+    id: "first_week_complete",
+    type: "milestone",
+    title: "Primeira Semana Completa! 🥇",
+    description: "100% das metas alcançadas na semana",
+    icon: "🥇",
     points: 150,
     condition: (data) => data.weeklyCompletion === 100 && (data.weeksCompleted || 0) >= 1,
   },
   {
-    id: 'perfect_week',
-    type: 'challenge',
-    title: 'Semana Perfeita! 💯',
-    description: '100% de dieta e treino por 7 dias',
-    icon: '💯',
+    id: "perfect_week",
+    type: "challenge",
+    title: "Semana Perfeita! 💯",
+    description: "100% de dieta e treino por 7 dias",
+    icon: "💯",
     points: 200,
     condition: (data) => data.weeklyCompletion === 100,
   },
   {
-    id: 'workout_warrior',
-    type: 'challenge',
-    title: 'Guerreiro do Treino! 💪',
-    description: '20 treinos completados',
-    icon: '💪',
+    id: "workout_warrior",
+    type: "challenge",
+    title: "Guerreiro do Treino! 💪",
+    description: "20 treinos completados",
+    icon: "💪",
     points: 250,
     condition: (data) => (data.totalWorkouts || 0) >= 20,
   },
   {
-    id: 'nutrition_master',
-    type: 'challenge',
-    title: 'Mestre da Nutrição! 🥗',
-    description: '100 refeições registradas',
-    icon: '🥗',
+    id: "nutrition_master",
+    type: "challenge",
+    title: "Mestre da Nutrição! 🥗",
+    description: "100 refeições registradas",
+    icon: "🥗",
     points: 250,
     condition: (data) => (data.totalMeals || 0) >= 100,
   },
@@ -137,7 +138,7 @@ export const achievementService = {
 
       return newAchievements;
     } catch (error) {
-      console.error('Error checking achievements:', error);
+      console.error("Error checking achievements:", error);
       return [];
     }
   },
@@ -148,7 +149,7 @@ export const achievementService = {
   async unlockAchievement(studentId: string, achievement: AchievementDefinition) {
     try {
       // 1. Inserir conquista no banco
-      const { error } = await supabase.from('achievements').insert({
+      const { error } = await supabase.from("achievements").insert({
         student_id: studentId,
         type: achievement.type,
         title: achievement.title,
@@ -162,10 +163,10 @@ export const achievementService = {
       // 2. Enviar notificação
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🏆 Nova Conquista Desbloqueada!',
+          title: "🏆 Nova Conquista Desbloqueada!",
           body: achievement.title,
           data: {
-            type: 'achievement',
+            type: "achievement",
             achievementId: achievement.id,
           },
         },
@@ -174,7 +175,7 @@ export const achievementService = {
 
       console.log(`Achievement unlocked: ${achievement.title}`);
     } catch (error) {
-      console.error('Error unlocking achievement:', error);
+      console.error("Error unlocking achievement:", error);
     }
   },
 
@@ -183,10 +184,10 @@ export const achievementService = {
    */
   async getEarnedAchievements(studentId: string) {
     const { data, error } = await supabase
-      .from('achievements')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('earned_at', { ascending: false });
+      .from("achievements")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("earned_at", { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -197,12 +198,12 @@ export const achievementService = {
    */
   async getStreakData(studentId: string) {
     const { data, error } = await supabase
-      .from('student_streaks')
-      .select('*')
-      .eq('student_id', studentId)
+      .from("student_streaks")
+      .select("*")
+      .eq("student_id", studentId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data;
   },
 
@@ -218,11 +219,11 @@ export const achievementService = {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
     const { data, error } = await supabase
-      .from('daily_goals')
-      .select('*')
-      .eq('student_id', studentId)
-      .gte('date', startOfWeek.toISOString().split('T')[0])
-      .lte('date', endOfWeek.toISOString().split('T')[0]);
+      .from("daily_goals")
+      .select("*")
+      .eq("student_id", studentId)
+      .gte("date", startOfWeek.toISOString().split("T")[0])
+      .lte("date", endOfWeek.toISOString().split("T")[0]);
 
     if (error) throw error;
 
@@ -233,21 +234,21 @@ export const achievementService = {
     // Calcular percentual de conclusão da semana
     const totalTarget = data.reduce(
       (sum, goal) => sum + goal.meals_target + goal.workout_target,
-      0
+      0,
     );
     const totalCompleted = data.reduce(
       (sum, goal) => sum + goal.meals_completed + goal.workout_completed,
-      0
+      0,
     );
     const completion_percentage =
       totalTarget > 0 ? Math.round((totalCompleted / totalTarget) * 100) : 0;
 
     // Contar semanas 100% completas
     const { count } = await supabase
-      .from('daily_goals')
-      .select('*', { count: 'exact', head: true })
-      .eq('student_id', studentId)
-      .eq('completion_percentage', 100);
+      .from("daily_goals")
+      .select("*", { count: "exact", head: true })
+      .eq("student_id", studentId)
+      .eq("completion_percentage", 100);
 
     const weeks_completed = Math.floor((count || 0) / 7);
 
@@ -260,15 +261,15 @@ export const achievementService = {
   async getTotalsData(studentId: string) {
     const [workoutsResult, mealsResult] = await Promise.all([
       supabase
-        .from('workout_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', studentId)
-        .eq('status', 'completed'),
+        .from("workout_sessions")
+        .select("*", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .eq("status", "completed"),
       supabase
-        .from('diet_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', studentId)
-        .eq('completed', true),
+        .from("diet_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .eq("completed", true),
     ]);
 
     return {

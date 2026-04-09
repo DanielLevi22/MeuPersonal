@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import * as Speech from 'expo-speech';
 import * as TaskManager from 'expo-task-manager';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, AppState, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
@@ -194,10 +194,16 @@ export default function CardioSessionScreen() {
     };
   }, [isActive, startTime, accumulatedSeconds, met, userWeight]);
 
-  // Track the absolute start time of the session for the API
+  const formatTime = useCallback((totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${hours > 0 ? `${hours}:` : ''}${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }, []);
+
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
-  const handleStart = async () => {
+  const handleStart = useCallback(async () => {
     setIsActive(true);
     setStartTime(Date.now());
     if (!sessionStartTime) setSessionStartTime(new Date());
@@ -223,9 +229,9 @@ export default function CardioSessionScreen() {
     } catch (e) {
       console.log('Error starting background location:', e);
     }
-  };
+  }, [sessionStartTime]);
 
-  const handlePause = async () => {
+  const handlePause = useCallback(async () => {
     setIsActive(false);
     if (startTime) {
       const now = Date.now();
@@ -243,19 +249,22 @@ export default function CardioSessionScreen() {
     } catch (e) {
       console.log('Error stopping background location:', e);
     }
-  };
+  }, [startTime]);
 
-  const handlePresetSelect = (min: number) => {
-    if (targetMinutes === min) {
-      setTargetMinutes(null);
-      setCustomMinutes('');
-    } else {
-      setTargetMinutes(min);
-      setCustomMinutes(min.toString());
-    }
-  };
+  const handlePresetSelect = useCallback(
+    (min: number) => {
+      if (targetMinutes === min) {
+        setTargetMinutes(null);
+        setCustomMinutes('');
+      } else {
+        setTargetMinutes(min);
+        setCustomMinutes(min.toString());
+      }
+    },
+    [targetMinutes]
+  );
 
-  const handleCustomChange = (text: string) => {
+  const handleCustomChange = useCallback((text: string) => {
     setCustomMinutes(text);
     const val = parseInt(text, 10);
     if (!Number.isNaN(val) && val > 0) {
@@ -263,72 +272,77 @@ export default function CardioSessionScreen() {
     } else {
       setTargetMinutes(null);
     }
-  };
+  }, []);
 
-  const onFeedbackSubmit = async (intensity: number, notes: string) => {
-    setShowFeedbackModal(false);
+  const onFeedbackSubmit = useCallback(
+    async (intensity: number, notes: string) => {
+      setShowFeedbackModal(false);
 
-    if (!user?.id || !sessionStartTime) return;
+      if (!user?.id || !sessionStartTime) return;
 
-    const endTime = new Date();
-    const finalCalories = Math.round(calories);
-    const finalTime = formatTime(seconds);
-    const finalExerciseName = (exerciseName as string) || 'Cardio Livre';
+      const endTime = new Date();
+      const finalCalories = Math.round(calories);
+      const finalTime = formatTime(seconds);
+      const finalExerciseName = (exerciseName as string) || 'Cardio Livre';
 
-    try {
-      // Save session
-      await saveCardioSession({
-        studentId: user.id,
-        exerciseName: finalExerciseName,
-        durationSeconds: seconds,
-        calories: calories,
-        startedAt: sessionStartTime.toISOString(),
-        completedAt: endTime.toISOString(),
-        intensity,
-        notes,
-      });
+      try {
+        // Save session
+        await saveCardioSession({
+          studentId: user.id,
+          exerciseName: finalExerciseName,
+          durationSeconds: seconds,
+          calories: calories,
+          startedAt: sessionStartTime.toISOString(),
+          completedAt: endTime.toISOString(),
+          intensity,
+          notes,
+        });
 
-      // Update gamification
-      const today = getLocalDateISOString();
-      await incrementWorkoutProgress(today);
+        // Update gamification
+        const today = getLocalDateISOString();
+        await incrementWorkoutProgress(today);
 
-      Alert.alert('Treino Salvo! 🎉', `Tempo: ${finalTime}\nCalorias: ${finalCalories} kcal`, [
-        {
-          text: 'Sair',
-          style: 'cancel',
-          onPress: () => router.navigate('/(tabs)/cardio'),
-        },
-        {
-          text: 'Compartilhar 📸',
-          onPress: () => {
-            setShareStats({
-              title: 'Cardio Finalizado',
-              duration: finalTime,
-              calories: `${finalCalories} kcal`,
-              date: new Date().toLocaleDateString('pt-BR'),
-              exerciseName: finalExerciseName,
-            });
-            setShowShareModal(true);
+        Alert.alert('Treino Salvo! 🎉', `Tempo: ${finalTime}\nCalorias: ${finalCalories} kcal`, [
+          {
+            text: 'Sair',
+            style: 'cancel',
+            onPress: () => router.navigate('/(tabs)/cardio'),
           },
-        },
-      ]);
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Erro', 'Erro ao salvar treino.');
-    }
-  };
-
-  const handleFinish = () => {
+          {
+            text: 'Compartilhar 📸',
+            onPress: () => {
+              setShareStats({
+                title: 'Cardio Finalizado',
+                duration: finalTime,
+                calories: `${finalCalories} kcal`,
+                date: new Date().toLocaleDateString('pt-BR'),
+                exerciseName: finalExerciseName,
+              });
+              setShowShareModal(true);
+            },
+          },
+        ]);
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Erro', 'Erro ao salvar treino.');
+      }
+    },
+    [
+      user?.id,
+      sessionStartTime,
+      calories,
+      seconds,
+      exerciseName,
+      saveCardioSession,
+      incrementWorkoutProgress,
+      formatTime,
+      router,
+    ]
+  );
+  const handleFinish = useCallback(() => {
     handlePause();
     setShowFeedbackModal(true);
-  };
-
-  const formatTime = (totalSeconds: number) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    return `${hours > 0 ? `${hours}:` : ''}${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
+  }, [handlePause]);
 
   return (
     <ScreenLayout>

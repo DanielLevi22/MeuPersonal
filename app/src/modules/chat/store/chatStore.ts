@@ -1,6 +1,7 @@
 import type { ChatMessage, ConversationWithDetails } from '@meupersonal/supabase';
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+
 export type { ChatMessage };
 export type Conversation = ConversationWithDetails;
 

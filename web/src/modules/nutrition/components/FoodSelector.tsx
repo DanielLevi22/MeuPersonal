@@ -1,12 +1,12 @@
-import { useFoods } from '@/shared/hooks/useNutrition';
-import { Food } from '@meupersonal/core';
-import { useEffect, useMemo, useState } from 'react';
+import type { Food } from "@meupersonal/core";
+import { useEffect, useMemo, useState } from "react";
+import { useFoods } from "@/shared/hooks/useNutrition";
 
 interface FoodSelectorProps {
   onSelect: (food: Food, quantity?: number) => void;
 }
 
-type MacroType = 'protein' | 'carbs' | 'fat' | 'calories';
+type MacroType = "protein" | "carbs" | "fat" | "calories";
 
 interface MacroTargets {
   protein?: string;
@@ -16,9 +16,9 @@ interface MacroTargets {
 }
 
 export function FoodSelector({ onSelect }: FoodSelectorProps) {
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   // Reverse Calculator State
   const [targets, setTargets] = useState<MacroTargets>({});
   const [activeMacros, setActiveMacros] = useState<MacroType[]>([]);
@@ -34,9 +34,9 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
   const { data: foods = [], isLoading } = useFoods(debouncedSearch);
 
   const toggleMacro = (macro: MacroType) => {
-    setActiveMacros(prev => {
+    setActiveMacros((prev) => {
       if (prev.includes(macro)) {
-        const newMacros = prev.filter(m => m !== macro);
+        const newMacros = prev.filter((m) => m !== macro);
         const newTargets = { ...targets };
         delete newTargets[macro];
         setTargets(newTargets);
@@ -48,7 +48,7 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
   };
 
   const updateTarget = (macro: MacroType, value: string) => {
-    setTargets(prev => ({ ...prev, [macro]: value }));
+    setTargets((prev) => ({ ...prev, [macro]: value }));
   };
 
   const calculateMatch = (food: Food) => {
@@ -58,7 +58,7 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
     let validTargets = 0;
 
     for (const macro of activeMacros) {
-      const targetVal = parseFloat(targets[macro] || '0');
+      const targetVal = parseFloat(targets[macro] || "0");
       if (targetVal > 0) {
         const foodVal = food[macro as keyof Food] as number;
         if (foodVal > 0) {
@@ -73,18 +73,19 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
 
     if (validTargets === 0) return null;
 
-    if (quantities.some(q => q === Infinity)) {
+    if (quantities.some((q) => q === Infinity)) {
       return { quantity: 0, score: 0, isMatch: false };
     }
 
     const avgQuantity = quantities.reduce((a, b) => a + b, 0) / quantities.length;
-    const variance = quantities.reduce((acc, q) => acc + Math.pow(q - avgQuantity, 2), 0) / quantities.length;
+    const variance =
+      quantities.reduce((acc, q) => acc + (q - avgQuantity) ** 2, 0) / quantities.length;
     const score = 100 / (1 + variance / 1000);
 
     return {
       quantity: avgQuantity,
       score,
-      isMatch: true
+      isMatch: true,
     };
   };
 
@@ -100,7 +101,7 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
 
       return scoreB - scoreA;
     });
-  }, [foods, targets, activeMacros]);
+  }, [foods, activeMacros, calculateMatch]);
 
   return (
     <div className="space-y-4">
@@ -113,34 +114,57 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
           placeholder="Buscar alimentos..."
           className="w-full bg-background border border-white/10 rounded-lg px-4 py-3 pl-10 text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
         />
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <svg
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
       </div>
 
       {/* Reverse Calculator */}
       <div className="bg-background/50 border border-white/10 rounded-lg p-4">
-        <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Calculadora Reversa (Multimeta)</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+          Calculadora Reversa (Multimeta)
+        </p>
         <div className="flex flex-wrap gap-2">
-          {(['protein', 'carbs', 'fat', 'calories'] as const).map((macro) => (
-            <div key={macro} className={`flex items-center rounded-lg border transition-all overflow-hidden ${
-              activeMacros.includes(macro) 
-                ? 'bg-primary/10 border-primary' 
-                : 'bg-background border-white/10'
-            }`}>
+          {(["protein", "carbs", "fat", "calories"] as const).map((macro) => (
+            <div
+              key={macro}
+              className={`flex items-center rounded-lg border transition-all overflow-hidden ${
+                activeMacros.includes(macro)
+                  ? "bg-primary/10 border-primary"
+                  : "bg-background border-white/10"
+              }`}
+            >
               <button
                 onClick={() => toggleMacro(macro)}
                 className={`px-3 py-2 text-xs font-medium transition-colors ${
-                  activeMacros.includes(macro) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  activeMacros.includes(macro)
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {macro === 'protein' ? 'Prot' : macro === 'carbs' ? 'Carb' : macro === 'fat' ? 'Gord' : 'Kcal'}
+                {macro === "protein"
+                  ? "Prot"
+                  : macro === "carbs"
+                    ? "Carb"
+                    : macro === "fat"
+                      ? "Gord"
+                      : "Kcal"}
               </button>
-              
+
               {activeMacros.includes(macro) && (
                 <input
                   type="number"
-                  value={targets[macro] || ''}
+                  value={targets[macro] || ""}
                   onChange={(e) => updateTarget(macro, e.target.value)}
                   placeholder="0"
                   className="w-16 bg-transparent border-l border-primary/20 py-1 px-2 text-sm text-center text-foreground focus:outline-none"
@@ -160,12 +184,12 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
           </div>
         ) : sortedFoods.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            {search ? 'Nenhum alimento encontrado' : 'Digite para buscar'}
+            {search ? "Nenhum alimento encontrado" : "Digite para buscar"}
           </div>
         ) : (
           sortedFoods.map((food) => {
             const match = calculateMatch(food);
-            
+
             return (
               <button
                 key={food.id}
@@ -173,12 +197,20 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
                 className="w-full text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden"
               >
                 {match?.isMatch && (
-                  <div className={`absolute top-0 right-0 px-2 py-1 text-[10px] font-bold rounded-bl-lg ${
-                    match.score > 80 ? 'bg-emerald-500/20 text-emerald-500' : 
-                    match.score > 40 ? 'bg-yellow-500/20 text-yellow-500' : 
-                    'bg-orange-500/20 text-orange-500'
-                  }`}>
-                    {match.score > 80 ? 'Combinação Perfeita' : match.score > 40 ? 'Boa Combinação' : 'Baixa Combinação'}
+                  <div
+                    className={`absolute top-0 right-0 px-2 py-1 text-[10px] font-bold rounded-bl-lg ${
+                      match.score > 80
+                        ? "bg-emerald-500/20 text-emerald-500"
+                        : match.score > 40
+                          ? "bg-yellow-500/20 text-yellow-500"
+                          : "bg-orange-500/20 text-orange-500"
+                    }`}
+                  >
+                    {match.score > 80
+                      ? "Combinação Perfeita"
+                      : match.score > 40
+                        ? "Boa Combinação"
+                        : "Baixa Combinação"}
                   </div>
                 )}
 
@@ -187,27 +219,41 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
                     <p className="font-medium text-foreground group-hover:text-primary transition-colors">
                       {food.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {food.category}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{food.category}</p>
                   </div>
                 </div>
 
                 {match?.isMatch ? (
                   <div className="mt-3 bg-background/50 rounded p-2 border border-white/5">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-lg font-bold text-primary">{Math.round(match.quantity)}{food.serving_unit}</span>
+                      <span className="text-lg font-bold text-primary">
+                        {Math.round(match.quantity)}
+                        {food.serving_unit}
+                      </span>
                       <span className="text-xs text-muted-foreground">para atingir metas</span>
                     </div>
                     <div className="flex gap-3 text-xs text-muted-foreground">
-                      {activeMacros.map(macro => {
-                        const val = (Number(food[macro as keyof Food]) * match.quantity) / food.serving_size;
-                        const target = parseFloat(targets[macro] || '0');
+                      {activeMacros.map((macro) => {
+                        const val =
+                          (Number(food[macro as keyof Food]) * match.quantity) / food.serving_size;
+                        const target = parseFloat(targets[macro] || "0");
                         return (
                           <span key={macro}>
-                            {macro === 'calories' ? 'Kcal' : macro.charAt(0).toUpperCase() + macro.slice(1, 3)}: 
-                            <span className={val > target * 1.1 ? 'text-red-400' : val < target * 0.9 ? 'text-yellow-400' : 'text-emerald-400'}>
-                              {' '}{Math.round(val)}/{Math.round(target)}
+                            {macro === "calories"
+                              ? "Kcal"
+                              : macro.charAt(0).toUpperCase() + macro.slice(1, 3)}
+                            :
+                            <span
+                              className={
+                                val > target * 1.1
+                                  ? "text-red-400"
+                                  : val < target * 0.9
+                                    ? "text-yellow-400"
+                                    : "text-emerald-400"
+                              }
+                            >
+                              {" "}
+                              {Math.round(val)}/{Math.round(target)}
                             </span>
                           </span>
                         );
@@ -220,7 +266,10 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
                     <span className="text-emerald-400">P: {food.protein}g</span>
                     <span className="text-blue-400">C: {food.carbs}g</span>
                     <span className="text-yellow-400">G: {food.fat}g</span>
-                    <span className="text-muted-foreground ml-auto">por {food.serving_size}{food.serving_unit}</span>
+                    <span className="text-muted-foreground ml-auto">
+                      por {food.serving_size}
+                      {food.serving_unit}
+                    </span>
                   </div>
                 )}
               </button>

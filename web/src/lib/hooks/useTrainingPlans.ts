@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@meupersonal/supabase";
+import { useQuery } from "@tanstack/react-query";
 
-export type TrainingSplit = 
-  | 'abc' 
-  | 'abcd' 
-  | 'abcde' 
-  | 'abcdef' 
-  | 'upper_lower' 
-  | 'full_body' 
-  | 'push_pull_legs' 
-  | 'custom';
+export type TrainingSplit =
+  | "abc"
+  | "abcd"
+  | "abcde"
+  | "abcdef"
+  | "upper_lower"
+  | "full_body"
+  | "push_pull_legs"
+  | "custom";
 
-export type TrainingPlanStatus = 'draft' | 'active' | 'completed';
+export type TrainingPlanStatus = "draft" | "active" | "completed";
 
 export interface TrainingPlan {
   id: string;
@@ -35,13 +35,13 @@ export interface TrainingPlan {
 
 export function useTrainingPlans(periodizationId: string) {
   return useQuery({
-    queryKey: ['training-plans', periodizationId],
+    queryKey: ["training-plans", periodizationId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('training_plans')
-        .select('*')
-        .eq('periodization_id', periodizationId)
-        .order('start_date', { ascending: true });
+        .from("training_plans")
+        .select("*")
+        .eq("periodization_id", periodizationId)
+        .order("start_date", { ascending: true });
 
       if (error) throw error;
 
@@ -49,15 +49,15 @@ export function useTrainingPlans(periodizationId: string) {
       const plansWithCounts = await Promise.all(
         (data || []).map(async (plan) => {
           const { count } = await supabase
-            .from('workouts')
-            .select('*', { count: 'exact', head: true })
-            .eq('training_plan_id', plan.id);
+            .from("workouts")
+            .select("*", { count: "exact", head: true })
+            .eq("training_plan_id", plan.id);
 
           return {
             ...plan,
             workouts_count: count || 0,
           };
-        })
+        }),
       );
 
       return plansWithCounts as TrainingPlan[];
@@ -69,21 +69,21 @@ export function useTrainingPlans(periodizationId: string) {
 
 export function useTrainingPlan(id: string) {
   return useQuery({
-    queryKey: ['training-plan', id],
+    queryKey: ["training-plan", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('training_plans')
-        .select('*')
-        .eq('id', id)
+        .from("training_plans")
+        .select("*")
+        .eq("id", id)
         .single();
 
       if (error) throw error;
 
       // Get workouts count
       const { count } = await supabase
-        .from('workouts')
-        .select('*', { count: 'exact', head: true })
-        .eq('training_plan_id', id);
+        .from("workouts")
+        .select("*", { count: "exact", head: true })
+        .eq("training_plan_id", id);
 
       return {
         ...data,
@@ -96,14 +96,14 @@ export function useTrainingPlan(id: string) {
 
 export function useActiveTrainingPlan(periodizationId: string) {
   return useQuery({
-    queryKey: ['active-training-plan', periodizationId],
+    queryKey: ["active-training-plan", periodizationId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('training_plans')
-        .select('*')
-        .eq('periodization_id', periodizationId)
-        .eq('status', 'active')
-        .order('start_date', { ascending: false })
+        .from("training_plans")
+        .select("*")
+        .eq("periodization_id", periodizationId)
+        .eq("status", "active")
+        .order("start_date", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -113,9 +113,9 @@ export function useActiveTrainingPlan(periodizationId: string) {
 
       // Get workouts count
       const { count } = await supabase
-        .from('workouts')
-        .select('*', { count: 'exact', head: true })
-        .eq('training_plan_id', data.id);
+        .from("workouts")
+        .select("*", { count: "exact", head: true })
+        .eq("training_plan_id", data.id);
 
       return {
         ...data,

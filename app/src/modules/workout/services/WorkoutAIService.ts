@@ -7,7 +7,7 @@ import {
 import { Exercise } from '../types';
 
 // Re-export types for compatibility
-export { AIWorkoutResponse, AIWorkoutDay, AIWorkoutItem };
+export { AIWorkoutDay, AIWorkoutItem, AIWorkoutResponse };
 
 export const WorkoutAIService = {
   /**

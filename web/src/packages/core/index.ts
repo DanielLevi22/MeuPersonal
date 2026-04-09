@@ -35,8 +35,8 @@ export interface DietPlan {
   target_fat: number;
   version: number;
   is_active: boolean;
-  status: 'active' | 'completed' | 'finished' | 'draft';
-  plan_type: 'unique' | 'cyclic';
+  status: "active" | "completed" | "finished" | "draft";
+  plan_type: "unique" | "cyclic";
   notes?: string;
 }
 

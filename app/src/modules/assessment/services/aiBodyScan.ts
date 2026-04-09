@@ -82,7 +82,7 @@ export const AIBodyScanService = {
 
       const result = response.data;
 
-      if (!result || !result.metrics) {
+      if (!result?.metrics) {
         throw new Error('Failed to generate valid analysis from AI');
       }
 

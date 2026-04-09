@@ -28,6 +28,8 @@ const TAB_BAR_HEIGHT = 80;
 const NOTCH_WIDTH = 160;
 const NOTCH_CURVE = 44;
 
+const routeOrder = ['index', 'workouts', 'progress', 'nutrition', 'students', 'ranking'];
+
 const getPath = () => {
   const w = SCREEN_WIDTH * 0.92 - 2;
   const h = TAB_BAR_HEIGHT - 2;
@@ -132,8 +134,6 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   const focusedRoute = state.routes[state.index];
   const focusedOptions = descriptors[focusedRoute.key].options;
-
-  const routeOrder = ['index', 'workouts', 'progress', 'nutrition', 'students', 'ranking'];
 
   const sortedRoutes = useMemo(
     () =>

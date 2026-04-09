@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useEffect, useState } from "react";
 
 interface AuditLog {
   id: string;
@@ -20,18 +20,18 @@ interface AuditLog {
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>("all");
 
   useEffect(() => {
     loadLogs();
-  }, [actionFilter]);
+  }, [loadLogs]);
 
   async function loadLogs() {
     try {
       setIsLoading(true);
-      
+
       let query = supabase
-        .from('admin_audit_logs')
+        .from("admin_audit_logs")
         .select(`
           *,
           admin:admin_id (
@@ -39,10 +39,10 @@ export default function AuditLogsPage() {
             full_name
           )
         `)
-        .order('created_at', { ascending: false });
+        .order("created_at", { ascending: false });
 
-      if (actionFilter !== 'all') {
-        query = query.eq('action_type', actionFilter);
+      if (actionFilter !== "all") {
+        query = query.eq("action_type", actionFilter);
       }
 
       const { data, error } = await query;
@@ -51,13 +51,13 @@ export default function AuditLogsPage() {
 
       setLogs(data || []);
     } catch (error) {
-      console.error('Error loading logs:', error);
+      console.error("Error loading logs:", error);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const actionTypes = Array.from(new Set(logs.map(log => log.action_type))).sort();
+  const actionTypes = Array.from(new Set(logs.map((log) => log.action_type))).sort();
 
   if (isLoading) {
     return (
@@ -91,8 +91,10 @@ export default function AuditLogsPage() {
             className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">Todas as Ações</option>
-            {actionTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {actionTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
         </div>
@@ -106,7 +108,9 @@ export default function AuditLogsPage() {
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Data</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Admin</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Ação</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Descrição</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                Descrição
+              </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Alvo</th>
             </tr>
           </thead>
@@ -119,10 +123,10 @@ export default function AuditLogsPage() {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary font-bold">
-                      {(log.admin?.full_name || log.admin?.email || '?').charAt(0).toUpperCase()}
+                      {(log.admin?.full_name || log.admin?.email || "?").charAt(0).toUpperCase()}
                     </div>
                     <span className="text-sm text-foreground">
-                      {log.admin?.full_name || log.admin?.email || 'Desconhecido'}
+                      {log.admin?.full_name || log.admin?.email || "Desconhecido"}
                     </span>
                   </div>
                 </td>
@@ -131,9 +135,7 @@ export default function AuditLogsPage() {
                     {log.action_type}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-foreground">
-                  {log.description}
-                </td>
+                <td className="px-6 py-4 text-sm text-foreground">{log.description}</td>
                 <td className="px-6 py-4 text-sm text-muted-foreground">
                   {log.target_type && (
                     <span className="font-mono text-xs">

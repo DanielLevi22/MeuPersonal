@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 export interface Student {
   id: string;
@@ -16,7 +16,9 @@ export function useStudents() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
       }
@@ -26,12 +28,12 @@ export function useStudents() {
   }, []);
 
   return useQuery({
-    queryKey: ['students', userId],
+    queryKey: ["students", userId],
     queryFn: async () => {
       if (!userId) return [];
 
       const { data, error } = await supabase
-        .from('coachings')
+        .from("coachings")
         .select(`
           client_id,
           profiles!client_id (
@@ -40,8 +42,8 @@ export function useStudents() {
             email
           )
         `)
-        .eq('professional_id', userId)
-        .eq('status', 'active');
+        .eq("professional_id", userId)
+        .eq("status", "active");
 
       if (error) throw error;
 

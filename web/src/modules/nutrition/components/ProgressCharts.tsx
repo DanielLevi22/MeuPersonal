@@ -1,9 +1,22 @@
-'use client';
+"use client";
 
-import { useDietLogs, useNutritionProgress } from '@/shared/hooks/useNutrition';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { useDietLogs, useNutritionProgress } from "@/shared/hooks/useNutrition";
 
 interface ProgressChartsProps {
   studentId: string;
@@ -12,8 +25,16 @@ interface ProgressChartsProps {
 }
 
 export function ProgressCharts({ studentId, startDate, endDate }: ProgressChartsProps) {
-  const { data: dietLogs = [], isLoading: logsLoading } = useDietLogs(studentId, startDate, endDate);
-  const { data: nutritionProgress = [], isLoading: progressLoading } = useNutritionProgress(studentId, startDate, endDate);
+  const { data: dietLogs = [], isLoading: logsLoading } = useDietLogs(
+    studentId,
+    startDate,
+    endDate,
+  );
+  const { data: nutritionProgress = [], isLoading: progressLoading } = useNutritionProgress(
+    studentId,
+    startDate,
+    endDate,
+  );
 
   if (logsLoading || progressLoading) {
     return (
@@ -30,16 +51,16 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
 
   // Prepare weight data
   const weightData = nutritionProgress.map((entry) => ({
-    date: format(new Date(entry.recorded_date), 'dd/MM', { locale: ptBR }),
+    date: format(new Date(entry.recorded_date), "dd/MM", { locale: ptBR }),
     weight: entry.weight || 0,
     fullDate: entry.recorded_date,
   }));
 
   // Prepare macro consumption data (aggregate by date)
   const macroData = dietLogs.reduce((acc: any[], log) => {
-    const dateStr = format(new Date(log.logged_date), 'dd/MM', { locale: ptBR });
-    const existing = acc.find(item => item.date === dateStr);
-    
+    const dateStr = format(new Date(log.logged_date), "dd/MM", { locale: ptBR });
+    const existing = acc.find((item) => item.date === dateStr);
+
     if (existing) {
       // Aggregate if multiple meals per day (from actual_items if available)
       existing.calories += log.actual_items?.calories || 0;
@@ -61,9 +82,9 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
 
   // Prepare adherence data (meals completed per day)
   const adherenceData = dietLogs.reduce((acc: any[], log) => {
-    const dateStr = format(new Date(log.logged_date), 'dd/MM', { locale: ptBR });
-    const existing = acc.find(item => item.date === dateStr);
-    
+    const dateStr = format(new Date(log.logged_date), "dd/MM", { locale: ptBR });
+    const existing = acc.find((item) => item.date === dateStr);
+
     if (existing) {
       existing.total += 1;
       if (log.completed) existing.completed += 1;
@@ -79,7 +100,7 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
   }, []);
 
   // Calculate adherence percentage
-  const adherencePercentageData = adherenceData.map(item => ({
+  const adherencePercentageData = adherenceData.map((item) => ({
     ...item,
     adherence: item.total > 0 ? Math.round((item.completed / item.total) * 100) : 0,
   }));
@@ -93,31 +114,27 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={weightData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" style={{ fontSize: "12px" }} />
+              <YAxis
                 stroke="rgba(255,255,255,0.5)"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="rgba(255,255,255,0.5)"
-                style={{ fontSize: '12px' }}
-                domain={['dataMin - 2', 'dataMax + 2']}
+                style={{ fontSize: "12px" }}
+                domain={["dataMin - 2", "dataMax + 2"]}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1a1f2e',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
+                  backgroundColor: "#1a1f2e",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "8px",
+                  color: "#fff",
                 }}
-                labelStyle={{ color: '#a0aec0' }}
+                labelStyle={{ color: "#a0aec0" }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="weight" 
-                stroke="#00ff88" 
+              <Line
+                type="monotone"
+                dataKey="weight"
+                stroke="#00ff88"
                 strokeWidth={2}
-                dot={{ fill: '#00ff88', r: 4 }}
+                dot={{ fill: "#00ff88", r: 4 }}
                 activeDot={{ r: 6 }}
                 name="Peso (kg)"
               />
@@ -133,51 +150,41 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={macroData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis 
-                dataKey="date" 
-                stroke="rgba(255,255,255,0.5)"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="rgba(255,255,255,0.5)"
-                style={{ fontSize: '12px' }}
-              />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" style={{ fontSize: "12px" }} />
+              <YAxis stroke="rgba(255,255,255,0.5)" style={{ fontSize: "12px" }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1a1f2e',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
+                  backgroundColor: "#1a1f2e",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "8px",
+                  color: "#fff",
                 }}
-                labelStyle={{ color: '#a0aec0' }}
+                labelStyle={{ color: "#a0aec0" }}
               />
-              <Legend 
-                wrapperStyle={{ color: '#a0aec0' }}
-                iconType="circle"
-              />
-              <Area 
-                type="monotone" 
-                dataKey="protein" 
+              <Legend wrapperStyle={{ color: "#a0aec0" }} iconType="circle" />
+              <Area
+                type="monotone"
+                dataKey="protein"
                 stackId="1"
-                stroke="#10b981" 
+                stroke="#10b981"
                 fill="#10b981"
                 fillOpacity={0.6}
                 name="Proteína (g)"
               />
-              <Area 
-                type="monotone" 
-                dataKey="carbs" 
+              <Area
+                type="monotone"
+                dataKey="carbs"
                 stackId="1"
-                stroke="#3b82f6" 
+                stroke="#3b82f6"
                 fill="#3b82f6"
                 fillOpacity={0.6}
                 name="Carboidratos (g)"
               />
-              <Area 
-                type="monotone" 
-                dataKey="fat" 
+              <Area
+                type="monotone"
+                dataKey="fat"
                 stackId="1"
-                stroke="#f59e0b" 
+                stroke="#f59e0b"
                 fill="#f59e0b"
                 fillOpacity={0.6}
                 name="Gorduras (g)"
@@ -194,51 +201,54 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={adherencePercentageData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" style={{ fontSize: "12px" }} />
+              <YAxis
                 stroke="rgba(255,255,255,0.5)"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="rgba(255,255,255,0.5)"
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: "12px" }}
                 domain={[0, 100]}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1a1f2e',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
+                  backgroundColor: "#1a1f2e",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "8px",
+                  color: "#fff",
                 }}
-                labelStyle={{ color: '#a0aec0' }}
+                labelStyle={{ color: "#a0aec0" }}
                 formatter={(value: any) => `${value}%`}
               />
-              <Bar 
-                dataKey="adherence" 
-                fill="#00ff88"
-                radius={[8, 8, 0, 0]}
-                name="Aderência (%)"
-              />
+              <Bar dataKey="adherence" fill="#00ff88" radius={[8, 8, 0, 0]} name="Aderência (%)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
       {/* Empty State */}
-      {weightData.length === 0 && macroData.length === 0 && adherencePercentageData.length === 0 && (
-        <div className="bg-surface border border-white/10 rounded-xl p-12 text-center">
-          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+      {weightData.length === 0 &&
+        macroData.length === 0 &&
+        adherencePercentageData.length === 0 && (
+          <div className="bg-surface border border-white/10 rounded-xl p-12 text-center">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Sem dados de progresso</h3>
+            <p className="text-muted-foreground">
+              Não há registros de progresso para o período selecionado.
+            </p>
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">Sem dados de progresso</h3>
-          <p className="text-muted-foreground">
-            Não há registros de progresso para o período selecionado.
-          </p>
-        </div>
-      )}
+        )}
     </div>
   );
 }

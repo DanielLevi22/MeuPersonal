@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useCreateTrainingPlan } from '@/shared/hooks/useTrainingPlanMutations';
-import type { TrainingSplit } from '@/shared/hooks/useTrainingPlans';
-import { useState } from 'react';
+import { useState } from "react";
+import { useCreateTrainingPlan } from "@/shared/hooks/useTrainingPlanMutations";
+import type { TrainingSplit } from "@/shared/hooks/useTrainingPlans";
 
 interface CreateTrainingPlanModalProps {
   isOpen: boolean;
@@ -11,25 +11,29 @@ interface CreateTrainingPlanModalProps {
 }
 
 const trainingSplits: { value: TrainingSplit; label: string; description: string }[] = [
-  { value: 'abc', label: 'ABC', description: '3 treinos diferentes' },
-  { value: 'abcd', label: 'ABCD', description: '4 treinos diferentes' },
-  { value: 'abcde', label: 'ABCDE', description: '5 treinos diferentes' },
-  { value: 'upper_lower', label: 'Superior/Inferior', description: 'Divisão por região' },
-  { value: 'full_body', label: 'Full Body', description: 'Corpo inteiro' },
-  { value: 'push_pull_legs', label: 'Push/Pull/Legs', description: 'Empurrar/Puxar/Pernas' },
-  { value: 'custom', label: 'Personalizado', description: 'Divisão customizada' },
+  { value: "abc", label: "ABC", description: "3 treinos diferentes" },
+  { value: "abcd", label: "ABCD", description: "4 treinos diferentes" },
+  { value: "abcde", label: "ABCDE", description: "5 treinos diferentes" },
+  { value: "upper_lower", label: "Superior/Inferior", description: "Divisão por região" },
+  { value: "full_body", label: "Full Body", description: "Corpo inteiro" },
+  { value: "push_pull_legs", label: "Push/Pull/Legs", description: "Empurrar/Puxar/Pernas" },
+  { value: "custom", label: "Personalizado", description: "Divisão customizada" },
 ];
 
-export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: CreateTrainingPlanModalProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [trainingSplit, setTrainingSplit] = useState<TrainingSplit>('abc');
+export function CreateTrainingPlanModal({
+  isOpen,
+  onClose,
+  periodizationId,
+}: CreateTrainingPlanModalProps) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [trainingSplit, setTrainingSplit] = useState<TrainingSplit>("abc");
   const [weeklyFrequency, setWeeklyFrequency] = useState(3);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [notes, setNotes] = useState('');
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [notes, setNotes] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
-  const [newGoal, setNewGoal] = useState('');
+  const [newGoal, setNewGoal] = useState("");
 
   const createMutation = useCreateTrainingPlan();
   const isLoading = createMutation.isPending;
@@ -37,7 +41,7 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
   const handleAddGoal = () => {
     if (newGoal.trim()) {
       setGoals([...goals, newGoal.trim()]);
-      setNewGoal('');
+      setNewGoal("");
     }
   };
 
@@ -64,19 +68,19 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
       });
 
       // Reset form
-      setName('');
-      setDescription('');
-      setTrainingSplit('abc');
+      setName("");
+      setDescription("");
+      setTrainingSplit("abc");
       setWeeklyFrequency(3);
-      setStartDate('');
-      setEndDate('');
-      setNotes('');
+      setStartDate("");
+      setEndDate("");
+      setNotes("");
       setGoals([]);
-      setNewGoal('');
+      setNewGoal("");
 
       onClose();
     } catch (error) {
-      console.error('Error creating training plan:', error);
+      console.error("Error creating training plan:", error);
     }
   };
 
@@ -85,10 +89,7 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -96,8 +97,18 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-foreground">Nova Ficha de Treino</h2>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -139,7 +150,9 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
 
           {/* Training Split */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-3">Divisão de Treino *</label>
+            <label className="block text-sm font-medium text-foreground mb-3">
+              Divisão de Treino *
+            </label>
             <div className="grid grid-cols-2 gap-3">
               {trainingSplits.map((split) => (
                 <button
@@ -148,8 +161,8 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
                   onClick={() => setTrainingSplit(split.value)}
                   className={`p-3 rounded-lg border-2 text-left transition-all ${
                     trainingSplit === split.value
-                      ? 'bg-secondary/10 border-secondary'
-                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                      ? "bg-secondary/10 border-secondary"
+                      : "bg-white/5 border-white/10 hover:border-white/20"
                   }`}
                   disabled={isLoading}
                 >
@@ -171,7 +184,7 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
               min="1"
               max="7"
               value={weeklyFrequency}
-              onChange={(e) => setWeeklyFrequency(parseInt(e.target.value))}
+              onChange={(e) => setWeeklyFrequency(parseInt(e.target.value, 10))}
               className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
               disabled={isLoading}
             />
@@ -216,13 +229,15 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
 
           {/* Goals */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Metas (Opcional)</label>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Metas (Opcional)
+            </label>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={newGoal}
                 onChange={(e) => setNewGoal(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddGoal())}
+                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddGoal())}
                 placeholder="Ex: Aumentar carga em 10%"
                 className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 disabled={isLoading}
@@ -277,7 +292,7 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
           {createMutation.isError && (
             <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-3">
               <p className="text-sm text-destructive">
-                {(createMutation.error as Error)?.message || 'Erro ao criar ficha'}
+                {(createMutation.error as Error)?.message || "Erro ao criar ficha"}
               </p>
             </div>
           )}
@@ -297,7 +312,7 @@ export function CreateTrainingPlanModal({ isOpen, onClose, periodizationId }: Cr
               className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || !name || !startDate || !endDate}
             >
-              {isLoading ? 'Criando...' : 'Criar Ficha'}
+              {isLoading ? "Criando..." : "Criar Ficha"}
             </button>
           </div>
         </form>

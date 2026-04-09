@@ -103,7 +103,6 @@ export default function PeriodizationDetailsScreen() {
     ? rawPeriodizationId[0]
     : rawPeriodizationId;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (user?.id) {
       // Always fetch if we don't have the specific periodization, even if we have others
@@ -115,9 +114,8 @@ export default function PeriodizationDetailsScreen() {
         setPeriodization(found);
       }
     }
-  }, [user, periodizationId, periodizations.length]); // Depend on length to re-run if fetch completes
+  }, [user?.id, periodizationId, periodizations, fetchPeriodizations]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (periodizations.length > 0 && periodizationId) {
       const found = periodizations.find((p) => p.id === periodizationId);
@@ -126,7 +124,7 @@ export default function PeriodizationDetailsScreen() {
         fetchPeriodizationPhases(periodizationId as string);
       }
     }
-  }, [periodizations, periodizationId]);
+  }, [periodizations, periodizationId, fetchPeriodizationPhases]);
 
   if (isLoading) {
     return (

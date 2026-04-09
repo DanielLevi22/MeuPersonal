@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -13,21 +13,31 @@ export function Footer() {
               A plataforma completa para personal trainers e alunos.
             </p>
           </div>
-          
+
           <div>
             <h4 className="font-bold mb-4">Produto</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="#features">Funcionalidades</Link></li>
-              <li><Link href="#pricing">Preços</Link></li>
-              <li><Link href="/auth/register">Criar Conta</Link></li>
+              <li>
+                <Link href="#features">Funcionalidades</Link>
+              </li>
+              <li>
+                <Link href="#pricing">Preços</Link>
+              </li>
+              <li>
+                <Link href="/auth/register">Criar Conta</Link>
+              </li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-bold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/privacy">Privacidade</Link></li>
-              <li><Link href="/terms">Termos de Uso</Link></li>
+              <li>
+                <Link href="/privacy">Privacidade</Link>
+              </li>
+              <li>
+                <Link href="/terms">Termos de Uso</Link>
+              </li>
             </ul>
           </div>
 
@@ -39,7 +49,7 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        
+
         <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} MeuPersonal. Todos os direitos reservados.
         </div>

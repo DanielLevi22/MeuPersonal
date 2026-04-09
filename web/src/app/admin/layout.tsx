@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,55 +13,57 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>("");
 
-  useEffect(() => {
-    checkAdminAccess();
-  }, []);
-
-  async function checkAdminAccess() {
+  const checkAdminAccess = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        router.push('/auth/login');
+        router.push("/auth/login");
         return;
       }
 
       // Check if user is admin
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('account_type, is_super_admin, email')
-        .eq('id', user.id)
+        .from("profiles")
+        .select("account_type, is_super_admin, email")
+        .eq("id", user.id)
         .single();
 
-      if (profile?.account_type !== 'admin') {
-        router.push('/dashboard');
+      if (profile?.account_type !== "admin") {
+        router.push("/dashboard");
         return;
       }
 
-      setUserEmail(profile.email || user.email || '');
+      setUserEmail(profile.email || user.email || "");
       setIsLoading(false);
     } catch (error) {
-      console.error('Error checking admin access:', error);
-      router.push('/dashboard');
+      console.error("Error checking admin access:", error);
+      router.push("/dashboard");
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    checkAdminAccess();
+  }, [checkAdminAccess]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: '📊' },
-    { href: '/admin/users', label: 'Usuários', icon: '👥' },
-    { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
-    { href: '/admin/content/exercises', label: 'Exercícios', icon: '💪' },
-    { href: '/admin/content/foods', label: 'Alimentos', icon: '🍎' },
-    { href: '/admin/content/reports', label: 'Denúncias', icon: '🚨' },
-    { href: '/admin/audit/logs', label: 'Auditoria', icon: '📋' },
-    { href: '/admin/settings', label: 'Configurações', icon: '⚙️' },
+    { href: "/admin", label: "Dashboard", icon: "📊" },
+    { href: "/admin/users", label: "Usuários", icon: "👥" },
+    { href: "/admin/analytics", label: "Analytics", icon: "📈" },
+    { href: "/admin/content/exercises", label: "Exercícios", icon: "💪" },
+    { href: "/admin/content/foods", label: "Alimentos", icon: "🍎" },
+    { href: "/admin/content/reports", label: "Denúncias", icon: "🚨" },
+    { href: "/admin/audit/logs", label: "Auditoria", icon: "📋" },
+    { href: "/admin/settings", label: "Configurações", icon: "⚙️" },
   ];
 
   if (isLoading) {
@@ -90,16 +92,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 p-4">
           <ul className="space-y-2">
             {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href));
-              
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/admin" && pathname?.startsWith(item.href));
+
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
                     <span className="text-xl">{item.icon}</span>
@@ -122,8 +126,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <p className="text-xs text-muted-foreground">Admin</p>
             </div>
           </div>
-          
+
           <button
+            type="button"
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
@@ -134,9 +139,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }

@@ -44,22 +44,24 @@ export default function StudentWorkoutExecuteScreen() {
   const { timeLeft, isActive, totalTime, startTimer, stopTimer, addTime, subtractTime } =
     useWorkoutTimer();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Initialize when id changes
-  useEffect(() => {
-    fetchWorkoutAndStartSession();
-  }, [id]);
+  const loadCompletedExercises = useCallback(async (sessId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('workout_exercise_logs')
+        .select('workout_item_id')
+        .eq('workout_session_id', sessId)
+        .eq('completed', true);
 
-  // Reload completed exercises when screen gains focus (returning from exercise detail)
-  useFocusEffect(
-    // biome-ignore lint/correctness/useExhaustiveDependencies: Reload when screen comes to focus
-    useCallback(() => {
-      if (sessionId) {
-        loadCompletedExercises(sessionId);
+      if (!error && data) {
+        const completed = new Set(data.map((log) => log.workout_item_id));
+        setCompletedExercises(completed);
       }
-    }, [sessionId])
-  );
+    } catch (error) {
+      console.error('Error loading completed exercises:', error);
+    }
+  }, []);
 
-  const fetchWorkoutAndStartSession = async () => {
+  const fetchWorkoutAndStartSession = useCallback(async () => {
     try {
       console.log('🏋️ Fetching workout for student, ID:', id, 'User:', user?.id);
 
@@ -150,24 +152,20 @@ export default function StudentWorkoutExecuteScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user?.id, loadCompletedExercises]);
 
-  const loadCompletedExercises = async (sessionId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('workout_exercise_logs')
-        .select('workout_item_id')
-        .eq('workout_session_id', sessionId)
-        .eq('completed', true);
+  useEffect(() => {
+    fetchWorkoutAndStartSession();
+  }, [fetchWorkoutAndStartSession]);
 
-      if (!error && data) {
-        const completed = new Set(data.map((log) => log.workout_item_id));
-        setCompletedExercises(completed);
+  // Reload completed exercises when screen gains focus (returning from exercise detail)
+  useFocusEffect(
+    useCallback(() => {
+      if (sessionId) {
+        loadCompletedExercises(sessionId);
       }
-    } catch (error) {
-      console.error('Error loading completed exercises:', error);
-    }
-  };
+    }, [sessionId, loadCompletedExercises])
+  );
 
   const handleExercisePress = (exercise: Exercise) => {
     router.push(

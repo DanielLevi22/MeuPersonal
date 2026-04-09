@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface ConfirmationModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'danger' | 'success' | 'warning' | 'info';
+  variant?: "danger" | "success" | "warning" | "info";
   onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -19,9 +19,9 @@ export function ConfirmationModal({
   isOpen,
   title,
   message,
-  confirmText = 'Confirmar',
-  cancelText = 'Cancelar',
-  variant = 'info',
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  variant = "info",
   onConfirm,
   onCancel,
   isLoading = false,
@@ -29,22 +29,22 @@ export function ConfirmationModal({
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === "Escape") onCancel();
     };
-    if (isOpen) window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    if (isOpen) window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen, onCancel]);
 
   const getVariantStyles = () => {
     switch (variant) {
-      case 'danger':
-        return 'bg-destructive text-destructive-foreground hover:bg-destructive/90';
-      case 'success':
-        return 'bg-green-600 text-white hover:bg-green-700';
-      case 'warning':
-        return 'bg-yellow-600 text-white hover:bg-yellow-700';
+      case "danger":
+        return "bg-destructive text-destructive-foreground hover:bg-destructive/90";
+      case "success":
+        return "bg-green-600 text-white hover:bg-green-700";
+      case "warning":
+        return "bg-yellow-600 text-white hover:bg-yellow-700";
       default:
-        return 'bg-primary text-primary-foreground hover:bg-primary/90';
+        return "bg-primary text-primary-foreground hover:bg-primary/90";
     }
   };
 
@@ -67,24 +67,34 @@ export function ConfirmationModal({
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
               className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="modal-title"
+              aria-describedby="modal-description"
             >
               <div className="p-6 space-y-4">
-                <h3 className="text-xl font-bold text-foreground">{title}</h3>
-                <p className="text-muted-foreground">{message}</p>
+                <h3 id="modal-title" className="text-xl font-bold text-foreground">
+                  {title}
+                </h3>
+                <p id="modal-description" className="text-muted-foreground">
+                  {message}
+                </p>
               </div>
 
               <div className="p-6 pt-0 flex justify-end gap-3">
                 <button
+                  type="button"
                   onClick={onCancel}
                   disabled={isLoading}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {cancelText}
                 </button>
                 <button
+                  type="button"
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2 ${getVariantStyles()}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card focus:ring-primary ${getVariantStyles()}`}
                 >
                   {isLoading && (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />

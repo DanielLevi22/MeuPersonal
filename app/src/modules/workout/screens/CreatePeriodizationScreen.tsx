@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -51,16 +51,7 @@ export default function CreatePeriodizationScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showObjectivePicker, setShowObjectivePicker] = useState(false);
 
-  // Fetch students on mount
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
-  useEffect(() => {
-    console.log('=== CreatePeriodizationScreen mounted ===');
-    console.log('User ID:', user?.id);
-    console.log('User metadata:', user);
-    fetchStudents();
-  }, [user]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     if (!user?.id) {
       console.log('⚠️ fetchStudents: No user ID available');
       return;
@@ -99,9 +90,17 @@ export default function CreatePeriodizationScreen() {
     } catch (error) {
       console.error('❌ Error fetching students:', error);
     }
-  };
+  }, [user?.id]);
 
-  const handleSave = async () => {
+  // Fetch students on mount
+  useEffect(() => {
+    console.log('=== CreatePeriodizationScreen mounted ===');
+    console.log('User ID:', user?.id);
+    console.log('User metadata:', user);
+    fetchStudents();
+  }, [user?.id, fetchStudents, user]);
+
+  const handleSave = useCallback(async () => {
     console.log('\n=== 🚀 STARTING PERIODIZATION CREATION ===');
 
     if (!name.trim()) {
@@ -177,7 +176,17 @@ export default function CreatePeriodizationScreen() {
       setLoading(false);
       console.log('=== PERIODIZATION CREATION FLOW ENDED ===\n');
     }
-  };
+  }, [
+    name,
+    objective,
+    studentId,
+    user?.id,
+    students,
+    startDate,
+    endDate,
+    notes,
+    createPeriodization,
+  ]);
 
   const selectedStudent = students.find((s) => s.id === studentId);
   const selectedObjective = OBJECTIVE_OPTIONS.find((o) => o.value === objective);

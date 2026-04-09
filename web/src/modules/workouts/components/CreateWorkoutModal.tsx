@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import type { Exercise } from '@/shared/hooks/useExercises';
-import { useStudents } from '@/shared/hooks/useStudents';
-import { useCreateWorkout, useUpdateWorkout } from '@/shared/hooks/useWorkoutMutations';
-import { useWorkout } from '@/shared/hooks/useWorkouts';
-import { supabase } from '@meupersonal/supabase';
-import { useEffect, useState } from 'react';
-import { ExerciseConfigModal, type SelectedExercise } from './ExerciseConfigModal';
-import { ExerciseListItem } from './ExerciseListItem';
-import { SelectExercisesModal } from './SelectExercisesModal';
-import { StudentMultiSelect } from './StudentMultiSelect';
+import { supabase } from "@meupersonal/supabase";
+import { useEffect, useState } from "react";
+import type { Exercise } from "@/shared/hooks/useExercises";
+import { useStudents } from "@/shared/hooks/useStudents";
+import { useCreateWorkout, useUpdateWorkout } from "@/shared/hooks/useWorkoutMutations";
+import { useWorkout } from "@/shared/hooks/useWorkouts";
+import { ExerciseConfigModal, type SelectedExercise } from "./ExerciseConfigModal";
+import { ExerciseListItem } from "./ExerciseListItem";
+import { SelectExercisesModal } from "./SelectExercisesModal";
+import { StudentMultiSelect } from "./StudentMultiSelect";
 
 interface CreateWorkoutModalProps {
   isOpen: boolean;
@@ -18,18 +18,25 @@ interface CreateWorkoutModalProps {
   trainingPlanId?: string;
 }
 
-export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId }: CreateWorkoutModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [identifier, setIdentifier] = useState('');
-  const [estimatedDuration, setEstimatedDuration] = useState('');
-  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
-  
+export function CreateWorkoutModal({
+  isOpen,
+  onClose,
+  workoutId,
+  trainingPlanId,
+}: CreateWorkoutModalProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [estimatedDuration, setEstimatedDuration] = useState("");
+  const [difficultyLevel, setDifficultyLevel] = useState<"beginner" | "intermediate" | "advanced">(
+    "intermediate",
+  );
+
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showSelectModal, setShowSelectModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
-  
+
   // Current exercise being configured (can be a new Exercise or an existing SelectedExercise)
   const [currentExercise, setCurrentExercise] = useState<{
     id: string;
@@ -37,10 +44,10 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
     muscle_group: string | null;
     video_url?: string | null;
   } | null>(null);
-  
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const { data: existingWorkout } = useWorkout(workoutId || '');
+  const { data: existingWorkout } = useWorkout(workoutId || "");
   const { data: students = [] } = useStudents();
   const createMutation = useCreateWorkout();
   const updateMutation = useUpdateWorkout();
@@ -52,10 +59,10 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
   useEffect(() => {
     if (existingWorkout) {
       setTitle(existingWorkout.title);
-      setDescription(existingWorkout.description || '');
-      setIdentifier(existingWorkout.identifier || '');
-      setEstimatedDuration(existingWorkout.estimated_duration?.toString() || '');
-      setDifficultyLevel(existingWorkout.difficulty_level || 'intermediate');
+      setDescription(existingWorkout.description || "");
+      setIdentifier(existingWorkout.identifier || "");
+      setEstimatedDuration(existingWorkout.estimated_duration?.toString() || "");
+      setDifficultyLevel(existingWorkout.difficulty_level || "intermediate");
       // TODO: Load workout items if editing
     }
   }, [existingWorkout]);
@@ -63,11 +70,11 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
   // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setTitle('');
-      setDescription('');
-      setIdentifier('');
-      setEstimatedDuration('');
-      setDifficultyLevel('intermediate');
+      setTitle("");
+      setDescription("");
+      setIdentifier("");
+      setEstimatedDuration("");
+      setDifficultyLevel("intermediate");
       setSelectedStudentIds([]);
       setSelectedExercises([]);
     }
@@ -75,14 +82,14 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const workoutData = {
         title,
         description,
         training_plan_id: trainingPlanId,
         identifier: trainingPlanId ? identifier : null,
-        estimated_duration: estimatedDuration ? parseInt(estimatedDuration) : null,
+        estimated_duration: estimatedDuration ? parseInt(estimatedDuration, 10) : null,
         difficulty_level: difficultyLevel,
       };
 
@@ -103,7 +110,7 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
         if (selectedExercises.length > 0) {
           // Delete existing items if editing
           if (isEditing) {
-            await supabase.from('workout_items').delete().eq('workout_id', newWorkoutId);
+            await supabase.from("workout_items").delete().eq("workout_id", newWorkoutId);
           }
 
           const items = selectedExercises.map((ex, index) => ({
@@ -117,9 +124,7 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
             notes: null, // SelectedExercise doesn't have notes yet, can add later
           }));
 
-          const { error: itemsError } = await supabase
-            .from('workout_items')
-            .insert(items);
+          const { error: itemsError } = await supabase.from("workout_items").insert(items);
 
           if (itemsError) throw itemsError;
         }
@@ -128,16 +133,16 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
         if (!trainingPlanId && selectedStudentIds.length > 0) {
           // Delete existing assignments if editing
           if (isEditing) {
-            await supabase.from('workout_assignments').delete().eq('workout_id', newWorkoutId);
+            await supabase.from("workout_assignments").delete().eq("workout_id", newWorkoutId);
           }
 
-          const assignments = selectedStudentIds.map(studentId => ({
+          const assignments = selectedStudentIds.map((studentId) => ({
             workout_id: newWorkoutId,
             student_id: studentId,
           }));
 
           const { error: assignmentError } = await supabase
-            .from('workout_assignments')
+            .from("workout_assignments")
             .insert(assignments);
 
           if (assignmentError) throw assignmentError;
@@ -146,8 +151,8 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
 
       onClose();
     } catch (error) {
-      console.error('Error saving workout:', error);
-      console.error('Full error details:', JSON.stringify(error, null, 2));
+      console.error("Error saving workout:", error);
+      console.error("Full error details:", JSON.stringify(error, null, 2));
       alert(`Erro ao salvar treino: ${JSON.stringify(error)}`);
     }
   };
@@ -204,14 +209,19 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
       <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-surface z-10 flex-none">
           <h2 className="text-2xl font-bold text-foreground">
-            {isEditing ? 'Editar Treino' : 'Novo Treino'}
+            {isEditing ? "Editar Treino" : "Novo Treino"}
           </h2>
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -283,20 +293,20 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
                       Nível de Dificuldade
                     </label>
                     <div className="flex gap-2">
-                      {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+                      {(["beginner", "intermediate", "advanced"] as const).map((level) => (
                         <button
                           key={level}
                           type="button"
                           onClick={() => setDifficultyLevel(level)}
                           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                             difficultyLevel === level
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-background border border-white/10 text-muted-foreground hover:bg-white/5'
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border border-white/10 text-muted-foreground hover:bg-white/5"
                           }`}
                         >
-                          {level === 'beginner' && 'Iniciante'}
-                          {level === 'intermediate' && 'Intermediário'}
-                          {level === 'advanced' && 'Avançado'}
+                          {level === "beginner" && "Iniciante"}
+                          {level === "intermediate" && "Intermediário"}
+                          {level === "advanced" && "Avançado"}
                         </button>
                       ))}
                     </div>
@@ -330,7 +340,12 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
                     className="text-sm text-secondary hover:text-secondary/80 font-medium flex items-center gap-1"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                     Adicionar Exercício
                   </button>
@@ -340,12 +355,24 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
                   {selectedExercises.length === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
                       <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        <svg
+                          className="w-8 h-8 opacity-50"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                          />
                         </svg>
                       </div>
                       <p className="text-lg font-medium mb-1">Seu treino está vazio</p>
-                      <p className="text-sm opacity-70 mb-4">Adicione exercícios para começar a montar o treino.</p>
+                      <p className="text-sm opacity-70 mb-4">
+                        Adicione exercícios para começar a montar o treino.
+                      </p>
                       <button
                         type="button"
                         onClick={() => setShowSelectModal(true)}
@@ -388,7 +415,7 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
               {isLoading && (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               )}
-              {isEditing ? 'Salvar Alterações' : 'Criar Treino'}
+              {isEditing ? "Salvar Alterações" : "Criar Treino"}
             </button>
           </div>
         </form>
@@ -399,7 +426,7 @@ export function CreateWorkoutModal({ isOpen, onClose, workoutId, trainingPlanId 
         isOpen={showSelectModal}
         onClose={() => setShowSelectModal(false)}
         onSelectExercise={handleAddExercise}
-        selectedIds={selectedExercises.map(ex => ex.id)}
+        selectedIds={selectedExercises.map((ex) => ex.id)}
       />
 
       {showConfigModal && currentExercise && (

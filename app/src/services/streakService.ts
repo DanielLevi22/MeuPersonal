@@ -95,7 +95,7 @@ export const streakService = {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      if (!streak || !streak.last_activity_date) return;
+      if (!streak?.last_activity_date) return;
 
       const today = new Date();
       const lastActivity = new Date(streak.last_activity_date);

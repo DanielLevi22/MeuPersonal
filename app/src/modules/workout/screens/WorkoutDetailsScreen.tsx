@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@meupersonal/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -61,7 +61,6 @@ export default function WorkoutDetailsScreen() {
 
   const targetId = (workoutId || id) as string;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
     if (!targetId) return;
 
@@ -74,7 +73,7 @@ export default function WorkoutDetailsScreen() {
         else setNotFound(true);
       });
     }
-  }, [workouts, targetId]);
+  }, [workouts, targetId, fetchWorkoutById]);
 
   // Identify unique muscle groups for the slideshow
   const muscleGroups = useMemo(() => {
@@ -108,96 +107,181 @@ export default function WorkoutDetailsScreen() {
     return () => clearInterval(interval);
   }, [muscleGroups]);
 
-  const handleEditExercise = (item: StoreExerciseItem) => {
-    if (accountType !== 'professional') return;
-    console.log('📝 Opening edit modal for exercise:', item.exercise?.name);
-    console.log('📝 Exercise data:', item.exercise);
-    console.log('📝 Video URL in exercise:', item.exercise?.video_url);
-    setEditingItem(item);
-    setShowEditModal(true);
-  };
+  const handleEditExercise = useCallback(
+    (item: StoreExerciseItem) => {
+      if (accountType !== 'professional') return;
+      console.log('📝 Opening edit modal for exercise:', item.exercise?.name);
+      console.log('📝 Exercise data:', item.exercise);
+      console.log('📝 Video URL in exercise:', item.exercise?.video_url);
+      setEditingItem(item);
+      setShowEditModal(true);
+    },
+    [accountType]
+  );
 
-  const handleSaveExercise = async (
-    updatedExercise: Record<string, unknown> & { reps?: string | number }
-  ) => {
-    if (!editingItem || !editingItem.exercise) return;
+  const handleSaveExercise = useCallback(
+    async (updatedExercise: Record<string, unknown> & { reps?: string | number }) => {
+      if (!editingItem?.exercise) return;
 
-    console.log('🎬 === SAVE EXERCISE START ===');
-    console.log('📝 Updated exercise data:', updatedExercise);
-    console.log('📝 Editing item:', editingItem);
-    console.log('🎥 Video URL in updatedExercise:', updatedExercise.video_url);
-    console.log('🎥 Video URL in editingItem:', editingItem.exercise?.video_url);
+      console.log('🎬 === SAVE EXERCISE START ===');
+      console.log('📝 Updated exercise data:', updatedExercise);
+      console.log('📝 Editing item:', editingItem);
+      console.log('🎥 Video URL in updatedExercise:', updatedExercise.video_url);
+      console.log('🎥 Video URL in editingItem:', editingItem.exercise?.video_url);
 
-    try {
-      // 1. Update workout_exercises table
-      const { error: workoutError } = await supabase
-        .from('workout_exercises')
-        .update({
-          sets: updatedExercise.sets,
-          reps: updatedExercise.reps?.toString() || '0',
-          weight: updatedExercise.weight,
-          rest_time: updatedExercise.rest_seconds,
-        })
-        .eq('id', editingItem.id);
+      try {
+        // 1. Update workout_exercises table
+        const { error: workoutError } = await supabase
+          .from('workout_exercises')
+          .update({
+            sets: updatedExercise.sets,
+            reps: updatedExercise.reps?.toString() || '0',
+            weight: updatedExercise.weight,
+            rest_time: updatedExercise.rest_seconds,
+          })
+          .eq('id', editingItem.id);
 
-      if (workoutError) throw workoutError;
+        if (workoutError) throw workoutError;
 
-      // 2. Update video URL if changed
-      if (updatedExercise.video_url !== editingItem.exercise.video_url) {
-        console.log('🎥 Updating video URL:', {
-          exerciseId: editingItem.exercise.id,
-          oldUrl: editingItem.exercise.video_url,
-          newUrl: updatedExercise.video_url,
-        });
+        // 2. Update video URL if changed
+        if (updatedExercise.video_url !== editingItem.exercise.video_url) {
+          console.log('🎥 Updating video URL:', {
+            exerciseId: editingItem.exercise.id,
+            oldUrl: editingItem.exercise.video_url,
+            newUrl: updatedExercise.video_url,
+          });
 
-        const { data: updateResult, error: videoError } = await supabase
-          .from('exercises')
-          .update({ video_url: updatedExercise.video_url || null })
-          .eq('id', editingItem.exercise.id)
-          .select();
+          const { data: updateResult, error: videoError } = await supabase
+            .from('exercises')
+            .update({ video_url: updatedExercise.video_url || null })
+            .eq('id', editingItem.exercise.id)
+            .select();
 
-        console.log('📊 Update result:', updateResult);
+          console.log('📊 Update result:', updateResult);
 
-        if (videoError) {
-          console.error('❌ Error updating video URL:', videoError);
-          throw new Error(`Falha ao atualizar URL do vídeo: ${videoError.message}`);
+          if (videoError) {
+            console.error('❌ Error updating video URL:', videoError);
+            throw new Error(`Falha ao atualizar URL do vídeo: ${videoError.message}`);
+          }
+
+          console.log('✅ Video URL updated successfully');
+        } else {
+          console.log('⏭️ Video URL unchanged, skipping update');
         }
 
-        console.log('✅ Video URL updated successfully');
-      } else {
-        console.log('⏭️ Video URL unchanged, skipping update');
-      }
+        // 3. Refresh workout data
+        console.log('🔄 Refreshing workout data...');
+        const refreshedWorkout = await fetchWorkoutById(targetId);
+        if (refreshedWorkout) {
+          setWorkout(refreshedWorkout);
+          console.log('✅ Workout data refreshed');
+          const refreshedItem = refreshedWorkout.items?.find(
+            (i: StoreExerciseItem) => i.id === editingItem.id
+          );
+          console.log('📊 Refreshed exercise video_url:', refreshedItem?.exercise?.video_url);
+          console.log('📊 Full refreshed item:', refreshedItem);
+          console.log(
+            '📋 Exercise order after refresh:',
+            refreshedWorkout.items?.map((i: StoreExerciseItem) => ({
+              name: i.exercise?.name,
+              order: (i as unknown as { order: number }).order,
+            }))
+          );
+        }
 
-      // 3. Refresh workout data
-      console.log('🔄 Refreshing workout data...');
-      const refreshedWorkout = await fetchWorkoutById(targetId);
-      if (refreshedWorkout) {
-        setWorkout(refreshedWorkout);
-        console.log('✅ Workout data refreshed');
-        const refreshedItem = refreshedWorkout.items?.find(
-          (i: StoreExerciseItem) => i.id === editingItem.id
-        );
-        console.log('📊 Refreshed exercise video_url:', refreshedItem?.exercise?.video_url);
-        console.log('📊 Full refreshed item:', refreshedItem);
-        console.log(
-          '📋 Exercise order after refresh:',
-          refreshedWorkout.items?.map((i: StoreExerciseItem) => ({
-            name: i.exercise?.name,
-            order: (i as unknown as { order: number }).order,
-          }))
-        );
+        setShowEditModal(false);
+        setEditingItem(null);
+        console.log('🎬 === SAVE EXERCISE END ===');
+        // Show success modal
+        setShowSuccessModal(true);
+      } catch (e: unknown) {
+        console.error('❌ Error saving exercise:', e);
+        Alert.alert('Erro', (e as Error).message || 'Não foi possível salvar as alterações.');
       }
+    },
+    [editingItem, fetchWorkoutById, targetId]
+  );
 
-      setShowEditModal(false);
-      setEditingItem(null);
-      console.log('🎬 === SAVE EXERCISE END ===');
-      // Show success modal
-      setShowSuccessModal(true);
-    } catch (e: unknown) {
-      console.error('❌ Error saving exercise:', e);
-      Alert.alert('Erro', (e as Error).message || 'Não foi possível salvar as alterações.');
-    }
-  };
+  const renderExerciseItem = useCallback(
+    ({ item, index }: { item: StoreExerciseItem; index: number }) => {
+      const muscleGroup = item.exercise?.muscle_group || 'Geral';
+      const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES.Geral;
+
+      return (
+        <Animated.View entering={FadeInDown.delay(index * 100).duration(500)} className="mb-4">
+          <TouchableOpacity
+            activeOpacity={accountType === 'professional' ? 0.7 : 1}
+            onPress={() => handleEditExercise(item)}
+          >
+            <ImageBackground
+              source={bgImage}
+              className="rounded-2xl overflow-hidden border border-zinc-800 h-40"
+              resizeMode="cover"
+            >
+              <LinearGradient
+                colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.85)']}
+                className="flex-1 p-4 justify-between"
+              >
+                <View className="flex-row justify-between items-start">
+                  <View className="bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/30">
+                    <Text className="text-orange-500 text-[10px] font-bold uppercase tracking-wider">
+                      {muscleGroup}
+                    </Text>
+                  </View>
+                  <View className="w-8 h-8 rounded-lg bg-black/40 items-center justify-center border border-white/10">
+                    <Text className="text-white font-bold">{index + 1}</Text>
+                  </View>
+                </View>
+
+                <View>
+                  <Text className="text-white text-lg font-bold font-display mb-2 drop-shadow-lg">
+                    {item.exercise?.name || 'Exercício'}
+                  </Text>
+
+                  <View className="flex-row items-center gap-3">
+                    <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
+                      <Ionicons
+                        name="repeat-outline"
+                        size={14}
+                        color="#FF6B35"
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text className="text-zinc-200 text-xs font-bold">
+                        {item.sets} x {item.reps}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
+                      <Ionicons
+                        name="timer-outline"
+                        size={14}
+                        color="#FF6B35"
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text className="text-zinc-200 text-xs font-bold">{item.rest_time}s</Text>
+                    </View>
+
+                    {item.weight && (
+                      <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
+                        <Ionicons
+                          name="barbell-outline"
+                          size={14}
+                          color="#FF6B35"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text className="text-zinc-200 text-xs font-bold">{item.weight}kg</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </LinearGradient>
+            </ImageBackground>
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    },
+    [accountType, handleEditExercise]
+  );
 
   if (notFound) {
     return (
@@ -228,84 +312,6 @@ export default function WorkoutDetailsScreen() {
   }
 
   if (!workout) return null;
-
-  const renderExerciseItem = ({ item, index }: { item: StoreExerciseItem; index: number }) => {
-    const muscleGroup = item.exercise?.muscle_group || 'Geral';
-    const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES.Geral;
-
-    return (
-      <Animated.View entering={FadeInDown.delay(index * 100).duration(500)} className="mb-4">
-        <TouchableOpacity
-          activeOpacity={accountType === 'professional' ? 0.7 : 1}
-          onPress={() => handleEditExercise(item)}
-        >
-          <ImageBackground
-            source={bgImage}
-            className="rounded-2xl overflow-hidden border border-zinc-800 h-40"
-            resizeMode="cover"
-          >
-            <LinearGradient
-              colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.85)']}
-              className="flex-1 p-4 justify-between"
-            >
-              <View className="flex-row justify-between items-start">
-                <View className="bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/30">
-                  <Text className="text-orange-500 text-[10px] font-bold uppercase tracking-wider">
-                    {muscleGroup}
-                  </Text>
-                </View>
-                <View className="w-8 h-8 rounded-lg bg-black/40 items-center justify-center border border-white/10">
-                  <Text className="text-white font-bold">{index + 1}</Text>
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-white text-lg font-bold font-display mb-2 drop-shadow-lg">
-                  {item.exercise?.name || 'Exercício'}
-                </Text>
-
-                <View className="flex-row items-center gap-3">
-                  <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
-                    <Ionicons
-                      name="repeat-outline"
-                      size={14}
-                      color="#FF6B35"
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text className="text-zinc-200 text-xs font-bold">
-                      {item.sets} x {item.reps}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
-                    <Ionicons
-                      name="timer-outline"
-                      size={14}
-                      color="#FF6B35"
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text className="text-zinc-200 text-xs font-bold">{item.rest_time}s</Text>
-                  </View>
-
-                  {item.weight && (
-                    <View className="flex-row items-center bg-white/10 px-2 py-1 rounded-md border border-white/5">
-                      <Ionicons
-                        name="barbell-outline"
-                        size={14}
-                        color="#FF6B35"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text className="text-zinc-200 text-xs font-bold">{item.weight}kg</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </LinearGradient>
-          </ImageBackground>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
 
   return (
     <ScreenLayout>

@@ -1,11 +1,18 @@
-import { DEFAULT_MEAL_TYPES } from '@/lib/constants/meals';
-import { useAddFoodToMeal, useAddMeal, useDietMeals, useRemoveMealItem, useUpdateMeal, useUpdateMealItem } from '@/shared/hooks/useNutrition';
-import { DietMeal, DietMealItem, Food } from '@meupersonal/core';
-import { useState } from 'react';
-import { AddFoodQuantityModal } from './AddFoodQuantityModal';
-import { EditFoodModal } from './EditFoodModal';
-import { EditMealTimeModal } from './EditMealTimeModal';
-import { FoodSelector } from './FoodSelector';
+import type { DietMeal, DietMealItem, Food } from "@meupersonal/core";
+import { useState } from "react";
+import { DEFAULT_MEAL_TYPES } from "@/lib/constants/meals";
+import {
+  useAddFoodToMeal,
+  useAddMeal,
+  useDietMeals,
+  useRemoveMealItem,
+  useUpdateMeal,
+  useUpdateMealItem,
+} from "@/shared/hooks/useNutrition";
+import { AddFoodQuantityModal } from "./AddFoodQuantityModal";
+import { EditFoodModal } from "./EditFoodModal";
+import { EditMealTimeModal } from "./EditMealTimeModal";
+import { FoodSelector } from "./FoodSelector";
 
 interface MealEditorProps {
   dietPlanId: string;
@@ -28,7 +35,10 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<DietMealItem | null>(null);
   const [editingMeal, setEditingMeal] = useState<DietMeal | null>(null);
-  const [pendingFood, setPendingFood] = useState<{ food: Food; calculatedQuantity?: number } | null>(null);
+  const [pendingFood, setPendingFood] = useState<{
+    food: Food;
+    calculatedQuantity?: number;
+  } | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   // Filter meals for the current day
@@ -39,13 +49,13 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
       await addMealMutation.mutateAsync({
         diet_plan_id: dietPlanId,
         day_of_week: dayOfWeek,
-        name: DEFAULT_MEAL_TYPES.find(m => m.type === mealType)?.label || mealType,
+        name: DEFAULT_MEAL_TYPES.find((m) => m.type === mealType)?.label || mealType,
         meal_time: defaultTime,
         meal_type: mealType as any,
         meal_order: order,
       });
     } catch (error) {
-      console.error('Error adding meal:', error);
+      console.error("Error adding meal:", error);
     }
   };
 
@@ -57,7 +67,7 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
         meal_time: time,
       });
     } catch (error) {
-      console.error('Error updating meal time:', error);
+      console.error("Error updating meal time:", error);
     }
   };
 
@@ -93,7 +103,7 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
       setIsQuantityModalOpen(false);
       setPendingFood(null);
     } catch (error) {
-      console.error('Error adding food:', error);
+      console.error("Error adding food:", error);
     }
   };
 
@@ -109,7 +119,7 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
         quantity,
       });
     } catch (error) {
-      console.error('Error updating food:', error);
+      console.error("Error updating food:", error);
     }
   };
 
@@ -125,7 +135,7 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
       setIsDeleteConfirmOpen(false);
       setItemToDelete(null);
     } catch (error) {
-      console.error('Error removing food:', error);
+      console.error("Error removing food:", error);
     }
   };
 
@@ -141,11 +151,13 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
       });
       return acc;
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
 
   // Calculate meal totals
-  const getMealTotals = (meal: DietMeal & { diet_meal_items?: (DietMealItem & { food: Food })[] }) => {
+  const getMealTotals = (
+    meal: DietMeal & { diet_meal_items?: (DietMealItem & { food: Food })[] },
+  ) => {
     return (meal.diet_meal_items || []).reduce(
       (acc: { calories: number; protein: number; carbs: number; fat: number }, item) => {
         const ratio = item.quantity / item.food.serving_size;
@@ -155,11 +167,12 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
         acc.fat += item.food.fat * ratio;
         return acc;
       },
-      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      { calories: 0, protein: 0, carbs: 0, fat: 0 },
     );
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Carregando refeições...</div>;
+  if (isLoading)
+    return <div className="p-8 text-center text-muted-foreground">Carregando refeições...</div>;
 
   return (
     <div className="space-y-6">
@@ -190,9 +203,12 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
 
           if (meal) {
             const mealTotals = getMealTotals(meal);
-            
+
             return (
-              <div key={meal.id} className="bg-surface border border-white/10 rounded-xl overflow-hidden">
+              <div
+                key={meal.id}
+                className="bg-surface border border-white/10 rounded-xl overflow-hidden"
+              >
                 <div className="p-4 bg-white/5">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
@@ -204,10 +220,20 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
                         }}
                         className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 mt-1"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
-                        {meal.meal_time || 'Definir horário'}
+                        {meal.meal_time || "Definir horário"}
                       </button>
                     </div>
                     <button
@@ -223,19 +249,27 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
                     <div className="grid grid-cols-4 gap-2 bg-background/30 rounded-lg p-2 mb-3">
                       <div className="text-center">
                         <p className="text-[10px] text-muted-foreground">Kcal</p>
-                        <p className="text-sm font-bold text-foreground">{Math.round(mealTotals.calories)}</p>
+                        <p className="text-sm font-bold text-foreground">
+                          {Math.round(mealTotals.calories)}
+                        </p>
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] text-muted-foreground">Prot</p>
-                        <p className="text-sm font-bold text-emerald-400">{Math.round(mealTotals.protein)}g</p>
+                        <p className="text-sm font-bold text-emerald-400">
+                          {Math.round(mealTotals.protein)}g
+                        </p>
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] text-muted-foreground">Carb</p>
-                        <p className="text-sm font-bold text-blue-400">{Math.round(mealTotals.carbs)}g</p>
+                        <p className="text-sm font-bold text-blue-400">
+                          {Math.round(mealTotals.carbs)}g
+                        </p>
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] text-muted-foreground">Gord</p>
-                        <p className="text-sm font-bold text-yellow-400">{Math.round(mealTotals.fat)}g</p>
+                        <p className="text-sm font-bold text-yellow-400">
+                          {Math.round(mealTotals.fat)}g
+                        </p>
                       </div>
                     </div>
                   )}
@@ -250,18 +284,28 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
                     meal.diet_meal_items?.map((item) => {
                       const ratio = item.quantity / item.food.serving_size;
                       return (
-                        <div key={item.id} className="p-3 flex justify-between items-center hover:bg-white/5 transition-colors group">
+                        <div
+                          key={item.id}
+                          className="p-3 flex justify-between items-center hover:bg-white/5 transition-colors group"
+                        >
                           <div>
                             <p className="text-sm font-medium text-foreground">{item.food.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {item.quantity}{item.unit} • {Math.round(item.food.calories * ratio)}kcal
+                              {item.quantity}
+                              {item.unit} • {Math.round(item.food.calories * ratio)}kcal
                             </p>
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right text-xs text-muted-foreground hidden sm:block">
-                              <span className="text-emerald-400 ml-2">P: {Math.round(item.food.protein * ratio)}</span>
-                              <span className="text-blue-400 ml-2">C: {Math.round(item.food.carbs * ratio)}</span>
-                              <span className="text-yellow-400 ml-2">G: {Math.round(item.food.fat * ratio)}</span>
+                              <span className="text-emerald-400 ml-2">
+                                P: {Math.round(item.food.protein * ratio)}
+                              </span>
+                              <span className="text-blue-400 ml-2">
+                                C: {Math.round(item.food.carbs * ratio)}
+                              </span>
+                              <span className="text-yellow-400 ml-2">
+                                G: {Math.round(item.food.fat * ratio)}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
@@ -269,8 +313,18 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
                                 className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                 title="Editar"
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
                                 </svg>
                               </button>
                               <button
@@ -278,8 +332,18 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
                                 className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                 title="Remover"
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                               </button>
                             </div>
@@ -301,7 +365,12 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
               className="w-full py-4 border-2 border-dashed border-white/10 rounded-xl text-muted-foreground hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               Adicionar {mealType.label}
             </button>
@@ -312,13 +381,24 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
       {/* Modals */}
       {isFoodModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsFoodModalOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsFoodModalOpen(false)}
+          />
           <div className="relative bg-surface border border-white/10 rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
             <div className="p-4 border-b border-white/10 flex justify-between items-center">
               <h3 className="text-lg font-bold text-foreground">Adicionar Alimento</h3>
-              <button onClick={() => setIsFoodModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setIsFoodModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -344,7 +424,7 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
         }}
         onSave={handleUpdateMealTime}
         currentTime={editingMeal?.meal_time || undefined}
-        mealName={editingMeal?.name || ''}
+        mealName={editingMeal?.name || ""}
       />
 
       <AddFoodQuantityModal
@@ -361,10 +441,15 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
       {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsDeleteConfirmOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsDeleteConfirmOpen(false)}
+          />
           <div className="relative bg-surface border border-white/10 rounded-xl w-full max-w-sm shadow-2xl p-6">
             <h3 className="text-lg font-bold text-foreground mb-4">Confirmar Remoção</h3>
-            <p className="text-muted-foreground mb-6">Tem certeza que deseja remover este alimento?</p>
+            <p className="text-muted-foreground mb-6">
+              Tem certeza que deseja remover este alimento?
+            </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}

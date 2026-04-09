@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { supabase } from '@meupersonal/supabase';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { supabase } from "@meupersonal/supabase";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface Exercise {
   id: string;
@@ -11,7 +11,7 @@ interface Exercise {
   muscle_group: string;
   equipment: string;
   difficulty: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   is_verified: boolean;
   created_by: string | null;
 }
@@ -20,78 +20,72 @@ export default function ExercisesPage() {
   const router = useRouter();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  useEffect(() => {
-    loadExercises();
-  }, []);
-
-  async function loadExercises() {
+  const loadExercises = useCallback(async () => {
     try {
       setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .order('name');
+
+      const { data, error } = await supabase.from("exercises").select("*").order("name");
 
       if (error) throw error;
 
       setExercises(data || []);
     } catch (error) {
-      console.error('Error loading exercises:', error);
+      console.error("Error loading exercises:", error);
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  async function updateStatus(id: string, newStatus: 'approved' | 'rejected') {
+  useEffect(() => {
+    loadExercises();
+  }, [loadExercises]);
+
+  async function updateStatus(id: string, newStatus: "approved" | "rejected") {
     try {
-      const { error } = await supabase
-        .from('exercises')
-        .update({ status: newStatus })
-        .eq('id', id);
+      const { error } = await supabase.from("exercises").update({ status: newStatus }).eq("id", id);
 
       if (error) throw error;
 
-      setExercises(prev => prev.map(ex => 
-        ex.id === id ? { ...ex, status: newStatus } : ex
-      ));
+      setExercises((prev) => prev.map((ex) => (ex.id === id ? { ...ex, status: newStatus } : ex)));
     } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Failed to update status');
+      console.error("Error updating status:", error);
+      alert("Failed to update status");
     }
   }
 
   async function toggleVerified(id: string, current: boolean) {
     try {
       const { error } = await supabase
-        .from('exercises')
+        .from("exercises")
         .update({ is_verified: !current })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
-      setExercises(prev => prev.map(ex => 
-        ex.id === id ? { ...ex, is_verified: !current } : ex
-      ));
+      setExercises((prev) =>
+        prev.map((ex) => (ex.id === id ? { ...ex, is_verified: !current } : ex)),
+      );
     } catch (error) {
-      console.error('Error updating verification:', error);
-      alert('Failed to update verification');
+      console.error("Error updating verification:", error);
+      alert("Failed to update verification");
     }
   }
 
   const filteredExercises = exercises.filter((ex) => {
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || ex.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || ex.category === categoryFilter;
+    const matchesStatus = statusFilter === "all" || ex.status === statusFilter;
+    const matchesCategory = categoryFilter === "all" || ex.category === categoryFilter;
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const categories = Array.from(new Set(exercises.map(ex => ex.category))).filter(Boolean).sort();
+  const categories = Array.from(new Set(exercises.map((ex) => ex.category)))
+    .filter(Boolean)
+    .sort();
 
   if (isLoading) {
     return (
@@ -111,12 +105,11 @@ export default function ExercisesPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">
             Exercícios
           </h1>
-          <p className="text-muted-foreground">
-            Gerencie e modere exercícios
-          </p>
+          <p className="text-muted-foreground">Gerencie e modere exercícios</p>
         </div>
         <button
-          onClick={() => router.push('/admin/content/exercises/create')}
+          type="button"
+          onClick={() => router.push("/admin/content/exercises/create")}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium"
         >
           + Novo Exercício
@@ -127,7 +120,11 @@ export default function ExercisesPage() {
       <div className="bg-surface border border-border rounded-xl p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
+            <label htmlFor="search-exercises" className="sr-only">
+              Buscar exercícios
+            </label>
             <input
+              id="search-exercises"
               type="text"
               placeholder="Buscar exercícios..."
               value={searchQuery}
@@ -136,27 +133,41 @@ export default function ExercisesPage() {
             />
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Todos os Status</option>
-            <option value="pending">Pendente</option>
-            <option value="approved">Aprovado</option>
-            <option value="rejected">Rejeitado</option>
-          </select>
+          <div>
+            <label htmlFor="status-filter" className="sr-only">
+              Filtrar por status
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Todos os Status</option>
+              <option value="pending">Pendente</option>
+              <option value="approved">Aprovado</option>
+              <option value="rejected">Rejeitado</option>
+            </select>
+          </div>
 
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">Todas as Categorias</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+          <div>
+            <label htmlFor="category-filter" className="sr-only">
+              Filtrar por categoria
+            </label>
+            <select
+              id="category-filter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Todas as Categorias</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -166,8 +177,12 @@ export default function ExercisesPage() {
           <thead className="bg-muted border-b border-border">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Nome</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Categoria</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Grupo Muscular</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                Categoria
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                Grupo Muscular
+              </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">Ações</th>
             </tr>
@@ -179,34 +194,42 @@ export default function ExercisesPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{ex.name}</span>
                     {ex.is_verified && (
-                      <span className="text-blue-400" title="Verificado">✓</span>
+                      <span className="text-blue-400" title="Verificado">
+                        ✓
+                      </span>
                     )}
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-muted-foreground">{ex.category}</td>
                 <td className="px-6 py-4 text-sm text-muted-foreground">{ex.muscle_group}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-md text-xs font-medium border ${
-                    ex.status === 'approved' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                    ex.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
-                    'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
-                  }`}>
-                    {ex.status || 'approved'}
+                  <span
+                    className={`px-2 py-1 rounded-md text-xs font-medium border ${
+                      ex.status === "approved"
+                        ? "bg-green-500/20 text-green-400 border-green-500/50"
+                        : ex.status === "rejected"
+                          ? "bg-red-500/20 text-red-400 border-red-500/50"
+                          : "bg-yellow-500/20 text-yellow-400 border-yellow-500/50"
+                    }`}
+                  >
+                    {ex.status || "approved"}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    {ex.status === 'pending' && (
+                    {ex.status === "pending" && (
                       <>
                         <button
-                          onClick={() => updateStatus(ex.id, 'approved')}
+                          type="button"
+                          onClick={() => updateStatus(ex.id, "approved")}
                           className="p-1 text-green-400 hover:bg-green-500/10 rounded"
                           title="Aprovar"
                         >
                           ✓
                         </button>
                         <button
-                          onClick={() => updateStatus(ex.id, 'rejected')}
+                          type="button"
+                          onClick={() => updateStatus(ex.id, "rejected")}
                           className="p-1 text-red-400 hover:bg-red-500/10 rounded"
                           title="Rejeitar"
                         >
@@ -215,13 +238,15 @@ export default function ExercisesPage() {
                       </>
                     )}
                     <button
+                      type="button"
                       onClick={() => toggleVerified(ex.id, ex.is_verified)}
-                      className={`p-1 rounded ${ex.is_verified ? 'text-blue-400' : 'text-muted-foreground hover:text-blue-400'}`}
+                      className={`p-1 rounded ${ex.is_verified ? "text-blue-400" : "text-muted-foreground hover:text-blue-400"}`}
                       title="Alternar Verificado"
                     >
                       ★
                     </button>
                     <button
+                      type="button"
                       onClick={() => router.push(`/admin/content/exercises/${ex.id}`)}
                       className="text-primary hover:text-primary/80 font-medium text-sm ml-2"
                     >

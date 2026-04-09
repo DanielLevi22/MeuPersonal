@@ -43,7 +43,7 @@ const VolumeByMuscleChart = ({
     <View className="items-center h-full justify-between pb-4">
       <View className="flex-row items-end h-[120px] w-full justify-between px-4">
         {renderData.map((item, index) => (
-          <View key={`bar-${item.label}-${index}`} className="items-center gap-2">
+          <View key={`bar-${item.label}-${index.toString()}`} className="items-center gap-2">
             <View className="h-full justify-end">
               <View
                 style={{
@@ -60,7 +60,7 @@ const VolumeByMuscleChart = ({
       <View className="flex-row w-full justify-between px-1 mt-2">
         {renderData.map((item, index) => (
           <Text
-            key={`label-${item.label}-${index}`}
+            key={`label-${item.label}-${index.toString()}`}
             style={{ width: 24, fontSize: 8, textAlign: 'center', color: '#71717A' }}
             numberOfLines={1}
           >
@@ -102,6 +102,7 @@ const WeeklyLoadChart = ({ data }: { data: { weekLabel: string; load: number }[]
   return (
     <View className="justify-end h-full w-full pb-4">
       <Svg width={width} height={height}>
+        <title>Gráfico de Carga Semanal</title>
         <Defs>
           <SvgLinearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor="#FACC15" stopOpacity="0.3" />
@@ -172,6 +173,7 @@ const StimulusChart = ({ data }: { data: { label: string; value: number; color: 
     <View className="flex-row items-center gap-4">
       <View className="relative w-[80px] h-[80px] items-center justify-center">
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <title>Distribuição de Estímulos</title>
           <G rotation="-90" origin={`${center}, ${center}`}>
             {data.map((item) => {
               const strokeDasharray = `${item.value * circumference} ${circumference}`;

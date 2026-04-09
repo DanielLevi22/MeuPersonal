@@ -1,7 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Platform detection
-const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+const isReactNative = typeof navigator !== "undefined" && navigator.product === "ReactNative";
 
 // Storage adapter factory
 const createStorageAdapter = () => {
@@ -11,17 +11,17 @@ const createStorageAdapter = () => {
     return undefined; // Will be set by mobile app
   } else {
     // For web, use localStorage
-    return typeof window !== 'undefined' ? window.localStorage : undefined;
+    return typeof window !== "undefined" ? window.localStorage : undefined;
   }
 };
 
 const supabaseUrl =
-  process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  throw new Error("Missing Supabase environment variables");
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
