@@ -11,6 +11,7 @@ export interface Student {
   is_invite?: boolean;
   invite_code?: string;
   status?: "active" | "pending";
+  created_at?: string;
 }
 
 export function useStudents() {
@@ -42,7 +43,8 @@ export function useStudents() {
           client:profiles!client_id (
             id,
             full_name,
-            email
+            email,
+            created_at
           )
         `)
         .eq("professional_id", userId)
@@ -65,6 +67,7 @@ export function useStudents() {
           id: string;
           full_name: string;
           email: string;
+          created_at: string;
         };
       }
 
@@ -86,6 +89,7 @@ export function useStudents() {
             email: item.client.email,
             is_invite: false,
             status: "active",
+            created_at: item.client.created_at,
           };
         })
         .filter((s): s is Student => s !== null);

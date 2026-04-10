@@ -71,25 +71,36 @@ export default function StudentDetailsPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-surface border border-white/10 rounded-xl p-4">
           <p className="text-sm text-muted-foreground mb-1">Status</p>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-lg font-bold text-foreground">Ativo</span>
+            <span
+              className={`w-2 h-2 rounded-full ${student.status === "active" ? "bg-emerald-500" : "bg-orange-400"}`}
+            />
+            <span className="text-lg font-bold text-foreground">
+              {student.status === "active" ? "Ativo" : "Pendente"}
+            </span>
           </div>
         </div>
         <div className="bg-surface border border-white/10 rounded-xl p-4">
-          <p className="text-sm text-muted-foreground mb-1">Plano Atual</p>
-          <p className="text-lg font-bold text-foreground">Hipertrofia</p>
+          <p className="text-sm text-muted-foreground mb-1">Membro desde</p>
+          <p className="text-lg font-bold text-foreground">
+            {student.created_at
+              ? new Date(student.created_at).toLocaleDateString("pt-BR", {
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}
+          </p>
         </div>
         <div className="bg-surface border border-white/10 rounded-xl p-4">
-          <p className="text-sm text-muted-foreground mb-1">Próximo Treino</p>
-          <p className="text-lg font-bold text-foreground">Hoje, 18:00</p>
+          <p className="text-sm text-muted-foreground mb-1">Treinos</p>
+          <p className="text-lg font-bold text-muted-foreground">—</p>
         </div>
         <div className="bg-surface border border-white/10 rounded-xl p-4">
-          <p className="text-sm text-muted-foreground mb-1">Última Presença</p>
-          <p className="text-lg font-bold text-foreground">Ontem</p>
+          <p className="text-sm text-muted-foreground mb-1">Avaliações</p>
+          <p className="text-lg font-bold text-muted-foreground">—</p>
         </div>
       </div>
 
