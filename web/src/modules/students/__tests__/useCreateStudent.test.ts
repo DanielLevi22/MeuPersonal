@@ -4,15 +4,17 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock Supabase
-const mockRpc = vi.fn();
-const mockGetUser = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock("@meupersonal/supabase", () => ({
   supabase: {
-    auth: { getUser: mockGetUser },
-    rpc: mockRpc,
+    auth: { getSession: mockGetSession },
   },
 }));
+
+// Mock fetch
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 
 // Import after mock
 const { useCreateStudent } = await import("../hooks/useCreateStudent");
@@ -24,17 +26,19 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe("useCreateStudent", () => {
   beforeEach(() => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: "prof-123" } } });
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: "token-abc" } },
+    });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("calls create_student_with_auth rpc with correct params", async () => {
-    mockRpc.mockResolvedValueOnce({
-      data: { success: true, student_id: "student-456" },
-      error: null,
+  it("calls POST /api/students with correct params", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, student_id: "student-456" }),
     });
 
     const { result } = renderHook(() => useCreateStudent(), { wrapper });
@@ -52,21 +56,23 @@ describe("useCreateStudent", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockRpc).toHaveBeenCalledWith("create_student_with_auth", {
-      p_professional_id: "prof-123",
-      p_full_name: "João Silva",
-      p_email: "joao@example.com",
-      p_password: "senha123",
-      p_phone: "(11) 99999-9999",
-      p_weight: 75,
-      p_height: 175,
-      p_notes: "Objetivo: hipertrofia",
-      p_experience_level: "Iniciante",
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/students",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          Authorization: "Bearer token-abc",
+        }),
+        body: expect.stringContaining("João Silva"),
+      }),
+    );
+
+    expect(result.current.data).toEqual({ success: true, student_id: "student-456" });
   });
 
   it("throws when user is not authenticated", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
 
     const { result } = renderHook(() => useCreateStudent(), { wrapper });
 
@@ -78,12 +84,13 @@ describe("useCreateStudent", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toBeInstanceOf(Error);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("throws when rpc returns an error", async () => {
-    mockRpc.mockResolvedValueOnce({
-      data: null,
-      error: { message: "Email already registered" },
+  it("throws when api returns an error response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: "Email já cadastrado" }),
     });
 
     const { result } = renderHook(() => useCreateStudent(), { wrapper });
@@ -95,12 +102,13 @@ describe("useCreateStudent", () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Email já cadastrado");
   });
 
-  it("throws when rpc returns success=false", async () => {
-    mockRpc.mockResolvedValueOnce({
-      data: { success: false, error: "User already exists" },
-      error: null,
+  it("throws with fallback message when api error has no message", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({}),
     });
 
     const { result } = renderHook(() => useCreateStudent(), { wrapper });
@@ -112,5 +120,6 @@ describe("useCreateStudent", () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Não foi possível criar o aluno");
   });
 });

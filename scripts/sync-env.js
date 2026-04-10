@@ -46,6 +46,7 @@ const appEnvMap = {
 const webEnvMap = {
   SUPABASE_URL: "NEXT_PUBLIC_SUPABASE_URL",
   SUPABASE_ANON_KEY: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  SUPABASE_SERVICE_ROLE_KEY: "SUPABASE_SERVICE_ROLE_KEY", // server-side only, sem prefixo NEXT_PUBLIC_
   DATABASE_URL: "DATABASE_URL",
   // GEMINI_API_KEY não vai pro web — é só para o mobile
 };

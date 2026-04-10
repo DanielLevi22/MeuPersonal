@@ -20,30 +20,26 @@ export function useCreateStudent() {
   return useMutation({
     mutationFn: async (input: CreateStudentInput) => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Usuário não autenticado");
 
-      const { data, error } = await supabase.rpc("create_student_with_auth", {
-        p_professional_id: user.id,
-        p_full_name: input.fullName,
-        p_email: input.email,
-        p_password: input.password,
-        p_phone: input.phone ?? null,
-        p_weight: input.weight ? parseFloat(input.weight) : null,
-        p_height: input.height ? parseFloat(input.height) : null,
-        p_notes: input.notes ?? null,
-        p_experience_level: input.experience_level ?? null,
+      const response = await fetch("/api/students", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(input),
       });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      const result = data as { success: boolean; error?: string; student_id?: string };
-      if (!result?.success) {
-        throw new Error(result?.error ?? "Não foi possível criar o aluno");
+      if (!response.ok) {
+        throw new Error(result.error ?? "Não foi possível criar o aluno");
       }
 
-      return result;
+      return result as { success: boolean; student_id: string };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });

@@ -75,9 +75,11 @@ export function useStudents() {
         invite_code?: string;
       }
 
+      const seen = new Set<string>();
       const activeStudents = ((activeData as unknown as CoachingWithStudent[]) || [])
         .map((item): Student | null => {
-          if (!item.client) return null;
+          if (!item.client || seen.has(item.client.id)) return null;
+          seen.add(item.client.id);
           return {
             id: item.client.id,
             full_name: item.client.full_name,
