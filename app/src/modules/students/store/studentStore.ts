@@ -200,7 +200,6 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       const { data: linkedData, error: linkedError, count } = await query;
 
       if (linkedError) throw linkedError;
-      if (count !== null) set({ totalCount: count });
 
       // 2. Fetch latest assessment for each student
       const studentIds = (linkedData || [])
@@ -233,6 +232,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         }
       }
 
+      const seenIds = new Set<string>();
       const formattedStudents = (linkedData || [])
         .map(
           (item: {
@@ -240,7 +240,8 @@ export const useStudentStore = create<StudentState>((set, get) => ({
             student?: Omit<Student, 'status'> | Omit<Student, 'status'>[] | null;
           }) => {
             const student = Array.isArray(item.student) ? item.student[0] : item.student;
-            if (!student) return null;
+            if (!student || seenIds.has(student.id)) return null;
+            seenIds.add(student.id);
 
             const assessment: PhysicalAssessment | undefined = assessmentsMap.get(student.id);
             const safeAssessment = assessment || ({} as Partial<PhysicalAssessment>);
@@ -257,9 +258,10 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         )
         .filter(Boolean) as Student[];
 
-      set((state) => ({
-        students: append ? [...state.students, ...formattedStudents] : formattedStudents,
-      }));
+      set((state) => {
+        const updated = append ? [...state.students, ...formattedStudents] : formattedStudents;
+        return { students: updated, totalCount: updated.length };
+      });
     } catch (error) {
       console.error('❌ Error fetching students:', error);
       if (!append) set({ students: [] });
