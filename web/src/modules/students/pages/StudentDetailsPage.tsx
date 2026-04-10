@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStudents } from "@/shared/hooks/useStudents";
+import { AssessmentModal } from "../components/AssessmentModal";
 import { EditStudentModal } from "../components/EditStudentModal";
 
 export default function StudentDetailsPage() {
@@ -12,6 +13,7 @@ export default function StudentDetailsPage() {
   const studentId = params.id as string;
   const { data: students = [], isLoading } = useStudents();
   const [editOpen, setEditOpen] = useState(false);
+  const [assessmentOpen, setAssessmentOpen] = useState(false);
 
   const student = students.find((s) => s.id === studentId);
 
@@ -70,7 +72,10 @@ export default function StudentDetailsPage() {
           >
             Editar Perfil
           </button>
-          <button className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors">
+          <button
+            onClick={() => setAssessmentOpen(true)}
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors"
+          >
             Nova Avaliação
           </button>
         </div>
@@ -172,6 +177,32 @@ export default function StudentDetailsPage() {
           <p className="text-xs text-muted-foreground mt-2 text-right">3 treinos essa semana</p>
         </Link>
 
+        {/* Assessments Module */}
+        <Link
+          href={`/dashboard/students/${studentId}/assessments`}
+          className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-accent/50 transition-all hover:shadow-lg hover:shadow-accent/5"
+        >
+          <div className="flex items-start justify-between mb-6">
+            <div className="p-3 rounded-xl bg-accent/10 text-accent group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground group-hover:bg-accent/10 group-hover:text-accent transition-colors">
+              Ver Detalhes
+            </span>
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Avaliações</h3>
+          <p className="text-muted-foreground">
+            Registre avaliações físicas, composição corporal e circunferências.
+          </p>
+        </Link>
+
         {/* History Module */}
         <Link
           href={`/dashboard/students/${studentId}/history`}
@@ -206,6 +237,10 @@ export default function StudentDetailsPage() {
       <EditStudentModal
         studentId={editOpen ? studentId : null}
         onClose={() => setEditOpen(false)}
+      />
+      <AssessmentModal
+        studentId={assessmentOpen ? studentId : null}
+        onClose={() => setAssessmentOpen(false)}
       />
     </div>
   );

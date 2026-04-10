@@ -1,9 +1,13 @@
+export { AssessmentModal } from "./components/AssessmentModal";
 export { CreateStudentModal } from "./components/CreateStudentModal";
 export { EditStudentModal } from "./components/EditStudentModal";
 export { TransferRequestsList } from "./components/TransferRequestsList";
+export { useCreateAssessment } from "./hooks/useCreateAssessment";
 export { useCreateStudent } from "./hooks/useCreateStudent";
+export { useStudentAssessments } from "./hooks/useStudentAssessments";
 export { useStudentDetails } from "./hooks/useStudentDetails";
 export { useStudentHistory } from "./hooks/useStudentHistory";
 export { useUpdateStudent } from "./hooks/useUpdateStudent";
+export { default as StudentAssessmentsPage } from "./pages/StudentAssessmentsPage";
 export { default as StudentDetailsPage } from "./pages/StudentDetailsPage";
 export { default as StudentsPage } from "./pages/StudentsPage";
