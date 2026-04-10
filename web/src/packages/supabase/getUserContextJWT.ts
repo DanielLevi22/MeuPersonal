@@ -92,7 +92,21 @@ export async function getUserContextJWT(userId: string): Promise<UserContext> {
       console.log("✅ Services found:", services);
     }
 
-    context.services = (services?.map((s) => s.service_category) || []) as ServiceCategory[];
+    const dbServices = services?.map((s) => s.service_category) || [];
+
+    if (dbServices.length > 0) {
+      context.services = dbServices as ServiceCategory[];
+    } else {
+      // Fallback: read from user_metadata (set during registration via signUp options.data)
+      // This covers professionals whose professional_services records haven't been created yet
+      const metaServices: string[] = session?.user?.user_metadata?.services || [];
+      if (metaServices.length > 0) {
+        console.log("ℹ️ professional_services empty, falling back to user_metadata:", metaServices);
+        context.services = metaServices as ServiceCategory[];
+      } else {
+        context.services = [];
+      }
+    }
   }
 
   if (user.account_type === "autonomous_student") {
