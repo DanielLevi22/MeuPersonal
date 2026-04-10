@@ -7,7 +7,10 @@
     "prepare": "husky",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "env:sync": "node scripts/sync-env.js",
+    "env:sync:preview": "node scripts/sync-env.js preview",
+    "env:sync:production": "node scripts/sync-env.js production"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",

@@ -45,7 +45,7 @@ export function EditExerciseModal({ visible, item, onClose, onSave }: EditExerci
       setVideoUrl(item.exercise?.video_url || '');
       console.log('🔄 EditExerciseModal initialized with video_url:', item.exercise?.video_url);
     }
-  }, [item?.id, visible, item.exercise?.video_url, item.reps, item.rest_time, item.sets, item]); // Only re-run when item ID or visibility changes
+  }, [item?.id, visible, item?.exercise?.video_url, item?.reps, item?.rest_time, item?.sets, item]); // Only re-run when item ID or visibility changes
 
   const handleSave = async () => {
     setIsSaving(true);

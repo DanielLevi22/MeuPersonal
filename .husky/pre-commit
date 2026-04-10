@@ -1,1 +1,2 @@
-cd app && npm run lint
+cd app && npm run lint && npx tsc --noEmit
+cd ../web && npm run lint && npm run typecheck

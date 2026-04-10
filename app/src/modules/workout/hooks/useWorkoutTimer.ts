@@ -11,7 +11,7 @@ export function useWorkoutTimer({ onComplete }: UseWorkoutTimerProps = {}) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backgroundTimeRef = useRef<number | null>(null);
 
   // Load sounds

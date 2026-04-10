@@ -268,14 +268,14 @@ Agente → implementa
 ### Branches
 
 ```
-main         → production-ready sempre (CI obrigatório)
-develop      → integração contínua
-feature/xxx  → uma feature, vida < 3 dias
-fix/xxx      → correção de bug
-chore/xxx    → infra, deps, configuração
+main          → production-ready sempre (CI obrigatório)
+development   → integração contínua
+feature/xxx   → uma feature, vida < 3 dias
+fix/xxx       → correção de bug
+chore/xxx     → infra, deps, configuração
 ```
 
-Nada vai pra `main` sem passar por `develop` primeiro (exceto hotfix crítico).
+Nada vai pra `main` sem passar por `development` primeiro (exceto hotfix crítico).
 
 ### Commits (conventional commits — commitlint ativo)
 
@@ -397,13 +397,33 @@ export function useCreateWorkout() {
 
 ## Gates de qualidade — tudo obrigatório
 
-Antes de qualquer commit:
-- `biome check .` passa (lint + format)
-- `tsc --noEmit` passa (tipos)
-- Testes relacionados à mudança passam
-- CI verde
+### Política de TDD
+
+- **Escrever testes antes ou junto com a implementação** para lógica de negócio (services, stores, hooks)
+- Componentes puramente visuais não precisam de teste unitário — foco em lógica
+- Cobertura mínima esperada: stores e services críticos
+
+### Hooks locais (Husky)
+
+```
+pre-commit  → biome check (lint) + tsc --noEmit (tipos) — ambos mobile e web
+pre-push    → jest (mobile) + vitest (web) — bloqueia push se testes falharem
+```
+
+**O fluxo correto:**
+- Commite livremente durante desenvolvimento (apenas lint/types)
+- Push só passa se os testes unitários estiverem verdes
+- CI valida tudo: lint + tipos + testes + E2E + build
 
 **Nunca use `--no-verify`.** Se o hook falhar, corrija o problema.
+
+### CI (pipeline completo)
+
+- `biome check .` passa (lint + format)
+- `tsc --noEmit` passa (tipos)
+- Testes unitários passam (Jest + Vitest)
+- Testes E2E passam (Maestro)
+- Build sem erros
 
 ### Segurança
 
@@ -470,7 +490,59 @@ scoop install maestro
 
 - Notificações push: infraestrutura pronta, integração pendente
 - Gamificação: migrations no Supabase Dashboard ainda não aplicadas
-- Staging Supabase: dev e prod usam o mesmo projeto por enquanto (separar antes do lançamento)
+
+## Separação de ambientes Supabase
+
+**Status**: ⚠️ Pendente — dev e prod ainda apontam para o mesmo projeto. Resolver antes do lançamento.
+
+### Estrutura alvo
+
+| Ambiente | Branch | Projeto Supabase | Arquivo local |
+|---|---|---|---|
+| Development | `development` | projeto dev (atual) | `app/.env.development`, `web/.env` |
+| Staging | `development` → EAS preview | projeto staging (criar) | `app/.env.preview` |
+| Production | `main` → EAS production | projeto prod (criar) | `app/.env.production` |
+
+### Checklist para separar os ambientes
+
+#### 1. Criar projetos no Supabase Dashboard
+- [ ] Criar projeto **staging** em supabase.com
+- [ ] Criar projeto **production** em supabase.com
+
+#### 2. Aplicar migrations em cada projeto
+As 12 migrations estão em `app/drizzle/` (0000 → 0011). Aplicar via SQL Editor do Supabase Dashboard na ordem:
+```
+0000_dark_leopardon.sql
+0001_create_periodizations.sql
+0002_create_training_plans.sql
+0003_update_workouts.sql
+0004_fix_date_constraints.sql
+0005_fix_rls_recursion.sql
+0006_create_workout_sessions.sql
+0007_add_workout_sessions_rls.sql
+0008_recreate_workout_session_items.sql
+0009_create_diet_logs.sql
+0010_enhance_gamification.sql
+0011_add_workout_intensity.sql
+```
+
+#### 3. Atualizar variáveis locais
+- [ ] `app/.env.preview` → URL e anon key do projeto staging
+- [ ] `app/.env.production` → URL e anon key do projeto production
+- [ ] `web/.env` → continua apontando para dev (já correto)
+
+#### 4. Atualizar GitHub Secrets
+- [ ] `EXPO_PUBLIC_SUPABASE_URL_PREVIEW` + `EXPO_PUBLIC_SUPABASE_ANON_KEY_PREVIEW` → staging
+- [ ] `EXPO_PUBLIC_SUPABASE_URL_PROD` + `EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD` → production
+- [ ] `NEXT_PUBLIC_SUPABASE_URL_PROD` + `NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD` → production
+
+### Prefixos de variáveis por plataforma
+
+```
+Mobile (Expo):  EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY
+Web (Next.js):  NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY
+Migrations:     DATABASE_URL (nunca expor no cliente — sem prefixo público)
+```
 
 ---
 

@@ -3,7 +3,7 @@
 // Use global mocks defined in jest.setup.ts
 // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
 const { mockSupabase, mockSupabaseBuilder } = global as unknown as {
-  mockSupabase: jest.Mock;
+  mockSupabase: jest.Mock & { from: jest.Mock };
   mockSupabaseBuilder: jest.Mock;
 };
 

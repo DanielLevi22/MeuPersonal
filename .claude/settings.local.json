@@ -10,7 +10,9 @@
       "Bash(sed -n '22,28p' /c/pessoal/MeuPersonal/web/src/app/admin/content/exercises/[id]/page.tsx)",
       "Bash(sed -n '24,30p' /c/pessoal/MeuPersonal/web/src/app/admin/content/foods/[id]/page.tsx)",
       "Bash(sed -n '26,32p' /c/pessoal/MeuPersonal/web/src/app/admin/content/reports/page.tsx)",
-      "Bash(sed -n '27,33p' /c/pessoal/MeuPersonal/web/src/app/admin/settings/page.tsx)"
+      "Bash(sed -n '27,33p' /c/pessoal/MeuPersonal/web/src/app/admin/settings/page.tsx)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(npx tsc:*)"
     ]
   }
 }

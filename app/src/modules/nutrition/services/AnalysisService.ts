@@ -1,6 +1,6 @@
 import type { DietPlan } from '@meupersonal/core';
 import { supabase } from '@meupersonal/supabase';
-import { CoPilotService } from '@/modules/ai';
+import { AssistantService } from '@/modules/ai';
 
 export interface WeeklyAdherenceData {
   totalMeals: number;
@@ -50,12 +50,12 @@ export const AnalysisService = {
     adherence: WeeklyAdherenceData,
     planName: string
   ): Promise<string> => {
-    return CoPilotService.analyzeNutritionAdherence(
+    return AssistantService.analyzeNutritionAdherence(
       studentName,
       {
         totalMeals: adherence.totalMeals,
         completedMeals: adherence.completedMeals,
-        logs: adherence.logs,
+        logs: adherence.logs as Record<string, unknown>[],
       },
       planName
     );

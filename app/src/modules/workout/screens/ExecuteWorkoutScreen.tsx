@@ -110,6 +110,76 @@ export default function ExecuteWorkoutScreen() {
     }
   }, [isMasquerading, router]);
 
+  const handleLogSet = useCallback(
+    (item: WorkoutItem) => {
+      if (isResting) {
+        Alert.alert('Descanso', 'Aguarde o tempo de descanso terminar ou pule o descanso.');
+        return;
+      }
+
+      // Use edited values if available
+      const effectiveItem = editedWorkoutItems[item.id] || item;
+      const currentCompleted = completedSets[item.id] || 0;
+
+      if (currentCompleted < effectiveItem.sets) {
+        setCompletedSets((prev) => ({
+          ...prev,
+          [item.id]: currentCompleted + 1,
+        }));
+
+        if (currentCompleted + 1 < effectiveItem.sets) {
+          // Start rest timer
+          startRest(effectiveItem.rest_time || DEFAULT_REST_TIME, item.id);
+          announceRest(effectiveItem.rest_time || DEFAULT_REST_TIME);
+        } else {
+          // Exercise completed, announce next exercise if available
+          if (workout?.items) {
+            const myIndex = workout.items.indexOf(item);
+            if (myIndex >= 0 && myIndex < workout.items.length - 1) {
+              const nextItem = workout.items[myIndex + 1];
+              const effectiveNextItem = editedWorkoutItems[nextItem.id] || nextItem;
+              if (effectiveNextItem.exercise) {
+                announceExercise(
+                  effectiveNextItem.exercise.name,
+                  effectiveNextItem.sets,
+                  effectiveNextItem.reps,
+                  effectiveNextItem.weight
+                );
+              }
+            }
+          }
+        }
+      }
+    },
+    [
+      isResting,
+      editedWorkoutItems,
+      completedSets,
+      workout,
+      startRest,
+      announceRest,
+      announceExercise,
+    ]
+  );
+
+  const handleFinishWorkout = useCallback(() => {
+    const totalSets = workout?.items?.reduce((acc, item) => acc + item.sets, 0) || 0;
+    const completedTotal = Object.values(completedSets).reduce((acc, val) => acc + val, 0);
+
+    if (completedTotal < totalSets) {
+      Alert.alert(
+        'Treino Incompleto',
+        `Você completou ${completedTotal} de ${totalSets} séries. Deseja finalizar mesmo assim?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Finalizar', style: 'destructive', onPress: () => setShowFeedbackModal(true) },
+        ]
+      );
+    } else {
+      setShowFeedbackModal(true);
+    }
+  }, [workout, completedSets]);
+
   const handleVoiceCommand = useCallback(
     async (action: string) => {
       if (action === 'next_set') {
@@ -137,9 +207,7 @@ export default function ExecuteWorkoutScreen() {
     [
       workout,
       completedSets,
-      // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: callbacks declared later in component, safe at runtime
       handleLogSet,
-      // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: callbacks declared later in component, safe at runtime
       handleFinishWorkout,
       pauseTimer,
       resumeTimer,
@@ -171,6 +239,24 @@ export default function ExecuteWorkoutScreen() {
     }
   }, [user?.id, workouts.length, fetchWorkouts]);
 
+  const fetchPreviousSession = useCallback(
+    async (workoutId: string, studentId: string) => {
+      try {
+        _setPreviousSessionError(null);
+        const session = await fetchWorkoutSessionDetails(workoutId, studentId);
+        console.log('[Progression] Previous session:', session);
+        setPreviousSession(session);
+      } catch (error) {
+        console.error('[Progression] Error fetching previous session:', error);
+        const errorMessage = 'Não foi possível carregar dados da sessão anterior';
+        _setPreviousSessionError(errorMessage);
+        // Show non-blocking toast/alert
+        console.warn(errorMessage);
+      }
+    },
+    [fetchWorkoutSessionDetails]
+  );
+
   useEffect(() => {
     const targetId = (workoutId || id) as string;
     if (workouts.length > 0 && targetId) {
@@ -190,26 +276,7 @@ export default function ExecuteWorkoutScreen() {
         }
       }
     }
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchPreviousSession declared on next line, safe at runtime
   }, [workouts, id, workoutId, user?.id, fetchPreviousSession]);
-
-  const fetchPreviousSession = useCallback(
-    async (workoutId: string, studentId: string) => {
-      try {
-        _setPreviousSessionError(null);
-        const session = await fetchWorkoutSessionDetails(workoutId, studentId);
-        console.log('[Progression] Previous session:', session);
-        setPreviousSession(session);
-      } catch (error) {
-        console.error('[Progression] Error fetching previous session:', error);
-        const errorMessage = 'Não foi possível carregar dados da sessão anterior';
-        _setPreviousSessionError(errorMessage);
-        // Show non-blocking toast/alert
-        console.warn(errorMessage);
-      }
-    },
-    [fetchWorkoutSessionDetails]
-  );
 
   const handleEditExercise = useCallback(
     (item: WorkoutItem) => {
@@ -285,58 +352,6 @@ export default function ExecuteWorkoutScreen() {
       maintained: string[];
     }>;
   }, [workout, previousSession, progressionAnalysis]);
-
-  const handleLogSet = useCallback(
-    (item: WorkoutItem) => {
-      if (isResting) {
-        Alert.alert('Descanso', 'Aguarde o tempo de descanso terminar ou pule o descanso.');
-        return;
-      }
-
-      // Use edited values if available
-      const effectiveItem = editedWorkoutItems[item.id] || item;
-      const currentCompleted = completedSets[item.id] || 0;
-
-      if (currentCompleted < effectiveItem.sets) {
-        setCompletedSets((prev) => ({
-          ...prev,
-          [item.id]: currentCompleted + 1,
-        }));
-
-        if (currentCompleted + 1 < effectiveItem.sets) {
-          // Start rest timer
-          startRest(effectiveItem.rest_time || DEFAULT_REST_TIME, item.id);
-          announceRest(effectiveItem.rest_time || DEFAULT_REST_TIME);
-        } else {
-          // Exercise completed, announce next exercise if available
-          if (workout?.items) {
-            const myIndex = workout.items.indexOf(item);
-            if (myIndex >= 0 && myIndex < workout.items.length - 1) {
-              const nextItem = workout.items[myIndex + 1];
-              const effectiveNextItem = editedWorkoutItems[nextItem.id] || nextItem;
-              if (effectiveNextItem.exercise) {
-                announceExercise(
-                  effectiveNextItem.exercise.name,
-                  effectiveNextItem.sets,
-                  effectiveNextItem.reps,
-                  effectiveNextItem.weight
-                );
-              }
-            }
-          }
-        }
-      }
-    },
-    [
-      isResting,
-      editedWorkoutItems,
-      completedSets,
-      workout,
-      startRest,
-      announceRest,
-      announceExercise,
-    ]
-  );
 
   const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -440,24 +455,6 @@ export default function ExecuteWorkoutScreen() {
     if (!currentRestItemId || !workout) return '';
     return workout.items?.find((i) => i.id === currentRestItemId)?.exercise?.name || '';
   }, [currentRestItemId, workout]);
-
-  const handleFinishWorkout = useCallback(() => {
-    const totalSets = workout?.items?.reduce((acc, item) => acc + item.sets, 0) || 0;
-    const completedTotal = Object.values(completedSets).reduce((acc, val) => acc + val, 0);
-
-    if (completedTotal < totalSets) {
-      Alert.alert(
-        'Treino Incompleto',
-        `Você completou ${completedTotal} de ${totalSets} séries. Deseja finalizar mesmo assim?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Finalizar', style: 'destructive', onPress: () => setShowFeedbackModal(true) },
-        ]
-      );
-    } else {
-      setShowFeedbackModal(true);
-    }
-  }, [workout, completedSets]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: WorkoutItem; index: number }) => {

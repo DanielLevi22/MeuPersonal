@@ -79,7 +79,8 @@ describe('nutritionStore - Food Substitution', () => {
     // biome-ignore lint/suspicious/noExplicitAny: Mocking subset structure for testing
     // biome-ignore lint/style/noNonNullAssertion: actual_items is guaranteed non-null by test setup
     expect((log.actual_items![0] as any).food_id).toBe('food-new');
-    expect(log.actual_items[0].is_substitution).toBe(true);
+    // biome-ignore lint/style/noNonNullAssertion: actual_items guaranteed non-null by test setup
+    expect(log.actual_items![0].is_substitution).toBe(true);
     expect(mockSupabase.from).toHaveBeenCalledWith('diet_logs');
   });
 

@@ -4,8 +4,8 @@ export {
   type AIWorkoutDay,
   type AIWorkoutItem,
   type AIWorkoutResponse,
-  CoPilotService,
-} from './services/CoPilotService';
+  AssistantService,
+} from './services/AssistantService';
 export {
   type GeminiGenerationConfig,
   GeminiService,

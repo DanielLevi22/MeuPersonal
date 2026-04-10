@@ -56,7 +56,7 @@ export function FoodSearchModal({
         mealId={mealId}
         initialData={initialData}
         onSave={onSave}
-        dailyTotals={dailyTotals}
+        substitutionTarget={dailyTotals}
         mealTime={mealTime}
         onTimeChange={onTimeChange}
       />

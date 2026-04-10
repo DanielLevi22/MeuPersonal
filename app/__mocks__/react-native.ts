@@ -4,7 +4,7 @@ export const Alert = {
 
 export const Platform = {
   OS: 'ios',
-  select: jest.fn((obj) => obj.ios),
+  select: jest.fn((obj: Record<string, unknown>) => obj.ios),
 };
 
 export const Dimensions = {
@@ -19,7 +19,7 @@ export const TextInput = 'TextInput';
 export const TouchableOpacity = 'TouchableOpacity';
 export const FlatList = 'FlatList';
 export const ActivityIndicator = 'ActivityIndicator';
-export const StyleSheet = { create: (obj) => obj };
+export const StyleSheet = { create: (obj: Record<string, unknown>) => obj };
 
 export default {
   Alert,
