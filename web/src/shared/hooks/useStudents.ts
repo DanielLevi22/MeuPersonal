@@ -34,12 +34,12 @@ export function useStudents() {
     queryFn: async () => {
       if (!userId) return [];
 
-      // Fetch active students (linked profiles)
+      // Fetch active students via profiles joined through coachings
       const { data: activeData, error: activeError } = await supabase
         .from("coachings")
         .select(`
           client_id,
-          client:profiles!coachings_client_id_fkey (
+          client:profiles!client_id (
             id,
             full_name,
             email
