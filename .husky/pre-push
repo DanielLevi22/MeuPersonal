@@ -1,2 +1,2 @@
-cd app && npm test -- --passWithNoTests
-cd ../web && npm test
+cd app && npm test -- --passWithNoTests --runInBand
+cd ../web && npm test -- --passWithNoTests

@@ -143,8 +143,8 @@ jest.mock('react-native-mmkv', () => ({
   })),
 }));
 
-// Mock Reanimated
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+// Mock Reanimated — using manual mock to avoid worklets native init issues
+jest.mock('react-native-reanimated');
 
 // Mock NitroModules
 jest.mock('react-native-nitro-modules', () => ({
