@@ -1,2 +1,9 @@
+branch=$(git symbolic-ref --short HEAD)
+if [ "$branch" = "main" ]; then
+  echo "❌ Push direto em 'main' é proibido."
+  echo "   Abra um PR de 'development' → 'main'."
+  exit 1
+fi
+
 cd app && npx jest --passWithNoTests --runInBand --no-coverage --forceExit
 cd ../web && npx vitest run --passWithNoTests

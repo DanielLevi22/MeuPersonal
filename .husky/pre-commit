@@ -1,2 +1,9 @@
+branch=$(git symbolic-ref --short HEAD)
+if [ "$branch" = "main" ] || [ "$branch" = "development" ]; then
+  echo "❌ Commits diretos em '$branch' são proibidos."
+  echo "   Crie uma branch: git checkout -b feature/minha-feature"
+  exit 1
+fi
+
 cd app && npm run lint && npx tsc --noEmit
 cd ../web && npm run lint && npm run typecheck
