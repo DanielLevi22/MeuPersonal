@@ -11,11 +11,11 @@
  *   npm run env:sync -- production → usa .env.production
  */
 
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require("node:fs");
+const path = require("node:path");
 
-const ROOT = path.resolve(__dirname, '..');
-const env = process.argv[2] || 'development';
+const ROOT = path.resolve(__dirname, "..");
+const env = process.argv[2] || "development";
 const sourceFile = path.join(ROOT, `.env.${env}`);
 
 if (!fs.existsSync(sourceFile)) {
@@ -25,28 +25,28 @@ if (!fs.existsSync(sourceFile)) {
 }
 
 // Lê e parseia o arquivo fonte
-const raw = fs.readFileSync(sourceFile, 'utf8');
+const raw = fs.readFileSync(sourceFile, "utf8");
 const vars = {};
-for (const line of raw.split('\n')) {
+for (const line of raw.split("\n")) {
   const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith('#')) continue;
-  const [key, ...rest] = trimmed.split('=');
-  if (key) vars[key.trim()] = rest.join('=').trim();
+  if (!trimmed || trimmed.startsWith("#")) continue;
+  const [key, ...rest] = trimmed.split("=");
+  if (key) vars[key.trim()] = rest.join("=").trim();
 }
 
 // ─── Mapeamento por plataforma ─────────────────────────────────────────────
 
 const appEnvMap = {
-  SUPABASE_URL: 'EXPO_PUBLIC_SUPABASE_URL',
-  SUPABASE_ANON_KEY: 'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-  GEMINI_API_KEY: 'EXPO_PUBLIC_GEMINI_API_KEY',
+  SUPABASE_URL: "EXPO_PUBLIC_SUPABASE_URL",
+  SUPABASE_ANON_KEY: "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+  GEMINI_API_KEY: "EXPO_PUBLIC_GEMINI_API_KEY",
   // DATABASE_URL não vai pro app — é só para migrations
 };
 
 const webEnvMap = {
-  SUPABASE_URL: 'NEXT_PUBLIC_SUPABASE_URL',
-  SUPABASE_ANON_KEY: 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  DATABASE_URL: 'DATABASE_URL',
+  SUPABASE_URL: "NEXT_PUBLIC_SUPABASE_URL",
+  SUPABASE_ANON_KEY: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  DATABASE_URL: "DATABASE_URL",
   // GEMINI_API_KEY não vai pro web — é só para o mobile
 };
 
@@ -56,7 +56,7 @@ function buildEnvFile(varMap, extras = {}) {
   const lines = [
     `# Gerado automaticamente por scripts/sync-env.js`,
     `# Fonte: .env.${env} — NÃO edite este arquivo diretamente`,
-    '',
+    "",
   ];
   for (const [src, dest] of Object.entries(varMap)) {
     if (vars[src] !== undefined) {
@@ -66,17 +66,17 @@ function buildEnvFile(varMap, extras = {}) {
   for (const [key, value] of Object.entries(extras)) {
     lines.push(`${key}=${value}`);
   }
-  return lines.join('\n') + '\n';
+  return `${lines.join("\n")}\n`;
 }
 
 // app/.env.<environment>
-const appFile = path.join(ROOT, 'app', `.env.${env}`);
+const appFile = path.join(ROOT, "app", `.env.${env}`);
 const appContent = buildEnvFile(appEnvMap, { EXPO_PUBLIC_APP_ENV: env });
 fs.writeFileSync(appFile, appContent);
 console.log(`✓ ${path.relative(ROOT, appFile)}`);
 
 // web/.env  (Next.js só lê .env e .env.local por padrão)
-const webFile = path.join(ROOT, 'web', '.env');
+const webFile = path.join(ROOT, "web", ".env");
 const webContent = buildEnvFile(webEnvMap);
 fs.writeFileSync(webFile, webContent);
 console.log(`✓ ${path.relative(ROOT, webFile)}`);
