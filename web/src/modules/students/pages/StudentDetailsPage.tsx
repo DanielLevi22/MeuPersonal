@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import { useStudents } from "@/shared/hooks/useStudents";
+import { EditStudentModal } from "../components/EditStudentModal";
 
 export default function StudentDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.id as string;
   const { data: students = [], isLoading } = useStudents();
+  const [editOpen, setEditOpen] = useState(false);
 
   const student = students.find((s) => s.id === studentId);
 
@@ -61,7 +64,10 @@ export default function StudentDetailsPage() {
         </div>
 
         <div className="flex gap-2">
-          <button className="px-4 py-2 bg-surface border border-white/10 text-foreground font-medium rounded-lg hover:bg-white/5 transition-colors">
+          <button
+            onClick={() => setEditOpen(true)}
+            className="px-4 py-2 bg-surface border border-white/10 text-foreground font-medium rounded-lg hover:bg-white/5 transition-colors"
+          >
             Editar Perfil
           </button>
           <button className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors">
@@ -166,6 +172,11 @@ export default function StudentDetailsPage() {
           <p className="text-xs text-muted-foreground mt-2 text-right">3 treinos essa semana</p>
         </Link>
       </div>
+
+      <EditStudentModal
+        studentId={editOpen ? studentId : null}
+        onClose={() => setEditOpen(false)}
+      />
     </div>
   );
 }
