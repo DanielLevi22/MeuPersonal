@@ -1,2 +1,2 @@
-cd app && npm test -- --passWithNoTests --runInBand
-cd ../web && npm test -- --passWithNoTests
+cd app && npx jest --passWithNoTests --runInBand --no-coverage --forceExit
+cd ../web && npx vitest run --passWithNoTests
