@@ -110,6 +110,24 @@ export default function StudentDetailsPage() {
         </div>
       </div>
 
+      {/* History link */}
+      <div>
+        <Link
+          href={`/dashboard/students/${studentId}/history`}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Ver histórico de atividades
+        </Link>
+      </div>
+
       {/* Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Nutrition Module */}
