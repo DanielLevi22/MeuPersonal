@@ -297,7 +297,12 @@ describe('workoutStore', () => {
       exercises: [{ id: 'ex1', name: 'Supino', muscle_group: 'Peito' } as never],
     });
 
-    mockSupabase.from.mockReturnValue(mockSupabaseQuery({ id: 'w1' }));
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'workouts') {
+        return mockSupabaseQuery([{ id: 'w1', title: 'Treino A' }]);
+      }
+      return mockSupabaseQuery(null);
+    });
 
     await useWorkoutStore.getState().saveGeneratedWorkouts(trainingPlanId, aiWorkouts, personalId);
 
