@@ -171,6 +171,36 @@ export default function StudentDetailsPage() {
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-right">3 treinos essa semana</p>
         </Link>
+
+        {/* History Module */}
+        <Link
+          href={`/dashboard/students/${studentId}/history`}
+          className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-violet-500/50 transition-all hover:shadow-lg hover:shadow-violet-500/5 md:col-span-2"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-violet-500/10 text-violet-400 group-hover:scale-110 transition-transform">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Histórico</h3>
+                <p className="text-muted-foreground text-sm mt-0.5">
+                  Timeline de treinos realizados, avaliações e planos de dieta.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-white/5 text-muted-foreground group-hover:bg-violet-500/10 group-hover:text-violet-400 transition-colors shrink-0">
+              Ver Histórico
+            </span>
+          </div>
+        </Link>
       </div>
 
       <EditStudentModal
