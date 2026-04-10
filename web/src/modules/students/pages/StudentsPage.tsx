@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useStudents } from "@/shared/hooks/useStudents";
 import { CreateStudentModal } from "../components/CreateStudentModal";
+import { StudentCard } from "../components/StudentCard";
 import { TransferRequestsList } from "../components/TransferRequestsList";
 
 export default function StudentsPage() {
@@ -83,58 +83,7 @@ export default function StudentsPage() {
       ) : filteredStudents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStudents.map((student) => (
-            <Link
-              key={student.id}
-              href={`/dashboard/students/${student.id}`}
-              className="group bg-surface border border-white/10 rounded-xl p-6 hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg group-hover:scale-110 transition-transform">
-                  {student.full_name.charAt(0).toUpperCase()}
-                </div>
-                <div
-                  className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                    student.status === "pending"
-                      ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                      : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  }`}
-                >
-                  {student.status === "pending" ? "Pendente" : "Ativo"}
-                </div>
-              </div>
-
-              <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
-                {student.full_name}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4 truncate">
-                {student.email || "Sem email"}
-              </p>
-
-              <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-white/5 pt-4">
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                  <span>Planos</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  <span>Treinos</span>
-                </div>
-              </div>
-            </Link>
+            <StudentCard key={student.id} student={student} />
           ))}
         </div>
       ) : (
