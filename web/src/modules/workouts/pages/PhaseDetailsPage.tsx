@@ -68,6 +68,7 @@ export default function PhaseDetailsPage() {
   const phaseId = params.phaseId as string;
 
   const [showSplitPicker, setShowSplitPicker] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [changingSplit, setChangingSplit] = useState(false);
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
@@ -204,32 +205,47 @@ export default function PhaseDetailsPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-foreground">{plan.name}</h1>
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusCfg.className}`}>
-            {statusCfg.label}
-          </span>
-        </div>
+        <h1 className="text-2xl font-bold text-foreground">{plan.name}</h1>
         <div className="flex items-center gap-2">
-          {/* Status cycle */}
-          {plan.status === "draft" && (
+          {/* Status menu */}
+          <div className="relative">
             <button
-              onClick={() => handleUpdateStatus("active")}
-              disabled={updateMutation.isPending}
-              className="px-3 py-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+              onClick={() => setShowStatusMenu((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${statusCfg.className} hover:opacity-80`}
             >
-              Ativar
+              {statusCfg.label}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </button>
-          )}
-          {plan.status === "active" && (
-            <button
-              onClick={() => handleUpdateStatus("completed")}
-              disabled={updateMutation.isPending}
-              className="px-3 py-1.5 text-xs font-medium bg-white/5 text-muted-foreground border border-white/10 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
-            >
-              Concluir
-            </button>
-          )}
+            {showStatusMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-surface border border-white/10 rounded-xl shadow-xl z-20 p-1.5 flex flex-col gap-0.5 min-w-[140px]">
+                {(["draft", "active", "completed"] as const).map((s) => {
+                  const cfg = PLAN_STATUS_CONFIG[s];
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        handleUpdateStatus(s);
+                        setShowStatusMenu(false);
+                      }}
+                      className={`px-3 py-2 rounded-lg text-left text-xs font-medium transition-colors hover:bg-white/5 ${
+                        plan.status === s ? "opacity-50 cursor-default" : ""
+                      } ${cfg.className}`}
+                      disabled={plan.status === s}
+                    >
+                      {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           {/* Delete */}
           <button
             onClick={handleDeletePhase}
