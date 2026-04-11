@@ -40,7 +40,7 @@ export function useStudents() {
         .from("coachings")
         .select(`
           client_id,
-          client:profiles!client_id (
+          client:profiles!client_professional_relationships_client_id_fkey (
             id,
             full_name,
             email,
@@ -106,7 +106,8 @@ export function useStudents() {
       return [...activeStudents, ...pendingStudents];
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 15, // 15 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -132,14 +133,16 @@ export function useProfessionalServices() {
 
       const { data, error } = await supabase
         .from("professional_services")
-        .select("service_type")
+        .select("service_category")
         .eq("user_id", userId)
         .eq("is_active", true);
 
       if (error) throw error;
-      return data.map((item) => item.service_type);
+      return data.map((item) => item.service_category);
     },
     enabled: !!userId,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -280,6 +283,8 @@ export function useTransferRequests() {
       if (error) throw error;
       return data as unknown as TransferRequest[];
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 

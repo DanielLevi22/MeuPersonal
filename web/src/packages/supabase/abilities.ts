@@ -86,6 +86,15 @@ export function defineAbilitiesFor(context: UserContext): AppAbility {
       can("read", "Workout"); // Pode VER treinos de clientes
       can("read", "Periodization");
     }
+
+    // Fallback: Se for profissional mas não tiver serviços explícitos (migração), permite gerenciar ambos para não travar o sistema
+    if (!context.services || context.services.length === 0) {
+      can("manage", "Workout");
+      can("manage", "Diet");
+      can("manage", "Exercise");
+      can("manage", "Food");
+      can("manage", "Periodization");
+    }
   }
 
   // === ALUNO GERENCIADO ===

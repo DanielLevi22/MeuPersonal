@@ -74,7 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .limit(50),
 
       supabaseAdmin
-        .from("diet_plans")
+        .from("nutrition_plans")
         .select("id, name, created_at, is_active")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false })

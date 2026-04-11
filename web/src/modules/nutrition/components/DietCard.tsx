@@ -32,9 +32,14 @@ export function DietCard({ dietPlan, onView, onEdit, onDelete }: DietCardProps) 
           <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
             {dietPlan.name}
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {dietPlan.plan_type === "unique" ? "Dieta Única" : "Dieta Cíclica"}
-          </p>
+          <div className="flex flex-col gap-0.5 mt-1">
+            <p className="text-xs font-medium text-primary uppercase tracking-wider">
+              {(dietPlan as any).profiles?.full_name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {dietPlan.plan_type === "unique" ? "Dieta Única" : "Dieta Cíclica"}
+            </p>
+          </div>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[dietPlan.status]}`}
