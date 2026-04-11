@@ -96,12 +96,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {canManageWorkouts && (
               <>
                 <a
-                  href="/dashboard/periodizations"
-                  className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
-                >
-                  📅 Periodizações
-                </a>
-                <a
                   href="/dashboard/students"
                   className="block px-4 py-3 text-muted-foreground hover:bg-surface-highlight hover:text-foreground rounded-lg transition-colors"
                 >
