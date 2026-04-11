@@ -203,6 +203,32 @@ export default function StudentDetailsPage() {
           </p>
         </Link>
 
+        {/* Anamnesis Module */}
+        <Link
+          href={`/dashboard/students/${studentId}/anamnesis`}
+          className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-teal-500/50 transition-all hover:shadow-lg hover:shadow-teal-500/5"
+        >
+          <div className="flex items-start justify-between mb-6">
+            <div className="p-3 rounded-xl bg-teal-500/10 text-teal-400 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground group-hover:bg-teal-500/10 group-hover:text-teal-400 transition-colors">
+              Ver Detalhes
+            </span>
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Anamnese</h3>
+          <p className="text-muted-foreground">
+            Questionário completo de saúde, histórico de treino e objetivos do aluno.
+          </p>
+        </Link>
+
         {/* History Module */}
         <Link
           href={`/dashboard/students/${studentId}/history`}
