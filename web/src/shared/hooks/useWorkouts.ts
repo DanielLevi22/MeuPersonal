@@ -74,7 +74,7 @@ export function useWorkouts() {
         .from("workouts")
         .select(`
           *,
-          workout_items(count),
+          workout_exercises(count),
           workout_assignments(count)
         `)
         .eq("personal_id", userId)
@@ -83,14 +83,14 @@ export function useWorkouts() {
       if (error) throw error;
 
       interface WorkoutWithCounts extends Workout {
-        workout_items: { count: number }[];
+        workout_exercises: { count: number }[];
         workout_assignments: { count: number }[];
       }
 
       // Transform data to include counts
       return ((data as unknown as WorkoutWithCounts[]) || []).map((workout) => ({
         ...workout,
-        exercise_count: workout.workout_items?.[0]?.count || 0,
+        exercise_count: workout.workout_exercises?.[0]?.count || 0,
         assigned_count: workout.workout_assignments?.[0]?.count || 0,
       }));
     },
@@ -103,11 +103,101 @@ export function useWorkout(id: string) {
   return useQuery({
     queryKey: ["workout", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("workouts").select("*").eq("id", id).single();
+      const { data, error } = await supabase
+        .from("workouts")
+        .select(`*, workout_exercises(count)`)
+        .eq("id", id)
+        .single();
 
       if (error) throw error;
-      return data as Workout;
+
+      interface WorkoutWithCount extends Workout {
+        workout_exercises: { count: number }[];
+      }
+
+      const w = data as unknown as WorkoutWithCount;
+      return {
+        ...w,
+        exercise_count: w.workout_exercises?.[0]?.count || 0,
+      } as Workout;
     },
     enabled: !!id,
+  });
+}
+
+export interface WorkoutItem {
+  id: string;
+  workout_id: string;
+  exercise_id: string;
+  order: number;
+  sets: number;
+  reps: string;
+  weight: string | null;
+  rest_time: number;
+  notes: string | null;
+  exercise?: {
+    id: string;
+    name: string;
+    muscle_group: string | null;
+    video_url: string | null;
+  };
+}
+
+export function useWorkoutItems(workoutId: string) {
+  return useQuery({
+    queryKey: ["workout-items", workoutId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("workout_exercises")
+        .select(`
+          id,
+          sets,
+          reps,
+          weight,
+          rest_time,
+          "order",
+          exercise:exercises (
+            id,
+            name,
+            muscle_group,
+            video_url
+          )
+        `)
+        .eq("workout_id", workoutId)
+        .order("order", { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as unknown as WorkoutItem[];
+    },
+    enabled: !!workoutId,
+    retry: 0,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useWorkoutsByPlan(planId: string) {
+  return useQuery({
+    queryKey: ["workouts-by-plan", planId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("workouts")
+        .select(`*, workout_exercises(count)`)
+        .eq("training_plan_id", planId)
+        .order("identifier", { ascending: true });
+
+      if (error) throw error;
+
+      interface WorkoutWithCount extends Workout {
+        workout_exercises: { count: number }[];
+      }
+
+      return ((data as unknown as WorkoutWithCount[]) || []).map((w) => ({
+        ...w,
+        exercise_count: w.workout_exercises?.[0]?.count || 0,
+      })) as Workout[];
+    },
+    enabled: !!planId,
+    retry: 0,
+    staleTime: 1000 * 60 * 5,
   });
 }

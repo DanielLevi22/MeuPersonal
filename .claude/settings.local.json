@@ -12,7 +12,28 @@
       "Bash(sed -n '26,32p' /c/pessoal/MeuPersonal/web/src/app/admin/content/reports/page.tsx)",
       "Bash(sed -n '27,33p' /c/pessoal/MeuPersonal/web/src/app/admin/settings/page.tsx)",
       "Bash(echo \"Exit: $?\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git -C /c/pessoal/MeuPersonal add 'web/src/app/api/students/[id]/route.ts' web/src/modules/students/hooks/useDeleteStudent.ts web/src/modules/students/components/DeleteStudentModal.tsx web/src/modules/students/components/StudentCard.tsx web/src/modules/students/pages/StudentsPage.tsx docs/web-student-management.md)",
+      "Bash(git -C /c/pessoal/MeuPersonal status)",
+      "Bash(git -C /c/pessoal/MeuPersonal push origin feature/web-student-management)",
+      "Bash(grep:*)",
+      "Bash(git -C /c/pessoal/MeuPersonal add 'web/src/app/api/students/[id]/route.ts' web/src/modules/students/hooks/useStudentDetails.ts web/src/modules/students/hooks/useUpdateStudent.ts web/src/modules/students/components/EditStudentModal.tsx web/src/modules/students/pages/StudentDetailsPage.tsx)",
+      "Bash(git -C /c/pessoal/MeuPersonal commit -m ':*)",
+      "Bash(winpty gh pr create --title 'feat: edit student modal \\(dados + medidas\\)' --body ':*)",
+      "Bash(npx vitest:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(gh pr:*)",
+      "Bash(command -v gh)",
+      "Read(//usr/local/bin/**)",
+      "Bash(find:*)",
+      "Bash(mkdir -p \"web/src/app/dashboard/workouts/periodizations/[id]/phases/[phaseId]\")",
+      "Bash(mkdir -p \"web/src/app/dashboard/workouts/[workoutId]\")",
+      "Bash(npm install:*)"
     ]
   }
 }
