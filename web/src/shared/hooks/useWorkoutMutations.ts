@@ -161,3 +161,18 @@ export function useDeleteWorkout() {
     },
   });
 }
+
+export function useDeleteWorkoutItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase.from("workout_items").delete().eq("id", itemId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workout-items"] });
+      queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
+    },
+  });
+}

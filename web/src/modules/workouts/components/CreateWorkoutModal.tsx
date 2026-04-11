@@ -116,12 +116,12 @@ export function CreateWorkoutModal({
           const items = selectedExercises.map((ex, index) => ({
             workout_id: newWorkoutId,
             exercise_id: ex.id,
-            order_index: index,
+            order: index,
             sets: ex.sets,
             reps: ex.reps,
-            rest_seconds: ex.rest_seconds,
+            rest_time: ex.rest_seconds,
             weight: ex.weight || null,
-            notes: null, // SelectedExercise doesn't have notes yet, can add later
+            notes: null,
           }));
 
           const { error: itemsError } = await supabase.from("workout_items").insert(items);

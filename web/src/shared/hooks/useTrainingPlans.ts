@@ -63,7 +63,8 @@ export function useTrainingPlans(periodizationId: string) {
       return plansWithCounts;
     },
     enabled: !!periodizationId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 0,
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -91,6 +92,7 @@ export function useTrainingPlan(id: string) {
       } as TrainingPlan;
     },
     enabled: !!id,
+    retry: 0,
   });
 }
 
