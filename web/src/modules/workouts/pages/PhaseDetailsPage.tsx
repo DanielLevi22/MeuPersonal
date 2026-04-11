@@ -12,6 +12,7 @@ import {
 import { useTrainingPlan } from "@/shared/hooks/useTrainingPlans";
 import type { Workout } from "@/shared/hooks/useWorkouts";
 import { useWorkoutsByPlan } from "@/shared/hooks/useWorkouts";
+import { ImportWorkoutModal } from "../components/ImportWorkoutModal";
 
 const SPLITS = ["A", "AB", "ABC", "ABCD", "ABCDE", "ABCDEF"];
 
@@ -69,6 +70,7 @@ export default function PhaseDetailsPage() {
 
   const [showSplitPicker, setShowSplitPicker] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const [changingSplit, setChangingSplit] = useState(false);
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
@@ -385,6 +387,20 @@ export default function PhaseDetailsPage() {
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
             Treinos da Fase <span className="text-foreground">{workouts.length}</span>
           </h2>
+          <button
+            onClick={() => setShowLibrary(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+            Importar
+          </button>
         </div>
 
         {/* Muscle filter tabs */}
@@ -459,6 +475,12 @@ export default function PhaseDetailsPage() {
           </div>
         )}
       </div>
+
+      <ImportWorkoutModal
+        isOpen={showLibrary}
+        onClose={() => setShowLibrary(false)}
+        phaseId={phaseId}
+      />
     </div>
   );
 }
