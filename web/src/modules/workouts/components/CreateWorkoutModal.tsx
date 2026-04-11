@@ -110,7 +110,7 @@ export function CreateWorkoutModal({
         if (selectedExercises.length > 0) {
           // Delete existing items if editing
           if (isEditing) {
-            await supabase.from("workout_items").delete().eq("workout_id", newWorkoutId);
+            await supabase.from("workout_exercises").delete().eq("workout_id", newWorkoutId);
           }
 
           const items = selectedExercises.map((ex, index) => ({
@@ -124,7 +124,7 @@ export function CreateWorkoutModal({
             notes: null,
           }));
 
-          const { error: itemsError } = await supabase.from("workout_items").insert(items);
+          const { error: itemsError } = await supabase.from("workout_exercises").insert(items);
 
           if (itemsError) throw itemsError;
         }

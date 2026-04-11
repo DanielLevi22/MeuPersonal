@@ -68,7 +68,7 @@ export function useWorkouts() {
         .from("workouts")
         .select(`
           *,
-          workout_items(count),
+          workout_exercises(count),
           workout_assignments(count)
         `)
         .eq("personal_id", userId)
@@ -79,7 +79,7 @@ export function useWorkouts() {
       // Transform data to include counts
       return (data || []).map((workout: any) => ({
         ...workout,
-        exercise_count: workout.workout_items?.[0]?.count || 0,
+        exercise_count: workout.workout_exercises?.[0]?.count || 0,
         assigned_count: workout.workout_assignments?.[0]?.count || 0,
       })) as Workout[];
     },

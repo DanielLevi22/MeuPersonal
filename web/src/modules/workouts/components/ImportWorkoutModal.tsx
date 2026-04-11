@@ -32,7 +32,7 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
 
       // 2. Fetch source workout items
       const { data: sourceItems } = await supabase
-        .from("workout_items")
+        .from("workout_exercises")
         .select("*")
         .eq("workout_id", workoutId)
         .order("order", { ascending: true });
@@ -74,7 +74,7 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
           rest_time: item.rest_time,
           notes: item.notes,
         }));
-        await supabase.from("workout_items").insert(newItems);
+        await supabase.from("workout_exercises").insert(newItems);
       }
 
       queryClient.invalidateQueries({ queryKey: ["workouts-by-plan", phaseId] });

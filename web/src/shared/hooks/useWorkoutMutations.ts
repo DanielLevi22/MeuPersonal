@@ -167,7 +167,7 @@ export function useDeleteWorkoutItem() {
 
   return useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase.from("workout_items").delete().eq("id", itemId);
+      const { error } = await supabase.from("workout_exercises").delete().eq("id", itemId);
       if (error) throw error;
     },
     onSuccess: () => {

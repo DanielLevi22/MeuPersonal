@@ -74,7 +74,7 @@ export function useWorkouts() {
         .from("workouts")
         .select(`
           *,
-          workout_items(count),
+          workout_exercises(count),
           workout_assignments(count)
         `)
         .eq("personal_id", userId)
@@ -83,14 +83,14 @@ export function useWorkouts() {
       if (error) throw error;
 
       interface WorkoutWithCounts extends Workout {
-        workout_items: { count: number }[];
+        workout_exercises: { count: number }[];
         workout_assignments: { count: number }[];
       }
 
       // Transform data to include counts
       return ((data as unknown as WorkoutWithCounts[]) || []).map((workout) => ({
         ...workout,
-        exercise_count: workout.workout_items?.[0]?.count || 0,
+        exercise_count: workout.workout_exercises?.[0]?.count || 0,
         assigned_count: workout.workout_assignments?.[0]?.count || 0,
       }));
     },
@@ -105,20 +105,20 @@ export function useWorkout(id: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("workouts")
-        .select(`*, workout_items(count)`)
+        .select(`*, workout_exercises(count)`)
         .eq("id", id)
         .single();
 
       if (error) throw error;
 
       interface WorkoutWithCount extends Workout {
-        workout_items: { count: number }[];
+        workout_exercises: { count: number }[];
       }
 
       const w = data as unknown as WorkoutWithCount;
       return {
         ...w,
-        exercise_count: w.workout_items?.[0]?.count || 0,
+        exercise_count: w.workout_exercises?.[0]?.count || 0,
       } as Workout;
     },
     enabled: !!id,
@@ -148,7 +148,7 @@ export function useWorkoutItems(workoutId: string) {
     queryKey: ["workout-items", workoutId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("workout_items")
+        .from("workout_exercises")
         .select(`
           id,
           sets,
@@ -181,19 +181,19 @@ export function useWorkoutsByPlan(planId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("workouts")
-        .select(`*, workout_items(count)`)
+        .select(`*, workout_exercises(count)`)
         .eq("training_plan_id", planId)
         .order("identifier", { ascending: true });
 
       if (error) throw error;
 
       interface WorkoutWithCount extends Workout {
-        workout_items: { count: number }[];
+        workout_exercises: { count: number }[];
       }
 
       return ((data as unknown as WorkoutWithCount[]) || []).map((w) => ({
         ...w,
-        exercise_count: w.workout_items?.[0]?.count || 0,
+        exercise_count: w.workout_exercises?.[0]?.count || 0,
       })) as Workout[];
     },
     enabled: !!planId,

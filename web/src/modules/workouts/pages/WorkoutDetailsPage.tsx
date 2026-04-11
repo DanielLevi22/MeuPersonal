@@ -48,7 +48,7 @@ export default function WorkoutDetailsPage() {
   };
 
   const handleSaveExercise = async (ex: SelectedExercise) => {
-    await supabase.from("workout_items").insert({
+    await supabase.from("workout_exercises").insert({
       workout_id: workoutId,
       exercise_id: ex.id,
       order: items.length,
