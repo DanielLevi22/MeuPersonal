@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@meupersonal/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
@@ -6,14 +7,89 @@ import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { useStudentStore } from '../store/studentStore';
 
+type EventType = 'assessment' | 'diet';
+
+interface HistoryEvent {
+  id: string;
+  type: EventType;
+  title: string;
+  date: string;
+  subtitle?: string;
+}
+
+async function fetchStudentHistory(studentId: string, personalId: string): Promise<HistoryEvent[]> {
+  const [assessmentsResult, dietPlansResult] = await Promise.all([
+    supabase
+      .from('physical_assessments')
+      .select('id, created_at, weight, body_fat_percentage')
+      .eq('student_id', studentId)
+      .eq('personal_id', personalId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+
+    supabase
+      .from('diet_plans')
+      .select('id, created_at, name, status')
+      .eq('student_id', studentId)
+      .eq('personal_id', personalId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+  ]);
+
+  const events: HistoryEvent[] = [];
+
+  for (const a of assessmentsResult.data ?? []) {
+    const parts: string[] = [];
+    if (a.weight) parts.push(`${a.weight} kg`);
+    if (a.body_fat_percentage) parts.push(`${a.body_fat_percentage}% gordura`);
+    events.push({
+      id: `assessment-${a.id}`,
+      type: 'assessment',
+      title: 'Avaliação Física',
+      date: a.created_at,
+      subtitle: parts.join(' · ') || undefined,
+    });
+  }
+
+  for (const d of dietPlansResult.data ?? []) {
+    events.push({
+      id: `diet-${d.id}`,
+      type: 'diet',
+      title: d.name ?? 'Plano alimentar',
+      date: d.created_at,
+      subtitle: d.status === 'active' ? 'Ativo' : d.status === 'inactive' ? 'Inativo' : undefined,
+    });
+  }
+
+  return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+function EventIcon({ type }: { type: EventType }) {
+  const name = type === 'diet' ? 'restaurant' : 'body';
+  const color = type === 'diet' ? '#10B981' : '#A1A1AA';
+  return <Ionicons name={name} size={16} color={color} style={{ marginRight: 8 }} />;
+}
+
+function EventLabel({ type }: { type: EventType }) {
+  return type === 'diet' ? 'Dieta' : 'Avaliação';
+}
+
+function dotColor(type: EventType) {
+  return type === 'diet' ? 'bg-emerald-500' : 'bg-zinc-500';
+}
+
 export default function StudentHistoryScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { students, fetchStudents, isLoading } = useStudentStore();
+  const { students, fetchStudents, isLoading: studentsLoading } = useStudentStore();
   const { user } = useAuthStore();
+
   const [student, setStudent] = useState<{ id: string; full_name: string } | null | undefined>(
     null
   );
+  const [events, setEvents] = useState<HistoryEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
@@ -29,7 +105,19 @@ export default function StudentHistoryScreen() {
     }
   }, [students, id]);
 
-  if (isLoading || !student) {
+  useEffect(() => {
+    if (!id || !user?.id) return;
+
+    setHistoryLoading(true);
+    setHistoryError(false);
+
+    fetchStudentHistory(id as string, user.id)
+      .then(setEvents)
+      .catch(() => setHistoryError(true))
+      .finally(() => setHistoryLoading(false));
+  }, [id, user?.id]);
+
+  if (studentsLoading || !student) {
     return (
       <ScreenLayout className="justify-center items-center">
         <ActivityIndicator size="large" color="#FF6B35" />
@@ -37,92 +125,31 @@ export default function StudentHistoryScreen() {
     );
   }
 
-  // Mock History Data (Replace with real data later)
-  const historyData = [
-    {
-      id: '1',
-      type: 'workout',
-      title: 'Treino A - Peito e Tríceps',
-      date: '2023-11-25',
-      status: 'completed',
-    },
-    { id: '2', type: 'diet', title: 'Dieta de Cutting', date: '2023-11-24', status: 'updated' },
-    {
-      id: '3',
-      type: 'assessment',
-      title: 'Avaliação Física',
-      date: '2023-11-20',
-      status: 'completed',
-    },
-    {
-      id: '4',
-      type: 'workout',
-      title: 'Treino B - Costas e Bíceps',
-      date: '2023-11-18',
-      status: 'completed',
-    },
-  ];
-
-  const renderItem = ({
-    item,
-  }: {
-    item: { id: string; type: string; title: string; date: string; status: string };
-  }) => (
+  const renderItem = ({ item }: { item: HistoryEvent }) => (
     <View className="flex-row mb-6">
-      {/* Timeline Line */}
+      {/* Timeline dot */}
       <View className="items-center mr-4">
-        <View
-          className={`w-3 h-3 rounded-full ${
-            item.type === 'workout'
-              ? 'bg-orange-500'
-              : item.type === 'diet'
-                ? 'bg-emerald-500'
-                : 'bg-zinc-500'
-          }`}
-        />
+        <View className={`w-3 h-3 rounded-full ${dotColor(item.type)}`} />
         <View className="w-0.5 flex-1 bg-zinc-800 my-1" />
       </View>
 
-      {/* Content Card */}
+      {/* Card */}
       <View className="flex-1 bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
         <View className="flex-row justify-between items-start mb-2">
           <View className="flex-row items-center">
-            <Ionicons
-              name={
-                item.type === 'workout' ? 'barbell' : item.type === 'diet' ? 'restaurant' : 'body'
-              }
-              size={16}
-              color={
-                item.type === 'workout' ? '#FF6B35' : item.type === 'diet' ? '#10B981' : '#A1A1AA'
-              }
-              style={{ marginRight: 8 }}
-            />
+            <EventIcon type={item.type} />
             <Text className="text-zinc-400 text-xs font-bold uppercase tracking-wider">
-              {item.type === 'workout' ? 'Treino' : item.type === 'diet' ? 'Dieta' : 'Avaliação'}
+              <EventLabel type={item.type} />
             </Text>
           </View>
-          <Text className="text-zinc-500 text-xs font-sans">
-            {new Date(item.date).toLocaleDateString()}
+          <Text className="text-zinc-500 text-xs">
+            {new Date(item.date).toLocaleDateString('pt-BR')}
           </Text>
         </View>
 
-        <Text className="text-white text-base font-bold mb-1 font-display">{item.title}</Text>
+        <Text className="text-white text-base font-bold mb-1">{item.title}</Text>
 
-        <View className="flex-row items-center mt-2">
-          <View
-            className={`px-2 py-1 rounded-lg ${
-              item.status === 'completed' ? 'bg-emerald-500/15' : 'bg-zinc-800'
-            }`}
-          >
-            <Text
-              className={`text-xs font-bold ${
-                item.status === 'completed' ? 'text-emerald-400' : 'text-zinc-400'
-              }`}
-            >
-              {item.status === 'completed' ? 'Concluído' : 'Atualizado'}
-            </Text>
-          </View>
-        </View>
+        {item.subtitle && <Text className="text-zinc-400 text-xs mt-1">{item.subtitle}</Text>}
       </View>
     </View>
   );
@@ -143,19 +170,32 @@ export default function StudentHistoryScreen() {
         </View>
       </View>
 
-      {/* Timeline */}
-      <FlatList
-        data={historyData}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 24 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View className="items-center justify-center py-10">
-            <Text className="text-zinc-500 font-sans">Nenhum histórico encontrado.</Text>
-          </View>
-        }
-      />
+      {historyLoading && (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="small" color="#FF6B35" />
+        </View>
+      )}
+
+      {historyError && !historyLoading && (
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-zinc-500 text-center">Erro ao carregar histórico.</Text>
+        </View>
+      )}
+
+      {!historyLoading && !historyError && (
+        <FlatList
+          data={events}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 24 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View className="items-center justify-center py-10">
+              <Text className="text-zinc-500 font-sans">Nenhum histórico encontrado.</Text>
+            </View>
+          }
+        />
+      )}
     </ScreenLayout>
   );
 }
