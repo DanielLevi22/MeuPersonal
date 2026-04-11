@@ -124,11 +124,18 @@ export default function PeriodizationDetailsPage() {
 
   const handleAddPhase = async () => {
     setAddingPhase(true);
+    const today = new Date().toISOString().split("T")[0];
+    const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     try {
       const { error } = await supabase.from("training_plans").insert({
         periodization_id: periodizationId,
         name: `Fase ${plans.length + 1}`,
-        description: null,
+        training_split: "ABC",
+        weekly_frequency: 3,
+        start_date: today,
+        end_date: in30Days,
+        status: "draft",
+        notes: "",
       });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["training-plans", periodizationId] });
