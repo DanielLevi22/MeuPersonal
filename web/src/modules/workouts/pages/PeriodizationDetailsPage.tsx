@@ -13,6 +13,7 @@ import type { PeriodizationStatus } from "@/shared/hooks/usePeriodizations";
 import { usePeriodization } from "@/shared/hooks/usePeriodizations";
 import type { TrainingPlan } from "@/shared/hooks/useTrainingPlans";
 import { useTrainingPlans } from "@/shared/hooks/useTrainingPlans";
+import { CreatePeriodizationModal } from "../components/CreatePeriodizationModal";
 
 const OBJECTIVE_LABELS: Record<string, string> = {
   hypertrophy: "Hipertrofia",
@@ -116,6 +117,7 @@ export default function PeriodizationDetailsPage() {
   const periodizationId = params.id as string;
   const queryClient = useQueryClient();
   const [addingPhase, setAddingPhase] = useState(false);
+  const [editingPeriodization, setEditingPeriodization] = useState(false);
 
   const { data: periodization, isLoading: loadingP } = usePeriodization(periodizationId);
   const { data: plans = [], isLoading: loadingPlans } = useTrainingPlans(periodizationId);
@@ -223,6 +225,12 @@ export default function PeriodizationDetailsPage() {
 
           {/* Status actions */}
           <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => setEditingPeriodization(true)}
+              className="px-4 py-2 bg-white/5 border border-white/10 text-muted-foreground rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              Editar
+            </button>
             {periodization.status === "planned" && (
               <button
                 onClick={() => activateMutation.mutateAsync(periodizationId)}
@@ -299,6 +307,20 @@ export default function PeriodizationDetailsPage() {
           </div>
         )}
       </div>
+
+      <CreatePeriodizationModal
+        isOpen={editingPeriodization}
+        onClose={() => setEditingPeriodization(false)}
+        periodizationId={periodizationId}
+        initialData={{
+          name: periodization.name,
+          objective: periodization.objective,
+          student_id: periodization.student_id,
+          start_date: periodization.start_date,
+          end_date: periodization.end_date,
+          notes: periodization.notes ?? undefined,
+        }}
+      />
     </div>
   );
 }

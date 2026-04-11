@@ -69,10 +69,10 @@ export function usePeriodizations() {
       if (!userId || !userRole) return [];
 
       let query = supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .select(`
           *,
-          student:profiles!periodizations_student_id_fkey (
+          student:profiles!student_id (
             id,
             full_name,
             email
@@ -82,7 +82,7 @@ export function usePeriodizations() {
 
       // Filter based on role
       if (userRole === "personal") {
-        query = query.eq("personal_id", userId);
+        query = query.eq("professional_id", userId);
       } else {
         query = query.eq("student_id", userId);
       }
@@ -118,10 +118,10 @@ export function usePeriodization(id: string) {
     queryKey: ["periodization", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .select(`
           *,
-          student:profiles!periodizations_student_id_fkey (
+          student:profiles!student_id (
             id,
             full_name,
             email
@@ -153,10 +153,10 @@ export function useActivePeriodization(studentId: string) {
     queryKey: ["active-periodization", studentId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .select(`
           *,
-          student:profiles!periodizations_student_id_fkey (
+          student:profiles!student_id (
             id,
             full_name,
             email

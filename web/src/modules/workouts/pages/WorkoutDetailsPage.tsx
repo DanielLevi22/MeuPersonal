@@ -4,9 +4,11 @@ import { supabase } from "@meupersonal/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useDeleteWorkoutItem } from "@/shared/hooks/useWorkoutMutations";
-import { useWorkout, useWorkoutItems } from "@/shared/hooks/useWorkouts";
+import { useWorkout, useWorkoutItems, type WorkoutItem } from "@/shared/hooks/useWorkouts";
 import { CreateWorkoutModal } from "../components/CreateWorkoutModal";
+import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { ExerciseConfigModal, type SelectedExercise } from "../components/ExerciseConfigModal";
 import { SelectExercisesModal } from "../components/SelectExercisesModal";
 
@@ -30,6 +32,8 @@ export default function WorkoutDetailsPage() {
     muscle_group: string | null;
     video_url?: string | null;
   } | null>(null);
+  const [editingItem, setEditingItem] = useState<WorkoutItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<WorkoutItem | null>(null);
 
   const { data: workout, isLoading: loadingWorkout } = useWorkout(workoutId);
   const { data: items = [], isLoading: loadingItems } = useWorkoutItems(workoutId);
@@ -48,20 +52,62 @@ export default function WorkoutDetailsPage() {
   };
 
   const handleSaveExercise = async (ex: SelectedExercise) => {
-    await supabase.from("workout_exercises").insert({
+    const { error } = await supabase.from("workout_exercises").insert({
       workout_id: workoutId,
       exercise_id: ex.id,
       order: items.length,
       sets: ex.sets,
-      reps: ex.reps,
+      reps: String(ex.reps),
       rest_time: ex.rest_seconds,
       weight: ex.weight || null,
       notes: null,
     });
+    if (error) {
+      toast.error("Erro ao adicionar exercício");
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
     queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
     queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
     setConfigExercise(null);
+    toast.success("Exercício adicionado");
+  };
+
+  const handleUpdateExercise = async (ex: SelectedExercise) => {
+    if (!editingItem) return;
+    const { error } = await supabase
+      .from("workout_exercises")
+      .update({
+        sets: ex.sets,
+        reps: String(ex.reps),
+        rest_time: ex.rest_seconds,
+        weight: ex.weight || null,
+      })
+      .eq("id", editingItem.id);
+    if (error) {
+      toast.error("Erro ao atualizar exercício");
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
+    setEditingItem(null);
+    toast.success("Exercício atualizado");
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingItem) return;
+    deleteItemMutation.mutate(deletingItem.id, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
+        queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+        queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
+        toast.success("Exercício removido");
+        setDeletingItem(null);
+      },
+      onError: () => {
+        toast.error("Erro ao remover exercício");
+        setDeletingItem(null);
+      },
+    });
   };
 
   if (isLoading) {
@@ -219,29 +265,41 @@ export default function WorkoutDetailsPage() {
                   </div>
                 </div>
 
-                {/* Delete */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    deleteItemMutation.mutate(item.id, {
-                      onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
-                        queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
-                        queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
-                      },
-                    })
-                  }
-                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors shrink-0"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+                {/* Actions */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Edit */}
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(item)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Editar"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={() => setDeletingItem(item)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
+                    title="Remover"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -263,6 +321,7 @@ export default function WorkoutDetailsPage() {
         selectedIds={items.map((i) => i.exercise_id)}
       />
 
+      {/* Adicionar novo exercício */}
       {configExercise && (
         <ExerciseConfigModal
           isOpen={true}
@@ -271,6 +330,35 @@ export default function WorkoutDetailsPage() {
           onSave={handleSaveExercise}
         />
       )}
+
+      {/* Editar exercício existente */}
+      {editingItem?.exercise && (
+        <ExerciseConfigModal
+          isOpen={true}
+          onClose={() => setEditingItem(null)}
+          exercise={editingItem.exercise}
+          initialData={{
+            id: editingItem.exercise.id,
+            name: editingItem.exercise.name,
+            muscle_group: editingItem.exercise.muscle_group ?? "",
+            sets: editingItem.sets,
+            reps: parseInt(editingItem.reps, 10) || 0,
+            weight: editingItem.weight ?? "",
+            rest_seconds: editingItem.rest_time,
+          }}
+          onSave={handleUpdateExercise}
+        />
+      )}
+
+      {/* Confirmar exclusão */}
+      <DeleteConfirmModal
+        isOpen={!!deletingItem}
+        onClose={() => setDeletingItem(null)}
+        onConfirm={handleConfirmDelete}
+        title="Remover exercício"
+        itemName={deletingItem?.exercise?.name ?? "este exercício"}
+        isLoading={deleteItemMutation.isPending}
+      />
     </div>
   );
 }

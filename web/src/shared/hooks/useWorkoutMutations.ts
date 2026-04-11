@@ -1,6 +1,6 @@
 "use client";
 
-import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
+import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface CreateWorkoutInput {
@@ -22,26 +22,6 @@ export function useCreateWorkout() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
-
-      // Check permissions with CASL
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        const ability = defineAbilitiesFor({
-          accountType: profile.account_type as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
-        });
-        if (ability.cannot("create", "Workout")) {
-          throw new Error("Você não tem permissão para criar treinos");
-        }
-      }
 
       const { data, error } = await supabase
         .from("workouts")
@@ -77,26 +57,6 @@ export function useUpdateWorkout() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Check permissions with CASL
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        const ability = defineAbilitiesFor({
-          accountType: profile.account_type as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
-        });
-        if (ability.cannot("update", "Workout")) {
-          throw new Error("Você não tem permissão para editar treinos");
-        }
-      }
-
       const { data: updated, error } = await supabase
         .from("workouts")
         .update({
@@ -127,31 +87,6 @@ export function useDeleteWorkout() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Check permissions with CASL
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        const ability = defineAbilitiesFor({
-          accountType: profile.account_type as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
-        });
-        if (ability.cannot("delete", "Workout")) {
-          throw new Error("Você não tem permissão para deletar treinos");
-        }
-      }
-
       const { error } = await supabase.from("workouts").delete().eq("id", id);
 
       if (error) throw error;

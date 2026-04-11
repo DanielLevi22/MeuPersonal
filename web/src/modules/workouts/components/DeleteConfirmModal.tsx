@@ -4,17 +4,26 @@ interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  workoutTitle: string;
+  /** Título do modal, ex: "Deletar Exercício" */
+  title?: string;
+  /** Nome do item a ser deletado */
+  itemName?: string;
   isLoading?: boolean;
+  /** @deprecated use itemName */
+  workoutTitle?: string;
 }
 
 export function DeleteConfirmModal({
   isOpen,
   onClose,
   onConfirm,
+  title = "Deletar item",
+  itemName,
   workoutTitle,
   isLoading,
 }: DeleteConfirmModalProps) {
+  const displayName = itemName || workoutTitle || "";
+
   if (!isOpen) return null;
 
   return (
@@ -45,10 +54,10 @@ export function DeleteConfirmModal({
 
         {/* Content */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-foreground mb-2">Deletar Treino</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">{title}</h2>
           <p className="text-muted-foreground">
-            Tem certeza que deseja deletar o treino{" "}
-            <span className="font-semibold text-foreground">"{workoutTitle}"</span>?
+            Tem certeza que deseja deletar{" "}
+            <span className="font-semibold text-foreground">"{displayName}"</span>?
           </p>
           <p className="text-sm text-muted-foreground mt-2">Esta ação não pode ser desfeita.</p>
         </div>

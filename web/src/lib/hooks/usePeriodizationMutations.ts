@@ -34,10 +34,11 @@ export function useCreatePeriodization() {
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .insert({
           ...input,
           personal_id: user.id,
+          professional_id: user.id,
           status: "planned",
         })
         .select()
@@ -58,7 +59,7 @@ export function useUpdatePeriodization() {
   return useMutation({
     mutationFn: async ({ id, data }: UpdatePeriodizationInput) => {
       const { data: result, error } = await supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .update(data)
         .eq("id", id)
         .select()
@@ -80,7 +81,7 @@ export function useUpdatePeriodizationStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: UpdatePeriodizationStatusInput) => {
       const { data, error } = await supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .update({ status })
         .eq("id", id)
         .select()
@@ -102,7 +103,7 @@ export function useDeletePeriodization() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("periodizations").delete().eq("id", id);
+      const { error } = await supabase.from("training_periodizations").delete().eq("id", id);
 
       if (error) throw error;
     },
@@ -119,14 +120,14 @@ export function useActivatePeriodization() {
     mutationFn: async (id: string) => {
       // First, deactivate any other active periodizations for the same student
       const { data: periodization } = await supabase
-        .from("periodizations")
+        .from("training_periodizations")
         .select("student_id")
         .eq("id", id)
         .single();
 
       if (periodization) {
         await supabase
-          .from("periodizations")
+          .from("training_periodizations")
           .update({ status: "completed" })
           .eq("student_id", periodization.student_id)
           .eq("status", "active");

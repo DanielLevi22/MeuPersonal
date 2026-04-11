@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   type CreatePeriodizationInput,
   useCreatePeriodization,
+  useUpdatePeriodization,
 } from "@/shared/hooks/usePeriodizationMutations";
 import type { PeriodizationObjective } from "@/shared/hooks/usePeriodizations";
 import { useStudents } from "@/shared/hooks/useStudents";
@@ -17,12 +18,26 @@ const OBJECTIVES: { value: PeriodizationObjective; label: string }[] = [
   { value: "general_fitness", label: "Saúde Geral" },
 ];
 
+interface InitialData {
+  name: string;
+  objective: PeriodizationObjective;
+  student_id: string;
+  start_date: string;
+  end_date: string;
+  notes?: string;
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  /** Quando fornecido, modal opera em modo de edição */
+  periodizationId?: string;
+  initialData?: InitialData;
 }
 
-export function CreatePeriodizationModal({ isOpen, onClose }: Props) {
+export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, initialData }: Props) {
+  const isEditing = !!periodizationId;
+
   const [name, setName] = useState("");
   const [objective, setObjective] = useState<PeriodizationObjective>("hypertrophy");
   const [studentId, setStudentId] = useState("");
@@ -30,25 +45,52 @@ export function CreatePeriodizationModal({ isOpen, onClose }: Props) {
   const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
 
+  useEffect(() => {
+    if (isOpen) {
+      setName(initialData?.name ?? "");
+      setObjective(initialData?.objective ?? "hypertrophy");
+      setStudentId(initialData?.student_id ?? "");
+      setStartDate(initialData?.start_date?.split("T")[0] ?? "");
+      setEndDate(initialData?.end_date?.split("T")[0] ?? "");
+      setNotes(initialData?.notes ?? "");
+    }
+  }, [isOpen, initialData]);
+
   const { data: students = [] } = useStudents();
   const createMutation = useCreatePeriodization();
+  const updateMutation = useUpdatePeriodization();
 
   const activeStudents = students.filter((s) => s.status === "active");
+
+  const isPending = isEditing ? updateMutation.isPending : createMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !studentId || !startDate || !endDate) return;
 
-    const input: CreatePeriodizationInput = {
-      name,
-      objective,
-      student_id: studentId,
-      start_date: startDate,
-      end_date: endDate,
-      notes: notes || undefined,
-    };
+    if (isEditing) {
+      await updateMutation.mutateAsync({
+        id: periodizationId,
+        data: {
+          name,
+          objective,
+          start_date: startDate,
+          end_date: endDate,
+          notes: notes || undefined,
+        },
+      });
+    } else {
+      const input: CreatePeriodizationInput = {
+        name,
+        objective,
+        student_id: studentId,
+        start_date: startDate,
+        end_date: endDate,
+        notes: notes || undefined,
+      };
+      await createMutation.mutateAsync(input);
+    }
 
-    await createMutation.mutateAsync(input);
     handleClose();
   };
 
@@ -68,7 +110,9 @@ export function CreatePeriodizationModal({ isOpen, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-lg">
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-foreground">Nova Periodização</h2>
+          <h2 className="text-xl font-bold text-foreground">
+            {isEditing ? "Editar Periodização" : "Nova Periodização"}
+          </h2>
           <button
             onClick={handleClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -196,13 +240,13 @@ export function CreatePeriodizationModal({ isOpen, onClose }: Props) {
             </button>
             <button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={isPending}
               className="px-5 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {createMutation.isPending && (
+              {isPending && (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               )}
-              Criar Periodização
+              {isEditing ? "Salvar" : "Criar Periodização"}
             </button>
           </div>
         </form>
