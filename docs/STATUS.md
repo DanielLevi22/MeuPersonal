@@ -1,6 +1,6 @@
 # Status dos Módulos — MeuPersonal
 
-> **Atualizado em:** 2026-04-12
+> **Atualizado em:** 2026-04-12 (ci-and-vercel-optimization)
 > **Regra:** atualizar ao fechar cada PR. Nenhuma feature é `done` sem este arquivo atualizado.
 
 ---
@@ -37,7 +37,9 @@
 
 | PRD | Feature | Status | Branch |
 |-----|---------|--------|--------|
-| — | — | — | — |
+| [ci-and-vercel-optimization](PRDs/ci-and-vercel-optimization.md) | CI path filters + Vercel ignoreCommand | ✅ done | `feature/ci-and-vercel-optimization` |
+| [database-audit-and-refactor](PRDs/database-audit-and-refactor.md) | Auditoria e refatoração do banco | draft | — |
+| [local-dev-environment](PRDs/local-dev-environment.md) | Supabase CLI local + Docker | draft | — |
 
 > Adicionar linha aqui ao criar um novo PRD via `node scripts/new-feature.js`.
 

@@ -1,7 +1,7 @@
 # PRD: ci-and-vercel-optimization
 
 **Data de criação:** 2026-04-12
-**Status:** approved
+**Status:** done
 **Branch:** — (a criar via new-feature.js)
 **Autor:** Daniel Levi
 
