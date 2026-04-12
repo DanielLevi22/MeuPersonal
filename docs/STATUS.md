@@ -1,6 +1,6 @@
 # Status dos Módulos — MeuPersonal
 
-> **Atualizado em:** 2026-04-12 (ci-and-vercel-optimization)
+> **Atualizado em:** 2026-04-12 (database-audit-and-refactor)
 > **Regra:** atualizar ao fechar cada PR. Nenhuma feature é `done` sem este arquivo atualizado.
 
 ---
@@ -30,6 +30,7 @@
 | **Gamification** | ⚠️ parcial | ⚠️ parcial | ❌ | ❌ | ❌ |
 | **AI / Agentes** | ❌ | ❌ | ⚠️ draft (blueprint) | ❌ | ❌ |
 | **Packages / Shared** | ⚠️ duplicado | ⚠️ duplicado | N/A | N/A | N/A |
+| **Database Schema** | ✅ | ✅ | ✅ | N/A | N/A |
 
 ---
 
@@ -39,8 +40,9 @@
 |-----|---------|--------|--------|
 | [ci-and-vercel-optimization](PRDs/ci-and-vercel-optimization.md) | CI path filters + Vercel ignoreCommand | ✅ done | `feature/ci-and-vercel-optimization` |
 | [vercel-pipeline-deploy](PRDs/vercel-pipeline-deploy.md) | Deploy via GitHub Actions + Vercel CLI | ✅ done | `feature/ci-and-vercel-optimization` |
-| [database-audit-and-refactor](PRDs/database-audit-and-refactor.md) | Auditoria e refatoração do banco | draft | — |
+| [database-audit-and-refactor](PRDs/database-audit-and-refactor.md) | Schema limpo: 21 tabelas, RLS, RPC, seeds | ✅ done | `feature/database-audit-and-refactor` |
 | [local-dev-environment](PRDs/local-dev-environment.md) | 3 ambientes: Local→Preview→Production | draft | — |
+| [social-and-engagement](PRDs/social-and-engagement.md) | Comunidade, ranking, chat, notificações | draft | — |
 
 > Adicionar linha aqui ao criar um novo PRD via `node scripts/new-feature.js`.
 
@@ -51,9 +53,10 @@
 | # | Descrição | Prioridade | ADR relacionado |
 |---|-----------|------------|-----------------|
 | 1 | `packages/core` e `packages/supabase` duplicados em web e app — já divergiram | 🔴 Alta | [ADR-002](decisions/002-flat-monorepo.md) |
-| 2 | Specs técnicas de todos os módulos implementados estão pendentes | 🟡 Média | — |
-| 3 | Separação de ambientes Supabase (dev/staging/prod) pendente | 🔴 Alta | — |
+| 2 | Specs técnicas dos módulos implementados pendentes (auth, nutrition, workouts, students) | 🟡 Média | — |
+| 3 | Separação de ambientes Supabase (dev/preview/prod) pendente — dev e prod no mesmo projeto | 🔴 Alta | — |
 | 4 | Testes de cobertura insuficientes em todos os módulos | 🟡 Média | — |
+| 5 | Código mobile/web ainda referencia tabelas antigas (meals, nutrition_plans, coachings) — precisa ser atualizado para o novo schema | 🔴 Alta | — |
 
 ---
 
@@ -61,8 +64,9 @@
 
 > Mover para `docs/PRDs/` ao iniciar. Não começar sem PRD aprovado.
 
-1. Migração de packages para `/packages/` na raiz (ADR-002)
-2. Spec técnica de Nutrição (`docs/features/nutrition.md`)
-3. Spec técnica de Workouts (`docs/features/workouts.md`)
-4. AI: primeiro agente — nutrição via Next.js BFF (ADR-001)
-5. Students: completar web (perfil completo do aluno)
+1. **Criar projetos Supabase Preview + Production** e aplicar as 3 migrations (`local-dev-environment`)
+2. **Atualizar código** para usar novo schema (diet_plans, diet_meals, student_professionals...)
+3. Migração de packages para `/packages/` na raiz (ADR-002)
+4. Spec técnica de Nutrição (`docs/features/nutrition.md`)
+5. Spec técnica de Workouts (`docs/features/workouts.md`)
+6. AI: primeiro agente — nutrição via Next.js BFF (ADR-001)

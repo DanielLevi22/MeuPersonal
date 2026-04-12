@@ -1,7 +1,7 @@
 # PRD: database-audit-and-refactor
 
 **Data de criação:** 2026-04-12
-**Status:** approved
+**Status:** done
 **Branch:** feature/database-audit-and-refactor
 **Autor:** Daniel Levi
 
