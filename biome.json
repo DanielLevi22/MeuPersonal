@@ -6,11 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": true,
-    "ignore": [
-      "app/drizzle/migrations/meta/**",
-      "**/node_modules/**"
-    ]
+    "ignoreUnknown": true
   },
   "css": {
     "parser": {
@@ -31,7 +27,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/globals.css"],
+      "includes": ["**/globals.css", "app/drizzle/migrations/meta/**"],
       "linter": { "enabled": false },
       "formatter": { "enabled": false }
     },
