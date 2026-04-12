@@ -6,22 +6,50 @@ on:
   pull_request:
     branches: [main, development]
 
+# Detecta quais partes do monorepo mudaram
+# Jobs de app só rodam se app/** ou packages/** mudaram
+# Jobs de web só rodam se web/** ou packages/** mudaram
+# Só docs mudaram → nenhum job roda
+
 jobs:
+  # ─────────────────────────────────────────
+  # DETECÇÃO DE MUDANÇAS
+  # ─────────────────────────────────────────
+  changes:
+    name: 🔎 Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'app/**'
+              - 'packages/**'
+            web:
+              - 'web/**'
+              - 'packages/**'
+
   # ─────────────────────────────────────────
   # APP — 1. LINT
   # ─────────────────────────────────────────
   lint:
     name: 🔍 [App] Lint & Format
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./app
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -38,16 +66,16 @@ jobs:
   # ─────────────────────────────────────────
   typecheck:
     name: 🔎 [App] TypeScript Check
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./app
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -64,6 +92,8 @@ jobs:
   # ─────────────────────────────────────────
   test:
     name: 🧪 [App] Unit Tests
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,11 +103,9 @@ jobs:
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
       EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -86,16 +114,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: npm run test:coverage -- --ci
         env:
           CI: true
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-report
+          name: app-coverage-report
           path: app/coverage/
           retention-days: 7
 
@@ -104,16 +131,16 @@ jobs:
   # ─────────────────────────────────────────
   web-lint:
     name: 🔍 [Web] Lint & Format
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -130,16 +157,16 @@ jobs:
   # ─────────────────────────────────────────
   web-typecheck:
     name: 🔎 [Web] TypeScript Check
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -156,16 +183,16 @@ jobs:
   # ─────────────────────────────────────────
   web-test:
     name: 🧪 [Web] Unit Tests
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -174,8 +201,53 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: npm run test:coverage -- --passWithNoTests
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_DEV }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-coverage-report
+          path: web/coverage/
+          retention-days: 7
+
+  # ─────────────────────────────────────────
+  # CI GATE — job final que agrupa tudo
+  # Usado pelo Branch Protection como único
+  # required status check obrigatório
+  # ─────────────────────────────────────────
+  ci-success:
+    name: ✅ CI Passed
+    runs-on: ubuntu-latest
+    needs: [changes, lint, typecheck, test, web-lint, web-typecheck, web-test]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          app_changed="${{ needs.changes.outputs.app }}"
+          web_changed="${{ needs.changes.outputs.web }}"
+
+          # Se app mudou, todos os jobs de app devem ter passado
+          if [ "$app_changed" = "true" ]; then
+            if [ "${{ needs.lint.result }}" != "success" ] || \
+               [ "${{ needs.typecheck.result }}" != "success" ] || \
+               [ "${{ needs.test.result }}" != "success" ]; then
+              echo "❌ App CI failed"
+              exit 1
+            fi
+          fi
+
+          # Se web mudou, todos os jobs de web devem ter passado
+          if [ "$web_changed" = "true" ]; then
+            if [ "${{ needs.web-lint.result }}" != "success" ] || \
+               [ "${{ needs.web-typecheck.result }}" != "success" ] || \
+               [ "${{ needs.web-test.result }}" != "success" ]; then
+              echo "❌ Web CI failed"
+              exit 1
+            fi
+          fi
+
+          echo "✅ All relevant CI checks passed"
