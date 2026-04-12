@@ -3,8 +3,8 @@
 import type { DietMeal, DietMealItem, DietPlan, Food } from "@meupersonal/core";
 import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { calculateDietStrategy, type StrategyResult } from "../utils/dietStrategies";
+import type { StrategyResult } from "../utils/dietStrategies";
+import { useAuthUser } from "./useAuthUser";
 
 // --- Hooks for Data Fetching ---
 
@@ -35,48 +35,7 @@ export function useFoods(searchQuery = "") {
 }
 
 export function useDietPlans(studentId?: string) {
-  const [currentUser, setCurrentUser] = useState<{
-    id: string;
-    accountType: string;
-    services?: string[];
-  } | null>(null);
-
-  useEffect(() => {
-    const getUserData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        // Fetch profile with account_type
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, account_type")
-          .eq("id", user.id)
-          .single();
-
-        if (profile) {
-          let services: string[] = [];
-
-          if (profile.account_type === "professional") {
-            const { data: servicesData } = await supabase
-              .from("professional_services")
-              .select("service_category")
-              .eq("user_id", user.id)
-              .eq("is_active", true);
-
-            services = servicesData?.map((s) => s.service_category) || [];
-          }
-
-          setCurrentUser({
-            id: profile.id,
-            accountType: profile.account_type,
-            services,
-          });
-        }
-      }
-    };
-    getUserData();
-  }, []);
+  const { data: currentUser } = useAuthUser();
 
   return useQuery({
     queryKey: ["nutrition_plans", studentId, currentUser?.id],
@@ -188,38 +147,7 @@ export function useDietMeals(dietPlanId: string) {
 
 export function useCreateDietPlan() {
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = useState<{
-    accountType: string;
-    services?: string[];
-  } | null>(null);
-
-  useEffect(() => {
-    const getRole = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("account_type")
-          .eq("id", user.id)
-          .single();
-        if (profile) {
-          let services: string[] = [];
-          if (profile.account_type === "professional") {
-            const { data: servicesData } = await supabase
-              .from("professional_services")
-              .select("service_category")
-              .eq("user_id", user.id)
-              .eq("is_active", true);
-            services = servicesData?.map((s) => s.service_category) || [];
-          }
-          setCurrentUser({ accountType: profile.account_type, services });
-        }
-      }
-    };
-    getRole();
-  }, []);
+  const { data: currentUser } = useAuthUser();
 
   return useMutation({
     mutationFn: async (
@@ -254,8 +182,8 @@ export function useCreateDietPlan() {
           personal_id: user.id,
           professional_id: user.id,
           version: 1,
-          is_active: true,
-          status: "active",
+          is_active: false,
+          status: "draft",
         })
         .select()
         .single();
@@ -297,15 +225,17 @@ export function useCreateDietPlanWithStrategy() {
           personal_id: user.id,
           professional_id: user.id,
           version: 1,
-          is_active: true,
-          status: "active",
+          is_active: false,
+          status: "draft",
         })
         .select()
         .single();
       if (planError) throw planError;
 
       const { weeklySchedule } = strategyData;
-      for (const day of weeklySchedule) {
+      const daysToSave = plan.plan_type === "unique" ? [weeklySchedule[0]] : weeklySchedule;
+
+      for (const day of daysToSave) {
         for (const [index, mealTemplate] of day.meals.entries()) {
           await supabase.from("meals").insert({
             diet_plan_id: newPlan.id,
@@ -324,6 +254,73 @@ export function useCreateDietPlanWithStrategy() {
   });
 }
 
+export function useUpdateDietPlanStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      status,
+      isActive,
+    }: {
+      planId: string;
+      status: DietPlan["status"];
+      isActive: boolean;
+    }) => {
+      const { data, error } = await supabase
+        .from("nutrition_plans")
+        .update({ status, is_active: isActive })
+        .eq("id", planId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as DietPlan;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["nutrition_plans"] });
+      queryClient.invalidateQueries({ queryKey: ["diet_plan", data.id] });
+    },
+  });
+}
+
+export function useDeleteDietPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (planId: string) => {
+      // First, get the plan to know the studentId for invalidation
+      const { data: plan } = await supabase
+        .from("nutrition_plans")
+        .select("student_id")
+        .eq("id", planId)
+        .single();
+
+      // Get all meals for this plan to delete dependent foods/logs
+      const { data: meals } = await supabase.from("meals").select("id").eq("diet_plan_id", planId);
+
+      const mealIds = meals?.map((m) => m.id) || [];
+
+      if (mealIds.length > 0) {
+        // Delete logs first - handle both possible column names
+        await supabase.from("meal_logs").delete().in("diet_meal_id", mealIds);
+        await supabase.from("meal_logs").delete().in("meal_id", mealIds);
+        // Delete foods
+        await supabase.from("meal_foods").delete().in("diet_meal_id", mealIds);
+        // Delete meals
+        await supabase.from("meals").delete().in("id", mealIds);
+      }
+
+      // Finally delete the plan
+      const { error } = await supabase.from("nutrition_plans").delete().eq("id", planId);
+      if (error) throw error;
+      return { planId, studentId: plan?.student_id };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["nutrition_plans"] });
+      queryClient.removeQueries({ queryKey: ["diet_plan", data.planId] });
+      queryClient.removeQueries({ queryKey: ["meals", data.planId] });
+    },
+  });
+}
+
 export function useFinishDietPlan() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -339,7 +336,7 @@ export function useFinishDietPlan() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["nutrition_plans", data.student_id] });
+      queryClient.invalidateQueries({ queryKey: ["nutrition_plans"] });
       queryClient.invalidateQueries({ queryKey: ["diet_plan", data.id] });
     },
   });
@@ -349,8 +346,17 @@ export function useAddMeal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (meal: Omit<DietMeal, "id">) => {
+      console.log("🥘 Creating meal:", meal);
       const { data, error } = await supabase.from("meals").insert(meal).select().single();
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error creating meal:", error);
+        if (error.code === "23503" && error.details?.includes("daily_goals")) {
+          throw new Error(
+            "O aluno não possui um perfil completo. Por favor, verifique o cadastro.",
+          );
+        }
+        throw new Error(error.message || "Erro ao criar refeição");
+      }
       return data;
     },
     onSuccess: (_, variables) =>
@@ -375,6 +381,23 @@ export function useUpdateMeal() {
   });
 }
 
+export function useDeleteMeal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // 1. Clear foods and logs for this specific meal
+      await supabase.from("meal_foods").delete().eq("diet_meal_id", id);
+      await supabase.from("meal_logs").delete().eq("diet_meal_id", id);
+      await supabase.from("meal_logs").delete().eq("meal_id", id);
+
+      // 2. Delete the meal
+      const { error } = await supabase.from("meals").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meals"] }),
+  });
+}
+
 export function useAddFoodToMeal() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -385,8 +408,12 @@ export function useAddFoodToMeal() {
       unit: string;
       order_index: number;
     }) => {
+      console.log("🍎 Adding food to meal:", item);
       const { data, error } = await supabase.from("meal_foods").insert(item).select().single();
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error adding food to meal:", error);
+        throw new Error(error.message || "Erro ao adicionar alimento");
+      }
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meals"] }),
@@ -448,11 +475,26 @@ export function usePasteDay() {
       targetDay: number;
       copiedMeals: any[];
     }) => {
-      await supabase
+      // 1. Get current meals for the target day
+      const { data: targetMeals } = await supabase
         .from("meals")
-        .delete()
+        .select("id")
         .eq("diet_plan_id", dietPlanId)
         .eq("day_of_week", targetDay);
+
+      const targetMealIds = targetMeals?.map((m) => m.id) || [];
+
+      if (targetMealIds.length > 0) {
+        // 2. Clear foods and logs for these meals first (cascade fallback)
+        await supabase.from("meal_foods").delete().in("diet_meal_id", targetMealIds);
+        await supabase.from("meal_logs").delete().in("diet_meal_id", targetMealIds);
+        await supabase.from("meal_logs").delete().in("meal_id", targetMealIds);
+
+        // 3. Delete the meals themselves
+        await supabase.from("meals").delete().in("id", targetMealIds);
+      }
+
+      // 4. Paste new meals
       for (const sourceMeal of copiedMeals) {
         const { data: newMeal, error: mealError } = await supabase
           .from("meals")
@@ -489,12 +531,25 @@ export function useClearDay() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ dietPlanId, dayOfWeek }: { dietPlanId: string; dayOfWeek: number }) => {
-      const { error } = await supabase
+      // 1. Get current meals for the day
+      const { data: mealsToDelete } = await supabase
         .from("meals")
-        .delete()
+        .select("id")
         .eq("diet_plan_id", dietPlanId)
         .eq("day_of_week", dayOfWeek);
-      if (error) throw error;
+
+      const mealIds = mealsToDelete?.map((m) => m.id) || [];
+
+      if (mealIds.length > 0) {
+        // 2. Clear foods and logs
+        await supabase.from("meal_foods").delete().in("diet_meal_id", mealIds);
+        await supabase.from("meal_logs").delete().in("diet_meal_id", mealIds);
+        await supabase.from("meal_logs").delete().in("meal_id", mealIds);
+
+        // 3. Delete meals
+        const { error } = await supabase.from("meals").delete().in("id", mealIds);
+        if (error) throw error;
+      }
       return { dietPlanId, dayOfWeek };
     },
     onSuccess: (data) => queryClient.invalidateQueries({ queryKey: ["meals", data.dietPlanId] }),

@@ -34,17 +34,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
         .from("coachings")
         .select(`
           client_id,
-          client:profiles!coachings_client_id_fkey(id, full_name, email)
+          profiles!client_id (
+            id,
+            full_name,
+            email
+          )
         `)
         .eq("professional_id", userId)
         .eq("status", "active");
 
       if (error) throw error;
 
-      const students = relationships?.map((rel: any) => rel.client).filter(Boolean) || [];
+      const students = relationships?.map((rel: any) => rel.profiles).filter(Boolean) || [];
       set({ students: students as any });
-    } catch (error) {
-      console.error("Error fetching students:", error);
+    } catch (error: any) {
+      console.error("Error fetching students:", error.message || error);
     }
   },
 

@@ -1,3 +1,4 @@
+export * from "./useAuthUser";
 export * from "./useDashboardStats";
 export * from "./useExerciseMutations";
 export * from "./useExercises";

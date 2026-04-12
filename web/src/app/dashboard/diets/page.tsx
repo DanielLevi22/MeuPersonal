@@ -2,12 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
+import { DeleteDietPlanModal } from "@/modules/nutrition/components/DeleteDietPlanModal";
 import { DietCardSkeleton } from "@/modules/nutrition/components/DietCardSkeleton";
 import { DietsEmptyState } from "@/modules/nutrition/components/DietsEmptyState";
 import { DietsFilter } from "@/modules/nutrition/components/DietsFilter";
 import { DietsHeader } from "@/modules/nutrition/components/DietsHeader";
 import { DietCard, ImportDietModal } from "@/nutrition";
-import { useDietPlans, useFinishDietPlan } from "@/shared/hooks/useNutrition";
+import { useAuthUser, useDeleteDietPlan, useDietPlans } from "@/shared/hooks";
 import { useStudents } from "@/shared/hooks/useStudents";
 
 export default function DietsPage() {
@@ -16,14 +18,30 @@ export default function DietsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
 
   const { data: students = [] } = useStudents();
-  const { data: dietPlans = [], isLoading } = useDietPlans(selectedStudentId);
-  const finishMutation = useFinishDietPlan();
+  const { isLoading: isAuthLoading } = useAuthUser();
+  const { data: dietPlans = [], isLoading: isDietsLoading } = useDietPlans(selectedStudentId);
+  const deleteMutation = useDeleteDietPlan();
 
-  const handleFinish = async (id: string) => {
-    if (confirm("Tem certeza que deseja finalizar este plano?")) {
-      await finishMutation.mutateAsync(id);
+  const isLoading = isAuthLoading || isDietsLoading;
+  const [selectedPlanForDelete, setSelectedPlanForDelete] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setSelectedPlanForDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedPlanForDelete) return;
+
+    try {
+      await deleteMutation.mutateAsync(selectedPlanForDelete);
+      toast.success("Plano excluído com sucesso.");
+      setSelectedPlanForDelete(null);
+    } catch (_error) {
+      toast.error("Erro ao excluir plano.");
     }
   };
+
+  const planToDelete = dietPlans.find((p) => p.id === selectedPlanForDelete);
 
   const handleCreate = () => router.push("/dashboard/diets/new");
   const handleImport = () => setIsImportModalOpen(true);
@@ -53,8 +71,7 @@ export default function DietsPage() {
             <DietCard
               key={plan.id}
               dietPlan={plan}
-              onDelete={() => handleFinish(plan.id)}
-              onEdit={(id) => router.push(`/dashboard/diets/${id}`)}
+              onDelete={(id) => handleDelete(id)}
               onView={(id) => router.push(`/dashboard/diets/${id}`)}
             />
           ))}
@@ -65,6 +82,14 @@ export default function DietsPage() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         targetStudentId={selectedStudentId}
+      />
+
+      <DeleteDietPlanModal
+        isOpen={!!selectedPlanForDelete}
+        onClose={() => setSelectedPlanForDelete(null)}
+        onConfirm={confirmDelete}
+        planName={planToDelete?.name || ""}
+        isDeleting={deleteMutation.isPending}
       />
     </div>
   );

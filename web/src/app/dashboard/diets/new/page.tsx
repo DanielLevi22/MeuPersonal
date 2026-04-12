@@ -14,59 +14,8 @@ import {
 
 const DAYS_NAME = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-interface MacroRingProps {
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-  unit: string;
-  icon: React.ReactNode;
-}
-
-const MacroRing = ({ label, value, max, color, unit, icon }: MacroRingProps) => {
-  const percentage = Math.min((value / max) * 100, 100);
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center gap-2 group">
-      <div className="relative w-24 h-24 flex items-center justify-center">
-        {/* Track */}
-        <svg className="w-full h-full -rotate-90">
-          <circle cx="48" cy="48" r={radius} className="stroke-white/5 fill-none" strokeWidth="6" />
-          <motion.circle
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            cx="48"
-            cy="48"
-            r={radius}
-            className="fill-none transition-all duration-300"
-            stroke={color}
-            strokeWidth="6"
-            strokeDasharray={circumference}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div
-            className={`p-1.5 rounded-lg mb-0.5 group-hover:scale-110 transition-transform`}
-            style={{ color }}
-          >
-            {icon}
-          </div>
-          <div className="text-lg font-black text-white italic tracking-tighter leading-none">
-            {value}
-          </div>
-          <div className="text-[7px] font-black text-zinc-500 uppercase tracking-widest mt-0.5">
-            {label}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { MacroRing } from "@/modules/nutrition/components/MacroRing";
+import { DatePicker } from "@/shared/components/ui/DatePicker";
 
 export default function NewDietPage() {
   const router = useRouter();
@@ -74,6 +23,9 @@ export default function NewDietPage() {
   const [studentId, setStudentId] = useState("");
   const [selectedStrategy, setSelectedStrategy] = useState<DietStrategyType>("standard");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(
+    new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split("T")[0],
+  );
   const [targetCalories, setTargetCalories] = useState(2000);
 
   const [protein, setProtein] = useState(150);
@@ -98,16 +50,14 @@ export default function NewDietPage() {
     if (!studentId) return;
 
     try {
-      await createMutation.mutateAsync({
+      const newPlan = await createMutation.mutateAsync({
         plan: {
           name,
           student_id: studentId,
           personal_id: "",
           plan_type: selectedStrategy === "carb_cycling" ? "cyclic" : "unique",
           start_date: startDate,
-          end_date: new Date(new Date().setMonth(new Date().getMonth() + 1))
-            .toISOString()
-            .split("T")[0],
+          end_date: endDate,
           target_calories: targetCalories,
           target_protein: protein,
           target_carbs: carbs,
@@ -116,7 +66,7 @@ export default function NewDietPage() {
         strategyData: strategyDetails,
       });
       toast.success("Plano nutricional criado com sucesso!");
-      router.push("/dashboard/diets");
+      router.push(`/dashboard/diets/${newPlan.id}`);
     } catch (error: any) {
       console.error("Error creating diet plan:", error);
       toast.error(error.message || "Erro ao criar plano nutricional");
@@ -227,6 +177,11 @@ export default function NewDietPage() {
                             <path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,7V12L15,15" />
                           </svg>
                         )}
+                        {strategy === "manual" && (
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z" />
+                          </svg>
+                        )}
                       </div>
                       {isSelected && (
                         <motion.div
@@ -320,25 +275,18 @@ export default function NewDietPage() {
                 </h2>
               </div>
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                    Data de ativação
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-zinc-950/80 border border-white/5 rounded-[20px] px-6 py-4 text-white focus:ring-2 focus:ring-primary outline-none transition-all"
-                      required
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <DatePicker
+                    label="Início da Vigência"
+                    value={startDate}
+                    onChange={setStartDate}
+                  />
+                  <DatePicker label="Fim da Vigência" value={endDate} onChange={setEndDate} />
                 </div>
                 <div className="p-5 bg-white/[0.02] border border-white/5 rounded-[24px]">
                   <p className="text-[9px] text-zinc-500 leading-relaxed font-medium italic">
-                    * Este plano terá duração base de{" "}
-                    <span className="text-zinc-300 font-bold">30 dias</span>. Você poderá estender
-                    ou recalcular este período após o deployment.
+                    * Defina o período de aplicação deste protocolo. Após o deployment, você será
+                    levado para a seleção de alimentos.
                   </p>
                 </div>
               </div>

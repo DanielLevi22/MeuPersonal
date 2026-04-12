@@ -2,10 +2,12 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DaySelector } from "@/modules/nutrition/components/DaySelector";
 import { DietDetailsHeader } from "@/modules/nutrition/components/DietDetailsHeader";
 import { DietDetailsSkeleton } from "@/modules/nutrition/components/DietDetailsSkeleton";
 import { DayOptionsModal, MealEditor } from "@/nutrition";
+import { useAuthUser } from "@/shared/hooks/useAuthUser";
 import {
   useClearDay,
   useCopyDay,
@@ -50,8 +52,11 @@ export default function DietDetailsPage() {
         dayOfWeek: selectedDay,
       });
       setCopiedDay(result);
+      setIsDayOptionsOpen(false);
+      toast.success("Dia copiado!");
     } catch (error) {
       console.error("Error copying day:", error);
+      toast.error("Erro ao copiar dia.");
     }
   };
 
@@ -63,8 +68,11 @@ export default function DietDetailsPage() {
         targetDay: selectedDay,
         copiedMeals: copiedDay.meals || [],
       });
+      setIsDayOptionsOpen(false);
+      toast.success("Dia colado com sucesso!");
     } catch (error) {
       console.error("Error pasting day:", error);
+      toast.error("Erro ao colar dia.");
     }
   };
 
@@ -74,17 +82,23 @@ export default function DietDetailsPage() {
         dietPlanId: id,
         dayOfWeek: selectedDay,
       });
+      setIsDayOptionsOpen(false);
+      toast.success("Dia limpo!");
     } catch (error) {
       console.error("Error clearing day:", error);
+      toast.error("Erro ao limpar dia.");
     }
   };
+
+  const { data: currentUser } = useAuthUser();
 
   const handleExportPDF = async () => {
     if (!dietPlan) return;
     try {
       const student = students.find((s) => s.id === dietPlan.student_id);
       const studentName = student?.full_name || "Aluno";
-      await exportDietToPDF(dietPlan, meals, studentName);
+      const professionalName = currentUser?.fullName || "Profissional";
+      await exportDietToPDF(dietPlan, meals, studentName, professionalName);
     } catch (error) {
       console.error("Error exporting PDF:", error);
     }
@@ -130,7 +144,7 @@ export default function DietDetailsPage() {
       />
 
       {/* Meal Editor */}
-      <MealEditor dietPlanId={id} dayOfWeek={isCyclic ? selectedDay : -1} />
+      <MealEditor dietPlanId={id} dayOfWeek={selectedDay} />
 
       {/* Day Options Modal */}
       <DayOptionsModal
@@ -141,6 +155,9 @@ export default function DietDetailsPage() {
         onClear={handleClearDay}
         canPaste={!!copiedDay}
         dayName={currentDayName}
+        isCopying={copyDayMutation.isPending}
+        isPasting={pasteDayMutation.isPending}
+        isClearing={clearDayMutation.isPending}
       />
     </div>
   );

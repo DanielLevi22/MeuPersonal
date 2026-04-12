@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { CustomTimePicker } from "@/shared/components/CustomTimePicker";
 
 interface EditMealTimeModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export function EditMealTimeModal({
   mealName,
 }: EditMealTimeModalProps) {
   const [time, setTime] = useState(currentTime || "08:00");
+  const _timeInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +57,7 @@ export function EditMealTimeModal({
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Horário</label>
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="w-full bg-background border border-white/10 rounded-lg px-4 py-3 text-lg font-semibold text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            <CustomTimePicker value={time} onChange={setTime} />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
