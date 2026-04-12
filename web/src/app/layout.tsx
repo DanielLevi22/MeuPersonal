@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/shared/components/providers";
 import "./globals.css";
+// ci: trigger check registration
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
