@@ -265,6 +265,98 @@ Daniel → aprova ou redireciona
 Agente → implementa
 ```
 
+---
+
+## Protocolo de Features — REGRAS BLOQUEADORAS
+
+> Este protocolo é seguido ferrenhamente por ambos. Não existe exceção.
+> O hook `pre-commit` enforça as regras automaticamente no git.
+
+### Regra 1 — Nenhuma feature começa sem PRD aprovado
+
+Antes de qualquer linha de código:
+
+```bash
+# Sempre iniciar uma feature assim — nunca criar branch manualmente
+node scripts/new-feature.js <nome-da-feature>
+```
+
+Este comando cria a branch e o PRD juntos. Depois:
+1. Preencher o PRD em `docs/PRDs/<nome>.md`
+2. Responder as 3 perguntas obrigatórias (O quê? Por quê? Como saberemos que está pronto?)
+3. Mudar `Status: draft` → `Status: approved`
+4. Só então codar
+
+**O agente DEVE recusar qualquer pedido de implementação se:**
+- O PRD não existir
+- O PRD estiver como `draft`
+- As 3 perguntas não estiverem respondidas
+
+Quando isso acontecer, o agente pergunta as 3 questões antes de continuar.
+
+### Regra 2 — Congelamento de escopo
+
+Depois que o PRD está `approved`, **nenhuma adição de escopo durante a implementação**.
+
+- Algo crítico que faltou? → Pausar, amendar o PRD, retomar
+- Melhoria que surgiu? → Novo PRD, nova feature
+- O agente não adiciona nada que não esteja explícito no PRD
+
+### Regra 3 — Feature só é `done` com 4 condições
+
+Mudar o PRD para `Status: done` somente quando:
+
+- [ ] Código passou em lint + typecheck + testes
+- [ ] PR mergeado em `development`
+- [ ] `docs/features/<nome>.md` criado ou atualizado
+- [ ] `docs/STATUS.md` atualizado
+
+O hook `pre-commit` bloqueia o commit se PRD estiver `done` sem a spec em `docs/features/`.
+
+### Ritual de início de sessão
+
+1. Verificar branch atual — nunca trabalhar direto em `development`
+2. Se feature nova → `node scripts/new-feature.js <nome>` antes de tudo
+3. Se continuação → reler PRD e verificar onde parou
+
+### Ritual de fim de sessão
+
+1. Lint + typecheck limpos
+2. Commit feito com mensagem convencional
+3. Se feature concluída → criar/atualizar `docs/features/<nome>.md`
+4. Atualizar `docs/STATUS.md`
+5. PR aberto (não esperar o Daniel pedir)
+
+### Documentação de decisões técnicas no código
+
+Decisões não-óbvias no código têm comentário explicando o **porquê**, não o **o quê**:
+
+```ts
+// Filtramos meal_foods vazias porque o Supabase retorna a refeição mesmo sem
+// alimentos quando fazemos LEFT JOIN — sem este filtro, cards vazios aparecem na UI.
+const activeMeals = meals.filter(m => m.meal_foods?.length > 0);
+```
+
+Decisões estruturais (stack, arquitetura) vão em `docs/decisions/ADR-XXX.md`.
+
+### Revisão de arquitetura a cada 4 features
+
+A cada ciclo de ~4 features:
+- Verificar divergências entre mobile e web
+- Identificar código que deveria estar em `/packages/`
+- Atualizar `docs/STATUS.md`
+- Revisar se ADRs ainda fazem sentido
+
+### Referência rápida dos documentos do sistema
+
+| Documento | Propósito |
+|---|---|
+| `docs/STATUS.md` | Estado atual de todos os módulos — ler toda sessão |
+| `docs/GLOSSARY.md` | Termos canônicos do domínio — consultar ao nomear coisas |
+| `docs/PRDs/<feature>.md` | PRD da feature em andamento — obrigatório antes de codar |
+| `docs/features/<feature>.md` | Spec técnica pós-implementação — obrigatório ao concluir |
+| `docs/decisions/ADR-XXX.md` | Decisões estruturais registradas |
+
 ### Branches
 
 ```
