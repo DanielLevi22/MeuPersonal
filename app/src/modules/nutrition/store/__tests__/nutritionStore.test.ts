@@ -51,10 +51,11 @@ describe('nutritionStore', () => {
     });
 
     mockSupabase.from.mockImplementation((table: string) => {
-      if (table === 'diet_logs') {
+      if (table === 'meal_logs') {
         return {
           insert: jest.fn().mockReturnThis(),
           select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
           single: jest.fn().mockResolvedValue({
             data: { id: 'log-1', completed: true, diet_meal_id: mockMealId },
             error: null,
@@ -68,7 +69,7 @@ describe('nutritionStore', () => {
 
     const state = useNutritionStore.getState();
     expect(state.dailyLogs[mockMealId].completed).toBe(true);
-    expect(mockSupabase.from).toHaveBeenCalledWith('diet_logs');
+    expect(mockSupabase.from).toHaveBeenCalledWith('meal_logs');
   });
 
   it('should handle food search edge cases (empty results)', async () => {
