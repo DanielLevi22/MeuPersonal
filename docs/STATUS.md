@@ -38,8 +38,9 @@
 | PRD | Feature | Status | Branch |
 |-----|---------|--------|--------|
 | [ci-and-vercel-optimization](PRDs/ci-and-vercel-optimization.md) | CI path filters + Vercel ignoreCommand | ✅ done | `feature/ci-and-vercel-optimization` |
+| [vercel-pipeline-deploy](PRDs/vercel-pipeline-deploy.md) | Deploy via GitHub Actions + Vercel CLI | ✅ done | `feature/ci-and-vercel-optimization` |
 | [database-audit-and-refactor](PRDs/database-audit-and-refactor.md) | Auditoria e refatoração do banco | draft | — |
-| [local-dev-environment](PRDs/local-dev-environment.md) | Supabase CLI local + Docker | draft | — |
+| [local-dev-environment](PRDs/local-dev-environment.md) | 3 ambientes: Local→Preview→Production | draft | — |
 
 > Adicionar linha aqui ao criar um novo PRD via `node scripts/new-feature.js`.
 

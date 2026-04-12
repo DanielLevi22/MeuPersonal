@@ -2,7 +2,7 @@
 
 **Data de criação:** 2026-04-12
 **Status:** draft
-**Branch:** — (aguardando implementação)
+**Branch:** — (aguardando database-audit-and-refactor)
 **Autor:** Daniel Levi
 
 ---
@@ -10,64 +10,107 @@
 ## As 3 perguntas obrigatórias
 
 ### O quê?
-Configurar o ambiente de desenvolvimento local com Supabase CLI + Docker, eliminando a dependência do projeto Supabase cloud para desenvolvimento. Definir a separação clara entre ambiente local (dev) e produção (único projeto Supabase gratuito).
+Configurar a arquitetura de 3 ambientes (Local → Preview → Production) com 2 projetos Supabase gratuitos e Vercel deployando por branch. Garantir que cada ambiente aponte para o banco correto e que seja impossível desenvolver contra o banco de produção por acidente.
 
 ### Por quê?
-Hoje todo o desenvolvimento acontece diretamente no Supabase cloud (produção). Isso significa:
-- Qualquer erro de migration afeta dados reais
-- Não é possível testar o banco do zero (o `meal_logs` não tem migration — se o banco for recriado, o sistema quebra)
-- Não há separação entre "estou testando" e "isso está rodando para usuários"
-- Custo zero adicional é possível com Supabase CLI local
+Hoje tudo aponta para o mesmo banco (produção). Um erro de migration em desenvolvimento afeta dados reais de usuários. Não há onde validar código integrado antes de chegar em produção. Com 2 projetos Supabase gratuitos isso é resolvido sem custo.
 
 ### Como saberemos que está pronto?
-- [ ] `supabase start` funciona localmente e sobe o banco completo
-- [ ] Todas as migrations rodam do zero sem erro (`supabase db reset`)
-- [ ] App mobile conecta no banco local em desenvolvimento
-- [ ] Web conecta no banco local em desenvolvimento
-- [ ] `.env.development` de cada projeto aponta para o banco local
-- [ ] Documentado em `docs/features/local-dev-environment.md`
+- [ ] Projeto **Preview** criado no Supabase com todas as migrations aplicadas
+- [ ] Projeto **Production** criado no Supabase com todas as migrations aplicadas
+- [ ] Variáveis de ambiente configuradas por contexto (local, preview, production)
+- [ ] Vercel deploya Preview URL a partir de `development` com banco Preview
+- [ ] Vercel deploya Produção a partir de `main` com banco Production
+- [ ] App mobile em desenvolvimento aponta para banco Preview
+- [ ] É impossível rodar localmente contra o banco de produção por acidente
+- [ ] `docs/features/local-dev-environment.md` criado
 
 ---
 
-## Decisão de arquitetura (acordada em 2026-04-12)
+## Arquitetura decidida (ADR-003)
 
-| Ambiente | Banco | Quem usa | Custo |
+```
+LOCAL               →   PREVIEW              →   PRODUCTION
+feature/* branches      development branch       main branch
+Banco Preview           Supabase Projeto 1       Supabase Projeto 2
+(ou CLI local)          Vercel Preview URL       Vercel Produção
+```
+
+| Branch | Ambiente | Supabase | Vercel |
 |---|---|---|---|
-| **Local (dev)** | Supabase CLI + Docker (`localhost:54321`) | Desenvolvedor durante desenvolvimento | Gratuito |
-| **Produção** | 1 projeto Supabase (free tier) | Usuários reais | Gratuito |
+| `feature/*` | Local | Projeto Preview | — |
+| `development` | Preview | Projeto Preview | Preview URL |
+| `main` | Production | Projeto Production | Production URL |
 
-**Não haverá ambiente de staging** neste momento. Custo-benefício não justifica antes do lançamento.
+---
 
-## Contexto
-
-- Docker Desktop já está instalado na máquina
-- Supabase CLI precisa ser instalado (`npm install -g supabase` ou Scoop)
-- O projeto tem 12 migrations numeradas (0000–0011) + ~50 scripts avulsos no `/app/drizzle/`
-- Antes de configurar o ambiente local, o banco precisa ser auditado (ver PRD: `database-audit-and-refactor`) — as migrations avulsas precisam ser organizadas primeiro para que `supabase db reset` funcione limpo
-
-## Dependência
+## Dependência crítica
 
 > ⚠️ Este PRD depende do `database-audit-and-refactor` estar concluído primeiro.
-> Configurar o ambiente local antes de limpar as migrations pode fazer o `supabase db reset` falhar por referências a tabelas inexistentes.
+> As migrations precisam estar limpas e versionadas antes de criar os projetos
+> — `supabase db reset` deve funcionar do zero sem erros.
+
+---
 
 ## Escopo
 
 ### Incluído
-- Instalação e configuração do Supabase CLI
-- `supabase/config.toml` na raiz do projeto
-- `.env.development` apontando para `localhost:54321`
-- Documentação do fluxo: como iniciar o banco local, como rodar migrations, como resetar
+- Criar projeto **Preview** no Supabase Dashboard
+- Criar projeto **Production** no Supabase Dashboard (se ainda não existe)
+- Aplicar migrations limpas nos 2 projetos
+- Configurar variáveis de ambiente:
+  - `app/.env.development` → banco Preview
+  - `web/.env.local` → banco Preview
+  - GitHub Secrets → Preview e Production separados
+- Configurar Vercel:
+  - Branch `development` → Preview URL → banco Preview
+  - Branch `main` → Production → banco Production
+- Supabase CLI local (opcional, para desenvolvimento offline)
 
 ### Fora do escopo
-- Staging environment (decisão: não teremos por enquanto)
-- CI rodando contra banco local (complexidade não justificada agora)
-- Supabase Storage local (só se necessário)
+- Ambiente de staging separado (2 projetos free cobrem o necessário)
+- CI rodando contra banco real (testes usam mocks)
+- Supabase Storage configuração (só se necessário)
+
+---
+
+## Variáveis de ambiente por contexto
+
+### Mobile (`app/`)
+```
+.env.development   → EXPO_PUBLIC_SUPABASE_URL = URL do projeto Preview
+.env.production    → EXPO_PUBLIC_SUPABASE_URL = URL do projeto Production
+```
+
+### Web (`web/`)
+```
+.env.local         → NEXT_PUBLIC_SUPABASE_URL = URL do projeto Preview
+(production via Vercel env vars) → URL do projeto Production
+```
+
+### GitHub Secrets
+```
+EXPO_PUBLIC_SUPABASE_URL_PREVIEW    → projeto Preview
+EXPO_PUBLIC_SUPABASE_ANON_KEY_PREVIEW
+
+NEXT_PUBLIC_SUPABASE_URL_PREVIEW    → projeto Preview
+NEXT_PUBLIC_SUPABASE_ANON_KEY_PREVIEW
+
+EXPO_PUBLIC_SUPABASE_URL_PROD       → projeto Production
+EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD
+
+NEXT_PUBLIC_SUPABASE_URL_PROD       → projeto Production
+NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD
+```
 
 ---
 
 ## Checklist de done
 
-- [ ] Código passou em lint + typecheck + testes
+- [ ] Migrations limpas aplicadas nos 2 projetos sem erro
+- [ ] App e web rodando localmente contra banco Preview (confirmado)
+- [ ] Vercel deployando corretamente por branch
+- [ ] GitHub Secrets configurados
 - [ ] PR mergeado em `development`
 - [ ] `docs/features/local-dev-environment.md` criado
 - [ ] `docs/STATUS.md` atualizado
