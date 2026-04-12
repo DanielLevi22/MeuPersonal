@@ -23,7 +23,10 @@ export interface Workout {
 }
 
 export function useWorkouts() {
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    accountType: string;
+    services?: string[];
+  } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,15 +37,28 @@ export function useWorkouts() {
       if (user) {
         setUserId(user.id);
 
-        // Get user role
+        // Get user profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("account_type")
           .eq("id", user.id)
           .single();
 
         if (profile) {
-          setUserRole(profile.role);
+          let services: string[] = [];
+          if (profile.account_type === "professional") {
+            const { data: servicesData } = await supabase
+              .from("professional_services")
+              .select("service_category")
+              .eq("user_id", user.id)
+              .eq("is_active", true);
+            services = servicesData?.map((s) => s.service_category) || [];
+          }
+
+          setCurrentUser({
+            accountType: profile.account_type,
+            services,
+          });
         }
       }
     };
@@ -56,13 +72,10 @@ export function useWorkouts() {
       if (!userId) return [];
 
       // Check permissions with CASL
-      if (userRole) {
+      if (currentUser) {
         const ability = defineAbilitiesFor({
-          accountType: userRole as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
+          accountType: currentUser.accountType as any,
+          services: currentUser.services as any[],
         });
         if (ability.cannot("read", "Workout")) {
           throw new Error("Você não tem permissão para visualizar treinos");

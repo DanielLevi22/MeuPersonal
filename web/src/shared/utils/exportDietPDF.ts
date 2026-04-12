@@ -31,7 +31,7 @@ interface DietMeal {
   meal_order: number;
   name?: string;
   meal_time?: string;
-  diet_meal_items: DietMealItem[];
+  meal_foods: DietMealItem[];
 }
 
 interface DietMealItem {
@@ -170,8 +170,8 @@ export async function exportDietToPDF(dietPlan: DietPlan, meals: DietMeal[], stu
       yPosition += 7;
 
       // Meal items table
-      if (meal.diet_meal_items && meal.diet_meal_items.length > 0) {
-        const tableData = meal.diet_meal_items.map((item) => [
+      if (meal.meal_foods && meal.meal_foods.length > 0) {
+        const tableData = meal.meal_foods.map((item) => [
           item.food.name,
           `${item.quantity}${item.unit}`,
           `${item.food.calories.toFixed(0)}kcal`,
@@ -208,7 +208,7 @@ export async function exportDietToPDF(dietPlan: DietPlan, meals: DietMeal[], stu
         yPosition = doc.lastAutoTable.finalY + 5;
 
         // Calculate totals
-        const totals = meal.diet_meal_items.reduce(
+        const totals = meal.meal_foods.reduce(
           (acc, item) => ({
             calories: acc.calories + item.food.calories,
             protein: acc.protein + item.food.protein,

@@ -120,7 +120,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   fetchDailyLogs: async (studentId: string, date: string) => {
     try {
       const { data, error } = await supabase
-        .from('diet_logs')
+        .from('meal_logs')
         .select('*')
         .eq('student_id', studentId)
         .eq('logged_date', date);
@@ -185,7 +185,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       if (existingLog?.id) {
         // Update
         const { error } = await supabase
-          .from('diet_logs')
+          .from('meal_logs')
           .update({ completed: isCompleted })
           .eq('id', existingLog.id);
 
@@ -193,7 +193,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
       } else {
         // Insert
         const { data, error } = await supabase
-          .from('diet_logs')
+          .from('meal_logs')
           .insert({
             student_id: currentDietPlan.student_id,
             diet_plan_id: currentDietPlan.id,

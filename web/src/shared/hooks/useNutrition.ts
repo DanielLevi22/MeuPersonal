@@ -4,6 +4,7 @@ import type { DietMeal, DietMealItem, DietPlan, Food } from "@meupersonal/core";
 import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { calculateDietStrategy, type StrategyResult } from "../utils/dietStrategies";
 
 // --- Hooks for Data Fetching ---
 
@@ -34,54 +35,100 @@ export function useFoods(searchQuery = "") {
 }
 
 export function useDietPlans(studentId?: string) {
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    accountType: string;
+    services?: string[];
+  } | null>(null);
 
   useEffect(() => {
-    const getRole = async () => {
+    const getUserData = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        // Fetch profile with account_type
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("id, account_type")
           .eq("id", user.id)
           .single();
-        if (profile) setUserRole(profile.role);
+
+        if (profile) {
+          let services: string[] = [];
+
+          if (profile.account_type === "professional") {
+            const { data: servicesData } = await supabase
+              .from("professional_services")
+              .select("service_category")
+              .eq("user_id", user.id)
+              .eq("is_active", true);
+
+            services = servicesData?.map((s) => s.service_category) || [];
+          }
+
+          setCurrentUser({
+            id: profile.id,
+            accountType: profile.account_type,
+            services,
+          });
+        }
       }
     };
-    getRole();
+    getUserData();
   }, []);
 
   return useQuery({
-    queryKey: ["diet_plans", studentId],
+    queryKey: ["nutrition_plans", studentId, currentUser?.id],
     queryFn: async () => {
-      if (!studentId) return [];
+      if (!currentUser) return [];
 
-      // Check permissions
-      if (userRole) {
-        const ability = defineAbilitiesFor({
-          accountType: userRole as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
-        });
-        if (ability.cannot("read", "Diet")) {
-          throw new Error("Você não tem permissão para visualizar dietas");
-        }
+      const ability = defineAbilitiesFor({
+        accountType: currentUser.accountType as any,
+        services: currentUser.services as any[],
+      });
+
+      if (ability.cannot("read", "Diet")) {
+        throw new Error("Você não tem permissão para visualizar dietas");
       }
 
-      const { data, error } = await supabase
-        .from("diet_plans")
-        .select("*")
-        .eq("student_id", studentId)
-        .order("created_at", { ascending: false });
+      let query = supabase.from("nutrition_plans").select("*");
 
-      if (error) throw error;
-      return data as DietPlan[];
+      if (studentId) {
+        query = query.eq("student_id", studentId);
+        if (currentUser.accountType === "professional") {
+          query = query.or(`personal_id.eq.${currentUser.id},professional_id.eq.${currentUser.id}`);
+        }
+      } else if (currentUser.accountType === "professional") {
+        query = query.or(`personal_id.eq.${currentUser.id},professional_id.eq.${currentUser.id}`);
+      }
+
+      const { data: plans, error: plansError } = await query.order("created_at", {
+        ascending: false,
+      });
+      if (plansError) throw plansError;
+      if (!plans || plans.length === 0) return [];
+
+      const uniqueStudentIds = Array.from(new Set(plans.map((p) => p.student_id)));
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", uniqueStudentIds);
+
+      if (profilesError) throw profilesError;
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]));
+
+      return plans.map((plan) => ({
+        ...plan,
+        profiles: profileMap.get(plan.student_id) || {
+          full_name: "Aluno Desconhecido",
+          avatar_url: null,
+        },
+      })) as (DietPlan & { profiles: { full_name: string; avatar_url: string | null } })[];
     },
-    enabled: !!studentId,
+    enabled: !!currentUser,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -89,24 +136,29 @@ export function useDietPlan(id: string) {
   return useQuery({
     queryKey: ["diet_plan", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("diet_plans").select("*").eq("id", id).single();
-
+      const { data, error } = await supabase
+        .from("nutrition_plans")
+        .select("*")
+        .eq("id", id)
+        .single();
       if (error) throw error;
       return data as DietPlan;
     },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
 export function useDietMeals(dietPlanId: string) {
   return useQuery({
-    queryKey: ["diet_meals", dietPlanId],
+    queryKey: ["meals", dietPlanId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("diet_meals")
+        .from("meals")
         .select(`
           *,
-          diet_meal_items (
+          meal_foods (
             *,
             food:foods (*)
           )
@@ -117,17 +169,18 @@ export function useDietMeals(dietPlanId: string) {
 
       if (error) throw error;
 
-      // Sort items by order_index manually since nested order in select is tricky
       const meals = (data || []).map((meal) => ({
         ...meal,
-        diet_meal_items: meal.diet_meal_items?.sort(
+        meal_foods: meal.meal_foods?.sort(
           (a: DietMealItem, b: DietMealItem) => (a.order_index || 0) - (b.order_index || 0),
         ),
       }));
 
-      return meals as (DietMeal & { diet_meal_items: (DietMealItem & { food: Food })[] })[];
+      return meals as (DietMeal & { meal_foods: (DietMealItem & { food: Food })[] })[];
     },
     enabled: !!dietPlanId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -135,7 +188,10 @@ export function useDietMeals(dietPlanId: string) {
 
 export function useCreateDietPlan() {
   const queryClient = useQueryClient();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    accountType: string;
+    services?: string[];
+  } | null>(null);
 
   useEffect(() => {
     const getRole = async () => {
@@ -145,10 +201,21 @@ export function useCreateDietPlan() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("account_type")
           .eq("id", user.id)
           .single();
-        if (profile) setUserRole(profile.role);
+        if (profile) {
+          let services: string[] = [];
+          if (profile.account_type === "professional") {
+            const { data: servicesData } = await supabase
+              .from("professional_services")
+              .select("service_category")
+              .eq("user_id", user.id)
+              .eq("is_active", true);
+            services = servicesData?.map((s) => s.service_category) || [];
+          }
+          setCurrentUser({ accountType: profile.account_type, services });
+        }
       }
     };
     getRole();
@@ -158,81 +225,121 @@ export function useCreateDietPlan() {
     mutationFn: async (
       plan: Omit<DietPlan, "id" | "created_at" | "version" | "is_active" | "status">,
     ) => {
-      if (userRole) {
+      if (currentUser) {
         const ability = defineAbilitiesFor({
-          accountType: userRole as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
+          accountType: currentUser.accountType as any,
+          services: currentUser.services as any[],
         });
-        if (ability.cannot("create", "Diet")) {
+        if (ability.cannot("create", "Diet"))
           throw new Error("Você não tem permissão para criar dietas");
-        }
       }
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Check for active plan
       const { data: existingActive } = await supabase
-        .from("diet_plans")
+        .from("nutrition_plans")
         .select("id")
         .eq("student_id", plan.student_id)
         .eq("status", "active")
-        .single();
-
-      if (existingActive) {
-        throw new Error(
-          "Já existe um plano ativo para este aluno. Finalize o atual antes de criar um novo.",
-        );
-      }
+        .limit(1)
+        .maybeSingle();
+      if (existingActive) throw new Error("Já existe um plano ativo para este aluno.");
 
       const { data, error } = await supabase
-        .from("diet_plans")
+        .from("nutrition_plans")
         .insert({
           ...plan,
           personal_id: user.id,
+          professional_id: user.id,
           version: 1,
           is_active: true,
           status: "active",
         })
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["diet_plans", variables.student_id] });
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nutrition_plans"] }),
+  });
+}
+
+export function useCreateDietPlanWithStrategy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      plan,
+      strategyData,
+    }: {
+      plan: Omit<DietPlan, "id" | "created_at" | "version" | "is_active" | "status">;
+      strategyData: StrategyResult;
+    }) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data: existingActive } = await supabase
+        .from("nutrition_plans")
+        .select("id")
+        .eq("student_id", plan.student_id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (existingActive) throw new Error("Já existe um plano ativo para este aluno.");
+
+      const { data: newPlan, error: planError } = await supabase
+        .from("nutrition_plans")
+        .insert({
+          ...plan,
+          personal_id: user.id,
+          professional_id: user.id,
+          version: 1,
+          is_active: true,
+          status: "active",
+        })
+        .select()
+        .single();
+      if (planError) throw planError;
+
+      const { weeklySchedule } = strategyData;
+      for (const day of weeklySchedule) {
+        for (const [index, mealTemplate] of day.meals.entries()) {
+          await supabase.from("meals").insert({
+            diet_plan_id: newPlan.id,
+            day_of_week: day.dayOfWeek,
+            meal_type: mealTemplate.type,
+            meal_order: index,
+            name: mealTemplate.name,
+            target_calories: 0,
+            meal_time: mealTemplate.time,
+          });
+        }
+      }
+      return newPlan;
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nutrition_plans"] }),
   });
 }
 
 export function useFinishDietPlan() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (planId: string) => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
-        .from("diet_plans")
-        .update({
-          status: "finished",
-          is_active: false,
-          end_date: today,
-        })
+        .from("nutrition_plans")
+        .update({ status: "finished", is_active: false, end_date: today })
         .eq("id", planId)
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["diet_plans", data.student_id] });
+      queryClient.invalidateQueries({ queryKey: ["nutrition_plans", data.student_id] });
       queryClient.invalidateQueries({ queryKey: ["diet_plan", data.id] });
     },
   });
@@ -240,141 +347,89 @@ export function useFinishDietPlan() {
 
 export function useAddMeal() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (meal: Omit<DietMeal, "id">) => {
-      const { data, error } = await supabase.from("diet_meals").insert(meal).select().single();
-
+      const { data, error } = await supabase.from("meals").insert(meal).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["diet_meals", variables.diet_plan_id] });
-    },
+    onSuccess: (_, variables) =>
+      queryClient.invalidateQueries({ queryKey: ["meals", variables.diet_plan_id] }),
   });
 }
 
 export function useUpdateMeal() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<DietMeal>) => {
       const { data, error } = await supabase
-        .from("diet_meals")
+        .from("meals")
         .update(updates)
         .eq("id", id)
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diet_meals"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meals"] }),
   });
 }
 
 export function useAddFoodToMeal() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async ({
-      diet_meal_id,
-      food_id,
-      quantity,
-      unit,
-      order_index,
-    }: {
+    mutationFn: async (item: {
       diet_meal_id: string;
       food_id: string;
       quantity: number;
       unit: string;
       order_index: number;
     }) => {
-      const { data, error } = await supabase
-        .from("diet_meal_items")
-        .insert({
-          diet_meal_id,
-          food_id,
-          quantity,
-          unit,
-          order_index,
-        })
-        .select()
-        .single();
-
+      const { data, error } = await supabase.from("meal_foods").insert(item).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: (_data) => {
-      // We need to find the plan ID to invalidate, but we only have meal ID.
-      // Invalidation of 'diet_meals' requires plan ID.
-      // A simple way is to invalidate all 'diet_meals' queries or refetch the specific one if we knew the plan ID.
-      // Since we don't easily have plan ID here without extra fetch or passing it,
-      // we can invalidate all 'diet_meals' which is safe but slightly inefficient,
-      // OR pass planId in variables.
-      // Let's rely on the UI to refetch or invalidate broadly for now.
-      queryClient.invalidateQueries({ queryKey: ["diet_meals"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meals"] }),
   });
 }
 
 export function useUpdateMealItem() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<DietMealItem>) => {
       const { data, error } = await supabase
-        .from("diet_meal_items")
+        .from("meal_foods")
         .update(updates)
         .eq("id", id)
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diet_meals"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meals"] }),
   });
 }
 
 export function useRemoveMealItem() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("diet_meal_items").delete().eq("id", id);
-
+      const { error } = await supabase.from("meal_foods").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diet_meals"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meals"] }),
   });
 }
-
-// --- Copy/Paste/Clear Day Operations ---
 
 export function useCopyDay() {
   return useMutation({
     mutationFn: async ({ dietPlanId, dayOfWeek }: { dietPlanId: string; dayOfWeek: number }) => {
-      // Fetch all meals and items for the specified day
       const { data: meals, error } = await supabase
-        .from("diet_meals")
-        .select(`
-          *,
-          diet_meal_items (
-            *,
-            food:foods (*)
-          )
-        `)
+        .from("meals")
+        .select("*, meal_foods(*, food:foods(*))")
         .eq("diet_plan_id", dietPlanId)
         .eq("day_of_week", dayOfWeek)
         .order("meal_order", { ascending: true });
-
       if (error) throw error;
       return { meals, dayOfWeek };
     },
@@ -383,7 +438,6 @@ export function useCopyDay() {
 
 export function usePasteDay() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       dietPlanId,
@@ -392,21 +446,16 @@ export function usePasteDay() {
     }: {
       dietPlanId: string;
       targetDay: number;
-      copiedMeals: (DietMeal & { diet_meal_items: DietMealItem[] })[];
+      copiedMeals: any[];
     }) => {
-      // 1. Delete existing meals for target day
-      const { error: deleteError } = await supabase
-        .from("diet_meals")
+      await supabase
+        .from("meals")
         .delete()
         .eq("diet_plan_id", dietPlanId)
         .eq("day_of_week", targetDay);
-
-      if (deleteError) throw deleteError;
-
-      // 2. Copy meals to target day
       for (const sourceMeal of copiedMeals) {
         const { data: newMeal, error: mealError } = await supabase
-          .from("diet_meals")
+          .from("meals")
           .insert({
             diet_plan_id: dietPlanId,
             day_of_week: targetDay,
@@ -418,60 +467,42 @@ export function usePasteDay() {
           })
           .select()
           .single();
-
         if (mealError) throw mealError;
-
-        // 3. Copy meal items
-        if (sourceMeal.diet_meal_items && sourceMeal.diet_meal_items.length > 0) {
-          const itemsToInsert = sourceMeal.diet_meal_items.map((item: DietMealItem) => ({
+        if (sourceMeal.meal_foods?.length > 0) {
+          const itemsToInsert = sourceMeal.meal_foods.map((item: any) => ({
             diet_meal_id: newMeal.id,
             food_id: item.food_id,
             quantity: item.quantity,
             unit: item.unit,
             order_index: item.order_index,
           }));
-
-          const { error: itemsError } = await supabase
-            .from("diet_meal_items")
-            .insert(itemsToInsert);
-
-          if (itemsError) throw itemsError;
+          await supabase.from("meal_foods").insert(itemsToInsert);
         }
       }
-
       return { dietPlanId, targetDay };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["diet_meals", data.dietPlanId] });
-    },
+    onSuccess: (data) => queryClient.invalidateQueries({ queryKey: ["meals", data.dietPlanId] }),
   });
 }
 
 export function useClearDay() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({ dietPlanId, dayOfWeek }: { dietPlanId: string; dayOfWeek: number }) => {
       const { error } = await supabase
-        .from("diet_meals")
+        .from("meals")
         .delete()
         .eq("diet_plan_id", dietPlanId)
         .eq("day_of_week", dayOfWeek);
-
       if (error) throw error;
       return { dietPlanId, dayOfWeek };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["diet_meals", data.dietPlanId] });
-    },
+    onSuccess: (data) => queryClient.invalidateQueries({ queryKey: ["meals", data.dietPlanId] }),
   });
 }
 
-// --- Import Diet ---
-
 export function useImportDiet() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       sourceDietPlanId,
@@ -484,36 +515,27 @@ export function useImportDiet() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
-
-      // 1. Get source diet plan
       const { data: sourcePlan, error: planError } = await supabase
-        .from("diet_plans")
+        .from("nutrition_plans")
         .select("*")
         .eq("id", sourceDietPlanId)
         .single();
-
       if (planError) throw planError;
-
-      // 2. Check for active plan on target student
       const { data: existingActive } = await supabase
-        .from("diet_plans")
+        .from("nutrition_plans")
         .select("id")
         .eq("student_id", targetStudentId)
         .eq("status", "active")
-        .single();
+        .limit(1)
+        .maybeSingle();
+      if (existingActive) throw new Error("Já existe um plano ativo para este aluno.");
 
-      if (existingActive) {
-        throw new Error(
-          "Já existe um plano ativo para este aluno. Finalize o atual antes de importar.",
-        );
-      }
-
-      // 3. Create new diet plan for target student
       const { data: newPlan, error: newPlanError } = await supabase
-        .from("diet_plans")
+        .from("nutrition_plans")
         .insert({
           student_id: targetStudentId,
           personal_id: user.id,
+          professional_id: user.id,
           name: `${sourcePlan.name} (Importado)`,
           description: sourcePlan.description,
           start_date: new Date().toISOString().split("T")[0],
@@ -529,26 +551,17 @@ export function useImportDiet() {
         })
         .select()
         .single();
-
       if (newPlanError) throw newPlanError;
 
-      // 4. Get all meals from source plan
       const { data: sourceMeals, error: mealsError } = await supabase
-        .from("diet_meals")
-        .select(`
-          *,
-          diet_meal_items (
-            *
-          )
-        `)
+        .from("meals")
+        .select("*, meal_foods(*)")
         .eq("diet_plan_id", sourceDietPlanId);
-
       if (mealsError) throw mealsError;
 
-      // 5. Copy meals to new plan
       for (const sourceMeal of sourceMeals || []) {
         const { data: newMeal, error: mealError } = await supabase
-          .from("diet_meals")
+          .from("meals")
           .insert({
             diet_plan_id: newPlan.id,
             day_of_week: sourceMeal.day_of_week,
@@ -560,59 +573,42 @@ export function useImportDiet() {
           })
           .select()
           .single();
-
         if (mealError) throw mealError;
-
-        // 6. Copy meal items
-        if (sourceMeal.diet_meal_items && sourceMeal.diet_meal_items.length > 0) {
-          const itemsToInsert = sourceMeal.diet_meal_items.map((item: DietMealItem) => ({
+        if (sourceMeal.meal_foods?.length > 0) {
+          const itemsToInsert = sourceMeal.meal_foods.map((item: any) => ({
             diet_meal_id: newMeal.id,
             food_id: item.food_id,
             quantity: item.quantity,
             unit: item.unit,
             order_index: item.order_index,
           }));
-
-          const { error: itemsError } = await supabase
-            .from("diet_meal_items")
-            .insert(itemsToInsert);
-
-          if (itemsError) throw itemsError;
+          await supabase.from("meal_foods").insert(itemsToInsert);
         }
       }
-
-      return { newPlan, targetStudentId };
+      return newPlan;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["diet_plans", data.targetStudentId] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nutrition_plans"] }),
   });
 }
-
-// --- Progress Tracking Queries ---
 
 export function useDietLogs(studentId: string, startDate?: string, endDate?: string) {
   return useQuery({
     queryKey: ["diet_logs", studentId, startDate, endDate],
     queryFn: async () => {
       let query = supabase
-        .from("diet_logs")
+        .from("meal_logs")
         .select("*")
         .eq("student_id", studentId)
         .order("logged_date", { ascending: true });
-
-      if (startDate) {
-        query = query.gte("logged_date", startDate);
-      }
-      if (endDate) {
-        query = query.lte("logged_date", endDate);
-      }
-
+      if (startDate) query = query.gte("logged_date", startDate);
+      if (endDate) query = query.lte("logged_date", endDate);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
     enabled: !!studentId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -625,19 +621,15 @@ export function useNutritionProgress(studentId: string, startDate?: string, endD
         .select("*")
         .eq("student_id", studentId)
         .order("recorded_date", { ascending: true });
-
-      if (startDate) {
-        query = query.gte("recorded_date", startDate);
-      }
-      if (endDate) {
-        query = query.lte("recorded_date", endDate);
-      }
-
+      if (startDate) query = query.gte("recorded_date", startDate);
+      if (endDate) query = query.lte("recorded_date", endDate);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
     enabled: !!studentId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -645,28 +637,23 @@ export function useStudentNutritionStats(studentId: string) {
   return useQuery({
     queryKey: ["nutrition_stats", studentId],
     queryFn: async (): Promise<StudentNutritionStats> => {
-      // Get last 30 days of logs
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
       const { data: logs, error: logsError } = await supabase
-        .from("diet_logs")
+        .from("meal_logs")
         .select("*")
         .eq("student_id", studentId)
         .gte("logged_date", thirtyDaysAgo.toISOString().split("T")[0]);
-
       if (logsError) throw logsError;
 
-      // Get latest weight
-      const { data: latestProgress, error: _progressError } = await supabase
+      const { data: latestProgress } = await supabase
         .from("nutrition_progress")
         .select("weight, recorded_date")
         .eq("student_id", studentId)
         .order("recorded_date", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      // Calculate adherence
       const totalDays = logs?.length || 0;
       const completedMeals = logs?.filter((log) => log.completed).length || 0;
       const adherenceRate = totalDays > 0 ? (completedMeals / totalDays) * 100 : 0;
@@ -680,5 +667,52 @@ export function useStudentNutritionStats(studentId: string) {
       };
     },
     enabled: !!studentId,
+    staleTime: 1000 * 60 * 2, // 2 minutes (stats can change if user logs a meal)
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useManualLogMeal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      studentId,
+      mealId,
+      completed,
+      loggedAt,
+    }: {
+      studentId: string;
+      mealId: string;
+      completed: boolean;
+      loggedAt: string;
+    }) => {
+      const dateStr = loggedAt.split("T")[0];
+      const { data: existing } = await supabase
+        .from("meal_logs")
+        .select("id")
+        .eq("meal_id", mealId)
+        .gte("logged_date", dateStr)
+        .lte("logged_date", dateStr)
+        .maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase
+          .from("meal_logs")
+          .update({ completed, logged_at: loggedAt })
+          .eq("id", existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await supabase
+        .from("meal_logs")
+        .insert({ student_id: studentId, diet_meal_id: mealId, completed, logged_date: dateStr })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) =>
+      queryClient.invalidateQueries({ queryKey: ["nutrition_stats", variables.studentId] }),
   });
 }

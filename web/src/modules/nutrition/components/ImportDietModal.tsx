@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useDietPlans, useImportDiet } from "@/shared/hooks/useNutrition";
 import { useStudents } from "@/shared/hooks/useStudents";
 
@@ -21,7 +22,7 @@ export function ImportDietModal({ isOpen, onClose, targetStudentId }: ImportDiet
     e.preventDefault();
 
     if (!selectedDietPlan || !selectedTargetStudent) {
-      alert("Selecione um plano e um aluno de destino");
+      toast.error("Selecione um plano e um aluno de destino");
       return;
     }
 
@@ -37,10 +38,10 @@ export function ImportDietModal({ isOpen, onClose, targetStudentId }: ImportDiet
       setSelectedTargetStudent(targetStudentId || "");
       onClose();
 
-      alert("Dieta importada com sucesso!");
+      toast.success("Dieta importada com sucesso!");
     } catch (error: any) {
       console.error("Error importing diet:", error);
-      alert(error.message || "Erro ao importar dieta");
+      toast.error(error.message || "Erro ao importar dieta");
     }
   };
 

@@ -28,7 +28,7 @@ async function fetchStudentHistory(studentId: string, personalId: string): Promi
       .limit(20),
 
     supabase
-      .from('diet_plans')
+      .from('nutrition_plans')
       .select('id, created_at, name, status')
       .eq('student_id', studentId)
       .eq('personal_id', personalId)

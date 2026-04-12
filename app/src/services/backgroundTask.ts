@@ -26,7 +26,7 @@ TaskManager.defineTask(BACKGROUND_DIET_SYNC, async () => {
 
     // 2. Fetch the active diet plan for this student
     const { data: activePlan, error } = await supabase
-      .from('diet_plans')
+      .from('nutrition_plans')
       .select('id, version, updated_at')
       .eq('student_id', studentId)
       .eq('status', 'active')
