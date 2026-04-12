@@ -2,17 +2,19 @@
 
 import type { DietMeal, DietMealItem, Food } from "@meupersonal/core";
 import { useState } from "react";
-import { DEFAULT_MEAL_TYPES } from "@/lib/constants/meals";
+import { toast } from "sonner";
+import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import {
   useAddFoodToMeal,
   useAddMeal,
+  useDeleteMeal,
   useDietMeals,
   useRemoveMealItem,
   useUpdateMeal,
   useUpdateMealItem,
 } from "@/shared/hooks/useNutrition";
 import { AddFoodQuantityModal } from "./AddFoodQuantityModal";
-import { DayTotals } from "./DayTotals";
+import { AddMealModal } from "./AddMealModal";
 import { EditFoodModal } from "./EditFoodModal";
 import { EditMealTimeModal } from "./EditMealTimeModal";
 import { FoodSelector } from "./FoodSelector";
@@ -23,15 +25,6 @@ interface MealEditorProps {
   dayOfWeek: number; // 0-6 for cyclic, -1 for unique
 }
 
-interface Totals {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  minerals?: number;
-  vitamins?: number;
-}
-
 export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
   const { data: allMeals = [], isLoading } = useDietMeals(dietPlanId);
   const addMealMutation = useAddMeal();
@@ -39,12 +32,15 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
   const updateMealMutation = useUpdateMeal();
   const updateItemMutation = useUpdateMealItem();
   const removeFoodMutation = useRemoveMealItem();
+  const deleteMealMutation = useDeleteMeal();
 
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditTimeModalOpen, setIsEditTimeModalOpen] = useState(false);
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
+  const [isConfirmDeleteMealOpen, setIsConfirmDeleteMealOpen] = useState(false);
 
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<DietMealItem | null>(null);
@@ -54,20 +50,18 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
     calculatedQuantity?: number;
   } | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [mealToDeleteId, setMealToDeleteId] = useState<string | null>(null);
 
   const meals = allMeals.filter((m) => m.day_of_week === dayOfWeek);
 
-  const handleAddMeal = async (mealType: string, order: number, defaultTime: string) => {
+  const handleDeleteMeal = async (id: string) => {
     try {
-      await addMealMutation.mutateAsync({
-        diet_plan_id: dietPlanId,
-        day_of_week: dayOfWeek,
-        name: DEFAULT_MEAL_TYPES.find((m) => m.type === mealType)?.label || mealType,
-        meal_time: defaultTime,
-        meal_type: mealType as any,
-        meal_order: order,
-      });
-    } catch (_error) {}
+      await deleteMealMutation.mutateAsync(id);
+      toast.success("Refeição removida com sucesso!");
+      setIsConfirmDeleteMealOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao remover refeição.");
+    }
   };
 
   const handleConfirmQuantity = async (quantity: number, food?: Food) => {
@@ -75,6 +69,10 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
     if (!selectedMealId || !foodToAdd) return;
 
     try {
+      setIsFoodModalOpen(false);
+      setIsQuantityModalOpen(false);
+      setPendingFood(null);
+
       await addFoodMutation.mutateAsync({
         diet_meal_id: selectedMealId,
         food_id: foodToAdd.id,
@@ -82,27 +80,13 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
         unit: foodToAdd.serving_unit,
         order_index: 999,
       });
-      setIsFoodModalOpen(false);
-      setIsQuantityModalOpen(false);
-      setPendingFood(null);
-    } catch (_error) {}
+      toast.success(`${foodToAdd.name} adicionado!`);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao adicionar alimento.");
+    }
   };
 
-  const totals: Totals = meals.reduce(
-    (acc, meal) => {
-      meal.meal_foods?.forEach((item) => {
-        const ratio = item.quantity / item.food.serving_size;
-        acc.calories += item.food.calories * ratio;
-        acc.protein += item.food.protein * ratio;
-        acc.carbs += item.food.carbs * ratio;
-        acc.fat += item.food.fat * ratio;
-      });
-      return acc;
-    },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
-
-  if (isLoading)
+  if (isLoading && allMeals.length === 0)
     return (
       <div className="p-8 text-center text-muted-foreground animate-pulse">
         Carregando refeições...
@@ -111,12 +95,29 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
 
   return (
     <div className="space-y-6">
-      <DayTotals totals={totals} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <svg
+            className="w-5 h-5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          Refeições do Dia
+        </h3>
+      </div>
 
       <div className="space-y-4">
-        {DEFAULT_MEAL_TYPES.map((mealType) => {
-          const meal = meals.find((m) => m.meal_type === mealType.type);
-          return meal ? (
+        {meals
+          .sort((a, b) => a.meal_order - b.meal_order)
+          .map((meal) => (
             <MealCard
               key={meal.id}
               meal={meal}
@@ -136,33 +137,33 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
                 setItemToDelete(id);
                 setIsDeleteConfirmOpen(true);
               }}
+              onDeleteMeal={() => {
+                setMealToDeleteId(meal.id);
+                setIsConfirmDeleteMealOpen(true);
+              }}
             />
-          ) : (
-            <button
-              key={mealType.type}
-              onClick={() => handleAddMeal(mealType.type, mealType.order, mealType.defaultTime)}
-              className="w-full py-4 border-2 border-dashed border-white/10 rounded-xl text-muted-foreground hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2 group"
-            >
-              <svg
-                className="w-5 h-5 transition-transform group-hover:scale-110"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Adicionar {mealType.label}
-            </button>
-          );
-        })}
+          ))}
+
+        <button
+          onClick={() => setIsAddMealModalOpen(true)}
+          className="w-full py-8 border-2 border-dashed border-white/5 rounded-3xl text-zinc-500 hover:text-zinc-400 hover:border-white/10 transition-all flex flex-col items-center justify-center gap-3 group mt-4"
+        >
+          <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+          </div>
+          <span className="font-black text-[10px] uppercase tracking-[0.3em]">
+            Provisionar Nova Refeição
+          </span>
+        </button>
       </div>
 
-      {/* Modals Coordinated Locally */}
       {isFoodModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -234,6 +235,26 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
         suggestedQuantity={pendingFood?.calculatedQuantity}
       />
 
+      <AddMealModal
+        isOpen={isAddMealModalOpen}
+        onClose={() => setIsAddMealModalOpen(false)}
+        onSave={async (name, time) => {
+          try {
+            await addMealMutation.mutateAsync({
+              diet_plan_id: dietPlanId,
+              day_of_week: dayOfWeek,
+              name,
+              meal_time: time,
+              meal_type: "custom" as any,
+              meal_order: meals.length + 1,
+            });
+            setIsAddMealModalOpen(false);
+          } catch (error: any) {
+            toast.error(error.message || "Erro ao adicionar refeição.");
+          }
+        }}
+      />
+
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -254,7 +275,12 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
               </button>
               <button
                 onClick={() => {
-                  if (itemToDelete) removeFoodMutation.mutate(itemToDelete);
+                  if (itemToDelete) {
+                    removeFoodMutation.mutate(itemToDelete, {
+                      onSuccess: () => toast.success("Alimento removido!"),
+                      onError: () => toast.error("Erro ao remover alimento."),
+                    });
+                  }
                   setIsDeleteConfirmOpen(false);
                 }}
                 className="px-6 py-2 bg-red-500 text-white rounded-lg font-bold text-sm hover:bg-red-600 transition-colors"
@@ -265,6 +291,28 @@ export function MealEditor({ dietPlanId, dayOfWeek }: MealEditorProps) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isConfirmDeleteMealOpen}
+        onClose={() => setIsConfirmDeleteMealOpen(false)}
+        onConfirm={() => mealToDeleteId && handleDeleteMeal(mealToDeleteId)}
+        title="Excluir Refeição"
+        description="Tem certeza que deseja remover esta refeição e todos os alimentos nela? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir Refeição"
+        variant="danger"
+      />
     </div>
   );
+}
+
+function _CustomMealModal({
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (name: string, time: string) => void;
+}) {
+  return <AddMealModal isOpen={isOpen} onClose={onClose} onSave={onSave} />;
 }

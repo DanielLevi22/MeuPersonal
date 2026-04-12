@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { CustomTimePicker } from "@/shared/components/CustomTimePicker";
 
 interface AddMealModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface AddMealModalProps {
 export function AddMealModal({ isOpen, onClose, onSave }: AddMealModalProps) {
   const [name, setName] = useState("");
   const [time, setTime] = useState("08:00");
+  const _timeInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +49,34 @@ export function AddMealModal({ isOpen, onClose, onSave }: AddMealModalProps) {
 
           <div className="space-y-4">
             <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Sugestões</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { name: "Café da Manhã", time: "08:00" },
+                  { name: "Lanche da Manhã", time: "10:30" },
+                  { name: "Almoço", time: "13:00" },
+                  { name: "Lanche da Tarde", time: "16:00" },
+                  { name: "Jantar", time: "19:30" },
+                  { name: "Ceia", time: "22:00" },
+                  { name: "Pré-Treino", time: "18:00" },
+                  { name: "Pós-Treino", time: "19:30" },
+                ].map((s) => (
+                  <button
+                    key={s.name}
+                    type="button"
+                    onClick={() => {
+                      setName(s.name);
+                      setTime(s.time);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-surface border border-white/5 text-[10px] font-bold text-muted-foreground hover:bg-white/5 transition-colors uppercase tracking-widest"
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Nome da Refeição</label>
               <input
                 type="text"
@@ -60,12 +90,7 @@ export function AddMealModal({ isOpen, onClose, onSave }: AddMealModalProps) {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Horário</label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-background border border-white/10 rounded-lg px-4 py-3 text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+              <CustomTimePicker value={time} onChange={setTime} />
             </div>
           </div>
 

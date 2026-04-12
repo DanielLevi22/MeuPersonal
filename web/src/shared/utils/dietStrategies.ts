@@ -1,4 +1,9 @@
-export type DietStrategyType = "standard" | "carb_cycling" | "ketogenic" | "intermittent_fasting";
+export type DietStrategyType =
+  | "standard"
+  | "carb_cycling"
+  | "ketogenic"
+  | "intermittent_fasting"
+  | "manual";
 
 export interface MacroSplit {
   protein: number;
@@ -55,6 +60,11 @@ export const DIET_STRATEGIES: Record<
     label: "Jejum Intermitente",
     description: "Janela de alimentação de 8h. Ideal para controle de insulina.",
     icon: "time",
+  },
+  manual: {
+    label: "Personalizado",
+    description: "Crie sua própria estrutura do zero sem sugestões automáticas.",
+    icon: "create",
   },
 };
 
@@ -125,6 +135,13 @@ export function calculateDietStrategy(
         dayLabel = "Janela 8h";
         dayDesc = "12:00 - 20:00";
         dailyMeals = [...fastingMeals];
+        dailyMacros = { calories: baseCalories, protein: 30, carbs: 40, fat: 30 };
+        break;
+
+      case "manual":
+        dayLabel = "Manual";
+        dayDesc = "Livre";
+        dailyMeals = [];
         dailyMacros = { calories: baseCalories, protein: 30, carbs: 40, fat: 30 };
         break;
 

@@ -3,7 +3,7 @@ import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// Extend jsPDF type to include autoTable and internal properties
+// Extend jsPDF type
 declare module "jspdf" {
   interface jsPDF {
     lastAutoTable: {
@@ -47,77 +47,109 @@ interface DietMealItem {
   };
 }
 
-const DAYS_OF_WEEK = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const _DAYS_OF_WEEK = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export async function exportDietToPDF(dietPlan: DietPlan, meals: DietMeal[], studentName: string) {
-  const doc = new jsPDF();
-  let yPosition = 20;
+// Colors
+const COLORS = {
+  primary: [204, 255, 0], // Neon Primary
+  dark: [20, 20, 20], // Deep Black
+  protein: [16, 185, 129], // Emerald
+  carbs: [59, 130, 246], // Blue
+  fat: [234, 179, 8], // Gold
+  text: [40, 40, 40],
+  gray: [150, 150, 150],
+  bgShade: [252, 252, 252],
+};
 
-  // Header
-  doc.setFontSize(24);
-  doc.setTextColor(0, 255, 136); // Primary color
-  doc.text("MeuPersonal", 105, yPosition, { align: "center" });
+const TRANSLATED_MEALS: Record<string, string> = {
+  breakfast: "Café da Manhã",
+  lunch: "Almoço",
+  dinner: "Jantar",
+  snack: "Lanche",
+  pre_workout: "Pré-treino",
+  post_workout: "Pós-treino",
+  supper: "Ceia",
+};
 
-  yPosition += 10;
-  doc.setFontSize(18);
-  doc.setTextColor(0, 0, 0);
-  doc.text("PLANO DE DIETA", 105, yPosition, { align: "center" });
+export async function exportDietToPDF(
+  dietPlan: DietPlan,
+  meals: DietMeal[],
+  studentName: string,
+  professionalName: string,
+) {
+  // --- DATA CLEANING (GHOST MEAL PREVENTER) ---
+  const activeMeals = meals.filter((m) => m.meal_foods && m.meal_foods.length > 0);
 
-  yPosition += 15;
+  const isCyclic = dietPlan.plan_type === "cyclic";
+  const doc = new jsPDF({
+    orientation: isCyclic ? "landscape" : "portrait",
+    unit: "mm",
+    format: "a4",
+  });
 
-  // Plan Info
-  doc.setFontSize(12);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // --- PREMIUM ARCHITECTURAL HEADER (DASHBOARD ELITE) ---
+
+  const hH = 35; // Header Height
+
+  // 1. Triple-Layer Depth Background
+  doc.setFillColor(15, 15, 15);
+  doc.rect(0, 0, pageWidth, hH, "F");
+  doc.setFillColor(28, 28, 28);
+  doc.rect(0, 0, pageWidth, hH * 0.45, "F"); // Top panel
+
+  // 2. High-Tech Structural Accents
+  doc.setDrawColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
+  doc.setLineWidth(0.1);
+  const m = 5; // Tactical margin
+  // Tiny crosshair markers in corners
+  const cross = 0.8;
+  doc.line(m, m - cross, m, m + cross);
+  doc.line(m - cross, m, m + cross, m);
+  doc.line(pageWidth - m, m - cross, pageWidth - m, m + cross);
+  doc.line(pageWidth - m - cross, m, pageWidth - m + 1, m);
+
+  // 3. Branding Section
+  doc.setFontSize(26);
+  doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
   doc.setFont("helvetica", "bold");
-  doc.text("Plano:", 20, yPosition);
-  doc.setFont("helvetica", "normal");
-  doc.text(dietPlan.name, 45, yPosition);
+  doc.text("MEU", 15, 18);
 
-  yPosition += 7;
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(22);
+  const brandX = 15 + doc.getTextWidth("MEU") + 2;
+  doc.text("PERSONAL", brandX, 18, { charSpace: 1.5 });
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(180, 180, 180);
   doc.setFont("helvetica", "bold");
-  doc.text("Aluno:", 20, yPosition);
-  doc.setFont("helvetica", "normal");
-  doc.text(studentName, 45, yPosition);
+  doc.text(`DESENVOLVIDO POR // ${professionalName.toUpperCase()}`, 15, 26);
 
-  yPosition += 7;
+  // 4. Student Identification Badge (High-Fidelity)
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text("Período:", 20, yPosition);
-  doc.setFont("helvetica", "normal");
-  const startDate = format(new Date(dietPlan.start_date), "dd/MM/yyyy", { locale: ptBR });
-  const endDate = format(new Date(dietPlan.end_date), "dd/MM/yyyy", { locale: ptBR });
-  doc.text(`${startDate} - ${endDate}`, 45, yPosition);
+  doc.text(`[ ${studentName.toUpperCase()} ]`, pageWidth - 15, 18, {
+    align: "right",
+    charSpace: 0.5,
+  });
 
-  yPosition += 7;
-  doc.setFont("helvetica", "bold");
-  doc.text("Tipo:", 20, yPosition);
-  doc.setFont("helvetica", "normal");
-  doc.text(
-    dietPlan.plan_type === "cyclic" ? "Cíclico (7 dias)" : "Único (todos os dias)",
-    45,
-    yPosition,
-  );
+  doc.setFontSize(8);
+  doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
+  const vigRange = `${format(new Date(dietPlan.start_date), "dd/MM/yyyy")}  -  ${format(new Date(dietPlan.end_date), "dd/MM/yyyy")}`;
+  doc.text(`VALOR DE VIGÊNCIA: ${vigRange}`, pageWidth - 15, 26, { align: "right" });
 
-  yPosition += 12;
+  // Neon Base Line
+  doc.setFillColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
+  doc.rect(0, hH, pageWidth, 1.2, "F");
 
-  // Nutritional Goals
-  if (dietPlan.target_calories) {
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, yPosition - 5, 170, 20, "F");
+  const yPosition = hH + 15;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("METAS NUTRICIONAIS", 105, yPosition, { align: "center" });
-
-    yPosition += 8;
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    const goals = `Calorias: ${dietPlan.target_calories}kcal | Proteínas: ${dietPlan.target_protein}g | Carboidratos: ${dietPlan.target_carbs}g | Gorduras: ${dietPlan.target_fat}g`;
-    doc.text(goals, 105, yPosition, { align: "center" });
-
-    yPosition += 15;
-  }
-
-  // Group meals by day
-  const mealsByDay = meals.reduce(
+  // --- DATA PROCESSING (CLEANED & SEQUENCED) ---
+  const mealsByDay = activeMeals.reduce(
     (acc, meal) => {
       const day = meal.day_of_week;
       if (!acc[day]) acc[day] = [];
@@ -127,132 +159,165 @@ export async function exportDietToPDF(dietPlan: DietPlan, meals: DietMeal[], stu
     {} as Record<number, DietMeal[]>,
   );
 
-  // Sort days
-  const sortedDays = Object.keys(mealsByDay)
-    .map(Number)
-    .sort((a, b) => a - b);
+  // Sort each day's meals
+  Object.keys(mealsByDay).forEach((day) => {
+    mealsByDay[Number(day)].sort(
+      (a, b) => a.meal_order - b.meal_order || a.meal_time?.localeCompare(b.meal_time || "") || 0,
+    );
+  });
 
-  // Render each day
-  for (const dayNum of sortedDays) {
-    const dayMeals = mealsByDay[dayNum].sort((a, b) => a.meal_order - b.meal_order);
+  if (isCyclic) {
+    const maxMealsInADay = Math.max(...Object.values(mealsByDay).map((d) => d.length), 0);
 
-    // Check if we need a new page
-    if (yPosition > 250) {
-      doc.addPage();
-      yPosition = 20;
-    }
+    const tableHead: any[] = [
+      { content: "SEQUÊNCIA DO PROTOCOLO", styles: { halign: "left" as const } },
+      "SEG",
+      "TER",
+      "QUA",
+      "QUI",
+      "SEX",
+      "SÁB",
+      "DOM",
+    ];
 
-    // Day header (only for cyclic plans)
-    if (dietPlan.plan_type === "cyclic") {
-      doc.setFillColor(0, 255, 136);
-      doc.rect(20, yPosition - 5, 170, 10, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.setTextColor(0, 0, 0);
-      doc.text(DAYS_OF_WEEK[dayNum].toUpperCase(), 105, yPosition, { align: "center" });
-      yPosition += 12;
-    }
+    const tableBody = Array.from({ length: maxMealsInADay }).map((_, rowIndex) => {
+      // Find the best possible label for this row across all days
+      let rowLabel = `REFEIÇÃO ${rowIndex + 1}`;
+      let rowTime = "";
 
-    // Render each meal
-    for (const meal of dayMeals) {
-      // Check if we need a new page
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
+      const rowMeals = [];
+      for (let d = 0; d < 7; d++) {
+        const m = mealsByDay[d]?.[rowIndex];
+        if (m) rowMeals.push(m);
       }
 
-      // Meal header
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      const mealTitle = `${meal.name || meal.meal_type}${meal.meal_time ? ` - ${meal.meal_time}` : ""}`;
-      doc.text(mealTitle, 20, yPosition);
-      yPosition += 7;
-
-      // Meal items table
-      if (meal.meal_foods && meal.meal_foods.length > 0) {
-        const tableData = meal.meal_foods.map((item) => [
-          item.food.name,
-          `${item.quantity}${item.unit}`,
-          `${item.food.calories.toFixed(0)}kcal`,
-          `P: ${item.food.protein.toFixed(1)}g`,
-          `C: ${item.food.carbs.toFixed(1)}g`,
-          `G: ${item.food.fat.toFixed(1)}g`,
-        ]);
-
-        autoTable(doc, {
-          startY: yPosition,
-          head: [["Alimento", "Quantidade", "Calorias", "Proteína", "Carboidratos", "Gordura"]],
-          body: tableData,
-          theme: "grid",
-          headStyles: {
-            fillColor: [50, 50, 50],
-            textColor: [255, 255, 255],
-            fontSize: 9,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            fontSize: 9,
-          },
-          columnStyles: {
-            0: { cellWidth: 60 },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 30 },
-            5: { cellWidth: 25 },
-          },
-          margin: { left: 20, right: 20 },
-        });
-
-        yPosition = doc.lastAutoTable.finalY + 5;
-
-        // Calculate totals
-        const totals = meal.meal_foods.reduce(
-          (acc, item) => ({
-            calories: acc.calories + item.food.calories,
-            protein: acc.protein + item.food.protein,
-            carbs: acc.carbs + item.food.carbs,
-            fat: acc.fat + item.food.fat,
-          }),
-          { calories: 0, protein: 0, carbs: 0, fat: 0 },
-        );
-
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(
-          `Total: ${totals.calories.toFixed(0)}kcal | P: ${totals.protein.toFixed(1)}g | C: ${totals.carbs.toFixed(1)}g | G: ${totals.fat.toFixed(1)}g`,
-          20,
-          yPosition,
-        );
-        yPosition += 10;
+      // 1. Try custom name
+      const mWithName = rowMeals.find((m) => m.name && m.name.trim().length > 0);
+      if (mWithName) {
+        rowLabel = mWithName.name ?? "";
       } else {
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.text("Nenhum alimento cadastrado", 20, yPosition);
-        yPosition += 10;
+        // 2. Try translation
+        const mWithTranslation = rowMeals.find(
+          (m) => m.meal_type && TRANSLATED_MEALS[m.meal_type.toLowerCase()],
+        );
+        if (mWithTranslation) {
+          rowLabel = TRANSLATED_MEALS[mWithTranslation.meal_type.toLowerCase()];
+        }
       }
-    }
 
-    yPosition += 5;
+      // Time logic (from any day)
+      const mWithTime = rowMeals.find((m) => m.meal_time);
+      if (mWithTime) rowTime = `\n[ ${mWithTime.meal_time} ]`;
+
+      const row: any[] = [
+        {
+          content: `${rowLabel.toUpperCase()}${rowTime}`,
+          styles: { fontStyle: "bold" as const, textColor: [40, 40, 40] },
+        },
+      ];
+
+      for (let i = 1; i <= 7; i++) {
+        const dayIdx = i % 7;
+        const meal = mealsByDay[dayIdx]?.[rowIndex];
+
+        if (meal && meal.meal_foods.length > 0) {
+          const foodsText = meal.meal_foods
+            .map((f) => `${f.food.name} (${f.quantity}${f.unit})`)
+            .join("\n");
+          row.push({ content: foodsText, styles: { textColor: [40, 40, 40] } } as any);
+        } else {
+          row.push({ content: "---", styles: { textColor: [200, 200, 200] } } as any);
+        }
+      }
+      return row;
+    });
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [tableHead],
+      body: tableBody,
+      theme: "grid",
+      styles: {
+        fontSize: 7.5,
+        cellPadding: 4,
+        overflow: "linebreak",
+        halign: "center",
+        valign: "middle",
+        lineWidth: 0.1,
+        lineColor: [230, 230, 230],
+        textColor: [40, 40, 40], // Global table text color
+      },
+      headStyles: {
+        fillColor: [40, 40, 40],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 8,
+      },
+      columnStyles: {
+        0: { cellWidth: 35, fillColor: [250, 250, 250], halign: "left", textColor: [40, 40, 40] },
+      },
+      margin: { left: 10, right: 10 },
+    });
+  } else {
+    // PORTRAIT LIST
+    const sortedDays = Object.keys(mealsByDay)
+      .map(Number)
+      .sort((a, b) => a - b);
+    const dayMeals = mealsByDay[sortedDays[0] || 1] || [];
+
+    const tableBody = dayMeals.map((meal) => {
+      const foods = meal.meal_foods
+        .map((f) => `• ${f.food.name} (${f.quantity}${f.unit})`)
+        .join("\n");
+      const cals = meal.meal_foods.reduce((s, f) => s + f.food.calories, 0).toFixed(0);
+      const macros = `P: ${meal.meal_foods.reduce((s, f) => s + f.food.protein, 0).toFixed(1)}g\nC: ${meal.meal_foods.reduce((s, f) => s + f.food.carbs, 0).toFixed(1)}g\nG: ${meal.meal_foods.reduce((s, f) => s + f.food.fat, 0).toFixed(1)}g`;
+
+      const label = meal.name || TRANSLATED_MEALS[meal.meal_type.toLowerCase()] || "REFEIÇÃO";
+
+      return [
+        {
+          content: `${label.toUpperCase()}\n[ ${meal.meal_time || "--:--"} ]`,
+          styles: { fontStyle: "bold" as const, textColor: [40, 40, 40] },
+        },
+        { content: foods, styles: { textColor: [40, 40, 40] } },
+        { content: `${cals} kcal`, styles: { halign: "center", textColor: [40, 40, 40] } },
+        { content: macros, styles: { textColor: [40, 40, 40] } },
+      ];
+    });
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["ORDEM / HORÁRIO", "PRESCRIÇÃO NUTRICIONAL", "VALOR ENERGÉTICO", "MACRONUTRIENTES"]],
+      body: tableBody as any,
+      theme: "grid",
+      styles: {
+        fontSize: 9,
+        cellPadding: 5,
+        valign: "middle",
+        lineWidth: 0.1,
+        textColor: [40, 40, 40],
+      },
+      headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 40, fillColor: [252, 252, 252], textColor: [40, 40, 40] },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 25, halign: "center" },
+        3: { cellWidth: 30 },
+      },
+      margin: { left: 15, right: 15 },
+    });
   }
 
-  // Footer
+  // --- FOOTER TRANSLATED ---
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
+    doc.setFontSize(6);
     doc.setTextColor(150, 150, 150);
-    doc.text(
-      `Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - Página ${i} de ${pageCount}`,
-      105,
-      290,
-      { align: "center" },
-    );
+    const footerText = `PROTOCOLO OFICIAL // AUTENTICADO POR MEUPERSONAL ENGINE // ${format(new Date(), "PPpp", { locale: ptBR })} // PÁGINA ${i} DE ${pageCount}`;
+    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
-  // Save PDF
-  const fileName = `Dieta_${dietPlan.name.replace(/[^a-z0-9]/gi, "_")}_${format(new Date(), "yyyyMMdd")}.pdf`;
+  const fileName = `Protocolo_${dietPlan.name.replace(/[^a-z0-9]/gi, "_")}.pdf`;
   doc.save(fileName);
 }

@@ -9,7 +9,7 @@ interface DietCardProps {
   onDelete?: (id: string) => void;
 }
 
-export function DietCard({ dietPlan, onView, onEdit, onDelete }: DietCardProps) {
+export function DietCard({ dietPlan, onView, onEdit: _onEdit, onDelete }: DietCardProps) {
   const statusColors = {
     active: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
     completed: "bg-blue-500/10 text-blue-500 border-blue-500/20",
@@ -25,7 +25,10 @@ export function DietCard({ dietPlan, onView, onEdit, onDelete }: DietCardProps) 
   };
 
   return (
-    <div className="group relative bg-surface border border-white/10 rounded-xl p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+    <div
+      onClick={() => onView?.(dietPlan.id)}
+      className="group relative bg-surface border border-white/10 rounded-xl p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 cursor-pointer"
+    >
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -99,31 +102,21 @@ export function DietCard({ dietPlan, onView, onEdit, onDelete }: DietCardProps) 
       <div className="flex items-center gap-2 pt-4 border-t border-white/5">
         {onView && (
           <button
-            onClick={() => onView(dietPlan.id)}
-            className="flex-1 px-3 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-lg text-sm font-medium transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView(dietPlan.id);
+            }}
+            className="flex-1 px-3 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-lg text-sm font-medium transition-colors text-center"
           >
             Ver Detalhes
           </button>
         )}
-        {onEdit && (
-          <button
-            onClick={() => onEdit(dietPlan.id)}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-colors"
-            title="Editar"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-        )}
         {onDelete && (
           <button
-            onClick={() => onDelete(dietPlan.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(dietPlan.id);
+            }}
             className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
             title="Excluir"
           >
