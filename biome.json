@@ -6,7 +6,11 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": true
+    "ignoreUnknown": true,
+    "ignore": [
+      "app/drizzle/migrations/meta/**",
+      "**/node_modules/**"
+    ]
   },
   "css": {
     "parser": {

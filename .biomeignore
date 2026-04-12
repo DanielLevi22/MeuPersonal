@@ -1,2 +1,3 @@
 web/src/app/globals.css
 src/app/globals.css
+app/drizzle/migrations/meta/
