@@ -1,9 +1,70 @@
 {
-  "id": "7f4fa99e-aa15-4b87-94ff-9ecfc818c6eb",
+  "id": "e2a15c44-2145-4ad4-a22f-b211e781ce27",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.professional_services": {
+      "name": "professional_services",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "professional_id": {
+          "name": "professional_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_type": {
+          "name": "service_type",
+          "type": "service_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "professional_services_professional_id_profiles_id_fk": {
+          "name": "professional_services_professional_id_profiles_id_fk",
+          "tableFrom": "professional_services",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "professional_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.profiles": {
       "name": "profiles",
       "schema": "",
@@ -32,12 +93,38 @@
           "primaryKey": false,
           "notNull": false
         },
-        "role": {
-          "name": "role",
-          "type": "user_role",
+        "account_type": {
+          "name": "account_type",
+          "type": "account_type",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
+        },
+        "account_status": {
+          "name": "account_status",
+          "type": "account_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_super_admin": {
+          "name": "is_super_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "birth_date": {
+          "name": "birth_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -62,8 +149,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.physical_assessments": {
-      "name": "physical_assessments",
+    "public.conversations": {
+      "name": "conversations",
       "schema": "",
       "columns": {
         "id": {
@@ -85,45 +172,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "assessed_at": {
-          "name": "assessed_at",
+        "last_message_at": {
+          "name": "last_message_at",
           "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "weight": {
-          "name": "weight",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "height": {
-          "name": "height",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "body_fat": {
-          "name": "body_fat",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "muscle_mass": {
-          "name": "muscle_mass",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "photos": {
-          "name": "photos",
-          "type": "text[]",
           "primaryKey": false,
           "notNull": false
         },
@@ -137,9 +188,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "physical_assessments_professional_id_profiles_id_fk": {
-          "name": "physical_assessments_professional_id_profiles_id_fk",
-          "tableFrom": "physical_assessments",
+        "conversations_professional_id_profiles_id_fk": {
+          "name": "conversations_professional_id_profiles_id_fk",
+          "tableFrom": "conversations",
           "tableTo": "profiles",
           "columnsFrom": [
             "professional_id"
@@ -147,15 +198,135 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "physical_assessments_student_id_profiles_id_fk": {
-          "name": "physical_assessments_student_id_profiles_id_fk",
-          "tableFrom": "physical_assessments",
+        "conversations_student_id_profiles_id_fk": {
+          "name": "conversations_student_id_profiles_id_fk",
+          "tableFrom": "conversations",
           "tableTo": "profiles",
           "columnsFrom": [
             "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "conversations_professional_id_student_id_unique": {
+          "name": "conversations_professional_id_student_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "professional_id",
+            "student_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.messages": {
+      "name": "messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "conversation_id": {
+          "name": "conversation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sender_id": {
+          "name": "sender_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "receiver_id": {
+          "name": "receiver_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message_type": {
+          "name": "message_type",
+          "type": "message_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'text'"
+        },
+        "media_url": {
+          "name": "media_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "messages_conversation_id_conversations_id_fk": {
+          "name": "messages_conversation_id_conversations_id_fk",
+          "tableFrom": "messages",
+          "tableTo": "conversations",
+          "columnsFrom": [
+            "conversation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "messages_sender_id_profiles_id_fk": {
+          "name": "messages_sender_id_profiles_id_fk",
+          "tableFrom": "messages",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "sender_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "messages_receiver_id_profiles_id_fk": {
+          "name": "messages_receiver_id_profiles_id_fk",
+          "tableFrom": "messages",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "receiver_id"
           ],
           "columnsTo": [
             "id"
@@ -170,8 +341,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.student_invites": {
-      "name": "student_invites",
+    "public.achievements": {
+      "name": "achievements",
       "schema": "",
       "columns": {
         "id": {
@@ -181,40 +352,27 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "professional_id": {
-          "name": "professional_id",
+        "student_id": {
+          "name": "student_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "email": {
-          "name": "email",
+        "type": {
+          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "token": {
-          "name": "token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "invite_status",
-          "typeSchema": "public",
+        "points": {
+          "name": "points",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "'pending'"
+          "default": 0
         },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
+        "unlocked_at": {
+          "name": "unlocked_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
@@ -223,36 +381,28 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "student_invites_professional_id_profiles_id_fk": {
-          "name": "student_invites_professional_id_profiles_id_fk",
-          "tableFrom": "student_invites",
+        "achievements_student_id_profiles_id_fk": {
+          "name": "achievements_student_id_profiles_id_fk",
+          "tableFrom": "achievements",
           "tableTo": "profiles",
           "columnsFrom": [
-            "professional_id"
+            "student_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "student_invites_token_unique": {
-          "name": "student_invites_token_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.student_professionals": {
-      "name": "student_professionals",
+    "public.daily_goals": {
+      "name": "daily_goals",
       "schema": "",
       "columns": {
         "id": {
@@ -262,50 +412,52 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "professional_id": {
-          "name": "professional_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
         "student_id": {
           "name": "student_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "relationship_status",
-          "typeSchema": "public",
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "water_target": {
+          "name": "water_target",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "'pending'"
+          "default": 2000
         },
-        "invited_by": {
-          "name": "invited_by",
-          "type": "uuid",
+        "water_completed": {
+          "name": "water_completed",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 0
         },
-        "started_at": {
-          "name": "started_at",
-          "type": "timestamp with time zone",
+        "meals_completed": {
+          "name": "meals_completed",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true,
+          "default": 0
         },
-        "ended_at": {
-          "name": "ended_at",
-          "type": "timestamp with time zone",
+        "workout_completed": {
+          "name": "workout_completed",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": false
         },
-        "ended_reason": {
-          "name": "ended_reason",
-          "type": "text",
+        "completed": {
+          "name": "completed",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -324,22 +476,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "student_professionals_professional_id_profiles_id_fk": {
-          "name": "student_professionals_professional_id_profiles_id_fk",
-          "tableFrom": "student_professionals",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "professional_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_professionals_student_id_profiles_id_fk": {
-          "name": "student_professionals_student_id_profiles_id_fk",
-          "tableFrom": "student_professionals",
+        "daily_goals_student_id_profiles_id_fk": {
+          "name": "daily_goals_student_id_profiles_id_fk",
+          "tableFrom": "daily_goals",
           "tableTo": "profiles",
           "columnsFrom": [
             "student_id"
@@ -347,25 +486,110 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_professionals_invited_by_profiles_id_fk": {
-          "name": "student_professionals_invited_by_profiles_id_fk",
-          "tableFrom": "student_professionals",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "invited_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "daily_goals_student_id_date_unique": {
+          "name": "daily_goals_student_id_date_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "student_id",
+            "date"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_streaks": {
+      "name": "student_streaks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_streak": {
+          "name": "current_streak",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "longest_streak": {
+          "name": "longest_streak",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "xp": {
+          "name": "xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "last_activity_at": {
+          "name": "last_activity_at",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_streaks_student_id_profiles_id_fk": {
+          "name": "student_streaks_student_id_profiles_id_fk",
+          "tableFrom": "student_streaks",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "student_streaks_student_id_unique": {
+          "name": "student_streaks_student_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "student_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -465,18 +689,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "time": {
-          "name": "time",
+        "meal_time": {
+          "name": "meal_time",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "order_index": {
-          "name": "order_index",
-          "type": "integer",
+        "day_of_week": {
+          "name": "day_of_week",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -537,12 +760,13 @@
           "primaryKey": false,
           "notNull": true
         },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
+        "status": {
+          "name": "status",
+          "type": "diet_plan_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": true
+          "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
@@ -611,12 +835,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "category": {
-          "name": "category",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "calories": {
           "name": "calories",
           "type": "numeric",
@@ -652,6 +870,13 @@
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_custom": {
+          "name": "is_custom",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_by": {
           "name": "created_by",
@@ -706,12 +931,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "diet_plan_id": {
-          "name": "diet_plan_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
         "diet_meal_id": {
           "name": "diet_meal_id",
           "type": "uuid",
@@ -730,12 +949,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -760,19 +973,6 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "meal_logs_diet_plan_id_diet_plans_id_fk": {
-          "name": "meal_logs_diet_plan_id_diet_plans_id_fk",
-          "tableFrom": "meal_logs",
-          "tableTo": "diet_plans",
-          "columnsFrom": [
-            "diet_plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "meal_logs_diet_meal_id_diet_meals_id_fk": {
           "name": "meal_logs_diet_meal_id_diet_meals_id_fk",
           "tableFrom": "meal_logs",
@@ -789,6 +989,533 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.physical_assessments": {
+      "name": "physical_assessments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "professional_id": {
+          "name": "professional_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height": {
+          "name": "height",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bmi": {
+          "name": "bmi",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bmr": {
+          "name": "bmr",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_fat_percentage": {
+          "name": "body_fat_percentage",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "neck": {
+          "name": "neck",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shoulder": {
+          "name": "shoulder",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chest": {
+          "name": "chest",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waist": {
+          "name": "waist",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abdomen": {
+          "name": "abdomen",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hip": {
+          "name": "hip",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arm_relaxed": {
+          "name": "arm_relaxed",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arm_contracted": {
+          "name": "arm_contracted",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "forearm": {
+          "name": "forearm",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thigh_proximal": {
+          "name": "thigh_proximal",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thigh_medial": {
+          "name": "thigh_medial",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calf": {
+          "name": "calf",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_chest": {
+          "name": "skinfold_chest",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_abdominal": {
+          "name": "skinfold_abdominal",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_thigh": {
+          "name": "skinfold_thigh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_triceps": {
+          "name": "skinfold_triceps",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_suprailiac": {
+          "name": "skinfold_suprailiac",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_subscapular": {
+          "name": "skinfold_subscapular",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skinfold_midaxillary": {
+          "name": "skinfold_midaxillary",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_front": {
+          "name": "photo_front",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_back": {
+          "name": "photo_back",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_left": {
+          "name": "photo_left",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_right": {
+          "name": "photo_right",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "physical_assessments_student_id_profiles_id_fk": {
+          "name": "physical_assessments_student_id_profiles_id_fk",
+          "tableFrom": "physical_assessments",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "physical_assessments_professional_id_profiles_id_fk": {
+          "name": "physical_assessments_professional_id_profiles_id_fk",
+          "tableFrom": "physical_assessments",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "professional_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_anamnesis": {
+      "name": "student_anamnesis",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "responses": {
+          "name": "responses",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "completed": {
+          "name": "completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_anamnesis_student_id_profiles_id_fk": {
+          "name": "student_anamnesis_student_id_profiles_id_fk",
+          "tableFrom": "student_anamnesis",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "student_anamnesis_student_id_unique": {
+          "name": "student_anamnesis_student_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "student_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_professionals": {
+      "name": "student_professionals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "professional_id": {
+          "name": "professional_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_type": {
+          "name": "service_type",
+          "type": "service_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "relationship_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_professionals_professional_id_profiles_id_fk": {
+          "name": "student_professionals_professional_id_profiles_id_fk",
+          "tableFrom": "student_professionals",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "professional_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "student_professionals_student_id_profiles_id_fk": {
+          "name": "student_professionals_student_id_profiles_id_fk",
+          "tableFrom": "student_professionals",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.feature_access": {
+      "name": "feature_access",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "subscription_tier": {
+          "name": "subscription_tier",
+          "type": "subscription_tier",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feature_key": {
+          "name": "feature_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_enabled": {
+          "name": "is_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "limit_value": {
+          "name": "limit_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "feature_access_subscription_tier_feature_key_unique": {
+          "name": "feature_access_subscription_tier_feature_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "subscription_tier",
+            "feature_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.feature_flags": {
+      "name": "feature_flags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "flag_key": {
+          "name": "flag_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_enabled": {
+          "name": "is_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "rollout_percentage": {
+          "name": "rollout_percentage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 100
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "feature_flags_flag_key_unique": {
+          "name": "feature_flags_flag_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "flag_key"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -824,10 +1551,10 @@
         },
         "is_verified": {
           "name": "is_verified",
-          "type": "integer",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "default": 0
+          "default": false
         },
         "created_by": {
           "name": "created_by",
@@ -899,6 +1626,14 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "periodization_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'planned'"
         },
         "start_date": {
           "name": "start_date",
@@ -985,17 +1720,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "phase": {
-          "name": "phase",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "week_number": {
-          "name": "week_number",
+        "order_index": {
+          "name": "order_index",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -1141,8 +1871,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "workout_exercise_id": {
-          "name": "workout_exercise_id",
+        "exercise_id": {
+          "name": "exercise_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -1151,7 +1881,8 @@
           "name": "sets_data",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -1176,12 +1907,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "workout_session_exercises_workout_exercise_id_workout_exercises_id_fk": {
-          "name": "workout_session_exercises_workout_exercise_id_workout_exercises_id_fk",
+        "workout_session_exercises_exercise_id_exercises_id_fk": {
+          "name": "workout_session_exercises_exercise_id_exercises_id_fk",
           "tableFrom": "workout_session_exercises",
-          "tableTo": "workout_exercises",
+          "tableTo": "exercises",
           "columnsFrom": [
-            "workout_exercise_id"
+            "exercise_id"
           ],
           "columnsTo": [
             "id"
@@ -1207,14 +1938,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "workout_id": {
-          "name": "workout_id",
+        "student_id": {
+          "name": "student_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "student_id": {
-          "name": "student_id",
+        "workout_id": {
+          "name": "workout_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -1228,6 +1959,12 @@
         "finished_at": {
           "name": "finished_at",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intensity": {
+          "name": "intensity",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -1247,12 +1984,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "workout_sessions_workout_id_workouts_id_fk": {
-          "name": "workout_sessions_workout_id_workouts_id_fk",
+        "workout_sessions_student_id_profiles_id_fk": {
+          "name": "workout_sessions_student_id_profiles_id_fk",
           "tableFrom": "workout_sessions",
-          "tableTo": "workouts",
+          "tableTo": "profiles",
           "columnsFrom": [
-            "workout_id"
+            "student_id"
           ],
           "columnsTo": [
             "id"
@@ -1260,12 +1997,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "workout_sessions_student_id_profiles_id_fk": {
-          "name": "workout_sessions_student_id_profiles_id_fk",
+        "workout_sessions_workout_id_workouts_id_fk": {
+          "name": "workout_sessions_workout_id_workouts_id_fk",
           "tableFrom": "workout_sessions",
-          "tableTo": "profiles",
+          "tableTo": "workouts",
           "columnsFrom": [
-            "student_id"
+            "workout_id"
           ],
           "columnsTo": [
             "id"
@@ -1295,28 +2032,16 @@
           "name": "training_plan_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
-        },
-        "professional_id": {
-          "name": "professional_id",
-          "type": "uuid",
-          "primaryKey": false,
           "notNull": true
         },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
+        "title": {
+          "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "type": {
-          "name": "type",
+        "day_of_week": {
+          "name": "day_of_week",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1348,458 +2073,62 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "workouts_professional_id_profiles_id_fk": {
-          "name": "workouts_professional_id_profiles_id_fk",
-          "tableFrom": "workouts",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "professional_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "workouts_student_id_profiles_id_fk": {
-          "name": "workouts_student_id_profiles_id_fk",
-          "tableFrom": "workouts",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.achievements": {
-      "name": "achievements",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "icon": {
-          "name": "icon",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "points": {
-          "name": "points",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "earned_at": {
-          "name": "earned_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "achievements_student_id_profiles_id_fk": {
-          "name": "achievements_student_id_profiles_id_fk",
-          "tableFrom": "achievements",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.daily_goals": {
-      "name": "daily_goals",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "date": {
-          "name": "date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "meals_target": {
-          "name": "meals_target",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 4
-        },
-        "meals_completed": {
-          "name": "meals_completed",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "workout_target": {
-          "name": "workout_target",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "workout_completed": {
-          "name": "workout_completed",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "water_target": {
-          "name": "water_target",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 2000
-        },
-        "water_completed": {
-          "name": "water_completed",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "completed": {
-          "name": "completed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "daily_goals_student_id_profiles_id_fk": {
-          "name": "daily_goals_student_id_profiles_id_fk",
-          "tableFrom": "daily_goals",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "daily_goals_student_id_date_unique": {
-          "name": "daily_goals_student_id_date_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "student_id",
-            "date"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.student_streaks": {
-      "name": "student_streaks",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "current_streak": {
-          "name": "current_streak",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "longest_streak": {
-          "name": "longest_streak",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "last_activity": {
-          "name": "last_activity",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "student_streaks_student_id_profiles_id_fk": {
-          "name": "student_streaks_student_id_profiles_id_fk",
-          "tableFrom": "student_streaks",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "student_streaks_student_id_unique": {
-          "name": "student_streaks_student_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "student_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.feature_access": {
-      "name": "feature_access",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "subscription_tier": {
-          "name": "subscription_tier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "feature_key": {
-          "name": "feature_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_enabled": {
-          "name": "is_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "limit_value": {
-          "name": "limit_value",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "feature_access_subscription_tier_feature_key_unique": {
-          "name": "feature_access_subscription_tier_feature_key_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "subscription_tier",
-            "feature_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.feature_flags": {
-      "name": "feature_flags",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "flag_key": {
-          "name": "flag_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "flag_name": {
-          "name": "flag_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_enabled": {
-          "name": "is_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "rollout_percentage": {
-          "name": "rollout_percentage",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "feature_flags_flag_key_unique": {
-          "name": "feature_flags_flag_key_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "flag_key"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     }
   },
   "enums": {
-    "public.user_role": {
-      "name": "user_role",
-      "schema": "public",
-      "values": [
-        "professional",
-        "student"
-      ]
-    },
-    "public.invite_status": {
-      "name": "invite_status",
+    "public.account_status": {
+      "name": "account_status",
       "schema": "public",
       "values": [
         "pending",
-        "accepted",
-        "expired"
+        "active",
+        "inactive"
+      ]
+    },
+    "public.account_type": {
+      "name": "account_type",
+      "schema": "public",
+      "values": [
+        "admin",
+        "professional",
+        "managed_student",
+        "autonomous_student"
+      ]
+    },
+    "public.service_type": {
+      "name": "service_type",
+      "schema": "public",
+      "values": [
+        "personal_training",
+        "nutrition_consulting"
+      ]
+    },
+    "public.message_type": {
+      "name": "message_type",
+      "schema": "public",
+      "values": [
+        "text",
+        "image",
+        "audio",
+        "file"
+      ]
+    },
+    "public.diet_plan_status": {
+      "name": "diet_plan_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "active",
+        "inactive"
       ]
     },
     "public.relationship_status": {
@@ -1809,6 +2138,25 @@
         "pending",
         "active",
         "inactive"
+      ]
+    },
+    "public.subscription_tier": {
+      "name": "subscription_tier",
+      "schema": "public",
+      "values": [
+        "free",
+        "basic",
+        "pro",
+        "elite"
+      ]
+    },
+    "public.periodization_status": {
+      "name": "periodization_status",
+      "schema": "public",
+      "values": [
+        "planned",
+        "active",
+        "completed"
       ]
     }
   },
