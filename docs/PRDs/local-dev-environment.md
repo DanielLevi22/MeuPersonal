@@ -2,7 +2,7 @@
 
 **Data de criação:** 2026-04-12
 **Atualizado em:** 2026-04-13
-**Status:** approved
+**Status:** done
 **Branch:** feature/local-dev-environment
 **Autor:** Daniel Levi
 
