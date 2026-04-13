@@ -1,236 +1,152 @@
 # System Mapping — Mapeamento Completo do Sistema
 
-> **Objetivo:** Entender feature por feature o que existe, o que funciona, o que está quebrado e o que é código morto — antes de finalizar o schema do banco.
->
-> **Regra:** Nunca presumir. Sempre perguntar. Avançar para o próximo módulo só quando o atual estiver com status `✅ Mapeado`.
->
-> **Uso:** Atualizar este documento a cada sessão. É o ponto de partida obrigatório ao retomar o trabalho.
+> **Status:** ✅ Concluído em 2026-04-13
+> **Objetivo:** Entender feature por feature o que existe, o que funciona, o que é código morto e quais decisões de schema tomar — antes de qualquer reescrita.
+> **Resultado:** Base para a reescrita modular completa do sistema.
 
 ---
 
-## Status geral
+## Status geral dos módulos
 
-| Módulo | Status | Decisões tomadas | Código morto identificado |
-|--------|--------|-----------------|--------------------------|
-| **Auth** | ✅ Mapeado | Sim | Parcial (paths pendentes) |
-| **Students** | 🔄 Em andamento | — | — |
-| **Nutrition** | ⏳ Pendente | — | — |
-| **Workouts** | ⏳ Pendente | — | — |
-| **Assessment** | ⏳ Pendente | — | — |
-| **Gamification** | ⏳ Pendente | — | — |
-| **Chat** | ⏳ Pendente | — | — |
-
----
-
-## Módulo: Auth
-
-### Contexto levantado (conversa com Daniel)
-
-**Fluxo original (abandonado):**
-- Professional gerava um código → aluno entrava com o código
-- Problema: Supabase exige email para auth
-- Status: **abandonado** — provavelmente tem código morto
-
-**Fluxo atual:**
-- Professional cria conta do aluno (email + senha)
-- Passa as credenciais manualmente ao aluno (WhatsApp etc.)
-- Implementado via RPC com SECURITY DEFINER
-
-**Tipos de profissional:**
-- Hoje: personal trainer, nutricionista
-- Futuro: outros tipos podem ser adicionados
-- Um profissional pode ter **múltiplos tipos** (personal E nutricionista ao mesmo tempo)
-- Permissões são baseadas nos tipos de serviço que o profissional tem
-
-**Tipos de aluno:**
-- `managed`: criado e gerenciado pelo profissional
-- `autonomous`: se cadastra sozinho, monta seu próprio treino/dieta
-- **Importante:** um aluno pode migrar de autonomous → managed e vice-versa
-- O sistema precisa ser flexível para essa transição
-
-**Documentos do profissional:**
-- Colunas CREF/CRM existem no banco atual
-- Provavelmente nunca foram usadas de verdade
-- Precisam de query de auditoria para confirmar
-
-**Aluno autônomo + IA:**
-- Futuro — aluno autônomo usará IA para montar treino/dieta
-- Não modelar agora, mas não criar constraints que impeçam isso
+| Módulo | Status | Relatório detalhado |
+|--------|--------|---------------------|
+| **Auth** | ✅ Mapeado | [AUTH_MODULE_REPORT.md](AUTH_MODULE_REPORT.md) |
+| **Students** | ✅ Mapeado | [STUDENTS_MODULE_REPORT.md](STUDENTS_MODULE_REPORT.md) |
+| **Nutrition** | ✅ Mapeado | [NUTRITION_MODULE_REPORT.md](NUTRITION_MODULE_REPORT.md) |
+| **Workouts** | ✅ Mapeado | [WORKOUTS_MODULE_REPORT.md](WORKOUTS_MODULE_REPORT.md) |
+| **Assessment** | ✅ Mapeado | [ASSESSMENT_MODULE_REPORT.md](ASSESSMENT_MODULE_REPORT.md) |
+| **Gamification** | ✅ Mapeado | [GAMIFICATION_MODULE_REPORT.md](GAMIFICATION_MODULE_REPORT.md) |
+| **Chat** | ✅ Mapeado | [CHAT_MODULE_REPORT.md](CHAT_MODULE_REPORT.md) |
+| **System/Admin** | ✅ Mapeado | [SYSTEM_MODULE_REPORT.md](SYSTEM_MODULE_REPORT.md) |
 
 ---
 
-### Perguntas respondidas
+## Decisões tomadas — Auth
 
-| # | Pergunta | Resposta |
-|---|----------|----------|
-| 1 | Personal e nutricionista têm permissões diferentes? | Sim — cada tipo tem seu conjunto de permissões. Um profissional pode ter os dois. |
-| 2 | Aluno autônomo existe no código hoje? | Foi implementado mas removido — ainda faz parte do roadmap. |
-| 3 | Documentos (CREF/CRM) são usados? | Existem no banco, provavelmente nunca usados — paths a confirmar na varredura. |
-| 4 | O fluxo de convite por código existe no código? | Sim — foi implementado em web e mobile. É código morto hoje. |
-| 5 | Aluno pode mudar de tipo (managed ↔ autonomous)? | Sim — o sistema precisa suportar essa transição. |
-| P1 | Como o profissional indica os tipos de serviço? | Na hora do cadastro — ele escolhe quais profissões quer exercer. |
-| P2 | Fluxo do aluno autônomo no mobile? | Fluxo foi removido — ainda é roadmap. Não existe hoje. |
-| P3 | Aluno autônomo pode encontrar profissional (marketplace)? | Não existe ainda — faz parte do que precisa ser desenvolvido. |
-| P4 | Profissional precisa de aprovação? | Sim — aprovação pelo admin antes de usar o sistema. |
-| P5 | Existe admin? | Sim — Daniel (desenvolvedor) gerencia a plataforma como admin. |
+**Roles (account_type):**
+- `admin` — Daniel gerencia a plataforma
+- `professional` — personal trainer e/ou nutricionista
+- `managed_student` — criado e gerenciado pelo profissional
+- `autonomous_student` — fluxo de cadastro autônomo (roadmap, não existe ainda)
 
----
+**Aprovação de profissional:**
+- Profissional se cadastra → `account_status = pending`
+- Admin aprova manualmente → `account_status = active`
+- Enquanto `pending`: acesso bloqueado por RLS
 
-### Perguntas pendentes — Auth
+**Tipos de serviço do profissional:**
+- Escolhidos no cadastro (personal_training, nutrition_consulting, ou ambos)
+- Tabela separada `professional_services` — um profissional pode ter múltiplos tipos
 
-> ✅ Todas respondidas — módulo fechado
+**Campos a remover de `profiles`:**
+`invite_code`, `phone`, `cref`, `crn`, `professional_bio`, `is_verified`, `verified_at`,
+`admin_notes`, `last_login_at` — todos legados, nunca usados de forma funcional
 
----
-
-### Código morto identificado — Auth
-
-| Arquivo | O que é | Ação |
-|---------|---------|------|
-| A identificar | Geração de invite code | Deletar |
-| A identificar | Validação de invite code no signup | Deletar |
-| A identificar | UI de entrada por código no mobile | Deletar |
-| A identificar | UI de geração de código no web | Deletar |
-| Coluna `cref` em profiles/users | Documento profissional — nunca usado | Avaliar (manter vazio ou dropar) |
-| Coluna `crn` em profiles/users | Documento profissional — nunca usado | Avaliar (manter vazio ou dropar) |
-
-> Preencher com paths reais após varredura do código
+**Campos a mover de `profiles`:**
+- `weight`, `height` → `physical_assessments`
+- `xp`, `level` → gamification (campo na própria tabela ou `student_streaks`)
 
 ---
 
-### Decisões de schema — Auth ✅
+## Divergências críticas identificadas (schema Drizzle vs produção real)
 
-**Profiles — campos necessários:**
+| Schema Drizzle (errado) | Produção real (correto) | Ação |
+|------------------------|------------------------|------|
+| `student_professionals` | `coachings` | Renomear para `student_professionals` no novo schema |
+| `periodizations` | `training_periodizations` | Manter `periodizations` (mais simples) |
+| `diet_plans` / `diet_meals` / `diet_meal_items` | `nutrition_plans` / `meals` / `meal_foods` | Manter nomes do Drizzle (mais específicos) |
+| — | `student_anamnesis` | Adicionar ao schema |
+| — | `conversations` + `messages` | Adicionar ao schema |
+
+> **Decisão:** projeto novo, nomes novos. Drizzle vence — nomes mais semânticos e sem colisões.
+
+---
+
+## Schema canônico — tabelas finais
+
 ```
-id, email, full_name, avatar_url
-role: enum('professional', 'student', 'admin')
-  ← admin adicionado: Daniel gerencia a plataforma
-student_type: enum('managed', 'autonomous') | null
-  ← null para professionals e admins
-  ← autonomous existe no schema mas o fluxo de cadastro é roadmap
-approval_status: enum('pending', 'approved', 'rejected') | null
-  ← null para students e admins
-  ← professional fica 'pending' após cadastro até admin aprovar
-created_at, updated_at
+Auth
+  profiles                    → id, email, full_name, avatar_url, account_type,
+                                account_status, is_super_admin, birth_date, gender
+  professional_services       → professional_id, service_type, is_active
+
+Students
+  student_professionals       → professional_id, student_id, service_type, status
+  physical_assessments        → student_id, peso, altura, dobras, circunferências, fotos, BMI, BMR
+  student_anamnesis           → student_id, responses (jsonb), completed_at
+
+Nutrition
+  foods                       → name, calories, protein, carbs, fat, fiber, serving_size, is_custom
+  diet_plans                  → professional_id, student_id, name, status
+  diet_meals                  → diet_plan_id, name, meal_time, day_of_week
+  diet_meal_items             → diet_meal_id, food_id, quantity
+  meal_logs                   → student_id, diet_meal_id, logged_date, completed
+
+Workouts
+  exercises                   → name, muscle_group, is_verified, created_by
+  periodizations              → professional_id, student_id, objective, status
+  training_plans              → periodization_id, name, order
+  workouts                    → training_plan_id, title, day_of_week
+  workout_exercises           → workout_id, exercise_id, sets, reps, rest, notes
+  workout_sessions            → student_id, workout_id, started_at, finished_at, intensity
+  workout_session_exercises   → session_id, exercise_id, sets_data (jsonb)
+
+Gamification
+  student_streaks             → student_id, current_streak, longest_streak, xp, level
+  daily_goals                 → student_id, date, water_target, water_completed,
+                                meals_completed, workout_completed, completed
+  achievements                → student_id, type, points, unlocked_at
+
+Chat
+  conversations               → professional_id, student_id, last_message_at
+  messages                    → conversation_id, sender_id, receiver_id,
+                                content, message_type, media_url, read_at
+
+System
+  feature_flags               → flag_key, is_enabled, rollout_percentage
+  feature_access              → subscription_tier, feature_key, limit_value, is_enabled
 ```
 
-**Professional services — tabela separada (confirmado):**
+**Total: 25 tabelas** (eram 21 no Drizzle anterior — faltavam anamnesis, conversations, messages, professional_services)
+
+---
+
+## Código morto confirmado
+
+| Módulo | O que é | Ação |
+|--------|---------|------|
+| Auth | Fluxo de invite code (web + mobile) | Deletar na reescrita de Auth |
+| Auth | Campos legados em profiles (cref, crn, phone, etc.) | Não criar no novo schema |
+| Students | `student_invites` — 0 rows, não usado | Não criar no novo schema |
+| Students | `coachings` — renomear, não recriar |  Migrar para `student_professionals` |
+| Nutrition | Notificações de refeição (kill switch ativo) | Não portar para o novo código |
+| Workouts | `workout_logs` — 0 referências no código | Não criar no novo schema |
+
+---
+
+## Plano de reescrita — ordem definida
+
+> **Estratégia:** cada módulo é reescrito em uma branch. O legado convive durante a branch.
+> O PR que entra em `development` já sai limpo — legado deletado no mesmo commit.
+
 ```
-professional_services
-  id
-  professional_id → profiles
-  service_type: enum('personal_training', 'nutrition_consulting', ...)
-  is_active: boolean
+feature/schema-foundation   → Drizzle reescrito + aplicado nos projetos Supabase dev e prod
+feature/rewrite-auth        → profiles, professional_services, fluxo de aprovação
+feature/rewrite-students    → student_professionals, physical_assessments, anamnesis
+feature/rewrite-nutrition   → diet_plans, diet_meals, diet_meal_items, meal_logs, foods
+feature/rewrite-workouts    → periodizations, training_plans, workouts, workout_sessions
+feature/rewrite-assessment  → AI body scan, integração com anamnesis
+feature/rewrite-gamification→ streaks, daily_goals, achievements, xp
+feature/rewrite-chat        → conversations, messages, realtime
+feature/rewrite-system      → feature_flags, feature_access, admin panel
 ```
-Criada no momento do cadastro — profissional já escolhe os tipos na tela de signup.
-Motivo da tabela separada: profissional pode ter múltiplos tipos simultaneamente.
-
-**Documentos do profissional (CREF/CRM):**
-- Aprovação é feita pelo admin → admin precisa ver o documento para aprovar
-- Decisão: campo genérico `professional_document jsonb` em profiles
-  - Flexível para CREF, CRM e outros tipos futuros
-  - Ex: `{"type": "CREF", "number": "123456-G/SP"}`
-- Colunas fixas `cref`/`crn` no banco atual: dropar e substituir por `professional_document`
-
-**Fluxo de aprovação (novo — P4):**
-```
-Professional se cadastra → approval_status = 'pending'
-    → envia professional_document (CREF/CRM)
-    → admin visualiza no painel
-    → admin aprova → approval_status = 'approved'
-    → profissional ganha acesso às features
-```
-Implicação de RLS: professional com status != 'approved' não pode criar alunos/planos.
 
 ---
 
-## Módulo: Students
+## Referências
 
-### Contexto levantado
+Para detalhes técnicos de cada módulo, consultar os relatórios:
 
-**Vínculo aluno-profissional:**
-- Tabela `student_professionals` (era `coachings`) — vínculo ativo entre aluno e professional
-- Status: `pending`, `active`, `inactive`
-- Um profissional cria a conta do aluno via RPC → vínculo já nasce `active`
-
-**Tipos de aluno:**
-- `managed`: criado pelo profissional, gerenciado por ele
-- `autonomous`: se cadastra sozinho — fluxo removido, é roadmap
-- Transição managed ↔ autonomous: precisa ser suportada
-
-**Physical assessments:**
-- Tabela `physical_assessments` existe — peso, altura, % gordura, fotos
-- Feita pelo profissional ou pelo próprio aluno?
-
-### Perguntas pendentes — Students
-
-- [ ] **P1:** Quem preenche a avaliação física — o profissional, o aluno ou os dois?
-- [ ] **P2:** Um aluno pode ter vínculo com mais de um profissional ao mesmo tempo? (ex: um personal E um nutricionista)
-- [ ] **P3:** Quando o profissional "inativa" um aluno, o aluno ainda consegue ver seus dados históricos (treinos, dieta)?
-- [ ] **P4:** Existe algum fluxo de "solicitação de vínculo" — aluno pede para ser gerenciado por um profissional? Ou sempre é o profissional que adiciona?
-
----
-
-## Módulo: Nutrition
-
-> ⏳ Aguardando Auth e Students serem fechados
-
----
-
-## Módulo: Workouts
-
-> ⏳ Aguardando Auth e Students serem fechados
-
----
-
-## Módulo: Assessment
-
-> ⏳ Pendente
-
----
-
-## Módulo: Gamification
-
-> ⏳ Pendente
-> Nota prévia: `streaks` no banco mas código usa `student_streaks` — bug confirmado
-
----
-
-## Módulo: Chat
-
-> ⏳ Pendente
-> Nota prévia: conversations/messages existem no banco mas UI incompleta. Ver PRD social-and-engagement.
-
----
-
-## Código morto — lista consolidada
-
-> Preencher durante o mapeamento de cada módulo
-
-| Módulo | Arquivo | Descrição | Ação |
-|--------|---------|-----------|------|
-| Auth | A identificar | Fluxo de invite code (web + mobile) | Deletar |
-| Workouts | A identificar | `workout_logs` table e código relacionado | Deletar migration + código |
-| Workouts | A identificar | `workout_executions` duplicado | Consolidar |
-| Nutrition | A identificar | Referências a tabelas antigas (meals, nutrition_plans) | Atualizar para novo schema |
-
----
-
-## Decisões de schema — pendentes de mapeamento
-
-> Não aplicar nenhuma migration até este checklist estar completo
-
-- [x] Auth: confirmar estrutura de roles e professional_services
-- [x] Auth: decisão sobre documentos do profissional (CREF/CRM)
-- [ ] Students: confirmar fluxo managed ↔ autonomous
-- [ ] Workouts: confirmar qual sistema de execução é o ativo
-- [ ] Gamification: confirmar o que funciona de fato
-- [ ] Chat: confirmar o que vai para o PRD social vs o que fica no core
-
----
-
-## Como usar este documento
-
-1. **Início de sessão:** ler este arquivo antes de qualquer coisa
-2. **Durante:** preencher perguntas respondidas, adicionar código morto identificado
-3. **Fim de sessão:** atualizar status da tabela geral + commitar
-4. **Avançar de módulo:** só quando todas as perguntas do módulo atual estiverem respondidas
+- [Auth](AUTH_MODULE_REPORT.md) · [Students](STUDENTS_MODULE_REPORT.md) · [Nutrition](NUTRITION_MODULE_REPORT.md)
+- [Workouts](WORKOUTS_MODULE_REPORT.md) · [Assessment](ASSESSMENT_MODULE_REPORT.md)
+- [Gamification](GAMIFICATION_MODULE_REPORT.md) · [Chat](CHAT_MODULE_REPORT.md) · [System](SYSTEM_MODULE_REPORT.md)
