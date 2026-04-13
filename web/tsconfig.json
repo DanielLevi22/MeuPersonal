@@ -32,7 +32,8 @@
       "@/workouts": ["./src/modules/workouts"],
       "@/training-plans": ["./src/modules/training-plans"],
       "@meupersonal/core": ["./src/packages/core"],
-      "@meupersonal/supabase": ["./src/packages/supabase"]
+      "@meupersonal/supabase": ["./src/packages/supabase"],
+      "@meupersonal/shared": ["../shared/src"]
     }
   },
   "include": [

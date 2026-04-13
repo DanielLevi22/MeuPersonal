@@ -12,7 +12,8 @@
       "@/auth": ["./src/modules/auth"],
       "@/assessment": ["./src/modules/assessment"],
       "@meupersonal/core": ["./src/packages/core"],
-      "@meupersonal/supabase": ["./src/packages/supabase"]
+      "@meupersonal/supabase": ["./src/packages/supabase"],
+      "@meupersonal/shared": ["../shared/src"]
     },
     "jsx": "react-jsx"
   },
