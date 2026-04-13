@@ -13,7 +13,10 @@
       "@/assessment": ["./src/modules/assessment"],
       "@meupersonal/core": ["./src/packages/core"],
       "@meupersonal/supabase": ["./src/packages/supabase"],
-      "@meupersonal/shared": ["../shared/src"]
+      "@meupersonal/shared": ["../shared/src"],
+      "@supabase/supabase-js": ["./node_modules/@supabase/supabase-js"],
+      "zustand": ["./node_modules/zustand"],
+      "zustand/*": ["./node_modules/zustand/*"]
     },
     "jsx": "react-jsx"
   },
