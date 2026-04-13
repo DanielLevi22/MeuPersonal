@@ -1,60 +1,13 @@
--- ============================================================
--- TRIGGER: auto-criar profile quando usuário se cadastra
--- ============================================================
-
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, email, full_name, role)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', ''),
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'student')
-  );
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+-- Migration: RLS + Triggers
+-- Habilita Row Level Security em todas as tabelas e cria políticas base.
+-- Trigger: cria profile automaticamente ao registrar no Supabase Auth.
+-- Helper: is_professional_of() — usado nas policies de dados do aluno.
 
 -- ============================================================
--- HABILITAR RLS EM TODAS AS TABELAS
+-- HELPER FUNCTION
 -- ============================================================
 
-alter table profiles                 enable row level security;
-alter table student_professionals    enable row level security;
-alter table student_invites          enable row level security;
-alter table physical_assessments     enable row level security;
-alter table foods                    enable row level security;
-alter table diet_plans               enable row level security;
-alter table diet_meals               enable row level security;
-alter table diet_meal_items          enable row level security;
-alter table meal_logs                enable row level security;
-alter table exercises                enable row level security;
-alter table periodizations           enable row level security;
-alter table training_plans           enable row level security;
-alter table workouts                 enable row level security;
-alter table workout_exercises        enable row level security;
-alter table workout_sessions         enable row level security;
-alter table workout_session_exercises enable row level security;
-alter table achievements             enable row level security;
-alter table student_streaks          enable row level security;
-alter table daily_goals              enable row level security;
-alter table feature_flags            enable row level security;
-alter table feature_access           enable row level security;
-
--- ============================================================
--- HELPER: verifica se o usuário autenticado é professional do aluno
--- ============================================================
-
-create or replace function public.is_professional_of(student uuid)
+create or replace function is_professional_of(student_uuid uuid)
 returns boolean
 language sql
 security definer
@@ -63,412 +16,341 @@ as $$
   select exists (
     select 1 from student_professionals
     where professional_id = auth.uid()
-      and student_id = student
+      and student_id = student_uuid
       and status = 'active'
   );
 $$;
 
 -- ============================================================
--- PROFILES
+-- TRIGGER: criar profile ao registrar
 -- ============================================================
 
--- Vê o próprio perfil ou perfis dos seus alunos/personal
-create policy "profiles: select own and related"
+create or replace function handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into profiles (id, email, full_name, account_type, account_status)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'full_name',
+    coalesce(
+      (new.raw_user_meta_data->>'account_type')::account_type,
+      'managed_student'
+    ),
+    case
+      when (new.raw_user_meta_data->>'account_type') = 'professional'
+        then 'pending'::account_status
+      else null
+    end
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+
+-- ============================================================
+-- RLS: habilitar em todas as tabelas
+-- ============================================================
+
+alter table profiles                  enable row level security;
+alter table professional_services     enable row level security;
+alter table student_professionals     enable row level security;
+alter table physical_assessments      enable row level security;
+alter table student_anamnesis         enable row level security;
+alter table foods                     enable row level security;
+alter table diet_plans                enable row level security;
+alter table diet_meals                enable row level security;
+alter table diet_meal_items           enable row level security;
+alter table meal_logs                 enable row level security;
+alter table exercises                 enable row level security;
+alter table periodizations            enable row level security;
+alter table training_plans            enable row level security;
+alter table workouts                  enable row level security;
+alter table workout_exercises         enable row level security;
+alter table workout_sessions          enable row level security;
+alter table workout_session_exercises enable row level security;
+alter table student_streaks           enable row level security;
+alter table daily_goals               enable row level security;
+alter table achievements              enable row level security;
+alter table conversations             enable row level security;
+alter table messages                  enable row level security;
+alter table feature_flags             enable row level security;
+alter table feature_access            enable row level security;
+
+-- ============================================================
+-- POLICIES: profiles
+-- ============================================================
+
+-- Usuário vê o próprio perfil
+create policy "profiles: select own"
+  on profiles for select
+  using (auth.uid() = id);
+
+-- Profissional vê perfis dos seus alunos
+create policy "profiles: professional sees students"
+  on profiles for select
+  using (is_professional_of(id));
+
+-- Admin vê todos
+create policy "profiles: admin sees all"
   on profiles for select
   using (
-    id = auth.uid()
-    or is_professional_of(id)
-    or exists (
-      select 1 from student_professionals
-      where student_id = auth.uid()
-        and professional_id = profiles.id
-        and status = 'active'
+    exists (
+      select 1 from profiles
+      where id = auth.uid() and is_super_admin = true
     )
   );
 
--- Só o próprio usuário atualiza seu perfil
+-- Usuário atualiza o próprio perfil
 create policy "profiles: update own"
   on profiles for update
-  using (id = auth.uid());
+  using (auth.uid() = id);
 
 -- ============================================================
--- STUDENT_PROFESSIONALS
+-- POLICIES: professional_services
 -- ============================================================
 
-create policy "student_professionals: professional sees all"
+create policy "professional_services: select own"
+  on professional_services for select
+  using (professional_id = auth.uid());
+
+create policy "professional_services: manage own"
+  on professional_services for all
+  using (professional_id = auth.uid());
+
+-- ============================================================
+-- POLICIES: student_professionals
+-- ============================================================
+
+create policy "student_professionals: professional sees own"
   on student_professionals for select
-  using (
-    professional_id = auth.uid()
-    or student_id = auth.uid()
-  );
+  using (professional_id = auth.uid());
 
-create policy "student_professionals: professional inserts"
-  on student_professionals for insert
-  with check (professional_id = auth.uid());
+create policy "student_professionals: student sees own"
+  on student_professionals for select
+  using (student_id = auth.uid());
 
-create policy "student_professionals: professional updates"
-  on student_professionals for update
+create policy "student_professionals: professional manages"
+  on student_professionals for all
   using (professional_id = auth.uid());
 
 -- ============================================================
--- STUDENT_INVITES
+-- POLICIES: physical_assessments
 -- ============================================================
 
-create policy "student_invites: professional manages"
-  on student_invites for select
-  using (professional_id = auth.uid());
+create policy "physical_assessments: professional manages"
+  on physical_assessments for all
+  using (is_professional_of(student_id));
 
-create policy "student_invites: professional inserts"
-  on student_invites for insert
-  with check (professional_id = auth.uid());
-
-create policy "student_invites: professional updates"
-  on student_invites for update
-  using (professional_id = auth.uid());
-
--- ============================================================
--- PHYSICAL_ASSESSMENTS
--- ============================================================
-
-create policy "physical_assessments: select"
+create policy "physical_assessments: student reads own"
   on physical_assessments for select
-  using (
-    professional_id = auth.uid()
-    or student_id = auth.uid()
-  );
-
-create policy "physical_assessments: professional inserts"
-  on physical_assessments for insert
-  with check (professional_id = auth.uid());
-
-create policy "physical_assessments: professional updates"
-  on physical_assessments for update
-  using (professional_id = auth.uid());
-
-create policy "physical_assessments: professional deletes"
-  on physical_assessments for delete
-  using (professional_id = auth.uid());
+  using (student_id = auth.uid());
 
 -- ============================================================
--- FOODS (catálogo compartilhado)
+-- POLICIES: student_anamnesis
 -- ============================================================
 
--- Todos os usuários autenticados podem ver alimentos
-create policy "foods: authenticated can select"
+create policy "student_anamnesis: professional manages"
+  on student_anamnesis for all
+  using (is_professional_of(student_id));
+
+create policy "student_anamnesis: student manages own"
+  on student_anamnesis for all
+  using (student_id = auth.uid());
+
+-- ============================================================
+-- POLICIES: foods (catálogo global + alimentos customizados)
+-- ============================================================
+
+-- Todos leem alimentos globais
+create policy "foods: anyone reads"
   on foods for select
-  using (auth.uid() is not null);
+  using (true);
 
--- Qualquer usuário autenticado pode criar alimentos
-create policy "foods: authenticated can insert"
-  on foods for insert
-  with check (auth.uid() is not null);
-
--- Só o criador atualiza
-create policy "foods: creator updates"
-  on foods for update
+-- Profissional gerencia os próprios alimentos customizados
+create policy "foods: professional manages custom"
+  on foods for all
   using (created_by = auth.uid());
 
 -- ============================================================
--- DIET_PLANS
+-- POLICIES: diet_plans, diet_meals, diet_meal_items
 -- ============================================================
 
-create policy "diet_plans: select"
+create policy "diet_plans: professional manages"
+  on diet_plans for all
+  using (professional_id = auth.uid());
+
+create policy "diet_plans: student reads own"
   on diet_plans for select
+  using (student_id = auth.uid());
+
+create policy "diet_meals: professional manages"
+  on diet_meals for all
   using (
-    professional_id = auth.uid()
-    or student_id = auth.uid()
+    exists (
+      select 1 from diet_plans
+      where id = diet_meals.diet_plan_id
+        and professional_id = auth.uid()
+    )
   );
 
-create policy "diet_plans: professional inserts"
-  on diet_plans for insert
-  with check (professional_id = auth.uid());
-
-create policy "diet_plans: professional updates"
-  on diet_plans for update
-  using (professional_id = auth.uid());
-
-create policy "diet_plans: professional deletes"
-  on diet_plans for delete
-  using (professional_id = auth.uid());
-
--- ============================================================
--- DIET_MEALS (acesso via plano)
--- ============================================================
-
-create policy "diet_meals: select via plan"
+create policy "diet_meals: student reads own"
   on diet_meals for select
   using (
     exists (
       select 1 from diet_plans
       where id = diet_meals.diet_plan_id
-        and (professional_id = auth.uid() or student_id = auth.uid())
+        and student_id = auth.uid()
     )
   );
 
-create policy "diet_meals: professional inserts"
-  on diet_meals for insert
-  with check (
-    exists (
-      select 1 from diet_plans
-      where id = diet_meals.diet_plan_id
-        and professional_id = auth.uid()
-    )
-  );
-
-create policy "diet_meals: professional updates"
-  on diet_meals for update
+create policy "diet_meal_items: professional manages"
+  on diet_meal_items for all
   using (
     exists (
-      select 1 from diet_plans
-      where id = diet_meals.diet_plan_id
-        and professional_id = auth.uid()
+      select 1 from diet_meals dm
+      join diet_plans dp on dp.id = dm.diet_plan_id
+      where dm.id = diet_meal_items.diet_meal_id
+        and dp.professional_id = auth.uid()
     )
   );
 
-create policy "diet_meals: professional deletes"
-  on diet_meals for delete
-  using (
-    exists (
-      select 1 from diet_plans
-      where id = diet_meals.diet_plan_id
-        and professional_id = auth.uid()
-    )
-  );
-
--- ============================================================
--- DIET_MEAL_ITEMS (acesso via refeição → plano)
--- ============================================================
-
-create policy "diet_meal_items: select via meal"
+create policy "diet_meal_items: student reads own"
   on diet_meal_items for select
   using (
     exists (
       select 1 from diet_meals dm
       join diet_plans dp on dp.id = dm.diet_plan_id
       where dm.id = diet_meal_items.diet_meal_id
-        and (dp.professional_id = auth.uid() or dp.student_id = auth.uid())
-    )
-  );
-
-create policy "diet_meal_items: professional inserts"
-  on diet_meal_items for insert
-  with check (
-    exists (
-      select 1 from diet_meals dm
-      join diet_plans dp on dp.id = dm.diet_plan_id
-      where dm.id = diet_meal_items.diet_meal_id
-        and dp.professional_id = auth.uid()
-    )
-  );
-
-create policy "diet_meal_items: professional deletes"
-  on diet_meal_items for delete
-  using (
-    exists (
-      select 1 from diet_meals dm
-      join diet_plans dp on dp.id = dm.diet_plan_id
-      where dm.id = diet_meal_items.diet_meal_id
-        and dp.professional_id = auth.uid()
+        and dp.student_id = auth.uid()
     )
   );
 
 -- ============================================================
--- MEAL_LOGS
+-- POLICIES: meal_logs
 -- ============================================================
 
-create policy "meal_logs: select"
+create policy "meal_logs: student manages own"
+  on meal_logs for all
+  using (student_id = auth.uid());
+
+create policy "meal_logs: professional reads"
   on meal_logs for select
-  using (
-    student_id = auth.uid()
-    or is_professional_of(student_id)
-  );
-
-create policy "meal_logs: student inserts own"
-  on meal_logs for insert
-  with check (student_id = auth.uid());
-
-create policy "meal_logs: student updates own"
-  on meal_logs for update
-  using (student_id = auth.uid());
-
-create policy "meal_logs: student deletes own"
-  on meal_logs for delete
-  using (student_id = auth.uid());
+  using (is_professional_of(student_id));
 
 -- ============================================================
--- EXERCISES (catálogo compartilhado)
+-- POLICIES: exercises (catálogo)
 -- ============================================================
 
-create policy "exercises: authenticated can select"
+create policy "exercises: anyone reads"
   on exercises for select
-  using (auth.uid() is not null);
+  using (true);
 
-create policy "exercises: professional inserts"
-  on exercises for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where id = auth.uid() and role = 'professional'
-    )
-  );
-
-create policy "exercises: creator updates"
-  on exercises for update
+create policy "exercises: professional manages own"
+  on exercises for all
   using (created_by = auth.uid());
 
 -- ============================================================
--- PERIODIZATIONS
+-- POLICIES: periodizations, training_plans, workouts, workout_exercises
 -- ============================================================
 
-create policy "periodizations: select"
+create policy "periodizations: professional manages"
+  on periodizations for all
+  using (professional_id = auth.uid());
+
+create policy "periodizations: student reads own"
   on periodizations for select
+  using (student_id = auth.uid());
+
+create policy "training_plans: professional manages"
+  on training_plans for all
   using (
-    professional_id = auth.uid()
-    or student_id = auth.uid()
+    exists (
+      select 1 from periodizations
+      where id = training_plans.periodization_id
+        and professional_id = auth.uid()
+    )
   );
 
-create policy "periodizations: professional inserts"
-  on periodizations for insert
-  with check (professional_id = auth.uid());
-
-create policy "periodizations: professional updates"
-  on periodizations for update
-  using (professional_id = auth.uid());
-
-create policy "periodizations: professional deletes"
-  on periodizations for delete
-  using (professional_id = auth.uid());
-
--- ============================================================
--- TRAINING_PLANS (acesso via periodização)
--- ============================================================
-
-create policy "training_plans: select via periodization"
+create policy "training_plans: student reads"
   on training_plans for select
   using (
     exists (
       select 1 from periodizations
       where id = training_plans.periodization_id
-        and (professional_id = auth.uid() or student_id = auth.uid())
+        and student_id = auth.uid()
     )
   );
 
-create policy "training_plans: professional inserts"
-  on training_plans for insert
-  with check (
-    exists (
-      select 1 from periodizations
-      where id = training_plans.periodization_id
-        and professional_id = auth.uid()
-    )
-  );
-
-create policy "training_plans: professional updates"
-  on training_plans for update
+create policy "workouts: professional manages"
+  on workouts for all
   using (
     exists (
-      select 1 from periodizations
-      where id = training_plans.periodization_id
-        and professional_id = auth.uid()
+      select 1 from training_plans tp
+      join periodizations p on p.id = tp.periodization_id
+      where tp.id = workouts.training_plan_id
+        and p.professional_id = auth.uid()
     )
   );
 
--- ============================================================
--- WORKOUTS
--- ============================================================
-
-create policy "workouts: select"
+create policy "workouts: student reads"
   on workouts for select
   using (
-    professional_id = auth.uid()
-    or student_id = auth.uid()
+    exists (
+      select 1 from training_plans tp
+      join periodizations p on p.id = tp.periodization_id
+      where tp.id = workouts.training_plan_id
+        and p.student_id = auth.uid()
+    )
   );
 
-create policy "workouts: professional inserts"
-  on workouts for insert
-  with check (professional_id = auth.uid());
+create policy "workout_exercises: professional manages"
+  on workout_exercises for all
+  using (
+    exists (
+      select 1 from workouts w
+      join training_plans tp on tp.id = w.training_plan_id
+      join periodizations p on p.id = tp.periodization_id
+      where w.id = workout_exercises.workout_id
+        and p.professional_id = auth.uid()
+    )
+  );
 
-create policy "workouts: professional updates"
-  on workouts for update
-  using (professional_id = auth.uid());
-
-create policy "workouts: professional deletes"
-  on workouts for delete
-  using (professional_id = auth.uid());
-
--- ============================================================
--- WORKOUT_EXERCISES (acesso via treino)
--- ============================================================
-
-create policy "workout_exercises: select via workout"
+create policy "workout_exercises: student reads"
   on workout_exercises for select
   using (
     exists (
-      select 1 from workouts
-      where id = workout_exercises.workout_id
-        and (professional_id = auth.uid() or student_id = auth.uid())
-    )
-  );
-
-create policy "workout_exercises: professional inserts"
-  on workout_exercises for insert
-  with check (
-    exists (
-      select 1 from workouts
-      where id = workout_exercises.workout_id
-        and professional_id = auth.uid()
-    )
-  );
-
-create policy "workout_exercises: professional updates"
-  on workout_exercises for update
-  using (
-    exists (
-      select 1 from workouts
-      where id = workout_exercises.workout_id
-        and professional_id = auth.uid()
+      select 1 from workouts w
+      join training_plans tp on tp.id = w.training_plan_id
+      join periodizations p on p.id = tp.periodization_id
+      where w.id = workout_exercises.workout_id
+        and p.student_id = auth.uid()
     )
   );
 
 -- ============================================================
--- WORKOUT_SESSIONS
+-- POLICIES: workout_sessions, workout_session_exercises
 -- ============================================================
 
-create policy "workout_sessions: select"
-  on workout_sessions for select
-  using (
-    student_id = auth.uid()
-    or is_professional_of(student_id)
-  );
-
-create policy "workout_sessions: student inserts own"
-  on workout_sessions for insert
-  with check (student_id = auth.uid());
-
-create policy "workout_sessions: student updates own"
-  on workout_sessions for update
+create policy "workout_sessions: student manages own"
+  on workout_sessions for all
   using (student_id = auth.uid());
 
--- ============================================================
--- WORKOUT_SESSION_EXERCISES (acesso via sessão)
--- ============================================================
+create policy "workout_sessions: professional reads"
+  on workout_sessions for select
+  using (is_professional_of(student_id));
 
-create policy "workout_session_exercises: select via session"
-  on workout_session_exercises for select
+create policy "workout_session_exercises: student manages"
+  on workout_session_exercises for all
   using (
-    exists (
-      select 1 from workout_sessions
-      where id = workout_session_exercises.session_id
-        and (
-          student_id = auth.uid()
-          or is_professional_of(student_id)
-        )
-    )
-  );
-
-create policy "workout_session_exercises: student inserts via session"
-  on workout_session_exercises for insert
-  with check (
     exists (
       select 1 from workout_sessions
       where id = workout_session_exercises.session_id
@@ -476,68 +358,94 @@ create policy "workout_session_exercises: student inserts via session"
     )
   );
 
--- ============================================================
--- ACHIEVEMENTS
--- ============================================================
-
-create policy "achievements: select"
-  on achievements for select
+create policy "workout_session_exercises: professional reads"
+  on workout_session_exercises for select
   using (
-    student_id = auth.uid()
-    or is_professional_of(student_id)
+    exists (
+      select 1 from workout_sessions ws
+      where ws.id = workout_session_exercises.session_id
+        and is_professional_of(ws.student_id)
+    )
   );
 
--- Inserção via service role (lógica de negócio server-side)
-create policy "achievements: service role inserts"
-  on achievements for insert
-  with check (auth.uid() is not null);
-
 -- ============================================================
--- STUDENT_STREAKS
+-- POLICIES: gamification
 -- ============================================================
-
-create policy "student_streaks: select"
-  on student_streaks for select
-  using (
-    student_id = auth.uid()
-    or is_professional_of(student_id)
-  );
 
 create policy "student_streaks: student manages own"
-  on student_streaks for insert
-  with check (student_id = auth.uid());
-
-create policy "student_streaks: student updates own"
-  on student_streaks for update
+  on student_streaks for all
   using (student_id = auth.uid());
 
+create policy "student_streaks: professional reads"
+  on student_streaks for select
+  using (is_professional_of(student_id));
+
+create policy "daily_goals: student manages own"
+  on daily_goals for all
+  using (student_id = auth.uid());
+
+create policy "daily_goals: professional reads"
+  on daily_goals for select
+  using (is_professional_of(student_id));
+
+create policy "achievements: student reads own"
+  on achievements for select
+  using (student_id = auth.uid());
+
+create policy "achievements: professional reads"
+  on achievements for select
+  using (is_professional_of(student_id));
+
 -- ============================================================
--- DAILY_GOALS
+-- POLICIES: chat
 -- ============================================================
 
-create policy "daily_goals: select"
-  on daily_goals for select
+create policy "conversations: participants select"
+  on conversations for select
   using (
-    student_id = auth.uid()
-    or is_professional_of(student_id)
+    professional_id = auth.uid() or student_id = auth.uid()
   );
 
-create policy "daily_goals: student inserts own"
-  on daily_goals for insert
-  with check (student_id = auth.uid());
+create policy "conversations: professional creates"
+  on conversations for insert
+  with check (professional_id = auth.uid());
 
-create policy "daily_goals: student updates own"
-  on daily_goals for update
-  using (student_id = auth.uid());
+create policy "messages: participants select"
+  on messages for select
+  using (
+    sender_id = auth.uid() or receiver_id = auth.uid()
+  );
+
+create policy "messages: sender inserts"
+  on messages for insert
+  with check (sender_id = auth.uid());
 
 -- ============================================================
--- FEATURE_FLAGS e FEATURE_ACCESS (somente leitura via anon/user)
+-- POLICIES: system (somente admin)
 -- ============================================================
 
-create policy "feature_flags: authenticated can select"
+create policy "feature_flags: admin manages"
+  on feature_flags for all
+  using (
+    exists (
+      select 1 from profiles
+      where id = auth.uid() and is_super_admin = true
+    )
+  );
+
+create policy "feature_flags: anyone reads"
   on feature_flags for select
-  using (auth.uid() is not null);
+  using (true);
 
-create policy "feature_access: authenticated can select"
+create policy "feature_access: admin manages"
+  on feature_access for all
+  using (
+    exists (
+      select 1 from profiles
+      where id = auth.uid() and is_super_admin = true
+    )
+  );
+
+create policy "feature_access: anyone reads"
   on feature_access for select
-  using (auth.uid() is not null);
+  using (true);
