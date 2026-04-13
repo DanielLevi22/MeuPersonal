@@ -12,8 +12,8 @@
 
 | Módulo | Status | Decisões tomadas | Código morto identificado |
 |--------|--------|-----------------|--------------------------|
-| **Auth** | 🔄 Em andamento | Parcial | Parcial |
-| **Students** | ⏳ Aguardando Auth | — | — |
+| **Auth** | ✅ Mapeado | Sim | Parcial (paths pendentes) |
+| **Students** | 🔄 Em andamento | — | — |
 | **Nutrition** | ⏳ Pendente | — | — |
 | **Workouts** | ⏳ Pendente | — | — |
 | **Assessment** | ⏳ Pendente | — | — |
@@ -64,22 +64,21 @@
 | # | Pergunta | Resposta |
 |---|----------|----------|
 | 1 | Personal e nutricionista têm permissões diferentes? | Sim — cada tipo tem seu conjunto de permissões. Um profissional pode ter os dois. |
-| 2 | Aluno autônomo existe no código hoje? | Sim — mobile foi projetado com signup de aluno autônomo |
-| 3 | Documentos (CREF/CRM) são usados? | Existem no banco, provavelmente nunca usados. Precisam de auditoria. |
+| 2 | Aluno autônomo existe no código hoje? | Foi implementado mas removido — ainda faz parte do roadmap. |
+| 3 | Documentos (CREF/CRM) são usados? | Existem no banco, provavelmente nunca usados — paths a confirmar na varredura. |
 | 4 | O fluxo de convite por código existe no código? | Sim — foi implementado em web e mobile. É código morto hoje. |
-| 5 | Aluno pode mudar de tipo (managed ↔ autonomous)? | Sim — o sistema precisa suportar essa transição |
+| 5 | Aluno pode mudar de tipo (managed ↔ autonomous)? | Sim — o sistema precisa suportar essa transição. |
+| P1 | Como o profissional indica os tipos de serviço? | Na hora do cadastro — ele escolhe quais profissões quer exercer. |
+| P2 | Fluxo do aluno autônomo no mobile? | Fluxo foi removido — ainda é roadmap. Não existe hoje. |
+| P3 | Aluno autônomo pode encontrar profissional (marketplace)? | Não existe ainda — faz parte do que precisa ser desenvolvido. |
+| P4 | Profissional precisa de aprovação? | Sim — aprovação pelo admin antes de usar o sistema. |
+| P5 | Existe admin? | Sim — Daniel (desenvolvedor) gerencia a plataforma como admin. |
 
 ---
 
 ### Perguntas pendentes — Auth
 
-> Responder antes de fechar o mapeamento deste módulo
-
-- [ ] **P1:** Como o profissional indica que tipo de serviço oferece? Na hora do cadastro ou configurável depois?
-- [ ] **P2:** Quando o aluno autônomo se cadastra sozinho no mobile, qual é o fluxo? Ele escolhe ser "autônomo" ou isso é automático por não ter profissional?
-- [ ] **P3:** Um aluno autônomo pode encontrar um profissional dentro do app (marketplace)? Ou o profissional sempre precisa adicioná-lo manualmente?
-- [ ] **P4:** O profissional precisa de aprovação/verificação antes de usar o sistema? (Ex: validar CREF)
-- [ ] **P5:** Existe admin no sistema? Quem gerencia a plataforma?
+> ✅ Todas respondidas — módulo fechado
 
 ---
 
@@ -98,19 +97,23 @@
 
 ---
 
-### Decisões de schema — Auth (rascunho, sujeito a revisão)
-
-> Não finalizar até fechar as perguntas pendentes
+### Decisões de schema — Auth ✅
 
 **Profiles — campos necessários:**
 ```
 id, email, full_name, avatar_url
-role: enum('professional', 'student')   ← simples, tipo de conta
-student_type: enum('managed', 'autonomous') | null  ← null para professionals
+role: enum('professional', 'student', 'admin')
+  ← admin adicionado: Daniel gerencia a plataforma
+student_type: enum('managed', 'autonomous') | null
+  ← null para professionals e admins
+  ← autonomous existe no schema mas o fluxo de cadastro é roadmap
+approval_status: enum('pending', 'approved', 'rejected') | null
+  ← null para students e admins
+  ← professional fica 'pending' após cadastro até admin aprovar
 created_at, updated_at
 ```
 
-**Professional services — tabela separada:**
+**Professional services — tabela separada (confirmado):**
 ```
 professional_services
   id
@@ -118,17 +121,52 @@ professional_services
   service_type: enum('personal_training', 'nutrition_consulting', ...)
   is_active: boolean
 ```
-Motivo: um profissional pode ter múltiplos tipos. Enum no profiles limitaria isso.
+Criada no momento do cadastro — profissional já escolhe os tipos na tela de signup.
+Motivo da tabela separada: profissional pode ter múltiplos tipos simultaneamente.
 
-**Documentos do profissional:**
-- Decisão pendente até P4 ser respondida (aprovação/verificação necessária?)
-- Proposta: campo genérico `professional_document jsonb` em vez de colunas fixas (CREF, CRM)
+**Documentos do profissional (CREF/CRM):**
+- Aprovação é feita pelo admin → admin precisa ver o documento para aprovar
+- Decisão: campo genérico `professional_document jsonb` em profiles
+  - Flexível para CREF, CRM e outros tipos futuros
+  - Ex: `{"type": "CREF", "number": "123456-G/SP"}`
+- Colunas fixas `cref`/`crn` no banco atual: dropar e substituir por `professional_document`
+
+**Fluxo de aprovação (novo — P4):**
+```
+Professional se cadastra → approval_status = 'pending'
+    → envia professional_document (CREF/CRM)
+    → admin visualiza no painel
+    → admin aprova → approval_status = 'approved'
+    → profissional ganha acesso às features
+```
+Implicação de RLS: professional com status != 'approved' não pode criar alunos/planos.
 
 ---
 
 ## Módulo: Students
 
-> ⏳ Aguardando Auth ser fechado
+### Contexto levantado
+
+**Vínculo aluno-profissional:**
+- Tabela `student_professionals` (era `coachings`) — vínculo ativo entre aluno e professional
+- Status: `pending`, `active`, `inactive`
+- Um profissional cria a conta do aluno via RPC → vínculo já nasce `active`
+
+**Tipos de aluno:**
+- `managed`: criado pelo profissional, gerenciado por ele
+- `autonomous`: se cadastra sozinho — fluxo removido, é roadmap
+- Transição managed ↔ autonomous: precisa ser suportada
+
+**Physical assessments:**
+- Tabela `physical_assessments` existe — peso, altura, % gordura, fotos
+- Feita pelo profissional ou pelo próprio aluno?
+
+### Perguntas pendentes — Students
+
+- [ ] **P1:** Quem preenche a avaliação física — o profissional, o aluno ou os dois?
+- [ ] **P2:** Um aluno pode ter vínculo com mais de um profissional ao mesmo tempo? (ex: um personal E um nutricionista)
+- [ ] **P3:** Quando o profissional "inativa" um aluno, o aluno ainda consegue ver seus dados históricos (treinos, dieta)?
+- [ ] **P4:** Existe algum fluxo de "solicitação de vínculo" — aluno pede para ser gerenciado por um profissional? Ou sempre é o profissional que adiciona?
 
 ---
 
@@ -181,8 +219,8 @@ Motivo: um profissional pode ter múltiplos tipos. Enum no profiles limitaria is
 
 > Não aplicar nenhuma migration até este checklist estar completo
 
-- [ ] Auth: confirmar estrutura de roles e professional_services
-- [ ] Auth: decisão sobre documentos do profissional (CREF/CRM)
+- [x] Auth: confirmar estrutura de roles e professional_services
+- [x] Auth: decisão sobre documentos do profissional (CREF/CRM)
 - [ ] Students: confirmar fluxo managed ↔ autonomous
 - [ ] Workouts: confirmar qual sistema de execução é o ativo
 - [ ] Gamification: confirmar o que funciona de fato
