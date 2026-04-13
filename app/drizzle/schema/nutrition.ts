@@ -10,21 +10,17 @@ import {
 } from 'drizzle-orm/pg-core';
 import { profiles } from './auth';
 
-export const dietPlanStatusEnum = pgEnum('diet_plan_status', [
-  'draft',
-  'active',
-  'inactive',
-]);
+export const dietPlanStatusEnum = pgEnum('diet_plan_status', ['draft', 'active', 'inactive']);
 
 // Catálogo global de alimentos com macros por 100g
 export const foods = pgTable('foods', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   calories: numeric('calories'), // kcal por 100g
-  protein: numeric('protein'),   // g por 100g
-  carbs: numeric('carbs'),       // g por 100g
-  fat: numeric('fat'),           // g por 100g
-  fiber: numeric('fiber'),       // g por 100g
+  protein: numeric('protein'), // g por 100g
+  carbs: numeric('carbs'), // g por 100g
+  fat: numeric('fat'), // g por 100g
+  fiber: numeric('fiber'), // g por 100g
   serving_size: numeric('serving_size'), // gramas por porção padrão
   is_custom: boolean('is_custom').notNull().default(false),
   // null = alimento global; preenchido = criado por profissional (uso privado)

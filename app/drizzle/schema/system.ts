@@ -9,12 +9,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-export const subscriptionTierEnum = pgEnum('subscription_tier', [
-  'free',
-  'basic',
-  'pro',
-  'elite',
-]);
+export const subscriptionTierEnum = pgEnum('subscription_tier', ['free', 'basic', 'pro', 'elite']);
 
 // Flags para ligar/desligar módulos sem novo deploy
 export const featureFlags = pgTable('feature_flags', {

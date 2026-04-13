@@ -78,7 +78,7 @@ export const workoutExercises = pgTable('workout_exercises', {
     .notNull()
     .references(() => exercises.id),
   sets: integer('sets'),
-  reps: text('reps'),           // "8-12", "AMRAP", "até a falha"
+  reps: text('reps'), // "8-12", "AMRAP", "até a falha"
   rest_seconds: integer('rest_seconds'),
   order_index: integer('order_index').notNull().default(0),
   notes: text('notes'),

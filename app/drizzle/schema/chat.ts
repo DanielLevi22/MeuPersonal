@@ -1,19 +1,7 @@
-import {
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  unique,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import { profiles } from './auth';
 
-export const messageTypeEnum = pgEnum('message_type', [
-  'text',
-  'image',
-  'audio',
-  'file',
-]);
+export const messageTypeEnum = pgEnum('message_type', ['text', 'image', 'audio', 'file']);
 
 // Um canal por par profissional-aluno — sem duplicidade
 export const conversations = pgTable(

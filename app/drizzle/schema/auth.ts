@@ -1,12 +1,4 @@
-import {
-  boolean,
-  date,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { boolean, date, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const accountTypeEnum = pgEnum('account_type', [
   'admin',
@@ -16,11 +8,7 @@ export const accountTypeEnum = pgEnum('account_type', [
 ]);
 
 // Aprovação só se aplica a professionals — null para students e admin
-export const accountStatusEnum = pgEnum('account_status', [
-  'pending',
-  'active',
-  'inactive',
-]);
+export const accountStatusEnum = pgEnum('account_status', ['pending', 'active', 'inactive']);
 
 export const serviceTypeEnum = pgEnum('service_type', [
   'personal_training',
