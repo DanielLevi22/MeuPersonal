@@ -1,19 +1,13 @@
 "use client";
 
+import { createStudentsService } from "@meupersonal/shared";
 import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-export interface Student {
-  id: string;
-  full_name: string | null;
-  email: string;
-  avatar_url: string | null;
-  account_status: "active" | "inactive" | "invited";
-  service_type: "personal_training" | "nutrition_consulting";
-  link_status: "active" | "inactive";
-  link_created_at: string;
-}
+export type { Student } from "@meupersonal/shared";
+
+const studentsService = createStudentsService(supabase);
 
 export function useStudents() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -26,46 +20,10 @@ export function useStudents() {
 
   return useQuery({
     queryKey: ["students", userId],
-    queryFn: async (): Promise<Student[]> => {
+    queryFn: async () => {
       if (!userId) return [];
-
-      const { data, error } = await supabase
-        .from("student_specialists")
-        .select(`
-          service_type,
-          status,
-          created_at,
-          student:profiles!student_id (
-            id,
-            full_name,
-            email,
-            avatar_url,
-            account_status
-          )
-        `)
-        .eq("specialist_id", userId)
-        .eq("status", "active");
-
-      if (error) throw error;
-
-      const seen = new Set<string>();
-      return (data ?? [])
-        .map((item) => {
-          const student = Array.isArray(item.student) ? item.student[0] : item.student;
-          if (!student || seen.has(student.id)) return null;
-          seen.add(student.id);
-          return {
-            id: student.id,
-            full_name: student.full_name,
-            email: student.email,
-            avatar_url: student.avatar_url,
-            account_status: student.account_status,
-            service_type: item.service_type,
-            link_status: item.status,
-            link_created_at: item.created_at,
-          } as Student;
-        })
-        .filter((s): s is Student => s !== null);
+      const { students } = await studentsService.fetchStudents(userId, { limit: 200 });
+      return students;
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 15,
@@ -146,7 +104,6 @@ export function useLinkStudentByCode() {
 
       if (codeError || !linkCode) throw new Error("Código inválido ou expirado");
 
-      // Check no active link already exists for this service type
       const { data: existing } = await supabase
         .from("student_specialists")
         .select("id")
@@ -166,7 +123,6 @@ export function useLinkStudentByCode() {
 
       if (linkError) throw linkError;
 
-      // Delete used code
       await supabase.from("student_link_codes").delete().eq("code", code.trim().toUpperCase());
     },
     onSuccess: () => {
@@ -175,5 +131,5 @@ export function useLinkStudentByCode() {
   });
 }
 
-/** @deprecated useProfessionalServices renamed to useSpecialistServices */
+/** @deprecated renamed to useSpecialistServices */
 export const useProfessionalServices = useSpecialistServices;

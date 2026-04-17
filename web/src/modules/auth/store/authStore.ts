@@ -1,3 +1,4 @@
+import { createAuthService } from "@meupersonal/shared";
 import {
   type AccountType,
   type AppAbility,
@@ -7,6 +8,8 @@ import {
 } from "@meupersonal/supabase";
 import type { Session, User } from "@supabase/supabase-js";
 import { create } from "zustand";
+
+const authService = createAuthService(supabase);
 
 export interface AuthState {
   session: Session | null;
@@ -36,7 +39,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await authService.getSession();
       await get().updateSession(session);
     } catch (error) {
       console.error("Error initializing auth:", error);
@@ -111,36 +114,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        // Check account status
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("account_type, account_status")
-          .eq("id", data.user.id)
-          .single();
-
-        if (profile?.account_status === "inactive") {
-          await supabase.auth.signOut();
-          return { success: false, error: "account_inactive" };
-        }
-      }
-
-      return { success: true };
-    } catch (error: any) {
+      return await authService.signInWithStatusCheck(email, password);
+    } catch (error: unknown) {
       console.error("SignIn error:", error);
-      return { success: false, error: error.message || "Erro ao fazer login" };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Erro ao fazer login",
+      };
     }
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
+    await authService.signOut();
     set({
       session: null,
       user: null,

@@ -1,3 +1,4 @@
+import { createAuthService } from '@meupersonal/shared';
 import {
   type AccountType,
   type AppAbility,
@@ -10,6 +11,8 @@ import { supabase } from '../../../lib/supabase';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
 import { useStudentStore } from '../../students/store/studentStore';
 import { useWorkoutStore } from '../../workout/store/workoutStore';
+
+const authService = createAuthService(supabase);
 
 export interface AuthState {
   session: Session | null;
@@ -228,26 +231,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
+    await authService.signOut();
     set({ session: null, user: null, accountType: null, accountStatus: null, abilities: null });
 
     // CRITICAL: Clear all stores to prevent data leakage between users
-    // Import stores dynamically to avoid circular dependencies
-
     useStudentStore.getState().reset();
     useNutritionStore.getState().reset();
     useWorkoutStore.getState().reset();
-
-    console.log('✅ All stores cleared on logout');
   },
 
   signIn: async (email, password) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { error } = await authService.signIn(email, password);
       if (error) throw error;
       return { success: true };
     } catch (error: unknown) {
@@ -258,34 +253,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signUp: async (email, password, role, metadata = {}) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            ...metadata,
-            account_type: role, // Pass to trigger if exists, or for client-side use
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        // Create profile if not created by trigger
-        // Note: Ideally a trigger handles this, but we can do it here for safety
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: data.user.id,
-          email: email,
-          account_type: role,
-          full_name: metadata.full_name,
-          ...metadata,
-        });
-
-        if (profileError) console.error('Error creating profile:', profileError);
-      }
-
-      return { success: true };
+      return await authService.signUp(email, password, role, metadata);
     } catch (error: unknown) {
       console.error('SignUp error:', error);
       return {
