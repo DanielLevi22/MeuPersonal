@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-async function getCallerProfessional(request: NextRequest) {
+async function getCallerSpecialist(request: NextRequest) {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ")) return null;
 
@@ -26,82 +26,65 @@ async function getCallerProfessional(request: NextRequest) {
   return user;
 }
 
+async function verifyOwnership(specialistId: string, studentId: string) {
+  const { data } = await supabaseAdmin
+    .from("student_specialists")
+    .select("id")
+    .eq("specialist_id", specialistId)
+    .eq("student_id", studentId)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const caller = await getCallerProfessional(request);
-    if (!caller) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const caller = await getCallerSpecialist(request);
+    if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id: studentId } = await params;
-
-    const { data: coaching } = await supabaseAdmin
-      .from("coachings")
-      .select("client_id")
-      .eq("professional_id", caller.id)
-      .eq("client_id", studentId)
-      .limit(1)
-      .single();
-
-    if (!coaching) {
+    if (!(await verifyOwnership(caller.id, studentId))) {
       return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
     }
 
     const body = await request.json();
-    const { full_name, phone, weight, height, notes, measurements } = body as {
+    const { full_name, measurements } = body as {
       full_name?: string;
-      phone?: string;
-      weight?: string | number | null;
-      height?: string | number | null;
-      notes?: string | null;
       measurements?: Record<string, string | number | null>;
     };
 
-    // Update profile fields
-    const profileUpdate: Record<string, unknown> = {};
-    if (full_name !== undefined) profileUpdate.full_name = full_name;
-    if (phone !== undefined) profileUpdate.phone = phone || null;
-    if (weight !== undefined)
-      profileUpdate.weight = weight !== "" && weight !== null ? Number(weight) : null;
-    if (height !== undefined)
-      profileUpdate.height = height !== "" && height !== null ? Number(height) : null;
-    if (notes !== undefined) profileUpdate.notes = notes || null;
-
-    if (Object.keys(profileUpdate).length > 0) {
+    // profiles only has: id, email, full_name, avatar_url, account_type, account_status, created_at
+    if (full_name !== undefined) {
       const { error } = await supabaseAdmin
         .from("profiles")
-        .update(profileUpdate)
+        .update({ full_name })
         .eq("id", studentId);
       if (error) throw error;
     }
 
-    // Upsert measurements into most recent physical_assessment
+    // Upsert measurements into physical_assessments
     if (measurements && Object.values(measurements).some((v) => v !== null && v !== "")) {
-      const numericMeasurements: Record<string, number | null> = {};
+      const numeric: Record<string, number | null> = {};
       for (const [key, val] of Object.entries(measurements)) {
-        numericMeasurements[key] = val !== null && val !== "" ? Number(val) : null;
+        numeric[key] = val !== null && val !== "" ? Number(val) : null;
       }
 
       const { data: latest } = await supabaseAdmin
         .from("physical_assessments")
         .select("id")
         .eq("student_id", studentId)
-        .eq("personal_id", caller.id)
+        .eq("specialist_id", caller.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (latest) {
+        await supabaseAdmin.from("physical_assessments").update(numeric).eq("id", latest.id);
+      } else {
         await supabaseAdmin
           .from("physical_assessments")
-          .update(numericMeasurements)
-          .eq("id", latest.id);
-      } else {
-        await supabaseAdmin.from("physical_assessments").insert({
-          student_id: studentId,
-          personal_id: caller.id,
-          ...numericMeasurements,
-        });
+          .insert({ student_id: studentId, specialist_id: caller.id, ...numeric });
       }
     }
 
@@ -117,44 +100,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const caller = await getCallerProfessional(request);
-    if (!caller) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const caller = await getCallerSpecialist(request);
+    if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id: studentId } = await params;
-
-    // Verify this student belongs to the caller
-    const { data: coaching } = await supabaseAdmin
-      .from("coachings")
-      .select("client_id")
-      .eq("professional_id", caller.id)
-      .eq("client_id", studentId)
-      .limit(1)
-      .single();
-
-    if (!coaching) {
+    if (!(await verifyOwnership(caller.id, studentId))) {
       return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
     }
 
-    // Remove all coachings between this professional and student
-    await supabaseAdmin
-      .from("coachings")
-      .delete()
-      .eq("professional_id", caller.id)
-      .eq("client_id", studentId);
+    // Soft delete — status → inactive (preserva histórico)
+    const { error } = await supabaseAdmin
+      .from("student_specialists")
+      .update({
+        status: "inactive",
+        ended_by: caller.id,
+        ended_at: new Date().toISOString(),
+      })
+      .eq("specialist_id", caller.id)
+      .eq("student_id", studentId)
+      .eq("status", "active");
 
-    // Check if student still has coachings with other professionals
-    const { data: remaining } = await supabaseAdmin
-      .from("coachings")
-      .select("client_id")
-      .eq("client_id", studentId)
-      .limit(1);
-
-    // If no other professional manages this student, delete the auth user
-    if (!remaining || remaining.length === 0) {
-      await supabaseAdmin.auth.admin.deleteUser(studentId);
-    }
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {

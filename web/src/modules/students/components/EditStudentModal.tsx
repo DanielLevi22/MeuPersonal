@@ -37,10 +37,6 @@ export function EditStudentModal({ studentId, onClose }: EditStudentModalProps) 
 
   // Profile fields
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
-  const [notes, setNotes] = useState("");
 
   // Measurement fields
   const [measurements, setMeasurements] = useState<Record<string, string>>({});
@@ -52,10 +48,6 @@ export function EditStudentModal({ studentId, onClose }: EditStudentModalProps) 
   useEffect(() => {
     if (!details) return;
     setFullName(details.profile.full_name ?? "");
-    setPhone(details.profile.phone ?? "");
-    setWeight(details.profile.weight?.toString() ?? "");
-    setHeight(details.profile.height?.toString() ?? "");
-    setNotes(details.profile.notes ?? "");
 
     if (details.measurements) {
       const m: Record<string, string> = {};
@@ -87,10 +79,6 @@ export function EditStudentModal({ studentId, onClose }: EditStudentModalProps) 
       await updateStudent.mutateAsync({
         studentId,
         full_name: fullName,
-        phone: phone || null,
-        weight: weight || null,
-        height: height || null,
-        notes: notes || null,
         measurements: measurementValues as never,
       });
 
@@ -133,49 +121,6 @@ export function EditStudentModal({ studentId, onClose }: EditStudentModalProps) 
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                />
-              </FormField>
-
-              <FormField label="Telefone" htmlFor="edit-phone" optional>
-                <Input
-                  id="edit-phone"
-                  type="tel"
-                  placeholder="(11) 99999-9999"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </FormField>
-
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Peso (kg)" htmlFor="edit-weight" optional>
-                  <Input
-                    id="edit-weight"
-                    type="number"
-                    step="0.1"
-                    placeholder="70.5"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                  />
-                </FormField>
-                <FormField label="Altura (cm)" htmlFor="edit-height" optional>
-                  <Input
-                    id="edit-height"
-                    type="number"
-                    placeholder="175"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                  />
-                </FormField>
-              </div>
-
-              <FormField label="Observações" htmlFor="edit-notes" optional>
-                <textarea
-                  id="edit-notes"
-                  placeholder="Objetivo, restrições, histórico..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                 />
               </FormField>
             </div>

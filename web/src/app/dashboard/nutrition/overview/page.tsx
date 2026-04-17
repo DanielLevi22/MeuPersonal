@@ -36,7 +36,7 @@ export default function NutritionOverviewPage() {
 
       switch (sortBy) {
         case "name":
-          comparison = a.full_name.localeCompare(b.full_name);
+          comparison = (a.full_name ?? "").localeCompare(b.full_name ?? "");
           break;
         case "adherence":
           comparison = (a.stats?.adherenceRate || 0) - (b.stats?.adherenceRate || 0);
@@ -248,7 +248,7 @@ export default function NutritionOverviewPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-primary font-bold">
-                          {student.full_name.charAt(0).toUpperCase()}
+                          {(student.full_name ?? "?").charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>

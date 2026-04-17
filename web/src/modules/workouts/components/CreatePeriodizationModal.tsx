@@ -60,7 +60,7 @@ export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, ini
   const createMutation = useCreatePeriodization();
   const updateMutation = useUpdatePeriodization();
 
-  const activeStudents = students.filter((s) => s.status === "active");
+  const activeStudents = students.filter((s) => s.account_status === "active");
 
   const isPending = isEditing ? updateMutation.isPending : createMutation.isPending;
 

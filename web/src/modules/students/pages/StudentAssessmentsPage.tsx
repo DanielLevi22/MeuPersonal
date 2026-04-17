@@ -62,20 +62,19 @@ function AssessmentCard({
             )}
           </div>
         </div>
-        {assessment.bmi && (
+        {assessment.weight && assessment.height && (
           <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/5 text-muted-foreground">
-            IMC {assessment.bmi}
+            IMC {(assessment.weight / (assessment.height / 100) ** 2).toFixed(1)}
           </span>
         )}
       </div>
 
       {/* Composição */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 pt-1 border-t border-white/5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1 border-t border-white/5">
         <StatCell label="Peso" value={assessment.weight} unit=" kg" />
         <StatCell label="Altura" value={assessment.height} unit=" cm" />
-        <StatCell label="% Gordura" value={assessment.body_fat_percentage} unit="%" />
-        <StatCell label="Massa magra" value={assessment.lean_mass_kg} unit=" kg" />
-        <StatCell label="Massa gorda" value={assessment.fat_mass_kg} unit=" kg" />
+        <StatCell label="Cintura" value={assessment.waist} unit=" cm" />
+        <StatCell label="Quadril" value={assessment.hips} unit=" cm" />
       </div>
 
       {/* Circunferências — só exibe se tiver algum valor */}

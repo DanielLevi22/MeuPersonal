@@ -17,21 +17,24 @@ interface HistoryEvent {
   subtitle?: string;
 }
 
-async function fetchStudentHistory(studentId: string, personalId: string): Promise<HistoryEvent[]> {
+async function fetchStudentHistory(
+  studentId: string,
+  specialistId: string
+): Promise<HistoryEvent[]> {
   const [assessmentsResult, dietPlansResult] = await Promise.all([
     supabase
       .from('physical_assessments')
-      .select('id, created_at, weight, body_fat_percentage')
+      .select('id, created_at, weight')
       .eq('student_id', studentId)
-      .eq('personal_id', personalId)
+      .eq('specialist_id', specialistId)
       .order('created_at', { ascending: false })
       .limit(20),
 
     supabase
-      .from('nutrition_plans')
+      .from('diet_plans')
       .select('id, created_at, name, status')
       .eq('student_id', studentId)
-      .eq('personal_id', personalId)
+      .eq('specialist_id', specialistId)
       .order('created_at', { ascending: false })
       .limit(20),
   ]);
@@ -41,7 +44,6 @@ async function fetchStudentHistory(studentId: string, personalId: string): Promi
   for (const a of assessmentsResult.data ?? []) {
     const parts: string[] = [];
     if (a.weight) parts.push(`${a.weight} kg`);
-    if (a.body_fat_percentage) parts.push(`${a.body_fat_percentage}% gordura`);
     events.push({
       id: `assessment-${a.id}`,
       type: 'assessment',
@@ -84,9 +86,9 @@ export default function StudentHistoryScreen() {
   const { students, fetchStudents, isLoading: studentsLoading } = useStudentStore();
   const { user } = useAuthStore();
 
-  const [student, setStudent] = useState<{ id: string; full_name: string } | null | undefined>(
-    null
-  );
+  const [student, setStudent] = useState<
+    import('../store/studentStore').Student | null | undefined
+  >(null);
   const [events, setEvents] = useState<HistoryEvent[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);

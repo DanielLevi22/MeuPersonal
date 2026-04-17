@@ -2,39 +2,37 @@ import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+async function getCallerSpecialist(request: NextRequest) {
+  const authorization = request.headers.get("authorization");
+  if (!authorization?.startsWith("Bearer ")) return null;
+
+  const token = authorization.replace("Bearer ", "");
+  const callerClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  );
+  const {
+    data: { user },
+  } = await callerClient.auth.getUser(token);
+  if (!user) return null;
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("account_type")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.account_type !== "specialist") return null;
+  return user;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the caller using their JWT
-    const authorization = request.headers.get("authorization");
-    if (!authorization?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = authorization.replace("Bearer ", "");
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-    const callerClient = createClient(supabaseUrl, anonKey);
-    const {
-      data: { user: caller },
-    } = await callerClient.auth.getUser(token);
-
-    if (!caller) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify caller is a professional
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("account_type")
-      .eq("id", caller.id)
-      .single();
-
-    if (profile?.account_type !== "specialist") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const caller = await getCallerSpecialist(request);
+    if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { fullName, email, password, phone } = body;
+    const { fullName, email, password } = body;
 
     if (!fullName || !email || !password) {
       return NextResponse.json(
@@ -43,16 +41,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create auth user using Admin SDK (no SQL function needed)
+    // Create auth user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: {
-        full_name: fullName,
-        account_type: "student",
-        phone: phone ?? null,
-      },
+      user_metadata: { full_name: fullName, account_type: "student" },
     });
 
     if (createError) {
@@ -65,45 +59,39 @@ export async function POST(request: NextRequest) {
 
     const studentId = newUser.user.id;
 
-    // Create profile (trigger may already do this, upsert to be safe)
+    // Upsert profile with account_status = 'invited' (Fluxo A)
     await supabaseAdmin.from("profiles").upsert(
       {
         id: studentId,
         email,
         full_name: fullName,
         account_type: "student",
-        account_status: "active",
-        phone: phone ?? null,
+        account_status: "invited",
       },
       { onConflict: "id" },
     );
 
-    // Create coaching relationships for each active service of the professional
+    // Fetch specialist's services
     const { data: services } = await supabaseAdmin
-      .from("professional_services")
-      .select("service_category")
-      .eq("user_id", caller.id)
-      .eq("is_active", true);
+      .from("specialist_services")
+      .select("service_type")
+      .eq("specialist_id", caller.id);
 
-    // Fallback to user_metadata when professional_services is empty
     const serviceList =
-      services && services.length > 0
-        ? services.map((s) => s.service_category)
-        : ((caller.user_metadata?.services as string[] | undefined) ?? ["personal_training"]);
+      services && services.length > 0 ? services.map((s) => s.service_type) : ["personal_training"];
 
-    if (serviceList.length > 0) {
-      const coachings = serviceList.map((service) => ({
-        client_id: studentId,
-        professional_id: caller.id,
-        service_type: service,
-        status: "active",
-      }));
+    // Create links in student_specialists
+    const links = serviceList.map((service_type) => ({
+      student_id: studentId,
+      specialist_id: caller.id,
+      service_type,
+      status: "active",
+    }));
 
-      await supabaseAdmin.from("coachings").upsert(coachings, {
-        onConflict: "client_id,professional_id,service_type",
-        ignoreDuplicates: true,
-      });
-    }
+    await supabaseAdmin.from("student_specialists").upsert(links, {
+      onConflict: "student_id,specialist_id,service_type",
+      ignoreDuplicates: true,
+    });
 
     return NextResponse.json({ success: true, student_id: studentId }, { status: 201 });
   } catch (error) {

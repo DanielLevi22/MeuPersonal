@@ -4,7 +4,10 @@ import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Assessment } from "@/app/api/students/[id]/assessments/route";
 
-export type AssessmentInput = Omit<Assessment, "id" | "created_at"> & { studentId: string };
+export type AssessmentInput = Omit<
+  Assessment,
+  "id" | "created_at" | "student_id" | "specialist_id"
+> & { studentId: string };
 
 export function useCreateAssessment() {
   const queryClient = useQueryClient();

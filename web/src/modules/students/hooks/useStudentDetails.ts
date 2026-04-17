@@ -5,12 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 
 export interface StudentProfile {
   id: string;
-  full_name: string;
+  full_name: string | null;
   email: string;
-  phone: string | null;
-  weight: number | null;
-  height: number | null;
-  notes: string | null;
+  avatar_url: string | null;
+  account_status: "active" | "inactive" | "invited";
 }
 
 export interface StudentMeasurements {
@@ -24,9 +22,17 @@ export interface StudentMeasurements {
   arm_left_relaxed: number | null;
   arm_right_contracted: number | null;
   arm_left_contracted: number | null;
-  thigh_proximal: number | null;
-  thigh_distal: number | null;
-  calf: number | null;
+  forearm_right: number | null;
+  forearm_left: number | null;
+  thigh_proximal_right: number | null;
+  thigh_proximal_left: number | null;
+  thigh_medial_right: number | null;
+  thigh_medial_left: number | null;
+  calf_right: number | null;
+  calf_left: number | null;
+  weight: number | null;
+  height: number | null;
+  notes: string | null;
 }
 
 export interface StudentDetails {
@@ -43,13 +49,16 @@ export function useStudentDetails(studentId: string | null) {
       const [profileResult, assessmentResult] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, full_name, email, phone, weight, height, notes")
+          .select("id, full_name, email, avatar_url, account_status")
           .eq("id", studentId)
           .single(),
         supabase
           .from("physical_assessments")
           .select(
-            "neck, shoulder, chest, waist, abdomen, hips, arm_right_relaxed, arm_left_relaxed, arm_right_contracted, arm_left_contracted, thigh_proximal, thigh_distal, calf",
+            "weight, height, notes, neck, shoulder, chest, waist, abdomen, hips, " +
+              "arm_right_relaxed, arm_left_relaxed, arm_right_contracted, arm_left_contracted, " +
+              "forearm_right, forearm_left, thigh_proximal_right, thigh_proximal_left, " +
+              "thigh_medial_right, thigh_medial_left, calf_right, calf_left",
           )
           .eq("student_id", studentId)
           .order("created_at", { ascending: false })

@@ -67,9 +67,6 @@ export function AssessmentModal({ studentId, onClose }: AssessmentModalProps) {
   // Composição corporal
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
-  const [bodyFat, setBodyFat] = useState("");
-  const [leanMass, setLeanMass] = useState("");
-  const [fatMass, setFatMass] = useState("");
   const [notes, setNotes] = useState("");
 
   // Circunferências e dobras como objetos
@@ -94,13 +91,8 @@ export function AssessmentModal({ studentId, onClose }: AssessmentModalProps) {
     try {
       await createAssessment.mutateAsync({
         studentId,
-        date: new Date().toISOString().split("T")[0],
         weight: toNum(weight),
         height: toNum(height),
-        body_fat_percentage: toNum(bodyFat),
-        lean_mass_kg: toNum(leanMass),
-        fat_mass_kg: toNum(fatMass),
-        bmi: null,
         notes: notes || null,
         neck: toNum(circumferences.neck ?? ""),
         shoulder: toNum(circumferences.shoulder ?? ""),
@@ -112,10 +104,14 @@ export function AssessmentModal({ studentId, onClose }: AssessmentModalProps) {
         arm_left_relaxed: toNum(circumferences.arm_left_relaxed ?? ""),
         arm_right_contracted: toNum(circumferences.arm_right_contracted ?? ""),
         arm_left_contracted: toNum(circumferences.arm_left_contracted ?? ""),
-        forearm: toNum(circumferences.forearm ?? ""),
-        thigh_proximal: toNum(circumferences.thigh_proximal ?? ""),
-        thigh_distal: toNum(circumferences.thigh_distal ?? ""),
-        calf: toNum(circumferences.calf ?? ""),
+        forearm_right: toNum(circumferences.forearm ?? ""),
+        forearm_left: null,
+        thigh_proximal_right: toNum(circumferences.thigh_proximal ?? ""),
+        thigh_proximal_left: null,
+        thigh_medial_right: toNum(circumferences.thigh_distal ?? ""),
+        thigh_medial_left: null,
+        calf_right: toNum(circumferences.calf ?? ""),
+        calf_left: null,
         skinfold_chest: toNum(skinfolds.skinfold_chest ?? ""),
         skinfold_abdominal: toNum(skinfolds.skinfold_abdominal ?? ""),
         skinfold_thigh: toNum(skinfolds.skinfold_thigh ?? ""),
@@ -178,39 +174,6 @@ export function AssessmentModal({ studentId, onClose }: AssessmentModalProps) {
                   placeholder="175"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                />
-              </FormField>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <FormField label="% Gordura" htmlFor="assess-bodyfat" optional>
-                <Input
-                  id="assess-bodyfat"
-                  type="number"
-                  step="0.1"
-                  placeholder="18.5"
-                  value={bodyFat}
-                  onChange={(e) => setBodyFat(e.target.value)}
-                />
-              </FormField>
-              <FormField label="Massa magra (kg)" htmlFor="assess-lean" optional>
-                <Input
-                  id="assess-lean"
-                  type="number"
-                  step="0.1"
-                  placeholder="60.0"
-                  value={leanMass}
-                  onChange={(e) => setLeanMass(e.target.value)}
-                />
-              </FormField>
-              <FormField label="Massa gorda (kg)" htmlFor="assess-fat" optional>
-                <Input
-                  id="assess-fat"
-                  type="number"
-                  step="0.1"
-                  placeholder="14.0"
-                  value={fatMass}
-                  onChange={(e) => setFatMass(e.target.value)}
                 />
               </FormField>
             </div>

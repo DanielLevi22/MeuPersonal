@@ -13,7 +13,7 @@ export default function StudentsPage() {
 
   const filteredStudents = students.filter(
     (student) =>
-      student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.full_name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 

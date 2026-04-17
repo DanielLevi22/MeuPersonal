@@ -3,7 +3,7 @@
 interface DietsFilterProps {
   selectedStudentId: string;
   onStudentChange: (id: string) => void;
-  students: { id: string; full_name: string }[];
+  students: { id: string; full_name: string | null }[];
 }
 
 export function DietsFilter({ selectedStudentId, onStudentChange, students }: DietsFilterProps) {
@@ -19,7 +19,7 @@ export function DietsFilter({ selectedStudentId, onStudentChange, students }: Di
           <option value="">Todos os alunos</option>
           {students.map((student) => (
             <option key={student.id} value={student.id}>
-              {student.full_name}
+              {student.full_name ?? "Aluno"}
             </option>
           ))}
         </select>

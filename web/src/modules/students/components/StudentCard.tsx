@@ -71,21 +71,21 @@ export function StudentCard({ student }: StudentCardProps) {
         <Link href={`/dashboard/students/${student.id}`} className="block">
           <div className="flex items-start mb-4">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg group-hover:scale-110 transition-transform">
-              {student.full_name.charAt(0).toUpperCase()}
+              {(student.full_name ?? "?").charAt(0).toUpperCase()}
             </div>
             <div
               className={`ml-auto px-2 py-1 rounded-full text-xs font-medium border ${
-                student.status === "pending"
+                student.account_status === "invited"
                   ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
                   : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
               }`}
             >
-              {student.status === "pending" ? "Pendente" : "Ativo"}
+              {student.account_status === "invited" ? "Pendente" : "Ativo"}
             </div>
           </div>
 
           <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors pr-6">
-            {student.full_name}
+            {student.full_name ?? "Aluno sem nome"}
           </h3>
           <p className="text-sm text-muted-foreground mb-4 truncate">
             {student.email || "Sem email"}
@@ -119,7 +119,7 @@ export function StudentCard({ student }: StudentCardProps) {
       </div>
 
       <DeleteStudentModal
-        student={showDeleteModal ? student : null}
+        student={showDeleteModal ? { id: student.id, full_name: student.full_name ?? "" } : null}
         onClose={() => setShowDeleteModal(false)}
       />
     </>
