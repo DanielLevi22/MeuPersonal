@@ -1,0 +1,400 @@
+# LGPD — Obrigações e Requisitos do MeuPersonal
+
+> Documento operacional. Traduz a Lei Geral de Proteção de Dados (Lei nº 13.709/2018) em obrigações concretas para o MeuPersonal.
+> Toda decisão de schema, feature e arquitetura que envolva dados pessoais deve ser verificada contra este documento.
+
+---
+
+## 1. Papéis e responsabilidades
+
+### MeuPersonal — Controlador (Art. 5°, VI)
+
+Daniel é o **controlador**: decide quais dados são coletados, por quê, como e por quanto tempo. É quem responde perante a ANPD em caso de infração.
+
+Responsabilidades:
+- Definir a finalidade de cada dado coletado
+- Garantir que o sistema respeite os direitos dos titulares
+- Manter registros de tratamento de dados
+- Notificar titulares e ANPD em caso de incidente de segurança
+
+### Supabase — Operador (Art. 5°, VII)
+
+Supabase é o **operador**: executa o armazenamento e processamento conforme configurado pelo controlador. Não decide sobre finalidade ou base legal.
+
+Implicação prática: RLS mal configurado ou queries sem controle de acesso são **falha do controlador**, não do operador. A responsabilidade é de quem modelou o banco.
+
+### Especialistas e alunos — Titulares (Art. 5°, V)
+
+Os usuários do sistema são os titulares dos dados. Têm os seguintes direitos que **o sistema precisa suportar**:
+
+| Direito | O que o sistema precisa ter |
+|---------|----------------------------|
+| Acesso | Usuário consegue ver todos os seus dados |
+| Correção | Usuário consegue editar nome, e-mail, dados pessoais |
+| Exclusão | Usuário consegue solicitar remoção da conta e dados |
+| Portabilidade | Usuário consegue exportar seus dados em formato legível |
+| Revogação do consentimento | Usuário consegue revogar permissões específicas |
+| Informação | Usuário sabe quais dados são coletados e por quê |
+
+---
+
+## 2. Mapa de dados — o que coletamos e por quê
+
+> **Última revisão completa:** módulos Auth e Students revisados via `/lgpd-check`. Ver seção 10 para status detalhado por módulo.
+
+### 2.1 Dados pessoais comuns (Art. 5°, I)
+
+Qualquer dado que identifica ou pode identificar uma pessoa.
+
+| Dado | Tabela | Base legal | Finalidade |
+|------|--------|------------|------------|
+| Nome completo | `profiles.full_name` | Execução de contrato | Identificação do usuário no sistema |
+| E-mail | `profiles.email` | Execução de contrato | Autenticação e comunicação |
+| Foto de perfil | `profiles.avatar_url` | Consentimento | Personalização da interface |
+| Tipo de conta | `profiles.account_type` | Execução de contrato | Controle de acesso e fluxo de uso |
+| Status da conta | `profiles.account_status` | Execução de contrato | Gestão de ciclo de vida do usuário |
+| Tipo de serviço | `specialist_services.service_type` | Execução de contrato | Definir quais funcionalidades o especialista acessa |
+
+### 2.2 Dados pessoais sensíveis (Art. 5°, II)
+
+Dados referentes à saúde exigem **base legal específica** e proteção reforçada. O MeuPersonal trata dados de saúde — isso é o núcleo do produto.
+
+| Dado | Tabela | Base legal | Finalidade |
+|------|--------|------------|------------|
+| Peso, altura | `physical_assessments` | Tutela da saúde (Art. 11, II, f) + Consentimento | Avaliação física, cálculo de composição corporal |
+| % gordura, massa muscular | `physical_assessments` | Tutela da saúde + Consentimento | Acompanhamento de evolução física |
+| Dobras cutâneas (7 pontos) | `physical_assessments` | Tutela da saúde + Consentimento | Protocolo Jackson-Pollock para composição corporal |
+| Circunferências corporais | `physical_assessments` | Tutela da saúde + Consentimento | Acompanhamento de medidas |
+| Histórico de saúde (anamnese) | `student_anamnesis.responses` | Consentimento explícito (Art. 11, I) | Informar o especialista sobre limitações, lesões, medicamentos |
+| Dados de treino executado | `workout_sessions` | Execução de contrato | Acompanhamento de desempenho |
+| Registro alimentar | `diet_logs` | Tutela da saúde + Consentimento | Acompanhamento nutricional |
+
+| Registro de consentimento | `student_consents` | Consentimento explícito (Art. 11, I) | Provar que o aluno autorizou coleta de dados de saúde |
+
+**Atenção:** O tratamento de dados sensíveis sem base legal adequada é considerado **infração grave** pela ANPD. A base de tutela da saúde exige que o tratamento seja realizado por profissional da área ou sob sua supervisão — o que se aplica ao contexto de personal trainers e nutricionistas usando o sistema.
+
+### 2.3 O que NÃO coletamos (por princípio da necessidade)
+
+Dados que foram explicitamente rejeitados do schema por violar o princípio da necessidade:
+
+- `birth_date` em `profiles` — não pertence à identidade de conta; se necessário para cálculo de tmb, fica em `physical_assessments` ou `student_anamnesis`
+- `gender` em `profiles` — mesmo motivo
+- `phone` — nunca utilizado funcionalmente
+- `cref` / `crn` — credenciais removidas do fluxo de cadastro
+- `is_super_admin` — redundante com `account_type`
+
+---
+
+## 3. Bases legais aplicadas (Art. 7° e Art. 11)
+
+Para cada tipo de tratamento, deve existir uma base legal documentada. Não existe "uso genérico" — cada finalidade precisa de justificativa.
+
+| Tratamento | Base legal | Artigo |
+|------------|------------|--------|
+| Criar conta e autenticar | Execução de contrato | Art. 7°, V |
+| Armazenar dados de perfil | Execução de contrato | Art. 7°, V |
+| Especialista criar conta do aluno | Execução de contrato + Consentimento posterior | Art. 7°, V + I |
+| Avaliações físicas | Tutela da saúde + Consentimento | Art. 11, II, f + I |
+| Anamnese de saúde | Consentimento explícito | Art. 11, I |
+| Prescrição de treinos | Execução de contrato | Art. 7°, V |
+| Prescrição de dietas | Tutela da saúde + Execução de contrato | Art. 11, II, f |
+| Logs de acesso ao sistema | Legítimo interesse (segurança) | Art. 7°, IX |
+| Dados de gamificação | Execução de contrato | Art. 7°, V |
+| Histórico de mensagens | Execução de contrato | Art. 7°, V |
+
+**Regra do consentimento (Art. 8°):** Quando usamos consentimento como base, ele precisa ser:
+- **Livre**: o aluno não pode ser forçado a aceitar para usar o serviço principal
+- **Informado**: explicar em linguagem simples o que será coletado e por quê
+- **Inequívoco**: ação explícita (checkbox, botão confirmar) — nunca pré-marcado
+- **Específico**: um consentimento por finalidade, não genérico
+- **Demonstrável**: guardar registro de quando e como o consentimento foi dado
+- **Revogável**: o usuário consegue revogar a qualquer momento
+
+---
+
+## 4. Os 10 princípios traduzidos em requisitos técnicos (Art. 6°)
+
+### 4.1 Finalidade (Art. 6°, I)
+> Dados usados apenas para o propósito declarado no momento da coleta.
+
+**Requisitos:**
+- [ ] Cada campo de formulário tem finalidade documentada
+- [ ] Dados de saúde do aluno NÃO podem ser usados para fins de marketing
+- [ ] Dados de treino NÃO podem ser compartilhados com terceiros sem nova base legal
+- [ ] Não usar e-mail coletado para autenticação em campanhas sem consentimento separado
+
+### 4.2 Adequação (Art. 6°, II)
+> O uso real dos dados precisa combinar com o que foi informado.
+
+**Requisitos:**
+- [ ] O que a política de privacidade diz precisa refletir o que o código faz
+- [ ] Se mudar a finalidade de uso de um dado, exige nova comunicação ao titular
+
+### 4.3 Necessidade (Art. 6°, III)
+> Coletar o mínimo necessário. Critério: "este dado é essencial para o serviço funcionar?"
+
+**Requisitos:**
+- [ ] Formulários de cadastro: apenas nome e e-mail são obrigatórios
+- [ ] Foto de perfil é opcional — não bloquear uso sem ela
+- [ ] Anamnese é opcional no onboarding — o sistema funciona sem ela
+- [ ] Não adicionar campos a formulários sem justificativa de necessidade
+- [ ] Antes de adicionar qualquer novo campo ao schema, perguntar: "o serviço deixa de funcionar sem isso?"
+
+### 4.4 Livre Acesso (Art. 6°, IV)
+> O titular tem direito de saber como seus dados estão sendo usados.
+
+**Requisitos:**
+- [ ] Tela "Meus Dados" acessível no app e no web (mobile + web)
+- [ ] Usuário consegue ver todos os dados armazenados sobre ele
+- [ ] Usuário consegue exportar seus dados (treinos, avaliações, anamnese)
+- [ ] Mostrar com clareza: quais dados, para qual finalidade, por quanto tempo
+
+### 4.5 Qualidade dos Dados (Art. 6°, V)
+> Dados precisam estar corretos e o titular pode corrigi-los.
+
+**Requisitos:**
+- [ ] Tela de perfil com campos editáveis (nome, foto)
+- [ ] Aluno pode atualizar anamnese quando as informações mudarem
+- [ ] Especialista pode corrigir avaliação física com erro (mas não deletar histórico)
+
+### 4.6 Transparência (Art. 6°, VI)
+> Informações claras, precisas e facilmente acessíveis sobre o tratamento.
+
+**Requisitos:**
+- [ ] Política de Privacidade em linguagem acessível — não juridiquês
+- [ ] Explicar na tela de cadastro quais dados são coletados e por quê
+- [ ] No onboarding do aluno: informar que dados de saúde serão coletados e quem terá acesso
+- [ ] Não usar frases genéricas como "para melhorar sua experiência" — ser específico
+
+### 4.7 Segurança (Art. 6°, VII)
+> Medidas técnicas para proteger contra acesso não autorizado.
+
+**Requisitos obrigatórios:**
+- [ ] **RLS ativo em todas as tabelas** — não existe tabela sem Row Level Security
+- [ ] Supabase Auth para autenticação — senhas nunca armazenadas em texto claro
+- [ ] HTTPS em todos os endpoints (garantido pelo Supabase + Vercel)
+- [ ] Especialista só acessa dados de alunos com vínculo `active` em `student_specialists`
+- [ ] Aluno só acessa seus próprios dados
+- [ ] Admin não acessa dados de saúde de alunos sem necessidade
+- [ ] Tokens de sessão não devem aparecer em logs
+
+**Requisitos recomendados (antes do lançamento):**
+- [ ] MFA disponível para especialistas (Supabase suporta nativamente)
+- [ ] Rate limiting nas APIs de autenticação
+- [ ] Alertas de acesso suspeito (muitas tentativas de login)
+
+### 4.8 Prevenção (Art. 6°, VIII)
+> Adotar medidas para prevenir danos antes que aconteçam.
+
+**Requisitos:**
+- [ ] Nunca logar dados sensíveis em texto claro (peso, gordura, respostas de anamnese)
+- [ ] Variáveis de ambiente nunca hardcoded no código
+- [ ] Seeds de desenvolvimento não podem usar dados reais de usuários
+- [ ] Ambientes dev/staging separados de produção (ver CLAUDE.md — pendente)
+- [ ] Revisão de segurança antes de cada release (npm audit)
+
+### 4.9 Não Discriminação (Art. 6°, IX)
+> Proibido tratar dados para fins discriminatórios.
+
+**Requisitos:**
+- [ ] Dados de saúde do aluno (peso, composição corporal) não podem ser usados para filtros de acesso ou precificação
+- [ ] Se o módulo de IA for implementado no futuro, garantir que não use dados sensíveis para classificações discriminatórias
+
+### 4.10 Responsabilização e Prestação de Contas (Art. 6°, X)
+> Não basta fazer o certo — é preciso provar que está fazendo o certo.
+
+**Requisitos:**
+- [ ] Manter este documento atualizado
+- [ ] Logs de acesso a dados sensíveis preservados (não expostos, mas existentes para auditoria)
+- [ ] Documentar decisões de schema que envolvam dados pessoais (já fazemos em `docs/schema/`)
+- [ ] Política de Privacidade publicada antes do lançamento
+- [ ] Definir responsável pelo contato com titulares (e-mail de privacidade/DPO)
+
+---
+
+## 5. Direitos dos titulares — como o sistema deve suportar
+
+A LGPD garante direitos aos titulares que o sistema precisa implementar. Abaixo o mapeamento de onde cada direito se materializa no produto:
+
+| Direito | Onde implementar | Status |
+|---------|-----------------|--------|
+| Acesso aos dados | Tela "Meus Dados" (mobile + web) | Pendente |
+| Correção | Tela de perfil editável | Parcialmente implementado |
+| Exclusão | Fluxo "Excluir minha conta" com confirmação | Pendente |
+| Portabilidade | Exportar dados em JSON/PDF | Pendente |
+| Revogação do consentimento | Tela de configurações de privacidade | Pendente |
+| Oposição ao tratamento | Configurações granulares de privacidade | Pendente |
+| Informação | Política de Privacidade + onboarding | Pendente |
+| Notificação de incidentes | Processo de comunicação definido | Pendente |
+
+### Exclusão vs. Soft Delete
+
+A LGPD distingue **eliminar** de **esconder**:
+
+- **Soft delete** (`account_status = 'inactive'`): dado permanece no banco — **isso não é eliminação** para fins da LGPD
+- **Eliminação real**: dado apagado ou anonimizado irreversivelmente
+
+**Posição do MeuPersonal:**
+
+Quando um usuário solicita exclusão da conta:
+1. Dados de identificação (`email`, `full_name`, `avatar_url`) devem ser eliminados ou anonimizados
+2. Dados de saúde (`physical_assessments`, `student_anamnesis`) devem ser eliminados
+3. Histórico de treinos e dietas: decisão pendente — pode ser anonimizado para fins estatísticos (sem nome, sem e-mail, sem vínculo)
+4. Dados financeiros e fiscais: podem ser mantidos por obrigação legal (prazo legal de guarda)
+
+> Esta decisão precisa ser aprovada antes de implementar o fluxo de exclusão de conta.
+
+---
+
+## 6. Dados sensíveis de saúde — proteção reforçada (Art. 11)
+
+O MeuPersonal é, na prática, uma plataforma de saúde. Dados de avaliação física e anamnese são **dados sensíveis** pela LGPD. Isso implica:
+
+**No banco de dados:**
+- RLS para dados de saúde deve ser mais restritivo: apenas o próprio aluno e especialistas com vínculo `active` acessam
+- Especialistas desvinculados perdem acesso via RLS (não precisamos deletar os dados, o vínculo inativo já bloqueia)
+- Especialistas diferentes não podem ver dados uns dos outros sobre o mesmo aluno
+
+**No código:**
+- Queries que retornam dados de saúde devem incluir verificação de vínculo ativo
+- Nunca retornar dados de saúde em listagens genéricas
+- Endpoints de saúde devem ter logs de acesso (quem acessou, quando)
+
+**No produto:**
+- Consentimento explícito antes de coletar a primeira avaliação física
+- Consentimento explícito antes de coletar a anamnese
+- O aluno deve conseguir ver quais especialistas têm acesso aos seus dados de saúde
+
+---
+
+## 7. Retenção de dados — por quanto tempo guardar
+
+A LGPD exige que dados sejam eliminados quando deixam de ser necessários (Art. 15).
+
+| Dado | Tempo de retenção | Justificativa |
+|------|------------------|---------------|
+| Dados de perfil | Enquanto a conta estiver ativa | Necessário para o serviço |
+| Avaliações físicas | Enquanto existir vínculo com especialista | Histórico clínico necessário ao especialista |
+| Anamnese | Enquanto a conta estiver ativa | Auto-relato do aluno |
+| Histórico de treinos | Enquanto a conta estiver ativa | Histórico de evolução |
+| Histórico de dietas | Enquanto a conta estiver ativa | Histórico de evolução |
+| Logs de autenticação | 90 dias | Segurança — detecção de acessos suspeitos |
+| Dados após exclusão de conta | 0 dias (eliminar ou anonimizar) | Princípio da necessidade |
+
+> Política de retenção detalhada deve ser definida e publicada na Política de Privacidade antes do lançamento.
+
+---
+
+## 8. Sanções — o que pode acontecer se descumprir (Art. 52)
+
+A ANPD pode aplicar as seguintes sanções, em ordem crescente de gravidade:
+
+1. **Advertência** — com prazo para correção
+2. **Multa simples** — até 2% do faturamento, limitado a R$ 50 milhões por infração
+3. **Multa diária** — enquanto a irregularidade persistir
+4. **Publicização da infração** — dano à reputação
+5. **Bloqueio dos dados** — operação paralisada até correção
+6. **Suspensão do banco de dados** — até 6 meses
+7. **Proibição de atividade** — medida extrema
+
+**O que reduz a sanção:** boa-fé, resposta rápida ao incidente, cooperação com a ANPD, ter documentação e processo.
+
+**O que agrava:** reincidência, omissão, não ter DPO/canal de contato, não avisar os titulares.
+
+---
+
+## 9. Checklist pré-lançamento
+
+Itens obrigatórios antes de abrir para o público:
+
+**Legal:**
+- [ ] Política de Privacidade publicada e acessível sem login
+- [ ] Termos de Uso publicados
+- [ ] E-mail de contato para titulares exercerem seus direitos (ex: privacidade@meupersonal.com.br)
+- [ ] Consentimento explícito para dados de saúde implementado no onboarding do aluno
+
+**Técnico:**
+- [ ] RLS ativo e testado em todas as tabelas com dados pessoais
+- [ ] Nenhum dado sensível em logs de aplicação
+- [ ] Fluxo de exclusão de conta implementado (eliminar ou anonimizar)
+- [ ] Tela "Meus Dados" disponível no app e no web
+- [ ] Campos editáveis de perfil funcionando
+
+**Processo:**
+- [ ] Processo definido para responder a solicitações de titulares (prazo: 15 dias úteis conforme LGPD)
+- [ ] Processo definido para notificar titulares e ANPD em caso de incidente (prazo: 72 horas)
+- [ ] Ambientes de dev/staging separados de produção (dados reais apenas em produção)
+
+---
+
+## 10. Impacto no schema — status por módulo
+
+### Módulo Auth ✅ Revisado
+
+| Decisão | Princípio atendido |
+|---------|-------------------|
+| `birth_date` e `gender` fora de `profiles` | Necessidade |
+| `is_super_admin` removido | Necessidade |
+| `account_status = 'inactive'` em vez de DELETE | Preservação de integridade referencial |
+| `avatar_url` opcional | Necessidade — personalização, não essencial |
+
+**Decisões tomadas nesta revisão:**
+
+| Decisão | Impacto |
+|---------|---------|
+| Fluxo de exclusão: anonimizar `profiles` (não deletar) | Preserva integridade referencial com dados de outros módulos |
+| Contas `invited` sem ativação: anonimizar após 90 dias | Princípio da Necessidade — dado sem finalidade ativa |
+| RLS `profiles`: usuário vê apenas próprio registro | Segurança — implementar na migration |
+
+---
+
+### Módulo Students ⚠️ Revisado — nova tabela necessária
+
+| Decisão já tomada | Princípio atendido |
+|---------|-------------------|
+| `specialist_id SET NULL` em `physical_assessments` | Preservação do histórico do aluno |
+| `student_anamnesis UNIQUE(student_id)` | Evitar duplicação de dados sensíveis |
+| RLS bloqueia especialistas desvinculados | Segurança |
+| `student_link_codes expires_at` | Segurança — tempo de vida limitado |
+| `physical_assessments` imutável (nunca UPDATE) | Qualidade dos dados — histórico preservado |
+
+**Decisões tomadas nesta revisão:**
+
+| Decisão | Impacto |
+|---------|---------|
+| Nova tabela `student_consents` | Rastreia consentimento explícito para dados de saúde — obrigatório Art. 11, I |
+| Consentimento antes da primeira avaliação/anamnese | Fluxo de onboarding precisa de tela de consentimento |
+| Revogação de consentimento: bloqueia novos registros via RLS, mantém existentes | Princípio da revogabilidade |
+| Exclusão de conta do aluno: deletar `physical_assessments` e `student_anamnesis` | Eliminação real — soft delete não é suficiente aqui |
+| Conteúdo de `student_anamnesis.responses` nunca logado em texto claro | Prevenção |
+
+---
+
+### Módulo Workouts ✅ Revisado
+
+| Decisão tomada | Princípio atendido |
+|---------------|-------------------|
+| `workout_sessions.workout_id SET NULL` (não RESTRICT) | Dado do aluno preservado mesmo após deleção do treino pelo specialist |
+| `workout_session_exercises.workout_exercise_id SET NULL` | Mesma garantia — sets_data jamais deletado por cascade do specialist |
+| RLS bloqueia INSERT de sessões por specialists | Specialist não pode inserir histórico falso em nome do aluno |
+| RLS bloqueia specialist após desvínculo | Specialist desvinculado perde acesso ao histórico de sessões do aluno |
+| DELETE proibido via RLS em sessions | Histórico é imutável — só deletado quando o próprio aluno exclui a conta |
+| CASCADE DELETE em student_id de workout_sessions | Exclusão de conta do aluno elimina todo o histórico de sessões |
+| Dados de performance não são dados sensíveis (Art. 5°, II) | Base legal: execução de contrato (Art. 7°, V) — sem necessidade de consentimento explícito |
+
+---
+
+### Módulos pendentes de revisão LGPD
+
+| Módulo | Status LGPD |
+|--------|-------------|
+| **Nutrition** | ⏳ Aguardando discussão do schema |
+| **Gamification** | ⏳ Aguardando discussão do schema |
+| **Chat** | ⏳ Aguardando discussão do schema |
+| **System** | ⏳ Aguardando discussão do schema |
+
+> Regra: cada módulo passa por `/lgpd-check` antes de ser marcado como ✅ Aprovado.
+
+---
+
+*Fonte: Lei nº 13.709/2018 (LGPD). Material de referência: Faculdade de Tecnologia Rocketseat — Carlos Fábio Andrade.*

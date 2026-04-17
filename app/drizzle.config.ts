@@ -1,8 +1,8 @@
 import type { Config } from 'drizzle-kit';
 
 export default {
-  schema: './drizzle/schema/index.ts',
-  out: './drizzle/migrations',
+  schema: '../shared/src/database/schema/index.ts',
+  out: '../supabase/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.EXPO_PUBLIC_DATABASE_URL as string,
