@@ -75,6 +75,30 @@ export const createAuthService = (supabase: SupabaseClient) => ({
     if (error) return null;
     return data as ProfileWithServices;
   },
+
+  // Usado no web — verifica account_status antes de confirmar login
+  signInWithStatusCheck: async (
+    email: string,
+    password: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_status")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile?.account_status === "inactive") {
+        await supabase.auth.signOut();
+        return { success: false, error: "account_inactive" };
+      }
+    }
+
+    return { success: true };
+  },
 });
 
 export type AuthService = ReturnType<typeof createAuthService>;
