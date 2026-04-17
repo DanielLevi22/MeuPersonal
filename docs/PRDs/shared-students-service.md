@@ -1,7 +1,7 @@
 # PRD: shared-students-service
 
 **Data de criação:** 2026-04-17
-**Status:** approved
+**Status:** done
 **Branch:** feature/shared-students-service
 **Autor:** Daniel Levi
 
@@ -82,7 +82,7 @@ O cliente Supabase é diferente no mobile (JS client) e no web server-side (serv
 
 ## Checklist de done
 
-- [ ] Código funciona e passou em lint + typecheck + testes
-- [ ] PR mergeado em `development`
-- [ ] `docs/features/shared-students-service.md` criado ou atualizado
-- [ ] `docs/STATUS.md` atualizado
+- [x] Código funciona e passou em lint + typecheck + testes
+- [x] PR mergeado em `development`
+- [x] `docs/features/shared-students-service.md` criado ou atualizado
+- [x] `docs/STATUS.md` atualizado
