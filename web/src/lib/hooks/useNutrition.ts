@@ -66,11 +66,7 @@ export function useDietPlans(studentId?: string) {
 
       // Check permissions
       const ability = defineAbilitiesFor({
-        accountType: currentUser.role as
-          | "admin"
-          | "professional"
-          | "managed_student"
-          | "autonomous_student",
+        accountType: currentUser.role as "admin" | "specialist" | "student" | "member",
       });
 
       if (ability.cannot("read", "Diet")) {
@@ -87,7 +83,7 @@ export function useDietPlans(studentId?: string) {
 
       if (studentId) {
         query = query.eq("student_id", studentId);
-      } else if (currentUser.role === "professional") {
+      } else if (currentUser.role === "specialist") {
         query = query.eq("personal_id", currentUser.id);
       }
 
@@ -179,11 +175,7 @@ export function useCreateDietPlan() {
     ) => {
       if (userRole) {
         const ability = defineAbilitiesFor({
-          accountType: userRole as
-            | "admin"
-            | "professional"
-            | "managed_student"
-            | "autonomous_student",
+          accountType: userRole as "admin" | "specialist" | "student" | "member",
         });
         if (ability.cannot("create", "Diet")) {
           throw new Error("Você não tem permissão para criar dietas");

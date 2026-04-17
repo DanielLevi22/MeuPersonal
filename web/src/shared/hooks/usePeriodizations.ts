@@ -70,7 +70,7 @@ export function usePeriodizations() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (accountType === "professional") {
+      if (accountType === "specialist") {
         query = query.eq("professional_id", userId);
       } else {
         query = query.eq("student_id", userId);

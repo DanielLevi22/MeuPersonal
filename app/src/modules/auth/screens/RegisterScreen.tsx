@@ -53,7 +53,7 @@ export function RegisterScreen() {
 
     setLoading(true);
     try {
-      const { data, error } = await authService.signUpProfessional({
+      const { data, error } = await authService.signUpSpecialist({
         email: email.trim().toLowerCase(),
         password,
         full_name: fullName.trim(),

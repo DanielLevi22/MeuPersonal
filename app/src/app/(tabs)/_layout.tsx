@@ -14,10 +14,7 @@ export default function TabLayout() {
   // If accountType is null (loading), default to student to avoid flashing restricted tabs.
   // explicitly include isMasquerading to ensure tabs show immediately
   const isStudent =
-    !accountType ||
-    accountType === 'managed_student' ||
-    accountType === 'autonomous_student' ||
-    isMasquerading;
+    !accountType || accountType === 'student' || accountType === 'member' || isMasquerading;
 
   return (
     <>
@@ -49,7 +46,7 @@ export default function TabLayout() {
           options={{
             title: 'Nutrição',
             href:
-              isStudent || (accountType === 'professional' && abilities?.can('manage', 'Diet'))
+              isStudent || (accountType === 'specialist' && abilities?.can('manage', 'Diet'))
                 ? '/nutrition'
                 : null,
           }}
@@ -110,7 +107,7 @@ export default function TabLayout() {
           options={{
             title: 'Alunos',
             href:
-              accountType === 'professional' && abilities?.can('manage', 'Workout')
+              accountType === 'specialist' && abilities?.can('manage', 'Workout')
                 ? '/students'
                 : null,
           }}

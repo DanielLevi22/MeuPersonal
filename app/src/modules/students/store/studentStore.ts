@@ -409,7 +409,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         .from('profiles')
         .delete()
         .eq('id', inviteId)
-        .eq('account_type', 'managed_student'); // Safety check
+        .eq('account_type', 'student'); // Safety check
 
       if (error) throw error;
 

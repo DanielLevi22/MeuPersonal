@@ -44,11 +44,9 @@ export default function PhaseDetailsScreen() {
   const { user, accountType } = useAuthStore();
   const pathname = usePathname();
   const isStudentView =
-    pathname.includes('/students/') ||
-    accountType === 'managed_student' ||
-    accountType === 'autonomous_student';
+    pathname.includes('/students/') || accountType === 'student' || accountType === 'member';
   const isProfessional =
-    (accountType as string) === 'personal' || (accountType as string) === 'professional';
+    (accountType as string) === 'personal' || (accountType as string) === 'specialist';
 
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
@@ -546,7 +544,7 @@ export default function PhaseDetailsScreen() {
                       const proceedToWorkout = () => {
                         const isProfessional =
                           (accountType as string) === 'personal' ||
-                          (accountType as string) === 'professional';
+                          (accountType as string) === 'specialist';
                         const path = isProfessional
                           ? '/(tabs)/workouts/details/[id]'
                           : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
@@ -593,7 +591,7 @@ export default function PhaseDetailsScreen() {
                         const proceedToWorkout = () => {
                           const isProfessional =
                             (accountType as string) === 'personal' ||
-                            (accountType as string) === 'professional';
+                            (accountType as string) === 'specialist';
                           const path = isProfessional
                             ? '/(tabs)/workouts/details/[id]'
                             : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
@@ -721,7 +719,7 @@ export default function PhaseDetailsScreen() {
               const proceedToWorkout = () => {
                 const isProfessional =
                   (accountType as string) === 'personal' ||
-                  (accountType as string) === 'professional';
+                  (accountType as string) === 'specialist';
                 const path = isProfessional
                   ? '/(tabs)/workouts/details/[id]'
                   : isStudentView

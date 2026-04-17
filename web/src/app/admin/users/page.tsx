@@ -208,9 +208,9 @@ export default function UsersPage() {
             >
               <option value="all">Todos os Tipos</option>
               <option value="admin">Admin</option>
-              <option value="professional">Profissional</option>
-              <option value="managed_student">Aluno (Gerenciado)</option>
-              <option value="autonomous_student">Aluno (Autônomo)</option>
+              <option value="specialist">Profissional</option>
+              <option value="student">Aluno (Gerenciado)</option>
+              <option value="member">Aluno (Autônomo)</option>
             </select>
           </div>
         </div>
@@ -298,8 +298,8 @@ export default function UsersPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {(user.account_status === "pending" ||
-                        (user.account_type === "professional" && !user.account_status)) && (
+                      {(user.account_status === "invited" ||
+                        (user.account_type === "specialist" && !user.account_status)) && (
                         <button
                           type="button"
                           onClick={(e) => {

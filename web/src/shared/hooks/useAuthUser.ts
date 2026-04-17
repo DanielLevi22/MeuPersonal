@@ -31,7 +31,7 @@ export function useAuthUser() {
 
       let services: string[] = [];
 
-      if (profile.account_type === "professional") {
+      if (profile.account_type === "specialist") {
         const { data: servicesData } = await supabase
           .from("professional_services")
           .select("service_category")

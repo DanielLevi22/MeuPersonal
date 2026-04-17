@@ -39,7 +39,7 @@ export default function RoleSelectionScreen() {
       await initializeSession(session);
 
       // Navigate based on role
-      if (selectedRole === 'professional') {
+      if (selectedRole === 'specialist') {
         router.replace('/(professional)' as never);
       } else {
         router.push('/onboarding/health-connect' as never);
@@ -107,14 +107,14 @@ export default function RoleSelectionScreen() {
 
         <View className="flex-1">
           <RoleCard
-            type="professional"
+            type="specialist"
             title="Sou Profissional"
             description="Personal Trainer gerenciando alunos e treinos."
             icon="fitness"
           />
 
           <RoleCard
-            type="autonomous_student"
+            type="member"
             title="Sou Aluno Autônomo"
             description="Quero treinar e acompanhar meu progresso sozinho."
             icon="person"

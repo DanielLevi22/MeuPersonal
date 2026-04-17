@@ -46,13 +46,13 @@ export default function AdminDashboard() {
       const { count: totalProfessionals } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("account_type", "professional");
+        .eq("account_type", "specialist");
 
       // Get students count (both types)
       const { count: totalStudents } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .in("account_type", ["managed_student", "autonomous_student"]);
+        .in("account_type", ["student", "member"]);
 
       // Get recent users
       const { data: recentUsers } = await supabase

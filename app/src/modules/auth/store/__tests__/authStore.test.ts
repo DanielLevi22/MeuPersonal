@@ -88,11 +88,11 @@ describe('authStore', () => {
   it('should manage student view (masquerade)', async () => {
     const mockStudent = { id: 's1', full_name: 'John Doe', email: 'john@doe.com' };
     // biome-ignore lint/suspicious/noExplicitAny: Mocking user shape
-    const mockState = { user: { id: 'p1' } as any, accountType: 'professional' as const };
+    const mockState = { user: { id: 'p1' } as any, accountType: 'specialist' as const };
     useAuthStore.setState(mockState);
 
     (getUserContextJWT as jest.Mock).mockResolvedValueOnce({
-      accountType: 'managed_student',
+      accountType: 'student',
       accountStatus: 'active',
     });
 

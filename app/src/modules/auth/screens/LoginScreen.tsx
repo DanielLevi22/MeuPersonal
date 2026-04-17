@@ -35,7 +35,7 @@ export function LoginScreen() {
           .eq('id', user.id)
           .single();
 
-        if (profile?.account_status === 'pending') {
+        if (profile?.account_status === 'invited') {
           router.replace('/(auth)/pending-approval' as never);
           setLoading(false);
           return;

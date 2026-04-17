@@ -15,14 +15,14 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   accountType: AccountType | null;
-  accountStatus: 'pending' | 'active' | 'rejected' | 'suspended' | null;
+  accountStatus: 'active' | 'inactive' | 'invited' | null;
   abilities: AppAbility | null;
   isLoading: boolean;
 
   // Masquerade Mode
   originalUser: User | null;
   originalAccountType: AccountType | null;
-  originalAccountStatus: 'pending' | 'active' | 'rejected' | 'suspended' | null;
+  originalAccountStatus: 'active' | 'inactive' | 'invited' | null;
   originalAbilities: AppAbility | null;
   isMasquerading: boolean;
   enterStudentView: (student: { id: string; email: string; full_name: string }) => Promise<void>;
@@ -103,10 +103,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           email: student.email,
           user_metadata: { ...state.user?.user_metadata, full_name: student.full_name },
         } as User,
-        accountType: 'managed_student', // Safe default
+        accountType: 'student',
         abilities: defineAbilitiesFor({
-          accountType: 'managed_student',
-          isSuperAdmin: false,
+          accountType: 'student',
           accountStatus: 'active',
         }),
       });
@@ -134,7 +133,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       state.originalAbilities ||
       defineAbilitiesFor({
         accountType: state.originalAccountType as AccountType,
-        isSuperAdmin: false,
         accountStatus: restoredAccountStatus,
       });
 

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       .eq("id", caller.id)
       .single();
 
-    if (profile?.account_type !== "professional") {
+    if (profile?.account_type !== "specialist") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
-        account_type: "managed_student",
+        account_type: "student",
         phone: phone ?? null,
       },
     });
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         id: studentId,
         email,
         full_name: fullName,
-        account_type: "managed_student",
+        account_type: "student",
         account_status: "active",
         phone: phone ?? null,
       },

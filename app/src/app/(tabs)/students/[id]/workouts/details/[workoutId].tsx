@@ -23,7 +23,7 @@ export default function WorkoutDetailsRoute() {
   // If user is a personal/professional, show the Details/Edit screen
   // If user is a student, show the Execute/Start screen
   const isProfessional =
-    (accountType as string) === 'personal' || (accountType as string) === 'professional';
+    (accountType as string) === 'personal' || (accountType as string) === 'specialist';
 
   if (isProfessional) {
     return <WorkoutDetailsScreen />;

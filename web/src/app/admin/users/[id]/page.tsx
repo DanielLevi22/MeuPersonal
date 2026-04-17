@@ -183,7 +183,7 @@ export default function UserDetailsPage() {
     // Treat null status as 'pending' for professionals, 'active' for others (legacy)
     let s = status;
     if (!s) {
-      s = user?.account_type === "professional" ? "pending" : "active";
+      s = user?.account_type === "specialist" ? "pending" : "active";
     }
 
     const badges = {
@@ -272,8 +272,8 @@ export default function UserDetailsPage() {
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
           {/* Approval Action Banner */}
-          {(user.account_status === "pending" ||
-            (user.account_type === "professional" && !user.account_status)) && (
+          {(user.account_status === "invited" ||
+            (user.account_type === "specialist" && !user.account_status)) && (
             <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-bold text-yellow-400">Aprovação Pendente</h3>
@@ -441,7 +441,7 @@ export default function UserDetailsPage() {
           <div className="bg-surface border border-border rounded-xl p-6">
             <h3 className="text-lg font-bold text-foreground mb-4">Mudar Tipo de Conta</h3>
             <div className="space-y-2">
-              {["admin", "professional", "managed_student", "autonomous_student"].map((type) => (
+              {["admin", "specialist", "student", "member"].map((type) => (
                 <button
                   type="button"
                   key={type}

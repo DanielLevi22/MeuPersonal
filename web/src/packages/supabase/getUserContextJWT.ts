@@ -1,130 +1,54 @@
-/**
- * JWT-based getUserContext - Avoids RLS recursion
- *
- * This version checks JWT claims FIRST before querying the database.
- * For admin users, this completely avoids the RLS recursion issue.
- */
-
 import type { UserContext } from "./abilities";
 import { supabase } from "./client";
-import type { AccountType, ServiceCategory, SubscriptionTier } from "./types";
+import type { AccountStatus, AccountType, ServiceType } from "./types";
 
 export async function getUserContextJWT(userId: string): Promise<UserContext> {
-  // STEP 1: Check JWT claims first (no database query = no RLS issues)
+  // Check JWT claims first — avoids RLS issues for admin fast path
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const jwtClaims = session?.user?.app_metadata || {};
 
-  console.log("🔍 getUserContextJWT - userId:", userId);
-  console.log("🔍 getUserContextJWT - JWT claims:", jwtClaims);
-
-  // If account_type is in JWT claims and it's admin, return immediately (fast path)
   if (jwtClaims.account_type === "admin") {
-    console.log("✅ Admin detected from JWT, skipping database query");
-    return {
-      accountType: "admin" as AccountType,
-      isSuperAdmin: jwtClaims.is_super_admin || false,
-    };
+    return { accountType: "admin" as AccountType };
   }
 
-  // STEP 2: Query database (for all users, including admins if JWT doesn't have claims)
-  // Add retry logic to handle race condition where profile might not exist yet
-  console.log("🔍 Querying database for user context...");
-
+  // Fetch profile with retry — handles race condition on fresh signup
   let user = null;
   let userError = null;
   let attempts = 0;
-  const maxAttempts = 8;
 
-  while (!user && attempts < maxAttempts) {
+  while (!user && attempts < 8) {
     attempts++;
-
     const result = await supabase
       .from("profiles")
-      .select("account_type, subscription_tier, is_super_admin, account_status")
+      .select("account_type, account_status")
       .eq("id", userId)
       .single();
 
     user = result.data;
     userError = result.error;
 
-    if (!user && attempts < maxAttempts) {
-      console.log(`⏳ Profile not found yet, retrying (${attempts}/${maxAttempts})...`);
-      await new Promise((resolve) => setTimeout(resolve, 500 * attempts)); // Exponential backoff
+    if (!user && attempts < 8) {
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempts));
     }
   }
 
-  if (userError || !user) {
-    console.error("❌ Error fetching user after retries:", userError);
-    throw new Error("User not found");
-  }
-
-  console.log("✅ User data from database:", user);
+  if (userError || !user) throw new Error("User not found");
 
   const context: UserContext = {
     accountType: user.account_type as AccountType,
-    accountStatus: user.account_status as "pending" | "active" | "rejected" | "suspended",
+    accountStatus: user.account_status as AccountStatus,
   };
 
-  // If user is admin, add super admin flag
-  if (user.account_type === "admin") {
-    context.isSuperAdmin = user.is_super_admin || false;
-    console.log("🔐 Admin user detected from database:", {
-      accountType: context.accountType,
-      isSuperAdmin: context.isSuperAdmin,
-    });
-    return context; // Return early for admins
+  if (user.account_type === "specialist") {
+    const { data: services } = await supabase
+      .from("specialist_services")
+      .select("service_type")
+      .eq("specialist_id", userId);
+
+    context.services = (services?.map((s) => s.service_type) || []) as ServiceType[];
   }
 
-  // STEP 3: Fetch additional context based on account type
-  if (user.account_type === "professional") {
-    console.log("🔍 Fetching services for professional:", userId);
-    const { data: services, error: servicesError } = await supabase
-      .from("professional_services")
-      .select("service_category")
-      .eq("user_id", userId)
-      .eq("is_active", true);
-
-    if (servicesError) {
-      console.error("❌ Error fetching services:", servicesError);
-    } else {
-      console.log("✅ Services found:", services);
-    }
-
-    const dbServices = services?.map((s) => s.service_category) || [];
-
-    if (dbServices.length > 0) {
-      context.services = dbServices as ServiceCategory[];
-    } else {
-      // Fallback: read from user_metadata (set during registration via signUp options.data)
-      // This covers professionals whose professional_services records haven't been created yet
-      const metaServices: string[] = session?.user?.user_metadata?.services || [];
-      if (metaServices.length > 0) {
-        console.log("ℹ️ professional_services empty, falling back to user_metadata:", metaServices);
-        context.services = metaServices as ServiceCategory[];
-      } else {
-        context.services = [];
-      }
-    }
-  }
-
-  if (user.account_type === "autonomous_student") {
-    context.subscriptionTier = user.subscription_tier as SubscriptionTier;
-
-    const { data: features } = await supabase
-      .from("feature_access")
-      .select("feature_key, is_enabled, limit_value")
-      .eq("subscription_tier", user.subscription_tier);
-
-    context.featureAccess = { ...(context.featureAccess ?? {}) };
-    features?.forEach((f) => {
-      if (context.featureAccess) {
-        context.featureAccess[f.feature_key] = f.limit_value ?? f.is_enabled;
-      }
-    });
-  }
-
-  console.log("✅ User context loaded:", context);
   return context;
 }

@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ServiceCategory } from '@meupersonal/supabase';
+import type { ServiceType } from '@meupersonal/supabase';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { cn } from '@/lib/utils';
 
 interface ServiceSelectionCardProps {
-  service: ServiceCategory;
+  service: ServiceType;
   title: string;
   description: string;
   icon: string; // emoji
@@ -12,29 +12,18 @@ interface ServiceSelectionCardProps {
   onToggle: () => void;
 }
 
-const SERVICE_INFO: Record<ServiceCategory, { title: string; description: string; icon: string }> =
-  {
-    personal_training: {
-      title: 'Personal Trainer',
-      description: 'Treinos e periodização',
-      icon: '🏋️',
-    },
-    nutrition_consulting: {
-      title: 'Nutricionista',
-      description: 'Dietas e nutrição',
-      icon: '🥗',
-    },
-    physiotherapy: {
-      title: 'Fisioterapeuta',
-      description: 'Reabilitação e prevenção',
-      icon: '💆',
-    },
-    sports_psychology: {
-      title: 'Psicólogo Esportivo',
-      description: 'Saúde mental e performance',
-      icon: '🧠',
-    },
-  };
+const SERVICE_INFO: Record<ServiceType, { title: string; description: string; icon: string }> = {
+  personal_training: {
+    title: 'Personal Trainer',
+    description: 'Treinos e periodização',
+    icon: '🏋️',
+  },
+  nutrition_consulting: {
+    title: 'Nutricionista',
+    description: 'Dietas e nutrição',
+    icon: '🥗',
+  },
+};
 
 export function ServiceSelectionCard({
   service,
