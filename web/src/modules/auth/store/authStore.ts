@@ -39,7 +39,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await authService.getSession();
       await get().updateSession(session);
     } catch (error) {
       console.error("Error initializing auth:", error);
@@ -125,7 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
+    await authService.signOut();
     set({
       session: null,
       user: null,

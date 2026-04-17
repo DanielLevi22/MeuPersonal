@@ -29,6 +29,35 @@ export const createAuthService = (supabase: SupabaseClient) => ({
     return supabase.auth.getSession();
   },
 
+  signUp: async (
+    email: string,
+    password: string,
+    accountType: string,
+    metadata: Record<string, unknown> = {},
+  ): Promise<{ success: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { account_type: accountType, ...metadata } },
+    });
+
+    if (error) return { success: false, error: error.message };
+
+    if (data.user) {
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: data.user.id,
+        email,
+        account_type: accountType,
+        full_name: metadata.full_name,
+        ...metadata,
+      });
+
+      if (profileError) return { success: false, error: profileError.message };
+    }
+
+    return { success: true };
+  },
+
   resetPassword: async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email);
   },
