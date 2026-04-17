@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-async function getCallerProfessional(request: NextRequest) {
+async function getCallerSpecialist(request: NextRequest) {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ")) return null;
 
@@ -37,45 +37,41 @@ export interface HistoryEvent {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const caller = await getCallerProfessional(request);
-    if (!caller) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const caller = await getCallerSpecialist(request);
+    if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id: studentId } = await params;
 
-    // Verify this student belongs to the caller
-    const { data: coaching } = await supabaseAdmin
-      .from("coachings")
-      .select("client_id")
-      .eq("professional_id", caller.id)
-      .eq("client_id", studentId)
+    // Verify active link exists
+    const { data: link } = await supabaseAdmin
+      .from("student_specialists")
+      .select("id")
+      .eq("specialist_id", caller.id)
+      .eq("student_id", studentId)
+      .eq("status", "active")
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (!coaching) {
-      return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
-    }
+    if (!link) return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
 
-    // Fetch all history in parallel
     const [sessionsResult, assessmentsResult, dietPlansResult] = await Promise.all([
       supabaseAdmin
         .from("workout_sessions")
-        .select("id, started_at, completed_at, workouts(title)")
+        .select("id, started_at, completed_at, workout:workouts(title)")
         .eq("student_id", studentId)
         .order("started_at", { ascending: false })
         .limit(50),
 
       supabaseAdmin
         .from("physical_assessments")
-        .select("id, created_at, weight, body_fat_percentage")
+        .select("id, created_at, weight, height")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false })
         .limit(50),
 
       supabaseAdmin
-        .from("nutrition_plans")
-        .select("id, name, created_at, is_active")
+        .from("diet_plans")
+        .select("id, name, created_at, status")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false })
         .limit(50),
@@ -83,9 +79,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const events: HistoryEvent[] = [];
 
-    // Workout sessions
     for (const s of sessionsResult.data ?? []) {
-      const workout = s.workouts as unknown as { title: string } | null;
+      const workout = s.workout as unknown as { title: string } | null;
       events.push({
         id: s.id,
         type: "workout_session",
@@ -96,14 +91,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    // Physical assessments
     for (const a of assessmentsResult.data ?? []) {
-      const detail =
-        a.weight && a.body_fat_percentage
-          ? `${a.weight} kg · ${a.body_fat_percentage}% gordura`
-          : a.weight
-            ? `${a.weight} kg`
-            : "Medidas registradas";
+      const detail = a.weight ? `${a.weight} kg` : "Medidas registradas";
       events.push({
         id: a.id,
         type: "physical_assessment",
@@ -113,18 +102,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    // Diet plans
     for (const p of dietPlansResult.data ?? []) {
       events.push({
         id: p.id,
         type: "diet_plan",
-        title: p.name,
-        subtitle: p.is_active ? "Plano de dieta ativo" : "Plano de dieta",
+        title: p.name ?? "Plano alimentar",
+        subtitle: p.status === "active" ? "Plano ativo" : "Plano encerrado",
         date: p.created_at,
       });
     }
 
-    // Sort by date descending
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return NextResponse.json({ events: events.slice(0, 100) });

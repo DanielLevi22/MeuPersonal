@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-async function getCallerProfessional(request: NextRequest) {
+async function getCallerSpecialist(request: NextRequest) {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ")) return null;
 
@@ -26,41 +26,44 @@ async function getCallerProfessional(request: NextRequest) {
   return user;
 }
 
-async function verifyOwnership(professionalId: string, studentId: string) {
+async function verifyOwnership(specialistId: string, studentId: string) {
   const { data } = await supabaseAdmin
-    .from("coachings")
-    .select("client_id")
-    .eq("professional_id", professionalId)
-    .eq("client_id", studentId)
+    .from("student_specialists")
+    .select("id")
+    .eq("specialist_id", specialistId)
+    .eq("student_id", studentId)
+    .eq("status", "active")
     .limit(1)
-    .single();
+    .maybeSingle();
   return !!data;
 }
 
 export interface Assessment {
   id: string;
-  date: string;
   created_at: string;
+  student_id: string;
+  specialist_id: string;
   weight: number | null;
   height: number | null;
-  body_fat_percentage: number | null;
-  lean_mass_kg: number | null;
-  fat_mass_kg: number | null;
-  bmi: number | null;
+  notes: string | null;
   neck: number | null;
   shoulder: number | null;
   chest: number | null;
-  waist: number | null;
-  abdomen: number | null;
-  hips: number | null;
   arm_right_relaxed: number | null;
   arm_left_relaxed: number | null;
   arm_right_contracted: number | null;
   arm_left_contracted: number | null;
-  forearm: number | null;
-  thigh_proximal: number | null;
-  thigh_distal: number | null;
-  calf: number | null;
+  forearm_right: number | null;
+  forearm_left: number | null;
+  waist: number | null;
+  abdomen: number | null;
+  hips: number | null;
+  thigh_proximal_right: number | null;
+  thigh_proximal_left: number | null;
+  thigh_medial_right: number | null;
+  thigh_medial_left: number | null;
+  calf_right: number | null;
+  calf_left: number | null;
   skinfold_chest: number | null;
   skinfold_abdominal: number | null;
   skinfold_thigh: number | null;
@@ -68,16 +71,13 @@ export interface Assessment {
   skinfold_suprailiac: number | null;
   skinfold_subscapular: number | null;
   skinfold_midaxillary: number | null;
-  notes: string | null;
 }
 
-const NUMERIC_FIELDS: Array<keyof Omit<Assessment, "id" | "date" | "created_at" | "notes">> = [
+const NUMERIC_FIELDS: Array<
+  keyof Omit<Assessment, "id" | "created_at" | "student_id" | "specialist_id" | "notes">
+> = [
   "weight",
   "height",
-  "body_fat_percentage",
-  "lean_mass_kg",
-  "fat_mass_kg",
-  "bmi",
   "neck",
   "shoulder",
   "chest",
@@ -88,10 +88,14 @@ const NUMERIC_FIELDS: Array<keyof Omit<Assessment, "id" | "date" | "created_at" 
   "arm_left_relaxed",
   "arm_right_contracted",
   "arm_left_contracted",
-  "forearm",
-  "thigh_proximal",
-  "thigh_distal",
-  "calf",
+  "forearm_right",
+  "forearm_left",
+  "thigh_proximal_right",
+  "thigh_proximal_left",
+  "thigh_medial_right",
+  "thigh_medial_left",
+  "calf_right",
+  "calf_left",
   "skinfold_chest",
   "skinfold_abdominal",
   "skinfold_thigh",
@@ -103,7 +107,7 @@ const NUMERIC_FIELDS: Array<keyof Omit<Assessment, "id" | "date" | "created_at" 
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const caller = await getCallerProfessional(request);
+    const caller = await getCallerSpecialist(request);
     if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id: studentId } = await params;
@@ -128,7 +132,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const caller = await getCallerProfessional(request);
+    const caller = await getCallerSpecialist(request);
     if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id: studentId } = await params;
@@ -139,19 +143,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const record: Record<string, unknown> = {
       student_id: studentId,
-      personal_id: caller.id,
+      specialist_id: caller.id,
       notes: body.notes || null,
     };
 
     for (const field of NUMERIC_FIELDS) {
       const val = body[field];
       record[field] = val !== undefined && val !== "" && val !== null ? Number(val) : null;
-    }
-
-    // Auto-calculate BMI if weight and height provided
-    if (record.weight && record.height) {
-      const heightM = Number(record.height) / 100;
-      record.bmi = Number((Number(record.weight) / (heightM * heightM)).toFixed(1));
     }
 
     const { data, error } = await supabaseAdmin

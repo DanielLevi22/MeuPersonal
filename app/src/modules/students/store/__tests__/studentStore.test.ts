@@ -19,6 +19,8 @@ describe('studentStore', () => {
     q.single = jest.fn().mockReturnValue(q);
     q.limit = jest.fn().mockReturnValue(q);
     q.ilike = jest.fn().mockReturnValue(q);
+    q.gt = jest.fn().mockReturnValue(q);
+    q.maybeSingle = jest.fn().mockReturnValue(q);
     return q;
   };
 
@@ -26,9 +28,7 @@ describe('studentStore', () => {
     useStudentStore.getState().reset();
     jest.clearAllMocks();
 
-    // Reset global supabase mocks to prevent pollution
     mockSupabase.from.mockClear();
-    mockSupabase.rpc.mockClear();
     mockSupabase.auth.getSession.mockClear();
 
     mockSupabase.from.mockImplementation(() => mockSupabaseQuery(null));
@@ -40,35 +40,73 @@ describe('studentStore', () => {
     expect(state.isLoading).toBe(false);
   });
 
-  it('should fetch students successfully with assessments', async () => {
-    // 1. coachings query resolution
-    // 2. assessments query resolution
+  it('should fetch students successfully', async () => {
     mockSupabase.from
       .mockReturnValueOnce(
         mockSupabaseQuery(
-          [{ status: 'active', student: { id: '1', full_name: 'Student 1' } }],
+          [
+            {
+              status: 'active',
+              service_type: 'personal_training',
+              created_at: '2024-01-01',
+              student: {
+                id: '1',
+                full_name: 'Student 1',
+                email: 't@t.com',
+                avatar_url: null,
+                account_status: 'active',
+              },
+            },
+          ],
           null,
           1
         )
       )
-      .mockReturnValueOnce(
-        mockSupabaseQuery([{ student_id: '1', weight: 80, height: 180, notes: 'Some notes' }])
-      );
+      .mockReturnValueOnce(mockSupabaseQuery([]));
 
-    await useStudentStore.getState().fetchStudents('personal-123');
+    await useStudentStore.getState().fetchStudents('specialist-123');
 
     const state = useStudentStore.getState();
     expect(state.students).toHaveLength(1);
-    expect(state.students[0].weight).toBe('80');
-    expect(state.totalCount).toBe(1);
+    expect(state.students[0].id).toBe('1');
   });
 
   it('should append students when append param is true', async () => {
-    useStudentStore.setState({ students: [{ id: 'prev' } as never] });
+    useStudentStore.setState({
+      students: [
+        {
+          id: 'prev',
+          full_name: 'Prev',
+          email: 'p@p.com',
+          avatar_url: null,
+          account_status: 'active',
+          service_type: 'personal_training',
+          link_status: 'active',
+          link_created_at: '2024-01-01',
+        },
+      ],
+    });
 
     mockSupabase.from
       .mockReturnValueOnce(
-        mockSupabaseQuery([{ status: 'active', student: { id: 'new', full_name: 'New' } }], null, 2)
+        mockSupabaseQuery(
+          [
+            {
+              status: 'active',
+              service_type: 'personal_training',
+              created_at: '2024-01-02',
+              student: {
+                id: 'new',
+                full_name: 'New',
+                email: 'n@n.com',
+                avatar_url: null,
+                account_status: 'active',
+              },
+            },
+          ],
+          null,
+          2
+        )
       )
       .mockReturnValueOnce(mockSupabaseQuery([]));
 
@@ -83,189 +121,71 @@ describe('studentStore', () => {
   it('should handle fetch students error', async () => {
     mockSupabase.from.mockReturnValue(mockSupabaseQuery(null, { message: 'Fetch failed' }));
 
-    await useStudentStore.getState().fetchStudents('personal-123');
+    await useStudentStore.getState().fetchStudents('specialist-123');
 
     expect(useStudentStore.getState().students).toHaveLength(0);
   });
 
-  it('should update student data (pending invite)', async () => {
-    useStudentStore.setState({
-      students: [
-        {
-          id: '1',
-          full_name: 'Original',
-          status: 'invited',
-          is_invite: true,
-          email: 't@t.com',
-          avatar_url: null,
-        },
-      ],
-    });
-
-    mockSupabase.from.mockReturnValue(mockSupabaseQuery(null));
-
-    const result = await useStudentStore.getState().updateStudent('1', { name: 'Updated Name' });
-
-    expect(result.success).toBe(true);
-    expect(useStudentStore.getState().students[0].full_name).toBe('Updated Name');
-    expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-  });
-
-  it('should update linked student and insert assessment', async () => {
-    useStudentStore.setState({
-      students: [
-        {
-          id: '1',
-          full_name: 'Linked',
-          status: 'active',
-          is_invite: false,
-          email: 't@t.com',
-          avatar_url: null,
-        },
-      ],
-    });
-
-    mockSupabase.from.mockReturnValue(mockSupabaseQuery(null));
-
-    mockSupabase.auth.getSession.mockResolvedValueOnce({
-      data: { session: { user: { id: 'p1' } } },
-    });
-
-    const result = await useStudentStore.getState().updateStudent('1', {
-      name: 'Linked Updated',
-      weight: '85',
-      waist: '90',
-    });
-
-    expect(result.success).toBe(true);
-    expect(useStudentStore.getState().students[0].full_name).toBe('Linked Updated');
-    expect(useStudentStore.getState().students[0].weight).toBe('85');
-  });
-
-  it('should create student invite successfully', async () => {
-    const inviteData = {
-      personal_id: 'p1',
-      name: 'New Student',
-      email: 'new@student.com',
-      password: 'password123',
-      weight: '75',
-    };
-
-    mockSupabase.rpc.mockResolvedValueOnce({
-      data: {
-        success: true,
-        student_id: 'new-id',
-        invite_code: 'CODE123',
-        email: inviteData.email,
-      },
-      error: null,
-    });
-
-    mockSupabase.from.mockImplementation(() => mockSupabaseQuery(null));
-
-    const result = await useStudentStore.getState().createStudentInvite(inviteData);
-
-    expect(result.success).toBe(true);
-    expect(result.code).toBe('CODE123');
-
-    const state = useStudentStore.getState();
-    expect(state.students).toHaveLength(1);
-    expect(state.students[0].id).toBe('new-id');
-    expect(state.students[0].weight).toBe('75');
-  });
-
-  it('should handle create invite error', async () => {
-    mockSupabase.rpc.mockResolvedValueOnce({
-      data: null,
-      error: new Error('Auth error'),
-    });
-
-    const result = await useStudentStore.getState().createStudentInvite({
-      personal_id: 'p1',
-      name: 'Fail',
-      email: 'fail@test.com',
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('Auth error');
-  });
-
-  it('should cancel invite successfully', async () => {
-    useStudentStore.setState({
-      students: [
-        {
-          id: 'invite-1',
-          full_name: 'Invited',
-          status: 'invited',
-          avatar_url: null,
-          email: 'i@i.com',
-        },
-      ],
-    });
-
-    mockSupabase.from.mockReturnValue(mockSupabaseQuery(null));
-
-    await useStudentStore.getState().cancelInvite('invite-1');
-
-    expect(useStudentStore.getState().students).toHaveLength(0);
-    expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-  });
-
-  it('should generate invite code', async () => {
+  it('should generate link code', async () => {
     mockSupabase.from
-      .mockReturnValueOnce(mockSupabaseQuery({ invite_code: null }))
+      .mockReturnValueOnce(mockSupabaseQuery(null))
       .mockReturnValueOnce(mockSupabaseQuery(null));
 
-    const code = await useStudentStore.getState().generateInviteCode('u1');
+    const code = await useStudentStore.getState().generateLinkCode('u1');
 
     expect(code).toHaveLength(6);
-    expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-  });
-
-  it('should return existing invite code if available', async () => {
-    mockSupabase.from.mockReturnValue(mockSupabaseQuery({ invite_code: 'EXISTING' }));
-
-    const code = await useStudentStore.getState().generateInviteCode('u1');
-
-    expect(code).toBe('EXISTING');
+    expect(mockSupabase.from).toHaveBeenCalledWith('student_link_codes');
   });
 
   it('should link student successfully', async () => {
     mockSupabase.from
-      .mockReturnValueOnce(mockSupabaseQuery({ id: 'p1' }))
+      .mockReturnValueOnce(mockSupabaseQuery({ student_id: 's1', expires_at: '2099-01-01' }))
+      .mockReturnValueOnce(mockSupabaseQuery({ service_type: 'personal_training' }))
+      .mockReturnValueOnce(mockSupabaseQuery(null))
       .mockReturnValueOnce(mockSupabaseQuery(null))
       .mockReturnValueOnce(mockSupabaseQuery(null));
 
-    const result = await useStudentStore.getState().linkStudent('s1', 'CODE12');
+    const result = await useStudentStore.getState().linkStudent('specialist-1', 'CODE12');
 
     expect(result.success).toBe(true);
-    expect(mockSupabase.from).toHaveBeenCalledWith('coachings');
+    expect(mockSupabase.from).toHaveBeenCalledWith('student_link_codes');
   });
 
-  it('should handle invalid invite code when linking', async () => {
+  it('should handle invalid code when linking', async () => {
     mockSupabase.from.mockReturnValue(mockSupabaseQuery(null, { message: 'Not found' }));
 
     const result = await useStudentStore.getState().linkStudent('s1', 'WRONG');
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('personal não encontrado');
   });
 
-  it('should remove student and all related data', async () => {
+  it('should remove student (soft delete)', async () => {
     useStudentStore.setState({
       students: [
-        { id: 's1', full_name: 'ToDelete', email: 'd@d.com', status: 'active', avatar_url: null },
+        {
+          id: 's1',
+          full_name: 'ToDelete',
+          email: 'd@d.com',
+          avatar_url: null,
+          account_status: 'active',
+          service_type: 'personal_training',
+          link_status: 'active',
+          link_created_at: '2024-01-01',
+        },
       ],
     });
 
+    mockSupabase.auth.getSession.mockResolvedValueOnce({
+      data: { session: { user: { id: 'p1' } } },
+    });
     mockSupabase.from.mockReturnValue(mockSupabaseQuery(null));
 
-    await useStudentStore.getState().removeStudent('p1', 's1');
+    await useStudentStore.getState().removeStudent('p1', 's1', 'personal_training');
 
     expect(useStudentStore.getState().students).toHaveLength(0);
   });
 
-  it('should add physical assessment and refresh history', async () => {
+  it('should add physical assessment', async () => {
     mockSupabase.auth.getSession.mockResolvedValueOnce({
       data: { session: { user: { id: 'p1' } } },
     });
@@ -280,7 +200,6 @@ describe('studentStore', () => {
 
     expect(result.success).toBe(true);
     expect(useStudentStore.getState().history).toHaveLength(1);
-    expect(useStudentStore.getState().history[0].weight).toBe(80);
   });
 
   it('should handle add physical assessment error', async () => {

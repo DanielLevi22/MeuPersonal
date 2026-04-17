@@ -43,10 +43,6 @@ describe("useUpdateStudent", () => {
     result.current.mutate({
       studentId: "student-123",
       full_name: "Maria Silva",
-      phone: "(11) 98888-7777",
-      weight: "65.5",
-      height: "165",
-      notes: "Foco em emagrecimento",
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

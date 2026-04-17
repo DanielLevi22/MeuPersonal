@@ -56,10 +56,10 @@ export default function StudentDetailsPage() {
 
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-              {student.full_name.charAt(0).toUpperCase()}
+              {(student.full_name ?? "?").charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{student.full_name}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{student.full_name ?? "Aluno"}</h1>
               <p className="text-muted-foreground">{student.email}</p>
             </div>
           </div>
@@ -87,18 +87,18 @@ export default function StudentDetailsPage() {
           <p className="text-sm text-muted-foreground mb-1">Status</p>
           <div className="flex items-center gap-2">
             <span
-              className={`w-2 h-2 rounded-full ${student.status === "active" ? "bg-emerald-500" : "bg-orange-400"}`}
+              className={`w-2 h-2 rounded-full ${student.account_status === "active" ? "bg-emerald-500" : "bg-orange-400"}`}
             />
             <span className="text-lg font-bold text-foreground">
-              {student.status === "active" ? "Ativo" : "Pendente"}
+              {student.account_status === "active" ? "Ativo" : "Pendente"}
             </span>
           </div>
         </div>
         <div className="bg-surface border border-white/10 rounded-xl p-4">
           <p className="text-sm text-muted-foreground mb-1">Membro desde</p>
           <p className="text-lg font-bold text-foreground">
-            {student.created_at
-              ? new Date(student.created_at).toLocaleDateString("pt-BR", {
+            {student.link_created_at
+              ? new Date(student.link_created_at).toLocaleDateString("pt-BR", {
                   month: "short",
                   year: "numeric",
                 })

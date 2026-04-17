@@ -18,19 +18,13 @@ import { StudentEditModal } from '../components/StudentEditModal';
 import { useStudentStore } from '../store/studentStore';
 
 export default function StudentsScreen() {
-  const { students, isLoading, fetchStudents, removeStudent, cancelInvite, updateStudent } =
-    useStudentStore();
+  const { students, isLoading, fetchStudents, removeStudent } = useStudentStore();
   const { user } = useAuthStore();
   const router = useRouter();
 
-  const [selectedStudent, setSelectedStudent] = useState<{
-    id: string;
-    full_name: string;
-    email: string;
-    status: string;
-    invite_code?: string;
-    created_at: string;
-  } | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<
+    import('../store/studentStore').Student | null
+  >(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -76,8 +70,8 @@ export default function StudentsScreen() {
     }
   }, [isLoading, students.length, totalCount, user?.id, debouncedSearch, sortBy, sortOrder, page]);
 
-  const handleRemove = (item: { id: string; status?: string; full_name?: string }) => {
-    const isInvite = item.status === 'invited';
+  const handleRemove = (item: import('../store/studentStore').Student) => {
+    const isInvite = item.account_status === 'invited';
     const title = isInvite ? 'Cancelar Convite' : 'Remover Aluno';
     const message = isInvite
       ? `Tem certeza que deseja cancelar o convite para ${item.full_name || 'este aluno'}?`
@@ -90,11 +84,7 @@ export default function StudentsScreen() {
         style: 'destructive',
         onPress: async () => {
           if (user?.id && item?.id) {
-            if (isInvite) {
-              await cancelInvite(item.id);
-            } else {
-              await removeStudent(user.id, item.id);
-            }
+            await removeStudent(user.id, item.id, item.service_type);
           } else {
             Alert.alert('Erro', 'ID do aluno não encontrado.');
           }
@@ -103,37 +93,30 @@ export default function StudentsScreen() {
     ]);
   };
 
-  const handleEdit = (student: { id: string; full_name?: string }) => {
-    setSelectedStudent(
-      student as {
-        id: string;
-        full_name: string;
-        email: string;
-        status: string;
-        invite_code?: string;
-        created_at: string;
-      }
-    );
+  const handleEdit = (student: import('../store/studentStore').Student) => {
+    setSelectedStudent(student);
     setIsEditModalVisible(true);
   };
 
-  const _handlePressStudent = (student: { id: string; full_name?: string }) => {
+  const _handlePressStudent = (student: import('../store/studentStore').Student) => {
     handleEdit(student);
   };
 
-  const handleEnterStudent = (student: { id: string }) => {
+  const handleEnterStudent = (student: import('../store/studentStore').Student) => {
     router.push(`/(tabs)/students/${student.id}` as never);
   };
 
-  const handleSaveEdit = async (data: Record<string, unknown>) => {
-    if (selectedStudent) {
-      const result = await updateStudent(selectedStudent.id, data);
-      if (result.success) {
-        setIsEditModalVisible(false);
-        setSelectedStudent(null);
-      } else {
-        Alert.alert('Erro', result.error || 'Falha ao atualizar aluno');
-      }
+  const handleSaveEdit = async (_data: Record<string, unknown>) => {
+    setIsEditModalVisible(false);
+    setSelectedStudent(null);
+    if (user?.id) {
+      fetchStudents(user.id, {
+        search: debouncedSearch,
+        sortBy,
+        sortOrder,
+        page: 1,
+        append: false,
+      });
     }
   };
 
@@ -146,19 +129,8 @@ export default function StudentsScreen() {
     return days > 7;
   };
 
-  const renderItem = ({
-    item,
-  }: {
-    item: {
-      id: string;
-      full_name?: string;
-      email?: string;
-      status?: string;
-      invite_code?: string;
-      created_at?: string;
-    };
-  }) => {
-    const expired = item.status === 'invited' && isExpired(item.created_at);
+  const renderItem = ({ item }: { item: import('../store/studentStore').Student }) => {
+    const expired = item.account_status === 'invited' && isExpired(item.link_created_at);
 
     return (
       <TouchableOpacity
@@ -193,7 +165,7 @@ export default function StudentsScreen() {
                     <Text className="text-red-500 text-[10px] font-bold uppercase">Expirado</Text>
                   </View>
                 )}
-                {item.status === 'invited' && !expired && (
+                {item.account_status === 'invited' && !expired && (
                   <View className="bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md">
                     <Text className="text-orange-500 text-[10px] font-bold uppercase">
                       Pendente
@@ -202,7 +174,7 @@ export default function StudentsScreen() {
                 )}
               </View>
               <Text className="text-zinc-400 text-sm font-sans" numberOfLines={1}>
-                {item.email || (item.invite_code ? `Código: ${item.invite_code}` : 'Sem contato')}
+                {item.email || 'Sem contato'}
               </Text>
             </View>
           </View>
@@ -372,7 +344,11 @@ export default function StudentsScreen() {
         visible={isEditModalVisible}
         onClose={() => setIsEditModalVisible(false)}
         onSave={handleSaveEdit}
-        student={selectedStudent}
+        student={
+          selectedStudent
+            ? { ...selectedStudent, full_name: selectedStudent.full_name ?? undefined }
+            : null
+        }
       />
     </ScreenLayout>
   );

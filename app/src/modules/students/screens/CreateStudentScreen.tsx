@@ -21,7 +21,7 @@ type Tab = 'personal' | 'measurements' | 'skinfolds';
 
 export default function CreateStudentScreen() {
   const router = useRouter();
-  const { createStudentInvite, isLoading } = useStudentStore();
+  const { createStudent, addPhysicalAssessment, isLoading } = useStudentStore();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('personal');
 
@@ -88,51 +88,69 @@ export default function CreateStudentScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const result = await createStudentInvite({
-      personal_id: user.id,
-      name: fullName,
+    const result = await createStudent({
+      specialist_id: user.id,
+      full_name: fullName,
       email: email.trim(),
       password: password.trim(),
-      phone: phone,
-      weight: weight,
-      height: height,
-      notes: '', // Or allow user to add notes
-      experience_level: level || undefined,
-      initial_assessment: {
-        // Circumferences
-        neck: neck ? parseFloat(neck) : null,
-        shoulder: shoulder ? parseFloat(shoulder) : null,
-        chest: chest ? parseFloat(chest) : null,
-        arm_right_relaxed: armRightRelaxed ? parseFloat(armRightRelaxed) : null,
-        arm_left_relaxed: armLeftRelaxed ? parseFloat(armLeftRelaxed) : null,
-        arm_right_contracted: armRightContracted ? parseFloat(armRightContracted) : null,
-        arm_left_contracted: armLeftContracted ? parseFloat(armLeftContracted) : null,
-        forearm_right: forearm ? parseFloat(forearm) : null,
-        waist: waist ? parseFloat(waist) : null,
-        abdomen: abdomen ? parseFloat(abdomen) : null,
-        hips: hips ? parseFloat(hips) : null,
-        thigh_proximal_right: thighProximal ? parseFloat(thighProximal) : null,
-        thigh_medial_right: thighDistal ? parseFloat(thighDistal) : null,
-        calf_right: calf ? parseFloat(calf) : null,
-        // Skinfolds
-        skinfold_chest: skinfoldChest ? parseFloat(skinfoldChest) : null,
-        skinfold_abdominal: skinfoldAbdominal ? parseFloat(skinfoldAbdominal) : null,
-        skinfold_thigh: skinfoldThigh ? parseFloat(skinfoldThigh) : null,
-        skinfold_triceps: skinfoldTriceps ? parseFloat(skinfoldTriceps) : null,
-        skinfold_suprailiac: skinfoldSuprailiac ? parseFloat(skinfoldSuprailiac) : null,
-        skinfold_subscapular: skinfoldSubscapular ? parseFloat(skinfoldSubscapular) : null,
-        skinfold_midaxillary: skinfoldMidaxillary ? parseFloat(skinfoldMidaxillary) : null,
-      },
+      service_type: 'personal_training',
     });
 
-    if (result.success && result.code) {
-      // Navigate to success screen
+    if (result.success && result.studentId) {
+      const hasMeasurements = [
+        neck,
+        shoulder,
+        chest,
+        armRightRelaxed,
+        armLeftRelaxed,
+        forearm,
+        waist,
+        abdomen,
+        hips,
+        thighProximal,
+        thighDistal,
+        calf,
+        skinfoldChest,
+        skinfoldAbdominal,
+        skinfoldThigh,
+        skinfoldTriceps,
+        skinfoldSuprailiac,
+        skinfoldSubscapular,
+        skinfoldMidaxillary,
+      ].some((v) => v !== '');
+
+      if (hasMeasurements) {
+        const p = (v: string) => (v ? parseFloat(v) : null);
+        await addPhysicalAssessment(result.studentId, {
+          weight: p(weight),
+          height: p(height),
+          neck: p(neck),
+          shoulder: p(shoulder),
+          chest: p(chest),
+          arm_right_relaxed: p(armRightRelaxed),
+          arm_left_relaxed: p(armLeftRelaxed),
+          arm_right_contracted: p(armRightContracted),
+          arm_left_contracted: p(armLeftContracted),
+          forearm_right: p(forearm),
+          waist: p(waist),
+          abdomen: p(abdomen),
+          hips: p(hips),
+          thigh_proximal_right: p(thighProximal),
+          thigh_medial_right: p(thighDistal),
+          calf_right: p(calf),
+          skinfold_chest: p(skinfoldChest),
+          skinfold_abdominal: p(skinfoldAbdominal),
+          skinfold_thigh: p(skinfoldThigh),
+          skinfold_triceps: p(skinfoldTriceps),
+          skinfold_suprailiac: p(skinfoldSuprailiac),
+          skinfold_subscapular: p(skinfoldSubscapular),
+          skinfold_midaxillary: p(skinfoldMidaxillary),
+        });
+      }
+
       router.replace({
         pathname: '/(tabs)/students/invite',
-        params: {
-          code: result.code,
-          name: fullName,
-        },
+        params: { studentId: result.studentId, name: fullName },
       });
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

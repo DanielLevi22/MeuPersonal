@@ -6,244 +6,168 @@ import { useEffect, useState } from "react";
 
 export interface Student {
   id: string;
-  full_name: string;
+  full_name: string | null;
   email: string;
-  is_invite?: boolean;
-  invite_code?: string;
-  status?: "active" | "pending";
-  created_at?: string;
+  avatar_url: string | null;
+  account_status: "active" | "inactive" | "invited";
+  service_type: "personal_training" | "nutrition_consulting";
+  link_status: "active" | "inactive";
+  link_created_at: string;
 }
 
 export function useStudents() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-
-    getUser();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
   }, []);
 
   return useQuery({
     queryKey: ["students", userId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Student[]> => {
       if (!userId) return [];
 
-      // Fetch active students via profiles joined through coachings
-      const { data: activeData, error: activeError } = await supabase
-        .from("coachings")
+      const { data, error } = await supabase
+        .from("student_specialists")
         .select(`
-          client_id,
-          client:profiles!client_professional_relationships_client_id_fkey (
+          service_type,
+          status,
+          created_at,
+          student:profiles!student_id (
             id,
             full_name,
             email,
-            created_at
+            avatar_url,
+            account_status
           )
         `)
-        .eq("professional_id", userId)
+        .eq("specialist_id", userId)
         .eq("status", "active");
 
-      if (activeError) throw activeError;
-
-      // Fetch pending students (from profiles table with pending status)
-      const { data: pendingData, error: pendingError } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, invite_code")
-        .eq("account_type", "student")
-        .eq("account_status", "pending");
-
-      if (pendingError) throw pendingError;
-
-      interface CoachingWithStudent {
-        client_id: string;
-        client: {
-          id: string;
-          full_name: string;
-          email: string;
-          created_at: string;
-        };
-      }
-
-      interface PendingProfile {
-        id: string;
-        full_name: string;
-        email: string;
-        invite_code?: string;
-      }
+      if (error) throw error;
 
       const seen = new Set<string>();
-      const activeStudents = ((activeData as unknown as CoachingWithStudent[]) || [])
-        .map((item): Student | null => {
-          if (!item.client || seen.has(item.client.id)) return null;
-          seen.add(item.client.id);
+      return (data ?? [])
+        .map((item) => {
+          const student = Array.isArray(item.student) ? item.student[0] : item.student;
+          if (!student || seen.has(student.id)) return null;
+          seen.add(student.id);
           return {
-            id: item.client.id,
-            full_name: item.client.full_name,
-            email: item.client.email,
-            is_invite: false,
-            status: "active",
-            created_at: item.client.created_at,
-          };
+            id: student.id,
+            full_name: student.full_name,
+            email: student.email,
+            avatar_url: student.avatar_url,
+            account_status: student.account_status,
+            service_type: item.service_type,
+            link_status: item.status,
+            link_created_at: item.created_at,
+          } as Student;
         })
         .filter((s): s is Student => s !== null);
-
-      const pendingStudents = ((pendingData as unknown as PendingProfile[]) || []).map((item) => ({
-        id: item.id,
-        full_name: item.full_name,
-        email: item.email,
-        is_invite: true,
-        invite_code: item.invite_code,
-        status: "pending" as const,
-      })) as Student[];
-
-      return [...activeStudents, ...pendingStudents];
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 1000 * 60 * 15,
     refetchOnWindowFocus: false,
   });
 }
 
-export function useProfessionalServices() {
+export function useSpecialistServices() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    getUser();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
   }, []);
 
   return useQuery({
-    queryKey: ["professional_services", userId],
+    queryKey: ["specialist_services", userId],
     queryFn: async () => {
       if (!userId) return [];
 
       const { data, error } = await supabase
-        .from("professional_services")
-        .select("service_category")
-        .eq("user_id", userId)
-        .eq("is_active", true);
+        .from("specialist_services")
+        .select("service_type")
+        .eq("specialist_id", userId);
 
       if (error) throw error;
-      return data.map((item) => item.service_category);
+      return data.map((s) => s.service_type);
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
   });
 }
 
+// Fluxo B: aluno existente fornece código ao especialista
 export function useFindStudentByCode() {
   return useMutation({
     mutationFn: async (code: string) => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        // .eq('invite_code', code.toUpperCase()) // Commenting out until invite_code is confirmed on profiles
+        .from("student_link_codes")
+        .select("student_id, expires_at, student:profiles!student_id(id, full_name, email)")
+        .eq("code", code.trim().toUpperCase())
+        .gt("expires_at", new Date().toISOString())
         .single();
 
-      if (error) {
-        if (error.code === "PGRST116") {
-          // Not found
-          // Try to find in active profiles too
-          const { data: _profile, error: _profileError } = await supabase
-            .from("profiles")
-            .select("id, full_name, email")
-            .eq("invite_code", code.toUpperCase()); // Assuming profiles also have invite_code now?
-          // Actually, the migration unified logic might not have added invite_code to profiles explicitly if not there.
-          // But let's assume we search students table which might be enough if we are looking for "access code".
-          // If the user is already a profile, they might not be in 'students' table if they were migrated?
-          // The migration 20241125_unify_invite_logic.sql kept the student record but didn't clear invite_code.
-          // So querying 'students' table should work for both pending and converted students if the record persists.
-          // But wait, if they are converted, does the student record stay?
-          // The migration logic I wrote: "We do NOT clear the invite_code...".
-          // So yes, the record in 'students' table should persist as a lookup.
-          return null;
-        }
-        throw error;
-      }
+      if (error || !data) return null;
 
-      // Check for existing relationships for this student
-      // We need to know if we can associate or need to transfer.
-      // But this hook just finds the student. The UI handles the check.
-      return data;
+      const student = Array.isArray(data.student) ? data.student[0] : data.student;
+      return student as { id: string; full_name: string | null; email: string } | null;
     },
   });
 }
 
-export interface RelationshipConflict {
-  professional_id: string;
-  profiles:
-    | {
-        full_name: string;
-      }
-    | {
-        full_name: string;
-      }[];
-}
-
-export function useCheckStudentRelationship() {
-  return useMutation({
-    mutationFn: async ({
-      studentId,
-      service,
-    }: {
-      studentId: string;
-      service: string;
-    }): Promise<RelationshipConflict | null> => {
-      const { data, error } = await supabase
-        .from("coachings")
-        .select("professional_id, profiles(full_name)")
-        .eq("client_id", studentId) // Check active relationships
-        .eq("service_type", service)
-        .eq("status", "active")
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-
-      return data as unknown as RelationshipConflict | null;
-    },
-  });
-}
-
-export function useTransferStudent() {
+// Vincula aluno ao especialista usando código de vínculo
+export function useLinkStudentByCode() {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
-      studentId,
-      currentProfessionalId,
-      service,
+      code,
+      serviceType,
     }: {
-      studentId: string;
-      currentProfessionalId: string;
-      service: string;
+      code: string;
+      serviceType: "personal_training" | "nutrition_consulting";
     }) => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Unauthorized");
+      if (!user) throw new Error("Não autenticado");
 
-      const { error } = await supabase.from("relationship_transfers").insert({
-        student_id: studentId,
-        from_professional_id: currentProfessionalId,
-        to_professional_id: user.id,
-        service_category: service,
+      const { data: linkCode, error: codeError } = await supabase
+        .from("student_link_codes")
+        .select("student_id")
+        .eq("code", code.trim().toUpperCase())
+        .gt("expires_at", new Date().toISOString())
+        .single();
+
+      if (codeError || !linkCode) throw new Error("Código inválido ou expirado");
+
+      // Check no active link already exists for this service type
+      const { data: existing } = await supabase
+        .from("student_specialists")
+        .select("id")
+        .eq("student_id", linkCode.student_id)
+        .eq("service_type", serviceType)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (existing) throw new Error("Aluno já vinculado a um especialista deste serviço");
+
+      const { error: linkError } = await supabase.from("student_specialists").insert({
+        student_id: linkCode.student_id,
+        specialist_id: user.id,
+        service_type: serviceType,
+        status: "active",
       });
 
-      if (error) throw error;
+      if (linkError) throw linkError;
+
+      // Delete used code
+      await supabase.from("student_link_codes").delete().eq("code", code.trim().toUpperCase());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
@@ -251,177 +175,5 @@ export function useTransferStudent() {
   });
 }
 
-export interface TransferRequest {
-  id: string;
-  service_category: string;
-  created_at: string;
-  profiles: { full_name: string } | { full_name: string }[];
-  requester: { full_name: string } | { full_name: string }[];
-}
-
-export function useTransferRequests() {
-  return useQuery({
-    queryKey: ["transfer-requests"],
-    queryFn: async (): Promise<TransferRequest[]> => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from("relationship_transfers")
-        .select(`
-          id,
-          service_category,
-          created_at,
-          profiles:student_id (full_name),
-          requester:to_professional_id (full_name)
-        `)
-        .eq("from_professional_id", user.id)
-        .eq("status", "pending");
-
-      if (error) throw error;
-      return data as unknown as TransferRequest[];
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
-  });
-}
-
-export function useRespondToTransfer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ transferId, approve }: { transferId: string; approve: boolean }) => {
-      if (approve) {
-        const { error } = await supabase.rpc("approve_transfer_request", {
-          p_transfer_id: transferId,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("relationship_transfers")
-          .update({ status: "rejected" })
-          .eq("id", transferId);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transfer-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-    },
-  });
-}
-
-export function useCreateStudent() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      fullName,
-      email,
-      services,
-      phone,
-      weight,
-      height,
-      notes,
-      initial_assessment,
-    }: {
-      fullName: string;
-      email?: string;
-      services: string[];
-      phone?: string;
-      weight?: string;
-      height?: string;
-      notes?: string;
-      initial_assessment?: {
-        weight: number | null;
-        height: number | null;
-        notes?: string;
-      };
-    }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Generate random 6-char invite code
-      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-      // Create student in students table
-      const { data: student, error: studentError } = await supabase
-        .from("students")
-        .insert({
-          full_name: fullName,
-          email: email, // Optional now
-          personal_id: user.id,
-          invite_code: inviteCode,
-          phone: phone,
-          weight: weight ? parseFloat(weight) : null,
-          height: height ? parseFloat(height) : null,
-          notes: notes,
-          initial_assessment: initial_assessment,
-        })
-        .select()
-        .single();
-
-      if (studentError) throw studentError;
-
-      // Create relationships for selected services
-      if (services.length > 0) {
-        const relationships = services.map((service) => ({
-          client_id: student.id, // pending_client_id -> client_id (unified)
-          professional_id: user.id,
-          service_type: service,
-          status: "active",
-          invited_by: user.id,
-        }));
-
-        const { error: relError } = await supabase.from("coachings").insert(relationships);
-
-        if (relError) throw relError;
-      }
-
-      return { status: "created", data: student };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-    },
-  });
-}
-
-export function useAssociateStudent() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      studentId,
-      services,
-      isPending: _isPending,
-    }: {
-      studentId: string;
-      services: string[];
-      isPending?: boolean;
-    }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      if (services.length === 0) return;
-
-      const relationships = services.map((service) => ({
-        client_id: studentId,
-        professional_id: user.id,
-        service_type: service,
-        status: "active",
-      }));
-
-      const { error } = await supabase.from("coachings").insert(relationships);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-    },
-  });
-}
+/** @deprecated useProfessionalServices renamed to useSpecialistServices */
+export const useProfessionalServices = useSpecialistServices;

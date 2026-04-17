@@ -75,9 +75,6 @@ describe("EditStudentModal", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByDisplayValue("João Silva")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("(11) 99999-9999")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("75")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("175")).toBeInTheDocument();
   });
 
   it("shows loading state while fetching", () => {

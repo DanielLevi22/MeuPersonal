@@ -142,9 +142,9 @@ export default function StudentDetailsScreen() {
                 Status
               </Text>
               <Text
-                className={`text-base font-bold ${student.status === 'active' ? 'text-emerald-400' : 'text-orange-500'}`}
+                className={`text-base font-bold ${student.account_status === 'active' ? 'text-emerald-400' : 'text-orange-500'}`}
               >
-                {student.status === 'active' ? 'Ativo' : 'Pendente'}
+                {student.account_status === 'active' ? 'Ativo' : 'Pendente'}
               </Text>
             </View>
             <View className="flex-1 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 items-center">
@@ -152,7 +152,9 @@ export default function StudentDetailsScreen() {
                 Desde
               </Text>
               <Text className="text-white text-base font-bold">
-                {student.created_at ? new Date(student.created_at).toLocaleDateString() : 'N/A'}
+                {student.link_created_at
+                  ? new Date(student.link_created_at).toLocaleDateString()
+                  : 'N/A'}
               </Text>
             </View>
           </View>
@@ -164,7 +166,11 @@ export default function StudentDetailsScreen() {
             onDownload={() => Alert.alert('Em breve', 'Geração de PDF da ficha completa')}
             onStudentView={async () => {
               const { enterStudentView } = useAuthStore.getState();
-              await enterStudentView(student);
+              await enterStudentView({
+                id: student.id,
+                email: student.email,
+                full_name: student.full_name ?? '',
+              });
               // Small delay to ensure state propagates before navigation
               setTimeout(() => {
                 router.replace(ROUTES.TABS.ROOT as never);

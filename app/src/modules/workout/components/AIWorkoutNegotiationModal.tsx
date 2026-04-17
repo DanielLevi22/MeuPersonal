@@ -13,7 +13,6 @@ import {
   View,
 } from 'react-native';
 import Animated, { SlideInDown } from 'react-native-reanimated';
-import { useStudentStore } from '../../students/store/studentStore';
 import { AIWorkoutResponse, WorkoutAIService } from '../services/WorkoutAIService';
 import { useWorkoutStore } from '../store/workoutStore';
 
@@ -38,7 +37,6 @@ export function AIWorkoutNegotiationModal({
   onClose,
   split,
   goal,
-  studentId,
 }: AIWorkoutNegotiationModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -47,10 +45,8 @@ export function AIWorkoutNegotiationModal({
 
   const scrollViewRef = useRef<ScrollView>(null);
   const { exercises, fetchExercises } = useWorkoutStore();
-  const { students } = useStudentStore();
 
-  const student = students.find((s) => s.id === studentId);
-  const level = student?.experience_level || 'Intermediário';
+  const level = 'Intermediário';
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
@@ -71,7 +67,7 @@ export function AIWorkoutNegotiationModal({
         goal,
         level,
         exercises,
-        student?.notes
+        undefined
       );
 
       const aiMsg: Message = {
@@ -118,7 +114,7 @@ export function AIWorkoutNegotiationModal({
         goal,
         level,
         exercises,
-        `${student?.notes || ''} ${refinedContext}`
+        refinedContext || undefined
       );
 
       const aiMsg: Message = {

@@ -7,10 +7,6 @@ import type { StudentMeasurements } from "./useStudentDetails";
 export interface UpdateStudentInput {
   studentId: string;
   full_name?: string;
-  phone?: string | null;
-  weight?: string | null;
-  height?: string | null;
-  notes?: string | null;
   measurements?: Partial<StudentMeasurements>;
 }
 
