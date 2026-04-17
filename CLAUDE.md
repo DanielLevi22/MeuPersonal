@@ -202,22 +202,73 @@ web/src/app/
   page.tsx        → página inicial
 ```
 
-### Data fetching no web
+### Data fetching no web — REGRA CRÍTICA
+
+**Camada de dados compartilhada:** toda query usa `createStudentsService(supabase)` (ou o service do módulo correspondente) de `shared/`. Nunca escrever queries Supabase inline em hooks ou componentes.
+
+```ts
+// shared/src/services/students.service.ts
+export const createStudentsService = (supabase: SupabaseClient) => ({
+  fetchStudents: async (specialistId: string) => { ... },
+  fetchStudentDetails: async (studentId: string) => { ... },
+});
+```
+
+**Server Component — chamar o service diretamente. Sem TanStack Query.**
 
 ```tsx
-// Server Component — fetch direto (sem TanStack Query)
-async function Page() {
-  const data = await supabase.from('workouts').select('*');
-  return <WorkoutList data={data} />;
+// ✅ Correto — Server Component (padrão no App Router)
+import { createStudentsService } from '@meupersonal/shared';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+async function StudentsPage() {
+  const supabase = await createServerSupabaseClient();
+  const service = createStudentsService(supabase);
+  const students = await service.fetchStudents(specialistId);
+  return <StudentList students={students} />;
 }
 
-// Client Component — TanStack Query
-'use client';
-function WorkoutList() {
-  const { data } = useWorkouts(userId);
-  return ...;
+// ✅ Fetches independentes em paralelo
+async function StudentDetailsPage({ params }) {
+  const supabase = await createServerSupabaseClient();
+  const service = createStudentsService(supabase);
+  const [details, history] = await Promise.all([
+    service.fetchStudentDetails(params.id),
+    service.fetchStudentHistory(params.id),
+  ]);
+  return <StudentDetails details={details} history={history} />;
+}
+
+// ❌ NUNCA — query Supabase inline em Server Component
+async function Page() {
+  const { data } = await supabase.from('student_specialists').select('...');
 }
 ```
+
+**Client Component — TanStack Query SOMENTE quando necessário.**
+
+TanStack Query no web é justificado apenas para:
+- Mutations com `onSuccess`/`invalidateQueries` (create, update, delete)
+- Dados que precisam de refetch em foreground (ex: polling)
+- Estado otimista
+
+```tsx
+// ✅ Client Component com mutation — TanStack faz sentido
+'use client';
+function CreateStudentButton() {
+  const { mutate } = useCreateStudent(); // useMutation wrappando service
+  return <Button onClick={() => mutate(data)} />;
+}
+
+// ❌ Errado — TanStack Query para leitura em Client Component quando
+//    o dado poderia vir do Server Component via props
+'use client';
+function StudentList() {
+  const { data } = useStudents(); // desnecessário se o pai for Server Component
+}
+```
+
+**Regra de ouro**: se a página pode ser Server Component, ela deve ser. Passar dados via props para Client Components filhos que precisam de interatividade.
 
 ---
 
