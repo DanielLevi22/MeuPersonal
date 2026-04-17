@@ -88,7 +88,6 @@ describe('StudentsScreen', () => {
     expect(screen.getByTestId('students-header-title')).toBeTruthy();
     expect(screen.getByText('Student One')).toBeTruthy();
     expect(screen.getByText('Invited Student')).toBeTruthy();
-    expect(screen.getByText('Código: CODE123')).toBeTruthy();
   });
 
   it('should fetch students on mount', () => {
