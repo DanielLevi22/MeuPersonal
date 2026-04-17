@@ -21,7 +21,7 @@ export function PendingApprovalsList() {
         .from("profiles")
         .select("*")
         .eq("account_status", "pending")
-        .eq("account_type", "professional")
+        .eq("account_type", "specialist")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

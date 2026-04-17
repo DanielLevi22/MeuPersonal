@@ -55,10 +55,10 @@ export function useDietPlans(studentId?: string) {
 
       if (studentId) {
         query = query.eq("student_id", studentId);
-        if (currentUser.accountType === "professional") {
+        if (currentUser.accountType === "specialist") {
           query = query.or(`personal_id.eq.${currentUser.id},professional_id.eq.${currentUser.id}`);
         }
-      } else if (currentUser.accountType === "professional") {
+      } else if (currentUser.accountType === "specialist") {
         query = query.or(`personal_id.eq.${currentUser.id},professional_id.eq.${currentUser.id}`);
       }
 

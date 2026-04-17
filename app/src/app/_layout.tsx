@@ -99,9 +99,9 @@ function RootLayoutNav({ loaded }: { loaded: boolean }) {
       router.replace('/(auth)/login' as never);
     } else if (session && inAuthGroup) {
       // Redirect based on role and status
-      if (accountType === 'professional' && accountStatus === 'pending') {
+      if (accountType === 'specialist' && accountStatus === 'invited') {
         router.replace('/(auth)/pending-approval' as never);
-      } else if (accountType === 'professional') {
+      } else if (accountType === 'specialist') {
         router.replace('/(tabs)' as never);
       } else {
         router.replace('/(tabs)' as never);

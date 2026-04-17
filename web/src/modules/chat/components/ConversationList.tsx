@@ -25,7 +25,7 @@ export function ConversationList({
 
   useEffect(() => {
     if (user?.id) {
-      if (accountType === "professional") {
+      if (accountType === "specialist") {
         fetchStudents(user.id);
       }
       fetchConversations(user.id);

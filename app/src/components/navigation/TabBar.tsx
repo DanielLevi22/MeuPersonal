@@ -140,14 +140,10 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       state.routes
         .filter((r: Route) => {
           if (!routeOrder.includes(r.name)) return false;
-          if (accountType === 'professional' && !isMasquerading) {
+          if (accountType === 'specialist' && !isMasquerading) {
             if (r.name === 'progress') return false;
           }
-          if (
-            accountType === 'managed_student' ||
-            accountType === 'autonomous_student' ||
-            isMasquerading
-          ) {
+          if (accountType === 'student' || accountType === 'member' || isMasquerading) {
             if (r.name === 'students') return false;
           }
           return true;
@@ -170,10 +166,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   };
 
   const isStudent =
-    !accountType ||
-    accountType === 'managed_student' ||
-    accountType === 'autonomous_student' ||
-    isMasquerading;
+    !accountType || accountType === 'student' || accountType === 'member' || isMasquerading;
 
   const triggerAction = (action: string) => {
     switch (action) {

@@ -35,7 +35,7 @@ export default function LeaderboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterScope, setFilterScope] = useState<'global' | 'my_students'>(
-    accountType === 'professional' ? 'my_students' : 'global'
+    accountType === 'specialist' ? 'my_students' : 'global'
   );
 
   // Filter State
@@ -71,7 +71,7 @@ export default function LeaderboardScreen() {
       }
 
       // STRATEGY 1: My Students (Professional View) - ALL students
-      if (currentAccountType === 'professional' && user?.id && filterScope === 'my_students') {
+      if (currentAccountType === 'specialist' && user?.id && filterScope === 'my_students') {
         // 1. Fetch ALL linked students with their profile info
         const { data: linkedData, error: linkError } = await supabase
           .from('coachings')
@@ -300,7 +300,7 @@ export default function LeaderboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {accountType === 'professional' && (
+          {accountType === 'specialist' && (
             <View className="flex-row bg-black p-1.5 rounded-2xl border border-zinc-800 mt-6 min-w-[280px]">
               <TouchableOpacity
                 onPress={() => toggleFilter('my_students')}

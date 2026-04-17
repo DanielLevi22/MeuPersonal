@@ -56,7 +56,7 @@ export function useStudents() {
       const { data: pendingData, error: pendingError } = await supabase
         .from("profiles")
         .select("id, full_name, email, invite_code")
-        .eq("account_type", "managed_student")
+        .eq("account_type", "student")
         .eq("account_status", "pending");
 
       if (pendingError) throw pendingError;

@@ -10,7 +10,7 @@ const { mockSupabase, mockSupabaseBuilder } = global as unknown as {
 jest.mock('@/modules/auth/store/authStore', () => ({
   useAuthStore: {
     getState: () => ({
-      accountType: 'professional',
+      accountType: 'specialist',
       isMasquerading: false,
     }),
   },

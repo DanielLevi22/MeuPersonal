@@ -129,7 +129,7 @@ export default function CreateDietScreen() {
       const { data: pendingData, error: pendingError } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .eq('account_type', 'managed_student')
+        .eq('account_type', 'student')
         .eq('account_status', 'pending');
       // .not('invite_code', 'is', null);
 

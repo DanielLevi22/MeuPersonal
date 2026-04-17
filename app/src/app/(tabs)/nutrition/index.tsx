@@ -4,7 +4,7 @@ import { NutritionScreen, StudentNutritionScreen } from '@/modules/nutrition/rou
 export default function NutritionRoute() {
   const { accountType } = useAuthStore();
 
-  if (accountType === 'professional') {
+  if (accountType === 'specialist') {
     return <NutritionScreen />;
   }
 

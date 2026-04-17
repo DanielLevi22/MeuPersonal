@@ -90,7 +90,7 @@ export default function DashboardScreen() {
 
     setProfile(profileData);
 
-    if (accountType === 'professional') {
+    if (accountType === 'specialist') {
       // Fetch Professional Data
       await Promise.all([fetchStudents(user.id), fetchWorkouts(user.id)]);
     } else {
@@ -111,7 +111,7 @@ export default function DashboardScreen() {
   );
 
   useEffect(() => {
-    if (accountType !== 'professional' && workouts.length > 0) {
+    if (accountType !== 'specialist' && workouts.length > 0) {
       // Logic for suggested workout: pick the first one for now
       setSuggestedWorkout(workouts[0]);
     }
@@ -166,7 +166,7 @@ export default function DashboardScreen() {
   }
 
   // Personal Trainer Dashboard (Legacy View - NOW PREMIUM)
-  if (accountType === 'professional' && !useAuthStore.getState().isMasquerading) {
+  if (accountType === 'specialist' && !useAuthStore.getState().isMasquerading) {
     return (
       <ScreenLayout>
         {/* Ambient Top Light - Made extremely subtle */}

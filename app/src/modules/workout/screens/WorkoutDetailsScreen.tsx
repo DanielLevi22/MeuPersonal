@@ -109,7 +109,7 @@ export default function WorkoutDetailsScreen() {
 
   const handleEditExercise = useCallback(
     (item: StoreExerciseItem) => {
-      if (accountType !== 'professional') return;
+      if (accountType !== 'specialist') return;
       console.log('📝 Opening edit modal for exercise:', item.exercise?.name);
       console.log('📝 Exercise data:', item.exercise);
       console.log('📝 Video URL in exercise:', item.exercise?.video_url);
@@ -210,7 +210,7 @@ export default function WorkoutDetailsScreen() {
       return (
         <Animated.View entering={FadeInDown.delay(index * 100).duration(500)} className="mb-4">
           <TouchableOpacity
-            activeOpacity={accountType === 'professional' ? 0.7 : 1}
+            activeOpacity={accountType === 'specialist' ? 0.7 : 1}
             onPress={() => handleEditExercise(item)}
           >
             <ImageBackground
@@ -334,7 +334,7 @@ export default function WorkoutDetailsScreen() {
               <IconButton icon="arrow-back" onPress={() => router.back()} />
 
               <View className="flex-row gap-2">
-                {accountType === 'professional' && (
+                {accountType === 'specialist' && (
                   <IconButton
                     icon="add"
                     variant="solid"
@@ -404,7 +404,7 @@ export default function WorkoutDetailsScreen() {
                 <Text className="text-zinc-500 font-sans mt-4 text-center">
                   Nenhum exercício cadastrado ainda.
                 </Text>
-                {accountType === 'professional' && (
+                {accountType === 'specialist' && (
                   <TouchableOpacity
                     onPress={() =>
                       router.push({

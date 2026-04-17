@@ -76,9 +76,9 @@ export function useAnalytics() {
 
       const [adminCount, professionalCount, managedCount, autonomousCount] = await Promise.all([
         fetchCountByType("admin"),
-        fetchCountByType("professional"),
-        fetchCountByType("managed_student"),
-        fetchCountByType("autonomous_student"),
+        fetchCountByType("specialist"),
+        fetchCountByType("student"),
+        fetchCountByType("member"),
       ]);
 
       // 6. Get workout and diet plan counts

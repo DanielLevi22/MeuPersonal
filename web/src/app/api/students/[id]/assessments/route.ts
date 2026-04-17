@@ -22,7 +22,7 @@ async function getCallerProfessional(request: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.account_type !== "professional") return null;
+  if (profile?.account_type !== "specialist") return null;
   return user;
 }
 

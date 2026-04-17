@@ -202,7 +202,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
       // If professional, fetch their created periodizations
       // If student, fetch periodizations assigned to them
-      if (accountType === 'professional') {
+      if (accountType === 'specialist') {
         query = query.eq('professional_id', userId);
       } else {
         query = query.eq('student_id', userId);

@@ -59,7 +59,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const { data, error: authError } = await authService.signUpProfessional({
+      const { data, error: authError } = await authService.signUpSpecialist({
         email: email.trim().toLowerCase(),
         password,
         full_name: fullName.trim(),

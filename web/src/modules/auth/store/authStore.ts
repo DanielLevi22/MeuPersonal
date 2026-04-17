@@ -12,7 +12,7 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   accountType: AccountType | null;
-  accountStatus: "pending" | "active" | "rejected" | "suspended" | null;
+  accountStatus: "active" | "inactive" | "invited" | null;
   abilities: AppAbility | null;
   services: string[];
   isLoading: boolean;
@@ -78,22 +78,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         const abilities = defineAbilitiesFor(context);
 
-        // Fetch professional services
-        const { data: servicesData } = await supabase
-          .from("professional_services")
-          .select("service_category")
-          .eq("user_id", user.id)
-          .eq("is_active", true);
+        const services = context.services || [];
 
-        const services = servicesData?.map((s) => s.service_category) || [];
-
-        // Log admin access
         if (context.accountType === "admin") {
-          console.log("🔐 Admin access granted:", {
-            isSuperAdmin: context.isSuperAdmin,
-            userId: user.id,
-            email: user.email,
-          });
+          console.log("🔐 Admin access granted:", { userId: user.id, email: user.email });
         }
 
         set({
@@ -138,14 +126,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .eq("id", data.user.id)
           .single();
 
-        if (profile?.account_status === "pending") {
+        if (profile?.account_status === "inactive") {
           await supabase.auth.signOut();
-          return { success: false, error: "pending_approval" };
-        }
-
-        if (profile?.account_status === "rejected" || profile?.account_status === "suspended") {
-          await supabase.auth.signOut();
-          return { success: false, error: "account_suspended" };
+          return { success: false, error: "account_inactive" };
         }
       }
 
