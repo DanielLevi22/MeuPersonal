@@ -249,6 +249,48 @@ Roles: `admin`, `professional`, `managed_student`, `autonomous_student`
 
 ---
 
+## Compliance LGPD — regras sempre ativas
+
+> Documento base: `docs/LGPD_COMPLIANCE.md`
+> Skill de revisão detalhada: `/lgpd-check`
+
+O MeuPersonal coleta **dados sensíveis de saúde** (Art. 5°, II da Lei 13.709/2018). Estas regras se aplicam a qualquer trabalho que envolva schema, coleta de dados ou features de produto.
+
+### Gatilhos obrigatórios — parar e verificar antes de prosseguir
+
+O agente **deve** verificar compliance LGPD (e invocar `/lgpd-check` se necessário) quando:
+- Adicionando qualquer novo campo a uma tabela existente
+- Criando uma nova tabela com dados pessoais
+- Implementando qualquer feature de onboarding ou formulário
+- Alterando quem pode acessar dados de saúde (RLS, queries)
+- Implementando features de exclusão, exportação ou edição de dados do usuário
+
+### Regras bloqueadoras
+
+**Antes de qualquer novo campo no schema:**
+- [ ] O dado é estritamente necessário para o serviço funcionar? (Princípio da Necessidade — Art. 6°, III)
+- [ ] Existe base legal documentada para coletar esse dado? (Art. 7° ou Art. 11 para saúde)
+- [ ] Está registrado no mapa de dados em `docs/LGPD_COMPLIANCE.md`?
+
+**Antes de qualquer nova tabela:**
+- [ ] RLS habilitado e políticas definidas antes de qualquer dado entrar
+- [ ] Se tabela contém dados de saúde → proteção reforçada (só aluno + especialista vinculado `active`)
+- [ ] Specialist desvinculado perde acesso via RLS — não deletar dados, bloquear acesso
+
+**Dados de saúde — proteção reforçada obrigatória:**
+- Tabelas: `physical_assessments`, `student_anamnesis`, `workout_sessions`, `diet_logs`
+- Consentimento explícito antes da primeira coleta
+- Nunca retornar em listagens genéricas
+- Nunca logar conteúdo em texto claro
+
+**Nunca fazer:**
+- Coletar dado sem finalidade definida
+- Adicionar campo "por precaução" ou "pode ser útil no futuro"
+- Usar soft delete (`inactive`) como substituto para eliminação quando o usuário pede exclusão
+- Expor dados de saúde de um especialista para outro sobre o mesmo aluno
+
+---
+
 ## Fluxo de desenvolvimento (nosso protocolo)
 
 ### Modelo de par
@@ -668,6 +710,7 @@ Skills ficam em `.agent/skills/` na raiz do monorepo. São ativados via `/nome-d
 |---|---|
 | `vercel-react-best-practices` | Ao escrever, revisar ou refatorar qualquer componente React ou página Next.js. Contém 45 regras em 8 categorias (waterfalls, bundle size, re-renders, SSR performance, etc.). **Prioridade CRÍTICA** para features em `web/`. |
 | `web-design-guidelines` | Ao revisar UI — acessibilidade, UX, conformidade de design. Aciona quando pedido: "revise minha UI", "audit design", "check acessibilidade". |
+| `lgpd-check` | Ao projetar novo módulo de schema, adicionar campos com dados pessoais/saúde, ou implementar features de onboarding/exclusão/exportação. **Obrigatório** antes de aprovar qualquer módulo de schema. |
 
 ### Regras de maior impacto (vercel-react-best-practices)
 
