@@ -366,7 +366,7 @@ describe('workoutStore', () => {
     const state = useWorkoutStore.getState();
     expect(state.periodizations[0]).toEqual({
       ...mockPeriodization,
-      student: { full_name: 'Student Name' },
+      student: { id: 's1', full_name: 'Student Name', email: undefined },
     });
   });
 
@@ -395,7 +395,9 @@ describe('workoutStore', () => {
       if (table === 'training_periodizations') {
         return {
           update: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockResolvedValue({ error: null }),
+          eq: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: { id: 'p1', name: 'New' }, error: null }),
         };
       }
       return {};
@@ -416,7 +418,9 @@ describe('workoutStore', () => {
       if (table === 'training_plans') {
         return {
           update: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockResolvedValue({ error: null }),
+          eq: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: { id: 'tp1', name: 'New' }, error: null }),
         };
       }
       return {};
@@ -436,8 +440,10 @@ describe('workoutStore', () => {
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === 'training_plans') {
         return {
+          select: jest.fn().mockReturnThis(),
           delete: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockResolvedValue({ error: null }),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: { periodization_id: 'p1' }, error: null }),
         };
       }
       return {};
@@ -543,7 +549,8 @@ describe('workoutStore', () => {
     const originalWorkout = {
       id: 'orig-id',
       title: 'Original',
-      items: [{ exercise_id: 'ex1', sets: 3, reps: '10' }],
+      specialist_id: 'sp1',
+      exercises: [{ exercise_id: 'ex1', sets: 3, reps: '10', order_index: 0 }],
     };
     const newWorkout = { id: 'new-id', title: 'Original (Cópia)' };
 
@@ -623,14 +630,18 @@ describe('workoutStore', () => {
 
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === 'exercises') {
-        return {
-          insert: jest.fn().mockResolvedValue({ error: null }),
-          select: jest.fn().mockReturnThis(),
+        const mock = {
+          insert: jest.fn(),
+          select: jest.fn(),
+          single: jest.fn().mockResolvedValue({ data: { id: 'new-ex' }, error: null }),
           order: jest.fn().mockImplementation(() => {
             fetchCalled = true;
             return { data: [], error: null };
           }),
         };
+        mock.insert.mockReturnValue(mock);
+        mock.select.mockReturnValue(mock);
+        return mock;
       }
       return {};
     });
@@ -641,7 +652,7 @@ describe('workoutStore', () => {
   });
 
   it('should fetch periodization phases and update state', async () => {
-    const mockPhases = [{ id: 'tp1', name: 'Phase 1', periodization_id: 'p1' }];
+    const mockPhases = [{ id: 'tp1', name: 'Phase 1', periodization_id: 'p1', workouts_count: 0 }];
 
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === 'training_plans') {
@@ -649,6 +660,12 @@ describe('workoutStore', () => {
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
           order: jest.fn().mockResolvedValue({ data: mockPhases, error: null }),
+        };
+      }
+      if (table === 'workouts') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          in: jest.fn().mockResolvedValue({ data: [], error: null }),
         };
       }
       return {};
