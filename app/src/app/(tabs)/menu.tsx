@@ -16,12 +16,6 @@ export default function MenuScreen() {
       color: '#FFFFFF',
     },
     {
-      label: 'Chat',
-      icon: 'chatbubbles-outline',
-      route: '/(tabs)/chat',
-      color: '#FFFFFF',
-    },
-    {
       label: 'Ranking',
       icon: 'trophy-outline',
       route: '/(tabs)/ranking',

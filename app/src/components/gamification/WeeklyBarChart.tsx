@@ -1,7 +1,7 @@
+import type { DailyGoal } from '@meupersonal/shared';
 import { useMemo, useState } from 'react';
 import { Dimensions, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import type { DailyGoal } from '@/services/gamification';
 
 interface WeeklyBarChartProps {
   data: DailyGoal[];

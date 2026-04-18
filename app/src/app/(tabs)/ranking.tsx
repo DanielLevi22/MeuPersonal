@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@meupersonal/supabase';
+import { createGamificationService, type LeaderboardEntry } from '@meupersonal/shared';
+import { supabase } from '@meupersonal/supabase'; // needed for gamificationService factory
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,14 +21,7 @@ import { RankListItem } from '@/components/gamification/RankListItem';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { colors as brandColors } from '@/constants/colors';
 
-interface LeaderboardEntry {
-  student_id: string;
-  name: string;
-  points: number;
-  avatar_url?: string;
-  rank: number;
-  phone?: string; // Added phone for interaction
-}
+const gamificationService = createGamificationService(supabase);
 
 export default function LeaderboardScreen() {
   const { user, accountType } = useAuthStore();
@@ -58,144 +52,22 @@ export default function LeaderboardScreen() {
       let startDate: string;
 
       if (filterPeriod === 'weekly') {
-        // Calculate week start (Monday)
         const day = today.getDay();
         const diff = today.getDate() - day + (day === 0 ? -6 : 1);
         startDate = new Date(today.setDate(diff)).toISOString().split('T')[0];
       } else if (filterPeriod === 'monthly') {
-        // Calculate month start (1st day)
         startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
       } else {
-        // Custom Date
         startDate = customDate.toISOString().split('T')[0];
       }
 
-      // STRATEGY 1: My Students (Professional View) - ALL students
-      if (currentAccountType === 'specialist' && user?.id && filterScope === 'my_students') {
-        // 1. Fetch ALL linked students with their profile info
-        const { data: linkedData, error: linkError } = await supabase
-          .from('coachings')
-          .select(`
-            client_id,
-            student:profiles!client_id (
-              id,
-              full_name,
-              avatar_url,
-              phone
-            )
-          `)
-          .eq('professional_id', user.id)
-          .eq('status', 'active');
+      const scope =
+        currentAccountType === 'specialist' && filterScope === 'my_students'
+          ? 'my_students'
+          : 'global';
 
-        if (linkError) throw linkError;
-
-        if (!linkedData || linkedData.length === 0) {
-          setEntries([]);
-          return;
-        }
-
-        type StudentProfile = {
-          id: string;
-          full_name: string;
-          avatar_url: string | null;
-          phone: string | null;
-        };
-        const students = linkedData
-          .map((d) => d.student as unknown as StudentProfile)
-          .filter(Boolean);
-        const studentIds = students.map((s) => s.id);
-
-        // 2. Fetch scores for these students
-        const { data: scores, error: scoresError } = await supabase
-          .from('ranking_scores')
-          .select('student_id, points')
-          .gte('week_start_date', startDate)
-          .in('student_id', studentIds);
-
-        if (scoresError) throw scoresError;
-
-        // 3. Aggregate scores
-        const scoreMap = new Map<string, number>();
-        scores?.forEach((s) => {
-          const current = scoreMap.get(s.student_id) || 0;
-          scoreMap.set(s.student_id, current + s.points);
-        });
-
-        // 4. Merge: All students + their score (or 0)
-        let mergedData = students.map((student) => ({
-          student_id: student.id,
-          name: student.full_name || 'Aluno',
-          points: scoreMap.get(student.id) || 0,
-          avatar_url: student.avatar_url || undefined,
-          rank: 0,
-          phone: student.phone || undefined,
-        }));
-
-        // 5. Sort by points desc
-        mergedData.sort((a, b) => b.points - a.points);
-
-        // 6. Assign ranks
-        mergedData = mergedData.map((item, index) => ({
-          ...item,
-          rank: index + 1,
-        }));
-
-        setEntries(mergedData);
-        return;
-      }
-
-      // STRATEGY 2: Global Scope
-      const { data: scores, error: scoresError } = await supabase
-        .from('ranking_scores')
-        .select('student_id, points')
-        .gte('week_start_date', startDate);
-
-      if (scoresError) throw scoresError;
-
-      if (!scores || scores.length === 0) {
-        setEntries([]);
-        return;
-      }
-
-      // Aggregate
-      const scoreMap = new Map<string, number>();
-      scores.forEach((s) => {
-        const current = scoreMap.get(s.student_id) || 0;
-        scoreMap.set(s.student_id, current + s.points);
-      });
-
-      // Convert map to array and Sort
-      const sortedScores = Array.from(scoreMap.entries())
-        .map(([student_id, points]) => ({ student_id, points }))
-        .sort((a, b) => b.points - a.points)
-        .slice(0, 50);
-
-      // 2. Fetch Profiles
-      const userIdsToCheck = sortedScores.map((s) => s.student_id);
-
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, phone')
-        .in('id', userIdsToCheck);
-
-      if (profilesError) throw profilesError;
-
-      // 3. Merge Data
-      const profileMap = new Map(profiles?.map((p) => [p.id, p]));
-
-      const leaderboardData = sortedScores.map((score, index) => {
-        const profile = profileMap.get(score.student_id);
-        return {
-          student_id: score.student_id,
-          name: profile?.full_name || 'Aluno',
-          points: score.points,
-          avatar_url: profile?.avatar_url || undefined,
-          rank: index + 1,
-          phone: profile?.phone || undefined,
-        };
-      });
-
-      setEntries(leaderboardData);
+      const data = await gamificationService.fetchLeaderboard(startDate, scope, user?.id);
+      setEntries(data);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     } finally {

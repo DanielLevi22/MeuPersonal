@@ -177,7 +177,6 @@ export default function StudentDetailsScreen() {
               }, 100);
             }}
             onEvolution={() => router.navigate(ROUTES.STUDENTS.ANALYTICS(id as string) as never)}
-            onAiPrescription={() => router.push(`/students/${id}/chat` as never)}
           />
         </View>
 
