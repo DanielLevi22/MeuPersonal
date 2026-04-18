@@ -17,7 +17,6 @@ export { default as CreateDietScreen } from '../screens/CreateDietScreen';
 export { default as DietDetailsScreen } from '../screens/DietDetailsScreen';
 export { default as NutritionScreen } from '../screens/NutritionScreen';
 export { StudentNutritionScreen } from '../screens/StudentNutritionScreen';
-export type { DailyLog } from '../store/nutritionStore';
 // Store
 export { useNutritionStore } from '../store/nutritionStore';
 

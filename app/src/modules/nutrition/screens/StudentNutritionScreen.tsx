@@ -174,10 +174,10 @@ export function StudentNutritionScreen() {
     food: {
       id: string;
       name: string;
-      calories: number;
-      protein: number;
-      carbs: number;
-      fat: number;
+      calories: number | null;
+      protein: number | null;
+      carbs: number | null;
+      fat: number | null;
       serving_size: number;
       serving_unit: string;
     },
@@ -542,7 +542,11 @@ export function StudentNutritionScreen() {
             dayMeals.map((meal) => (
               <MealCard
                 key={meal.id}
-                meal={{ ...meal, name: meal.name || 'Refeição' }}
+                meal={{
+                  ...meal,
+                  name: meal.name || 'Refeição',
+                  meal_time: meal.meal_time ?? undefined,
+                }}
                 items={
                   (dailyLogs[meal.id]?.actual_items as unknown as Array<{
                     id: string;

@@ -64,10 +64,10 @@ export function DailyNutrition() {
         items.forEach((item) => {
           if (item.food) {
             const multiplier = item.quantity / item.food.serving_size;
-            total.calories += item.food.calories * multiplier;
-            total.protein += item.food.protein * multiplier;
-            total.carbs += item.food.carbs * multiplier;
-            total.fat += item.food.fat * multiplier;
+            total.calories += (item.food.calories ?? 0) * multiplier;
+            total.protein += (item.food.protein ?? 0) * multiplier;
+            total.carbs += (item.food.carbs ?? 0) * multiplier;
+            total.fat += (item.food.fat ?? 0) * multiplier;
           }
         });
         return total;
@@ -118,7 +118,7 @@ export function DailyNutrition() {
             {consumedMacros.calories.toFixed(0)}
           </Text>
           <Text className="text-xs text-muted-foreground">
-            / {currentDietPlan.target_calories.toFixed(0)} kcal
+            / {(currentDietPlan.target_calories ?? 0).toFixed(0)} kcal
           </Text>
         </View>
       </View>
@@ -128,19 +128,19 @@ export function DailyNutrition() {
         <MacroBar
           label="Proteína"
           current={consumedMacros.protein}
-          target={currentDietPlan.target_protein}
+          target={currentDietPlan.target_protein ?? 0}
           colorClass="bg-primary"
         />
         <MacroBar
           label="Carboidratos"
           current={consumedMacros.carbs}
-          target={currentDietPlan.target_carbs}
+          target={currentDietPlan.target_carbs ?? 0}
           colorClass="bg-secondary"
         />
         <MacroBar
           label="Gordura"
           current={consumedMacros.fat}
-          target={currentDietPlan.target_fat}
+          target={currentDietPlan.target_fat ?? 0}
           colorClass="bg-yellow-400"
         />
       </View>
@@ -159,7 +159,9 @@ export function DailyNutrition() {
             const totalCalories = items.reduce((sum, item) => {
               return (
                 sum +
-                (item.food ? (item.food.calories * item.quantity) / item.food.serving_size : 0)
+                (item.food
+                  ? ((item.food.calories ?? 0) * item.quantity) / item.food.serving_size
+                  : 0)
               );
             }, 0);
 
@@ -189,7 +191,7 @@ export function DailyNutrition() {
                     <Text
                       className={`text-base font-semibold text-foreground ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
                     >
-                      {meal.name || getMealTypeName(meal.meal_type)}
+                      {meal.name || getMealTypeName(meal.meal_type ?? '')}
                     </Text>
                   </View>
                   <View

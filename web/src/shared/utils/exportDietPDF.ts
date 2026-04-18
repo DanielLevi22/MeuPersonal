@@ -14,23 +14,23 @@ declare module "jspdf" {
 
 interface DietPlan {
   id: string;
-  name: string;
-  start_date: string;
-  end_date: string;
+  name: string | null;
+  start_date: string | null;
+  end_date: string | null;
   plan_type: "unique" | "cyclic";
-  target_calories?: number;
-  target_protein?: number;
-  target_carbs?: number;
-  target_fat?: number;
+  target_calories?: number | null;
+  target_protein?: number | null;
+  target_carbs?: number | null;
+  target_fat?: number | null;
 }
 
 interface DietMeal {
   id: string;
-  day_of_week: number;
-  meal_type: string;
+  day_of_week: number | null;
+  meal_type: string | null;
   meal_order: number;
-  name?: string;
-  meal_time?: string;
+  name?: string | null;
+  meal_time?: string | null;
   meal_foods: DietMealItem[];
 }
 
@@ -40,10 +40,10 @@ interface DietMealItem {
   unit: string;
   food: {
     name: string;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
+    calories: number | null;
+    protein: number | null;
+    carbs: number | null;
+    fat: number | null;
   };
 }
 
@@ -139,7 +139,7 @@ export async function exportDietToPDF(
 
   doc.setFontSize(8);
   doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
-  const vigRange = `${format(new Date(dietPlan.start_date), "dd/MM/yyyy")}  -  ${format(new Date(dietPlan.end_date), "dd/MM/yyyy")}`;
+  const vigRange = `${format(new Date(dietPlan.start_date ?? ""), "dd/MM/yyyy")}  -  ${format(new Date(dietPlan.end_date ?? ""), "dd/MM/yyyy")}`;
   doc.text(`VALOR DE VIGÊNCIA: ${vigRange}`, pageWidth - 15, 26, { align: "right" });
 
   // Neon Base Line
@@ -151,7 +151,7 @@ export async function exportDietToPDF(
   // --- DATA PROCESSING (CLEANED & SEQUENCED) ---
   const mealsByDay = activeMeals.reduce(
     (acc, meal) => {
-      const day = meal.day_of_week;
+      const day = meal.day_of_week ?? 0;
       if (!acc[day]) acc[day] = [];
       acc[day].push(meal);
       return acc;
@@ -201,7 +201,7 @@ export async function exportDietToPDF(
           (m) => m.meal_type && TRANSLATED_MEALS[m.meal_type.toLowerCase()],
         );
         if (mWithTranslation) {
-          rowLabel = TRANSLATED_MEALS[mWithTranslation.meal_type.toLowerCase()];
+          rowLabel = TRANSLATED_MEALS[(mWithTranslation.meal_type ?? "").toLowerCase()];
         }
       }
 
@@ -269,10 +269,11 @@ export async function exportDietToPDF(
       const foods = meal.meal_foods
         .map((f) => `• ${f.food.name} (${f.quantity}${f.unit})`)
         .join("\n");
-      const cals = meal.meal_foods.reduce((s, f) => s + f.food.calories, 0).toFixed(0);
-      const macros = `P: ${meal.meal_foods.reduce((s, f) => s + f.food.protein, 0).toFixed(1)}g\nC: ${meal.meal_foods.reduce((s, f) => s + f.food.carbs, 0).toFixed(1)}g\nG: ${meal.meal_foods.reduce((s, f) => s + f.food.fat, 0).toFixed(1)}g`;
+      const cals = meal.meal_foods.reduce((s, f) => s + (f.food.calories ?? 0), 0).toFixed(0);
+      const macros = `P: ${meal.meal_foods.reduce((s, f) => s + (f.food.protein ?? 0), 0).toFixed(1)}g\nC: ${meal.meal_foods.reduce((s, f) => s + (f.food.carbs ?? 0), 0).toFixed(1)}g\nG: ${meal.meal_foods.reduce((s, f) => s + (f.food.fat ?? 0), 0).toFixed(1)}g`;
 
-      const label = meal.name || TRANSLATED_MEALS[meal.meal_type.toLowerCase()] || "REFEIÇÃO";
+      const label =
+        meal.name || TRANSLATED_MEALS[(meal.meal_type ?? "").toLowerCase()] || "REFEIÇÃO";
 
       return [
         {
@@ -318,6 +319,6 @@ export async function exportDietToPDF(
     doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
-  const fileName = `Protocolo_${dietPlan.name.replace(/[^a-z0-9]/gi, "_")}.pdf`;
+  const fileName = `Protocolo_${(dietPlan.name ?? "Plano").replace(/[^a-z0-9]/gi, "_")}.pdf`;
   doc.save(fileName);
 }

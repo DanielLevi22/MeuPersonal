@@ -61,14 +61,14 @@ export default function StudentDietPlansScreen() {
   }: {
     item: {
       id: string;
-      name: string;
-      description?: string;
+      name: string | null;
+      description?: string | null;
       status: string;
-      target_protein: number;
-      target_carbs: number;
-      target_fat: number;
-      target_calories: number;
-      start_date: string;
+      target_protein: number | null;
+      target_carbs: number | null;
+      target_fat: number | null;
+      target_calories: number | null;
+      start_date: string | null;
     };
     index: number;
   }) => (
@@ -122,7 +122,7 @@ export default function StudentDietPlansScreen() {
             </View>
             <View className="flex-row items-center">
               <Text className="text-zinc-500 text-xs mr-1 font-medium">
-                {new Date(item.start_date).toLocaleDateString()}
+                {item.start_date ? new Date(item.start_date).toLocaleDateString() : '—'}
               </Text>
             </View>
           </View>

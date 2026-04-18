@@ -1,4 +1,4 @@
-import type { Food } from "@meupersonal/core";
+import type { Food } from "@meupersonal/shared";
 import { useEffect, useState } from "react";
 
 interface AddFoodQuantityModalProps {
@@ -98,25 +98,25 @@ export function AddFoodQuantityModal({
                 <div>
                   <p className="text-xs text-muted-foreground">Calorias</p>
                   <p className="text-sm font-bold text-foreground">
-                    {Math.round(food.calories * ratio)}
+                    {Math.round((food.calories ?? 0) * ratio)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Prot</p>
                   <p className="text-sm font-bold text-emerald-400">
-                    {Math.round(food.protein * ratio)}g
+                    {Math.round((food.protein ?? 0) * ratio)}g
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Carb</p>
                   <p className="text-sm font-bold text-blue-400">
-                    {Math.round(food.carbs * ratio)}g
+                    {Math.round((food.carbs ?? 0) * ratio)}g
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Gord</p>
                   <p className="text-sm font-bold text-yellow-400">
-                    {Math.round(food.fat * ratio)}g
+                    {Math.round((food.fat ?? 0) * ratio)}g
                   </p>
                 </div>
               </div>

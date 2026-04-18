@@ -61,10 +61,10 @@ const NutritionTabContent = () => {
         items.forEach((item) => {
           if (item.food) {
             const ratio = item.quantity / (item.food.serving_size || 100);
-            calories += item.food.calories * ratio;
-            protein += item.food.protein * ratio;
-            carbs += item.food.carbs * ratio;
-            fat += item.food.fat * ratio;
+            calories += (item.food.calories ?? 0) * ratio;
+            protein += (item.food.protein ?? 0) * ratio;
+            carbs += (item.food.carbs ?? 0) * ratio;
+            fat += (item.food.fat ?? 0) * ratio;
           }
         });
       }

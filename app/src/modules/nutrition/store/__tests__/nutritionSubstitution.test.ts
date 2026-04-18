@@ -45,26 +45,32 @@ describe('nutritionStore - Food Substitution', () => {
 
     // biome-ignore lint/suspicious/noExplicitAny: Testing specific Builder
     const builder = mockSupabaseBuilder as any;
-    // 1. Insert daily log
+    const newLogData = {
+      id: 'log-1',
+      student_id: 'student-1',
+      diet_meal_id: mealId,
+      actual_items: [
+        {
+          id: `sub_${Date.now()}`,
+          food_id: 'food-new',
+          quantity: 150,
+          unit: 'g',
+          is_substitution: true,
+        },
+      ],
+    };
+    // toggleMealLog: 1. SELECT (maybeSingle) → no existing log
+    // biome-ignore lint/suspicious/noExplicitAny: Promise handler allows dynamic resolutions
+    builder.then.mockImplementationOnce((resolve: any) => resolve({ data: null, error: null }));
+    // toggleMealLog: 2. INSERT → new log
     // biome-ignore lint/suspicious/noExplicitAny: Promise handler allows dynamic resolutions
     builder.then.mockImplementationOnce((resolve: any) =>
-      resolve({
-        data: {
-          id: 'log-1',
-          student_id: 'student-1',
-          diet_meal_id: mealId,
-          actual_items: [
-            {
-              id: `sub_${Date.now()}`,
-              food_id: 'food-new',
-              quantity: 150,
-              unit: 'g',
-              is_substitution: true,
-            },
-          ],
-        },
-        error: null,
-      })
+      resolve({ data: { id: 'log-1' }, error: null })
+    );
+    // updateMealLogItems: UPDATE → log with actual_items
+    // biome-ignore lint/suspicious/noExplicitAny: Promise handler allows dynamic resolutions
+    builder.then.mockImplementationOnce((resolve: any) =>
+      resolve({ data: newLogData, error: null })
     );
 
     await useNutritionStore
@@ -76,12 +82,13 @@ describe('nutritionStore - Food Substitution', () => {
     expect(log).toBeDefined();
     // biome-ignore lint/style/noNonNullAssertion: log.actual_items is expected to be non-null in this test path
     expect(log.actual_items!).toHaveLength(1);
-    // biome-ignore lint/suspicious/noExplicitAny: Mocking subset structure for testing
-    // biome-ignore lint/style/noNonNullAssertion: actual_items is guaranteed non-null by test setup
-    expect((log.actual_items![0] as any).food_id).toBe('food-new');
-    // biome-ignore lint/style/noNonNullAssertion: actual_items guaranteed non-null by test setup
-    expect(log.actual_items![0].is_substitution).toBe(true);
-    expect(mockSupabase.from).toHaveBeenCalledWith('diet_logs');
+    expect(((log.actual_items as unknown[])[0] as Record<string, unknown>).food_id).toBe(
+      'food-new'
+    );
+    expect(((log.actual_items as unknown[])[0] as Record<string, unknown>).is_substitution).toBe(
+      true
+    );
+    expect(mockSupabase.from).toHaveBeenCalledWith('meal_logs');
   });
 
   it('should update existing daily log with actual_items', async () => {

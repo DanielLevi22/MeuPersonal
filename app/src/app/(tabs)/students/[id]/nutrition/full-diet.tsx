@@ -96,8 +96,10 @@ export default function DietaCompletaScreen() {
     }
 
     try {
+      const mealConfig = MEAL_TYPES.find((m) => m.type === mealType);
       await addMeal({
         diet_plan_id: currentDietPlan.id,
+        name: mealConfig?.label ?? mealType,
         day_of_week: selectedDay,
         meal_type: mealType,
         meal_order: order,
@@ -167,10 +169,10 @@ export default function DietaCompletaScreen() {
       items.forEach((item) => {
         if (item.food) {
           const multiplier = item.quantity / item.food.serving_size;
-          total.calories += item.food.calories * multiplier;
-          total.protein += item.food.protein * multiplier;
-          total.carbs += item.food.carbs * multiplier;
-          total.fat += item.food.fat * multiplier;
+          total.calories += (item.food.calories ?? 0) * multiplier;
+          total.protein += (item.food.protein ?? 0) * multiplier;
+          total.carbs += (item.food.carbs ?? 0) * multiplier;
+          total.fat += (item.food.fat ?? 0) * multiplier;
         }
       });
       return total;
@@ -291,7 +293,11 @@ export default function DietaCompletaScreen() {
               return (
                 <MealCard
                   key={meal.id}
-                  meal={{ ...meal, name: meal.name || mealType.label }}
+                  meal={{
+                    ...meal,
+                    name: meal.name || mealType.label,
+                    meal_time: meal.meal_time ?? undefined,
+                  }}
                   items={mealItems[meal.id] || []}
                   onAddFood={() => handleAddFoodToMeal(meal.id)}
                   onRemoveFood={handleRemoveFood}

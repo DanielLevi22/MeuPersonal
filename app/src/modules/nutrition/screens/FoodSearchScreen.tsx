@@ -20,10 +20,10 @@ import { useNutritionStore } from '@/modules/nutrition/store/nutritionStore';
 export interface FoodItem {
   id: string;
   name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
   serving_size: number;
   serving_unit: string;
 }
@@ -136,7 +136,16 @@ export default function FoodSearchScreen({
       fetchMealItems(mealId);
       // Sync local items with store items when they load
       if (mealItems[mealId]) {
-        setLocalItems(mealItems[mealId]);
+        setLocalItems(
+          mealItems[mealId].map((item) => ({
+            id: item.id,
+            food_id: item.food_id,
+            food: item.food as FoodItem | undefined,
+            quantity: item.quantity,
+            unit: item.unit,
+            order_index: item.order_index,
+          }))
+        );
       }
     }
   }, [mealId, mealItems, fetchMealItems]); // Re-sync if store updates
@@ -302,7 +311,7 @@ export default function FoodSearchScreen({
     for (const macro of activeMacros) {
       const targetVal = parseFloat(targets[macro] || '0');
       if (targetVal > 0) {
-        const foodVal = food[macro];
+        const foodVal = food[macro] ?? 0;
         if (foodVal > 0) {
           quantities.push((targetVal / foodVal) * (food.serving_size || 100));
           validTargets++;
