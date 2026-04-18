@@ -7,11 +7,7 @@ interface QuickActionsProps {
   onEvolution: () => void;
 }
 
-export function QuickActions({
-  onDownload,
-  onStudentView,
-  onEvolution,
-}: QuickActionsProps) {
+export function QuickActions({ onDownload, onStudentView, onEvolution }: QuickActionsProps) {
   const actions = [
     {
       id: 'download',
