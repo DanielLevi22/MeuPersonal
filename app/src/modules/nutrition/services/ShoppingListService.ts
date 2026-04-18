@@ -1,4 +1,4 @@
-import type { DietMeal, DietMealItem } from '@meupersonal/core';
+import type { DietMeal, DietMealItem } from '@meupersonal/shared';
 import { GeminiService } from '@/modules/ai/services/GeminiService';
 
 export interface ShoppingListItem {

@@ -54,7 +54,6 @@ export default function NewDietPage() {
         plan: {
           name,
           student_id: studentId,
-          personal_id: "",
           plan_type: selectedStrategy === "carb_cycling" ? "cyclic" : "unique",
           start_date: startDate,
           end_date: endDate,

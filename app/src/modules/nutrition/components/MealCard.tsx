@@ -9,7 +9,7 @@ interface MealCardProps {
     quantity: number;
     unit?: string;
     is_substitution?: boolean;
-    food?: { name: string; serving_size?: number; calories?: number };
+    food?: { name: string; serving_size?: number | null; calories?: number | null };
   }[];
   onAddFood: () => void;
   onRemoveFood: (itemId: string) => void;

@@ -54,8 +54,12 @@ describe('nutritionStore', () => {
       if (table === 'meal_logs') {
         return {
           insert: jest.fn().mockReturnThis(),
+          update: jest.fn().mockReturnThis(),
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
+          // toggleMealLog first does a maybeSingle SELECT to check for existing log
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          // then inserts and calls single() for the result
           single: jest.fn().mockResolvedValue({
             data: { id: 'log-1', completed: true, diet_meal_id: mockMealId },
             error: null,

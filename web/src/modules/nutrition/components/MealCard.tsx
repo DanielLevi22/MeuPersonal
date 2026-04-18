@@ -1,6 +1,6 @@
 "use client";
 
-import type { DietMeal, DietMealItem, Food } from "@meupersonal/core";
+import type { DietMeal, DietMealItem, Food } from "@meupersonal/shared";
 
 interface MealCardProps {
   meal: DietMeal & { meal_foods?: (DietMealItem & { food: Food })[] };
@@ -22,10 +22,10 @@ export function MealCard({
   const mealTotals = (meal.meal_foods || []).reduce(
     (acc, item) => {
       const ratio = item.quantity / item.food.serving_size;
-      acc.calories += item.food.calories * ratio;
-      acc.protein += item.food.protein * ratio;
-      acc.carbs += item.food.carbs * ratio;
-      acc.fat += item.food.fat * ratio;
+      acc.calories += (item.food.calories ?? 0) * ratio;
+      acc.protein += (item.food.protein ?? 0) * ratio;
+      acc.carbs += (item.food.carbs ?? 0) * ratio;
+      acc.fat += (item.food.fat ?? 0) * ratio;
       return acc;
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0 },
@@ -117,19 +117,20 @@ export function MealCard({
                 <div className="flex-1 min-w-0 pr-2">
                   <p className="text-sm font-bold text-foreground truncate">{item.food.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {item.quantity} {item.unit} • {Math.round(item.food.calories * ratio)} kcal
+                    {item.quantity} {item.unit} • {Math.round((item.food.calories ?? 0) * ratio)}{" "}
+                    kcal
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right text-[10px] text-muted-foreground hidden sm:block whitespace-nowrap">
                     <span className="text-emerald-400/80 mr-2">
-                      P: {Math.round(item.food.protein * ratio)}g
+                      P: {Math.round((item.food.protein ?? 0) * ratio)}g
                     </span>
                     <span className="text-blue-400/80 mr-2">
-                      C: {Math.round(item.food.carbs * ratio)}g
+                      C: {Math.round((item.food.carbs ?? 0) * ratio)}g
                     </span>
                     <span className="text-yellow-400/80">
-                      G: {Math.round(item.food.fat * ratio)}g
+                      G: {Math.round((item.food.fat ?? 0) * ratio)}g
                     </span>
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -1,6 +1,6 @@
 "use client";
 
-import type { DietPlan } from "@meupersonal/core";
+import type { DietPlan } from "@meupersonal/shared";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AnimatePresence, motion } from "framer-motion";
@@ -166,8 +166,8 @@ export function DietDetailsHeader({
               </AnimatePresence>
             </div>
             <span className="text-zinc-600 font-medium">
-              {format(new Date(dietPlan.start_date), "d 'de' MMM", { locale: ptBR })} -{" "}
-              {format(new Date(dietPlan.end_date), "d 'de' MMM", { locale: ptBR })}
+              {format(new Date(dietPlan.start_date ?? ""), "d 'de' MMM", { locale: ptBR })} -{" "}
+              {format(new Date(dietPlan.end_date ?? ""), "d 'de' MMM", { locale: ptBR })}
             </span>
           </div>
 
@@ -190,7 +190,7 @@ export function DietDetailsHeader({
             <div className="flex flex-row gap-6">
               <MacroRing
                 label="Proteína"
-                value={dietPlan.target_protein}
+                value={dietPlan.target_protein ?? 0}
                 max={300}
                 color="#10b981"
                 size="md"
@@ -202,7 +202,7 @@ export function DietDetailsHeader({
               />
               <MacroRing
                 label="Carbo"
-                value={dietPlan.target_carbs}
+                value={dietPlan.target_carbs ?? 0}
                 max={600}
                 color="#3b82f6"
                 size="md"
@@ -214,7 +214,7 @@ export function DietDetailsHeader({
               />
               <MacroRing
                 label="Gordura"
-                value={dietPlan.target_fat}
+                value={dietPlan.target_fat ?? 0}
                 max={150}
                 color="#eab308"
                 size="md"
@@ -285,7 +285,7 @@ export function DietDetailsHeader({
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDelete}
-        planName={dietPlan.name}
+        planName={dietPlan.name ?? ""}
         isDeleting={deleteMutation.isPending}
       />
     </>

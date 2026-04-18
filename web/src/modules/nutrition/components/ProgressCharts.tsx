@@ -60,20 +60,20 @@ export function ProgressCharts({ studentId, startDate, endDate }: ProgressCharts
   const macroData = dietLogs.reduce((acc: any[], log) => {
     const dateStr = format(new Date(log.logged_date), "dd/MM", { locale: ptBR });
     const existing = acc.find((item) => item.date === dateStr);
+    const items = log.actual_items as Record<string, number> | null;
 
     if (existing) {
-      // Aggregate if multiple meals per day (from actual_items if available)
-      existing.calories += log.actual_items?.calories || 0;
-      existing.protein += log.actual_items?.protein || 0;
-      existing.carbs += log.actual_items?.carbs || 0;
-      existing.fat += log.actual_items?.fat || 0;
+      existing.calories += items?.calories || 0;
+      existing.protein += items?.protein || 0;
+      existing.carbs += items?.carbs || 0;
+      existing.fat += items?.fat || 0;
     } else {
       acc.push({
         date: dateStr,
-        calories: log.actual_items?.calories || 0,
-        protein: log.actual_items?.protein || 0,
-        carbs: log.actual_items?.carbs || 0,
-        fat: log.actual_items?.fat || 0,
+        calories: items?.calories || 0,
+        protein: items?.protein || 0,
+        carbs: items?.carbs || 0,
+        fat: items?.fat || 0,
         fullDate: log.logged_date,
       });
     }

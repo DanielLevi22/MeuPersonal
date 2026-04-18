@@ -1,4 +1,4 @@
-import type { Food } from "@meupersonal/core";
+import type { Food } from "@meupersonal/shared";
 import { useEffect, useMemo, useState } from "react";
 import { useFoods } from "@/shared/hooks/useNutrition";
 

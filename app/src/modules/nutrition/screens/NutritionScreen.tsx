@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { DietPlan } from '@meupersonal/core';
+import type { DietPlan } from '@meupersonal/shared';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
@@ -65,7 +65,7 @@ export default function NutritionScreen() {
                 {item.name}
               </Text>
               <Text className="text-zinc-500 text-sm font-sans line-clamp-2">
-                {item.description || 'Sem descrição'}
+                {item.notes || 'Sem descrição'}
               </Text>
               {item.student?.full_name && (
                 <View className="flex-row items-center mt-3">
@@ -176,7 +176,7 @@ export default function NutritionScreen() {
             </View>
             <View className="flex-row items-center">
               <Text className="text-zinc-600 text-[10px] mr-2 font-black uppercase tracking-widest">
-                {new Date(item.start_date).toLocaleDateString()}
+                {item.start_date ? new Date(item.start_date).toLocaleDateString() : '—'}
               </Text>
               <Ionicons name="chevron-forward" size={14} color={brandColors.text.disabled} />
             </View>

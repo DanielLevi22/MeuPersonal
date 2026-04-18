@@ -1,4 +1,4 @@
-import type { DietMealItem } from "@meupersonal/core";
+import type { DietMealItem } from "@meupersonal/shared";
 import { useEffect, useState } from "react";
 
 interface EditFoodModalProps {
