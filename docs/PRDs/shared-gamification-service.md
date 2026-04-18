@@ -1,7 +1,7 @@
 # PRD: shared-gamification-service
 
 **Data de criação:** 2026-04-18
-**Status:** approved
+**Status:** done
 **Branch:** feature/shared-gamification-service
 **Autor:** Daniel Levi
 
