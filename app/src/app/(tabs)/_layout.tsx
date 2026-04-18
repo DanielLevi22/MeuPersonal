@@ -77,14 +77,6 @@ export default function TabLayout() {
           }}
         />
 
-        {/* Hidden Screens */}
-        <Tabs.Screen
-          name="chat"
-          options={{
-            href: null,
-          }}
-        />
-
         <Tabs.Screen
           name="ranking"
           options={{

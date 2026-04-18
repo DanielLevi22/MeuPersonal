@@ -40,6 +40,9 @@
       "Bash(cmd /c \"C:\\\\pessoal\\\\MeuPersonal\\\\web\\\\node_modules\\\\@esbuild\\\\win32-x64\\\\esbuild.exe --version\")",
       "Bash(cmd /c \"cd c:\\\\pessoal\\\\MeuPersonal\\\\web && node_modules\\\\.bin\\\\vitest.cmd run src/shared/hooks/__tests__/useWorkoutMutations.test.ts src/modules/workouts/__tests__/DeleteConfirmModal.test.tsx 2>&1\")",
       "WebSearch"
+    ],
+    "additionalDirectories": [
+      "C:\\pessoal\\MeuPersonal\\app\\src\\app\\(tabs)\\students\\[id]"
     ]
   }
 }
