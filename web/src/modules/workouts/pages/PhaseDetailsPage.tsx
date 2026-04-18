@@ -43,15 +43,15 @@ function WorkoutCard({ workout, onDelete }: { workout: Workout; onDelete: (w: Wo
         className="flex items-center gap-4 flex-1 min-w-0 p-4"
       >
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-          <span className="text-primary font-bold text-sm">{workout.identifier ?? "?"}</span>
+          <span className="text-primary font-bold text-sm">{workout.title.charAt(0)}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
             {workout.title}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {workout.exercise_count ?? 0} exercício{(workout.exercise_count ?? 0) !== 1 ? "s" : ""}
-            {workout.estimated_duration ? ` · ${workout.estimated_duration} min` : ""}
+            {workout.exercises_count ?? 0} exercício
+            {(workout.exercises_count ?? 0) !== 1 ? "s" : ""}
           </p>
         </div>
         <svg
@@ -122,11 +122,11 @@ export default function PhaseDetailsPage() {
 
   // Unique muscle groups from workouts for filter tabs
   const muscleGroups = Array.from(
-    new Set(workouts.flatMap((w) => w.focus_areas ?? []).filter(Boolean)),
+    new Set(workouts.map((w) => w.muscle_group).filter(Boolean) as string[]),
   );
 
   const filteredWorkouts = selectedMuscle
-    ? workouts.filter((w) => w.focus_areas?.includes(selectedMuscle))
+    ? workouts.filter((w) => w.muscle_group === selectedMuscle)
     : workouts;
 
   const handleConfirmSplit = useCallback(async () => {
@@ -134,11 +134,6 @@ export default function PhaseDetailsPage() {
     setChangingSplit(true);
     setPendingSplit(null);
     try {
-      await updateMutation.mutateAsync({
-        id: phaseId,
-        data: { training_split: pendingSplit as never },
-      });
-
       await supabase.from("workouts").delete().eq("training_plan_id", phaseId);
 
       const {
@@ -150,21 +145,19 @@ export default function PhaseDetailsPage() {
         await supabase.from("workouts").insert({
           training_plan_id: phaseId,
           title: `Treino ${letter}`,
-          description: "",
-          personal_id: user.id,
-          identifier: letter,
+          specialist_id: user.id,
         });
       }
 
       queryClient.invalidateQueries({ queryKey: ["workouts-by-plan", phaseId] });
       queryClient.invalidateQueries({ queryKey: ["training-plan", phaseId] });
-      toast.success(`Divisão alterada para ${pendingSplit}`);
+      toast.success(`Divisão criada: ${pendingSplit}`);
     } catch {
       toast.error("Erro ao alterar divisão de treino");
     } finally {
       setChangingSplit(false);
     }
-  }, [plan, pendingSplit, phaseId, updateMutation, queryClient]);
+  }, [plan, pendingSplit, phaseId, queryClient]);
 
   const handleDeletePhase = useCallback(async () => {
     if (!confirm(`Excluir a fase "${plan?.name}"? Todos os treinos serão perdidos.`)) return;
@@ -306,97 +299,20 @@ export default function PhaseDetailsPage() {
 
       {/* Config card */}
       <div className="bg-surface border border-white/10 rounded-2xl p-6 space-y-5">
-        {/* Split + Frequency */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-              Divisão de Treino
-            </p>
-            <div className="relative">
-              <button
-                onClick={() => setShowSplitPicker((v) => !v)}
-                disabled={changingSplit}
-                className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50"
-              >
-                <span className="text-foreground font-bold text-lg uppercase">
-                  {plan.training_split || "--"}
-                </span>
-                <svg
-                  className="w-4 h-4 text-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {showSplitPicker && (
-                <div className="absolute left-0 top-full mt-1 bg-surface border border-white/10 rounded-xl shadow-xl z-20 p-2 flex flex-col gap-1 min-w-[160px]">
-                  {SPLITS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        setShowSplitPicker(false);
-                        if (s !== plan.training_split) {
-                          setPendingSplit(s);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg text-left text-sm font-bold hover:bg-primary/10 hover:text-primary transition-colors ${
-                        plan.training_split === s ? "bg-primary/20 text-primary" : "text-foreground"
-                      }`}
-                    >
-                      {s}
-                      <span className="text-xs font-normal text-muted-foreground ml-2">
-                        ({s.length} ficha{s.length !== 1 ? "s" : ""})
-                      </span>
-                    </button>
-                  ))}
-                  {/* Custom split input */}
-                  <div className="border-t border-white/10 mt-1 pt-2 px-1">
-                    <p className="text-xs text-muted-foreground mb-1.5 px-1">Personalizado</p>
-                    <div className="flex gap-1">
-                      <input
-                        type="text"
-                        value={customSplitInput}
-                        onChange={(e) =>
-                          setCustomSplitInput(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))
-                        }
-                        placeholder="Ex: ABCBAC"
-                        maxLength={12}
-                        className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono uppercase"
-                      />
-                      <button
-                        type="button"
-                        disabled={customSplitInput.length === 0}
-                        onClick={() => {
-                          setShowSplitPicker(false);
-                          if (customSplitInput !== plan.training_split) {
-                            setPendingSplit(customSplitInput);
-                          }
-                          setCustomSplitInput("");
-                        }}
-                        className="px-2 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-primary/90 transition-colors"
-                      >
-                        OK
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-              Frequência
-            </p>
-            <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-4 py-2.5 rounded-xl">
+        {/* Split picker (creates workouts per letter) */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+            Divisão de Treino
+          </p>
+          <div className="relative">
+            <button
+              onClick={() => setShowSplitPicker((v) => !v)}
+              disabled={changingSplit}
+              className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              <span className="text-foreground font-bold text-lg uppercase">
+                {workouts.map((w) => w.title.charAt(0)).join("") || "--"}
+              </span>
               <svg
                 className="w-4 h-4 text-primary"
                 fill="none"
@@ -407,11 +323,58 @@ export default function PhaseDetailsPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                  d="M19 9l-7 7-7-7"
                 />
               </svg>
-              <span className="text-primary font-bold text-lg">{plan.weekly_frequency ?? 0}x</span>
-            </div>
+            </button>
+
+            {showSplitPicker && (
+              <div className="absolute left-0 top-full mt-1 bg-surface border border-white/10 rounded-xl shadow-xl z-20 p-2 flex flex-col gap-1 min-w-40">
+                {SPLITS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setShowSplitPicker(false);
+                      setPendingSplit(s);
+                    }}
+                    className="px-4 py-2 rounded-lg text-left text-sm font-bold hover:bg-primary/10 hover:text-primary transition-colors text-foreground"
+                  >
+                    {s}
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      ({s.length} ficha{s.length !== 1 ? "s" : ""})
+                    </span>
+                  </button>
+                ))}
+                {/* Custom split input */}
+                <div className="border-t border-white/10 mt-1 pt-2 px-1">
+                  <p className="text-xs text-muted-foreground mb-1.5 px-1">Personalizado</p>
+                  <div className="flex gap-1">
+                    <input
+                      type="text"
+                      value={customSplitInput}
+                      onChange={(e) =>
+                        setCustomSplitInput(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))
+                      }
+                      placeholder="Ex: ABCBAC"
+                      maxLength={12}
+                      className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono uppercase"
+                    />
+                    <button
+                      type="button"
+                      disabled={customSplitInput.length === 0}
+                      onClick={() => {
+                        setShowSplitPicker(false);
+                        setPendingSplit(customSplitInput);
+                        setCustomSplitInput("");
+                      }}
+                      className="px-2 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                    >
+                      OK
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

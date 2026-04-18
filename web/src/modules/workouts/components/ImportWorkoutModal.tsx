@@ -35,7 +35,7 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
         .from("workout_exercises")
         .select("*")
         .eq("workout_id", workoutId)
-        .order("order", { ascending: true });
+        .order("order_index", { ascending: true });
 
       // 3. Fetch source workout data
       const { data: source, error: srcErr } = await supabase
@@ -52,11 +52,9 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
           training_plan_id: phaseId,
           title: source.title,
           description: source.description,
-          personal_id: user.id,
-          identifier: source.identifier,
-          estimated_duration: source.estimated_duration,
-          difficulty_level: source.difficulty_level,
-          focus_areas: source.focus_areas,
+          specialist_id: user.id,
+          muscle_group: source.muscle_group,
+          difficulty: source.difficulty,
         })
         .select()
         .single();
@@ -67,11 +65,11 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
         const newItems = sourceItems.map((item) => ({
           workout_id: newWorkout.id,
           exercise_id: item.exercise_id,
-          order: item.order,
+          order_index: item.order_index,
           sets: item.sets,
           reps: item.reps,
           weight: item.weight,
-          rest_time: item.rest_time,
+          rest_seconds: item.rest_seconds,
           notes: item.notes,
         }));
         await supabase.from("workout_exercises").insert(newItems);
@@ -189,19 +187,18 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
                       : "bg-white/5 border-white/10 hover:border-primary/40 hover:bg-white/10"
                   } disabled:opacity-60`}
                 >
-                  {/* Identifier badge */}
+                  {/* Badge */}
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-primary font-bold text-sm">
-                      {workout.identifier ?? workout.title.charAt(0).toUpperCase()}
+                      {workout.title.charAt(0).toUpperCase()}
                     </span>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{workout.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {workout.exercise_count ?? 0} exercício
-                      {(workout.exercise_count ?? 0) !== 1 ? "s" : ""}
-                      {workout.estimated_duration ? ` · ${workout.estimated_duration} min` : ""}
+                      {workout.exercises_count ?? 0} exercício
+                      {(workout.exercises_count ?? 0) !== 1 ? "s" : ""}
                     </p>
                   </div>
 

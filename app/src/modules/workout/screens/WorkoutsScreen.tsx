@@ -87,8 +87,8 @@ export default function WorkoutsScreen() {
       const muscleGroup = item.muscle_group || 'Geral';
       const bgImage = MUSCLE_IMAGES[muscleGroup] || MUSCLE_IMAGES.Geral;
 
-      const duration = item.duration_minutes || 60;
-      const exercisesCount = item.items?.length || item.exercises_count || 0;
+      const duration = 60;
+      const exercisesCount = item.exercises_count || 0;
 
       return (
         <PremiumCard

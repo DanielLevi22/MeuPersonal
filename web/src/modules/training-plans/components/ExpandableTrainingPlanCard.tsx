@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import type { TrainingPlan } from "@/shared/hooks/useTrainingPlans";
-import { useDeleteWorkout, useUpdateWorkout } from "@/shared/hooks/useWorkoutMutations";
+import { useDeleteWorkout } from "@/shared/hooks/useWorkoutMutations";
 import { useWorkouts } from "@/shared/hooks/useWorkouts";
 import { CreateWorkoutModal } from "@/workouts";
 import { SortableWorkoutItem } from "./SortableWorkoutItem";
@@ -28,17 +28,6 @@ interface ExpandableTrainingPlanCardProps {
   onDelete: () => void;
   onClone: () => void;
 }
-
-const splitLabels: Record<string, string> = {
-  abc: "ABC",
-  abcd: "ABCD",
-  abcde: "ABCDE",
-  abcdef: "ABCDEF",
-  upper_lower: "Superior/Inferior",
-  full_body: "Full Body",
-  push_pull_legs: "Push/Pull/Legs",
-  custom: "Personalizado",
-};
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/30",
@@ -64,7 +53,6 @@ export function ExpandableTrainingPlanCard({
 
   const { data: workouts = [], isLoading: workoutsLoading } = useWorkouts();
   const deleteWorkoutMutation = useDeleteWorkout();
-  const updateWorkoutMutation = useUpdateWorkout();
 
   // Local state for optimistic updates
   const [orderedWorkouts, setOrderedWorkouts] = useState(workouts);
@@ -73,12 +61,12 @@ export function ExpandableTrainingPlanCard({
   useEffect(() => {
     const planWorkouts = workouts
       .filter((w) => w.training_plan_id === trainingPlan.id)
-      .sort((a, b) => (a.identifier || "").localeCompare(b.identifier || ""));
+      .sort((a, b) => a.title.localeCompare(b.title));
     setOrderedWorkouts(planWorkouts);
   }, [workouts, trainingPlan.id]);
 
-  const startDate = new Date(trainingPlan.start_date);
-  const endDate = new Date(trainingPlan.end_date);
+  const startDate = new Date(trainingPlan.start_date ?? "");
+  const endDate = new Date(trainingPlan.end_date ?? "");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -94,32 +82,7 @@ export function ExpandableTrainingPlanCard({
       setOrderedWorkouts((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        const newItems = arrayMove(items, oldIndex, newIndex);
-
-        // Update identifiers based on new order (A, B, C...)
-        const updates = newItems.map((item, index) => {
-          const identifier = String.fromCharCode(65 + index); // A, B, C...
-          return {
-            id: item.id,
-            identifier,
-          };
-        });
-
-        // Optimistically update local state
-        const optimisticItems = newItems.map((item, index) => ({
-          ...item,
-          identifier: String.fromCharCode(65 + index),
-        }));
-
-        // Trigger updates in background
-        updates.forEach((update) => {
-          updateWorkoutMutation.mutate({
-            id: update.id,
-            identifier: update.identifier,
-          });
-        });
-
-        return optimisticItems;
+        return arrayMove(items, oldIndex, newIndex);
       });
     }
   };
@@ -156,18 +119,10 @@ export function ExpandableTrainingPlanCard({
               >
                 {statusLabels[trainingPlan.status]}
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-secondary/10 text-secondary border border-secondary/30">
-                {splitLabels[trainingPlan.training_split]}
-              </span>
             </div>
             <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
               {trainingPlan.name}
             </h3>
-            {trainingPlan.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {trainingPlan.description}
-              </p>
-            )}
           </div>
 
           {/* Actions */}
@@ -239,8 +194,8 @@ export function ExpandableTrainingPlanCard({
             <p className="text-lg font-bold text-foreground">{orderedWorkouts.length}</p>
           </div>
           <div className="bg-background/50 rounded-lg p-3 text-center">
-            <p className="text-xs text-muted-foreground mb-1">Frequência</p>
-            <p className="text-lg font-bold text-foreground">{trainingPlan.weekly_frequency}x</p>
+            <p className="text-xs text-muted-foreground mb-1">Treinos</p>
+            <p className="text-lg font-bold text-foreground">{orderedWorkouts.length}</p>
           </div>
           <div className="bg-background/50 rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground mb-1">Duração</p>
@@ -250,20 +205,6 @@ export function ExpandableTrainingPlanCard({
             </p>
           </div>
         </div>
-
-        {/* Goals */}
-        {trainingPlan.goals && trainingPlan.goals.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground mb-2">Metas:</p>
-            <div className="flex flex-wrap gap-2">
-              {trainingPlan.goals.map((goal, index) => (
-                <span key={index} className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                  🎯 {goal}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Expand/Collapse Button */}
         <button

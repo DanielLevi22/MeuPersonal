@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import {
-  type CreateTrainingPlanInput,
-  useCreateTrainingPlan,
-} from "@/shared/hooks/useTrainingPlanMutations";
-import type { TrainingSplit } from "@/shared/hooks/useTrainingPlans";
+import { useCreateTrainingPlan } from "@/shared/hooks/useTrainingPlanMutations";
+
+type TrainingSplit =
+  | "full_body"
+  | "upper_lower"
+  | "abc"
+  | "abcd"
+  | "abcde"
+  | "push_pull_legs"
+  | "custom";
 
 const SPLITS: { value: TrainingSplit; label: string; desc: string }[] = [
   { value: "full_body", label: "Full Body", desc: "1 treino completo" },
@@ -44,17 +49,12 @@ export function CreateTrainingPlanModal({ periodizationId, isOpen, onClose }: Pr
     e.preventDefault();
     if (!name || !startDate || !endDate) return;
 
-    const input: CreateTrainingPlanInput = {
+    await createMutation.mutateAsync({
       periodization_id: periodizationId,
       name,
-      training_split: split,
-      weekly_frequency: Number(frequency),
       start_date: startDate,
       end_date: endDate,
-      description: description || undefined,
-    };
-
-    await createMutation.mutateAsync(input);
+    });
     handleClose();
   };
 

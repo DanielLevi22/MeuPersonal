@@ -1,16 +1,29 @@
 "use client";
 
+import type { UpdateWorkoutInput } from "@meupersonal/shared";
+import { createWorkoutsService } from "@meupersonal/shared";
 import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+export type { UpdateWorkoutInput };
+
+const workoutsService = createWorkoutsService(supabase);
+
 export interface CreateWorkoutInput {
   title: string;
-  description?: string;
+  description?: string | null;
   training_plan_id?: string | null;
-  identifier?: string | null;
-  estimated_duration?: number | null;
-  difficulty_level?: "beginner" | "intermediate" | "advanced" | null;
-  focus_areas?: string[] | null;
+  muscle_group?: string | null;
+  difficulty?: "beginner" | "intermediate" | "advanced" | null;
+  day_of_week?:
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday"
+    | null;
 }
 
 export function useCreateWorkout() {
@@ -21,25 +34,8 @@ export function useCreateWorkout() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data, error } = await supabase
-        .from("workouts")
-        .insert({
-          title: workout.title,
-          description: workout.description || null,
-          personal_id: user.id,
-          training_plan_id: workout.training_plan_id,
-          identifier: workout.identifier,
-          estimated_duration: workout.estimated_duration,
-          difficulty_level: workout.difficulty_level,
-          focus_areas: workout.focus_areas,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      if (!user?.id) throw new Error("Usuário não autenticado");
+      return workoutsService.createWorkout({ specialist_id: user.id, ...workout });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workouts"] });
@@ -51,29 +47,8 @@ export function useUpdateWorkout() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string } & Partial<CreateWorkoutInput>) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: updated, error } = await supabase
-        .from("workouts")
-        .update({
-          title: data.title,
-          description: data.description,
-          training_plan_id: data.training_plan_id,
-          identifier: data.identifier,
-          estimated_duration: data.estimated_duration,
-          difficulty_level: data.difficulty_level,
-          focus_areas: data.focus_areas,
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return updated;
+    mutationFn: async ({ id, ...data }: { id: string } & UpdateWorkoutInput) => {
+      return workoutsService.updateWorkout(id, data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["workouts"] });
@@ -86,11 +61,7 @@ export function useDeleteWorkout() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("workouts").delete().eq("id", id);
-
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => workoutsService.deleteWorkout(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workouts"] });
     },
@@ -101,10 +72,7 @@ export function useDeleteWorkoutItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await supabase.from("workout_exercises").delete().eq("id", itemId);
-      if (error) throw error;
-    },
+    mutationFn: (itemId: string) => workoutsService.removeExerciseFromWorkout(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workout-items"] });
       queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });

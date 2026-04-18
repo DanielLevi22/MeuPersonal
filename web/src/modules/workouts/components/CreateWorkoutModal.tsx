@@ -62,9 +62,7 @@ export function CreateWorkoutModal({
     if (existingWorkout) {
       setTitle(existingWorkout.title);
       setDescription(existingWorkout.description || "");
-      setIdentifier(existingWorkout.identifier || "");
-      setEstimatedDuration(existingWorkout.estimated_duration?.toString() || "");
-      setDifficultyLevel(existingWorkout.difficulty_level || "intermediate");
+      setDifficultyLevel(existingWorkout.difficulty || "intermediate");
       // TODO: Load workout items if editing
     }
   }, [existingWorkout]);
@@ -92,10 +90,8 @@ export function CreateWorkoutModal({
       const workoutData = {
         title: resolvedTitle,
         description,
-        training_plan_id: trainingPlanId,
-        identifier: trainingPlanId ? identifier : null,
-        estimated_duration: estimatedDuration ? parseInt(estimatedDuration, 10) : null,
-        difficulty_level: difficultyLevel,
+        training_plan_id: trainingPlanId ?? null,
+        difficulty: difficultyLevel,
       };
 
       let newWorkoutId = workoutId;
@@ -121,10 +117,10 @@ export function CreateWorkoutModal({
           const items = selectedExercises.map((ex, index) => ({
             workout_id: newWorkoutId,
             exercise_id: ex.id,
-            order: index,
+            order_index: index,
             sets: ex.sets,
             reps: ex.reps,
-            rest_time: ex.rest_seconds,
+            rest_seconds: ex.rest_seconds,
             weight: ex.weight || null,
             notes: null,
           }));

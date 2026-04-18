@@ -19,6 +19,7 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
       "@meupersonal/core": resolve(__dirname, "./src/packages/core"),
       "@meupersonal/supabase": resolve(__dirname, "./src/packages/supabase"),
+      "@meupersonal/shared": resolve(__dirname, "../shared/src"),
     },
   },
 });

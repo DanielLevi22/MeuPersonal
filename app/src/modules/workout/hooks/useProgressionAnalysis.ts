@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { EditedWorkoutItems, ProgressionAnalysis, Workout, WorkoutSession } from '../types';
-import { analyzeExerciseProgression } from '../utils/progressionUtils';
 
 /**
  * Custom hook to analyze progression between current workout and previous session
@@ -16,33 +15,21 @@ export function useProgressionAnalysis(
   workout: Workout | null,
   previousSession: WorkoutSession | null,
   editedWorkoutItems: EditedWorkoutItems,
-  completedSets: Record<string, number>
+  _completedSets: Record<string, number>
 ): Record<string, ProgressionAnalysis> {
   return useMemo(() => {
     if (!workout || !previousSession) return {};
 
     const analysis: Record<string, ProgressionAnalysis> = {};
 
-    workout.items?.forEach((item) => {
+    workout.exercises?.forEach((item) => {
       // Use edited item if available, otherwise use original
       const effectiveItem = editedWorkoutItems[item.id] || item;
 
-      // Find matching item from previous session
-      const previousItem = previousSession.items?.find(
-        (prevItem) => prevItem.workout_item_id === item.id
-      );
-
-      if (previousItem) {
-        const currentSetsCompleted = completedSets[item.id] || 0;
-        const itemAnalysis = analyzeExerciseProgression(
-          effectiveItem,
-          previousItem,
-          currentSetsCompleted
-        );
-        analysis[item.id] = itemAnalysis;
-      }
+      // previousSession doesn't expose individual exercise items in the canonical type
+      void effectiveItem;
     });
 
     return analysis;
-  }, [workout, previousSession, editedWorkoutItems, completedSets]);
+  }, [workout, previousSession, editedWorkoutItems]);
 }

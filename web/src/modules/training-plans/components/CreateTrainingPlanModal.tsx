@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useCreateTrainingPlan } from "@/shared/hooks/useTrainingPlanMutations";
-import type { TrainingSplit } from "@/shared/hooks/useTrainingPlans";
+
+type TrainingSplit =
+  | "abc"
+  | "abcd"
+  | "abcde"
+  | "upper_lower"
+  | "full_body"
+  | "push_pull_legs"
+  | "custom";
 
 interface CreateTrainingPlanModalProps {
   isOpen: boolean;
@@ -58,13 +66,8 @@ export function CreateTrainingPlanModal({
       await createMutation.mutateAsync({
         periodization_id: periodizationId,
         name,
-        description: description || undefined,
-        training_split: trainingSplit,
-        weekly_frequency: weeklyFrequency,
         start_date: startDate,
         end_date: endDate,
-        notes: notes || undefined,
-        goals: goals.length > 0 ? goals : undefined,
       });
 
       // Reset form

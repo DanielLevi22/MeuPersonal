@@ -83,11 +83,11 @@ export default function ExecuteWorkoutScreen() {
     pauseTimer,
     resumeTimer,
   } = useRestTimer((itemId) => {
-    const item = workout?.items?.find((i) => i.id === itemId);
+    const item = workout?.exercises?.find((i) => i.id === itemId);
     if (item) {
       const nextSet = (completedSets[item.id] || 0) + 1;
       const effectiveItem = editedWorkoutItems[item.id] || item;
-      announceSetStart(nextSet, effectiveItem.reps, effectiveItem.weight);
+      announceSetStart(nextSet, effectiveItem.reps ?? '', effectiveItem.weight ?? undefined);
     }
   });
 
@@ -121,29 +121,29 @@ export default function ExecuteWorkoutScreen() {
       const effectiveItem = editedWorkoutItems[item.id] || item;
       const currentCompleted = completedSets[item.id] || 0;
 
-      if (currentCompleted < effectiveItem.sets) {
+      if (currentCompleted < (effectiveItem.sets ?? 0)) {
         setCompletedSets((prev) => ({
           ...prev,
           [item.id]: currentCompleted + 1,
         }));
 
-        if (currentCompleted + 1 < effectiveItem.sets) {
+        if (currentCompleted + 1 < (effectiveItem.sets ?? 0)) {
           // Start rest timer
-          startRest(effectiveItem.rest_time || DEFAULT_REST_TIME, item.id);
-          announceRest(effectiveItem.rest_time || DEFAULT_REST_TIME);
+          startRest(effectiveItem.rest_seconds || DEFAULT_REST_TIME, item.id);
+          announceRest(effectiveItem.rest_seconds || DEFAULT_REST_TIME);
         } else {
           // Exercise completed, announce next exercise if available
-          if (workout?.items) {
-            const myIndex = workout.items.indexOf(item);
-            if (myIndex >= 0 && myIndex < workout.items.length - 1) {
-              const nextItem = workout.items[myIndex + 1];
+          if (workout?.exercises) {
+            const myIndex = workout.exercises.indexOf(item);
+            if (myIndex >= 0 && myIndex < workout.exercises.length - 1) {
+              const nextItem = workout.exercises[myIndex + 1];
               const effectiveNextItem = editedWorkoutItems[nextItem.id] || nextItem;
               if (effectiveNextItem.exercise) {
                 announceExercise(
                   effectiveNextItem.exercise.name,
-                  effectiveNextItem.sets,
-                  effectiveNextItem.reps,
-                  effectiveNextItem.weight
+                  effectiveNextItem.sets ?? 0,
+                  effectiveNextItem.reps ?? '',
+                  effectiveNextItem.weight ?? undefined
                 );
               }
             }
@@ -163,7 +163,7 @@ export default function ExecuteWorkoutScreen() {
   );
 
   const handleFinishWorkout = useCallback(() => {
-    const totalSets = workout?.items?.reduce((acc, item) => acc + item.sets, 0) || 0;
+    const totalSets = workout?.exercises?.reduce((acc, item) => acc + (item.sets ?? 0), 0) || 0;
     const completedTotal = Object.values(completedSets).reduce((acc, val) => acc + val, 0);
 
     if (completedTotal < totalSets) {
@@ -183,9 +183,9 @@ export default function ExecuteWorkoutScreen() {
   const handleVoiceCommand = useCallback(
     async (action: string) => {
       if (action === 'next_set') {
-        const nextItem = workout?.items?.find((item) => {
+        const nextItem = workout?.exercises?.find((item) => {
           const completed = completedSets[item.id] || 0;
-          return completed < item.sets;
+          return completed < (item.sets ?? 0);
         });
 
         if (nextItem) {
@@ -265,7 +265,7 @@ export default function ExecuteWorkoutScreen() {
         setWorkout(found);
 
         const initialSets: Record<string, number> = {};
-        found.items?.forEach((item) => {
+        found.exercises?.forEach((item) => {
           initialSets[item.id] = 0;
         });
         setCompletedSets(initialSets);
@@ -308,7 +308,7 @@ export default function ExecuteWorkoutScreen() {
   const getProgressionSummaryData = useMemo(() => {
     if (!workout || !previousSession || Object.keys(progressionAnalysis).length === 0) return [];
 
-    const summaryData = workout.items
+    const summaryData = workout.exercises
       ?.map((item) => {
         const analysis = progressionAnalysis[item.id];
         if (!analysis || !item.exercise) return null;
@@ -369,18 +369,18 @@ export default function ExecuteWorkoutScreen() {
         const endTime = new Date();
 
         // Include edited parameters in session items
-        const sessionItems = Object.entries(completedSets).map(([itemId, sets]) => {
+        const sessionItems = Object.entries(completedSets).map(([itemId, setsCount]) => {
           const editedItem = editedWorkoutItems[itemId];
+          const originalItem = workout?.exercises?.find((ex) => ex.id === itemId);
+          const reps = editedItem?.reps ?? originalItem?.reps ?? '0';
+          const weight = editedItem?.weight ?? originalItem?.weight ?? '';
           return {
-            workoutItemId: itemId,
-            setsCompleted: sets,
-            // Save edited parameters if they exist
-            ...(editedItem && {
-              editedSets: editedItem.sets,
-              editedReps: editedItem.reps,
-              editedWeight: editedItem.weight,
-              editedRestTime: editedItem.rest_time,
-            }),
+            workoutExerciseId: itemId,
+            setsData: Array.from({ length: setsCount }, () => ({
+              sets: 1,
+              reps: parseInt(String(reps), 10) || 0,
+              weight: weight ? parseFloat(String(weight)) : undefined,
+            })),
           };
         });
 
@@ -453,7 +453,7 @@ export default function ExecuteWorkoutScreen() {
 
   const currentRestExercise = useMemo(() => {
     if (!currentRestItemId || !workout) return '';
-    return workout.items?.find((i) => i.id === currentRestItemId)?.exercise?.name || '';
+    return workout.exercises?.find((i) => i.id === currentRestItemId)?.exercise?.name || '';
   }, [currentRestItemId, workout]);
 
   const renderItem = useCallback(
@@ -461,7 +461,7 @@ export default function ExecuteWorkoutScreen() {
       const effectiveItem = editedWorkoutItems[item.id] || item;
       const isEdited = !!editedWorkoutItems[item.id];
       const completed = completedSets[item.id] || 0;
-      const isCompleted = completed >= effectiveItem.sets;
+      const isCompleted = completed >= (effectiveItem.sets ?? 0);
 
       return (
         <WorkoutExerciseCard
@@ -532,22 +532,21 @@ export default function ExecuteWorkoutScreen() {
             {workout.title}
           </Text>
           <Text className="text-zinc-500 text-lg font-sans mb-12 text-center font-medium">
-            {workout.items?.length} exercícios •{' '}
-            {workout.items?.reduce((acc: number, item: { sets: number }) => acc + item.sets, 0)}{' '}
-            séries
+            {workout.exercises?.length} exercícios •{' '}
+            {workout.exercises?.reduce((acc: number, item) => acc + (item.sets ?? 0), 0)} séries
           </Text>
 
           <TouchableOpacity
             onPress={() => {
               setIsWorkoutStarted(true);
               setStartTime(new Date());
-              const firstItem = workout.items?.[0];
+              const firstItem = workout.exercises?.[0];
               if (firstItem?.exercise)
                 announceExercise(
                   firstItem.exercise.name,
-                  firstItem.sets,
-                  firstItem.reps,
-                  firstItem.weight
+                  firstItem.sets ?? 0,
+                  firstItem.reps ?? '',
+                  firstItem.weight ?? undefined
                 );
             }}
             className="w-full"
@@ -572,12 +571,12 @@ export default function ExecuteWorkoutScreen() {
         <View className="flex-1 bg-black">
           <WorkoutHeader
             title={workout.title}
-            itemCount={workout.items?.length || 0}
+            itemCount={workout.exercises?.length || 0}
             onExit={handleExit}
           />
 
           <FlatList
-            data={workout.items}
+            data={workout.exercises}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: 24, paddingBottom: 150 }}
             showsVerticalScrollIndicator={false}

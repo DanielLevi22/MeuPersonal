@@ -55,10 +55,10 @@ export default function WorkoutDetailsPage() {
     const { error } = await supabase.from("workout_exercises").insert({
       workout_id: workoutId,
       exercise_id: ex.id,
-      order: items.length,
+      order_index: items.length,
       sets: ex.sets,
       reps: String(ex.reps),
-      rest_time: ex.rest_seconds,
+      rest_seconds: ex.rest_seconds,
       weight: ex.weight || null,
       notes: null,
     });
@@ -80,7 +80,7 @@ export default function WorkoutDetailsPage() {
       .update({
         sets: ex.sets,
         reps: String(ex.reps),
-        rest_time: ex.rest_seconds,
+        rest_seconds: ex.rest_seconds,
         weight: ex.weight || null,
       })
       .eq("id", editingItem.id);
@@ -148,20 +148,14 @@ export default function WorkoutDetailsPage() {
       <div className="bg-surface border border-white/10 rounded-2xl p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="flex items-start gap-4">
-            {workout.identifier && (
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <span className="text-primary font-bold">{workout.identifier}</span>
-              </div>
-            )}
             <div>
               <h1 className="text-2xl font-bold text-foreground">{workout.title}</h1>
               <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
-                {workout.difficulty_level && (
+                {workout.difficulty && (
                   <span className="px-2 py-0.5 rounded-md bg-white/5">
-                    {DIFFICULTY_LABELS[workout.difficulty_level]}
+                    {DIFFICULTY_LABELS[workout.difficulty]}
                   </span>
                 )}
-                {workout.estimated_duration && <span>{workout.estimated_duration} min</span>}
                 <span>
                   {items.length} exercício{items.length !== 1 ? "s" : ""}
                 </span>
@@ -260,7 +254,7 @@ export default function WorkoutDetailsPage() {
                     </div>
                   )}
                   <div className="text-center">
-                    <p className="text-foreground font-semibold">{item.rest_time}s</p>
+                    <p className="text-foreground font-semibold">{item.rest_seconds}s</p>
                     <p>descanso</p>
                   </div>
                 </div>
@@ -341,10 +335,10 @@ export default function WorkoutDetailsPage() {
             id: editingItem.exercise.id,
             name: editingItem.exercise.name,
             muscle_group: editingItem.exercise.muscle_group ?? "",
-            sets: editingItem.sets,
-            reps: parseInt(editingItem.reps, 10) || 0,
+            sets: editingItem.sets ?? 0,
+            reps: parseInt(editingItem.reps ?? "0", 10) || 0,
             weight: editingItem.weight ?? "",
-            rest_seconds: editingItem.rest_time,
+            rest_seconds: editingItem.rest_seconds ?? 0,
           }}
           onSave={handleUpdateExercise}
         />

@@ -54,7 +54,7 @@ export function SortableWorkoutItem({
               </svg>
             </button>
             <div className="w-10 h-10 bg-primary/20 border-2 border-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-primary font-bold">{workout.identifier || index + 1}</span>
+              <span className="text-primary font-bold">{String.fromCharCode(65 + index)}</span>
             </div>
           </div>
 
@@ -65,24 +65,16 @@ export function SortableWorkoutItem({
               <p className="text-sm text-muted-foreground line-clamp-1">{workout.description}</p>
             )}
             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-              {workout.estimated_duration && (
-                <span className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  {workout.estimated_duration}min
+              {workout.muscle_group && (
+                <span className="px-2 py-0.5 bg-white/10 rounded capitalize">
+                  {workout.muscle_group}
                 </span>
               )}
-              {workout.difficulty_level && (
+              {workout.difficulty && (
                 <span className="px-2 py-0.5 bg-white/10 rounded capitalize">
-                  {workout.difficulty_level === "beginner" && "Iniciante"}
-                  {workout.difficulty_level === "intermediate" && "Intermediário"}
-                  {workout.difficulty_level === "advanced" && "Avançado"}
+                  {workout.difficulty === "beginner" && "Iniciante"}
+                  {workout.difficulty === "intermediate" && "Intermediário"}
+                  {workout.difficulty === "advanced" && "Avançado"}
                 </span>
               )}
             </div>
