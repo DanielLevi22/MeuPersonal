@@ -1,7 +1,7 @@
 # PRD: shared-workouts-service
 
 **Data de criação:** 2026-04-17
-**Status:** approved
+**Status:** done
 **Branch:** feature/shared-workouts-service
 **Autor:** Daniel Levi
 

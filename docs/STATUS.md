@@ -1,6 +1,6 @@
 # Status dos Módulos — MeuPersonal
 
-> **Atualizado em:** 2026-04-17 (shared-students-service)
+> **Atualizado em:** 2026-04-18 (shared-workouts-service)
 > **Regra:** atualizar ao fechar cada PR. Nenhuma feature é `done` sem este arquivo atualizado.
 
 ---
@@ -29,7 +29,7 @@
 | **Chat** | ⚠️ parcial | ⚠️ parcial | ❌ | ❌ | ❌ |
 | **Gamification** | ⚠️ parcial | ⚠️ parcial | ❌ | ❌ | ❌ |
 | **AI / Agentes** | ❌ | ❌ | ⚠️ draft (blueprint) | ❌ | ❌ |
-| **Packages / Shared** | ✅ centralizado (students + auth) | ✅ centralizado (students + auth) | ✅ | N/A | N/A |
+| **Packages / Shared** | ✅ centralizado (students + auth + workouts) | ✅ centralizado (students + auth + workouts) | ✅ | N/A | N/A |
 | **Database Schema** | ✅ | ✅ | ✅ | N/A | N/A |
 
 ---
@@ -43,6 +43,7 @@
 | [database-audit-and-refactor](PRDs/database-audit-and-refactor.md) | Schema limpo: 21 tabelas, RLS, RPC, seeds | ✅ done | `feature/database-audit-and-refactor` |
 | [students-schema-alignment](PRDs/students-schema-alignment.md) | Alinha módulo students ao novo schema | ✅ done | `feature/students-schema-alignment` |
 | [shared-students-service](PRDs/shared-students-service.md) | Serviço centralizado students + auth em shared/ | ✅ done | `feature/shared-students-service` |
+| [shared-workouts-service](PRDs/shared-workouts-service.md) | Serviço centralizado workouts em shared/ | ✅ done | `feature/shared-workouts-service` |
 | [local-dev-environment](PRDs/local-dev-environment.md) | 3 ambientes: Local→Preview→Production | draft | — |
 | [social-and-engagement](PRDs/social-and-engagement.md) | Comunidade, ranking, chat, notificações | draft | — |
 
@@ -54,7 +55,7 @@
 
 | # | Descrição | Prioridade | ADR relacionado |
 |---|-----------|------------|-----------------|
-| 1 | `packages/core` e `packages/supabase` duplicados em web e app — já divergiram (students e auth centralizados; nutrition/workouts pendentes) | 🟡 Média | [ADR-002](decisions/002-flat-monorepo.md) |
+| 1 | `packages/core` e `packages/supabase` duplicados em web e app — já divergiram (students, auth e workouts centralizados; nutrition pendente) | 🟡 Média | [ADR-002](decisions/002-flat-monorepo.md) |
 | 2 | Specs técnicas dos módulos implementados pendentes (auth, nutrition, workouts, students) | 🟡 Média | — |
 | 3 | Separação de ambientes Supabase (dev/preview/prod) pendente — dev e prod no mesmo projeto | 🔴 Alta | — |
 | 4 | Testes de cobertura insuficientes em todos os módulos | 🟡 Média | — |
