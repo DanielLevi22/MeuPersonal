@@ -1,9 +1,12 @@
+import { createGamificationService, type DailyGoal } from '@meupersonal/shared';
+import { supabase } from '@meupersonal/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { Dimensions, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ConsistencyHeatmap } from '@/components/gamification/ConsistencyHeatmap';
-import { type DailyGoal, gamificationService } from '@/services/gamification';
+
+const gamificationService = createGamificationService(supabase);
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const _CHART_WIDTH = SCREEN_WIDTH - 80;

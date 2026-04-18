@@ -48,7 +48,9 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
 
   // ── Diet Plans ─────────────────────────────────────────────────────────────
 
-  fetchDietPlans: async (specialistId: string): Promise<(DietPlan & { student?: { id: string; full_name: string } })[]> => {
+  fetchDietPlans: async (
+    specialistId: string,
+  ): Promise<(DietPlan & { student?: { id: string; full_name: string } })[]> => {
     const { data: plans, error } = await supabase
       .from("diet_plans")
       .select("*")
@@ -82,11 +84,7 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
   },
 
   fetchDietPlanById: async (id: string): Promise<DietPlan | null> => {
-    const { data, error } = await supabase
-      .from("diet_plans")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await supabase.from("diet_plans").select("*").eq("id", id).single();
     if (error) throw error;
     return data as DietPlan;
   },
@@ -160,10 +158,7 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
   },
 
   deleteDietPlan: async (id: string): Promise<void> => {
-    const { data: meals } = await supabase
-      .from("diet_meals")
-      .select("id")
-      .eq("diet_plan_id", id);
+    const { data: meals } = await supabase.from("diet_meals").select("id").eq("diet_plan_id", id);
 
     const mealIds = meals?.map((m) => m.id) ?? [];
     if (mealIds.length > 0) {
@@ -241,13 +236,15 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
       const items = sourceMeal.diet_meal_items ?? [];
       if (items.length > 0) {
         await supabase.from("diet_meal_items").insert(
-          items.map((item: { food_id: string; quantity: string; unit: string; order_index: number }) => ({
-            diet_meal_id: newMeal.id,
-            food_id: item.food_id,
-            quantity: item.quantity,
-            unit: item.unit,
-            order_index: item.order_index,
-          })),
+          items.map(
+            (item: { food_id: string; quantity: string; unit: string; order_index: number }) => ({
+              diet_meal_id: newMeal.id,
+              food_id: item.food_id,
+              quantity: item.quantity,
+              unit: item.unit,
+              order_index: item.order_index,
+            }),
+          ),
         );
       }
     }
@@ -274,14 +271,14 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
       .order("meal_order", { ascending: true });
     if (error) throw error;
 
-    return ((data || []) as (DietMeal & { diet_meal_items: (DietMealItem & { food: Food })[] })[]).map(
-      (meal) => ({
-        ...meal,
-        diet_meal_items: (meal.diet_meal_items ?? []).sort(
-          (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
-        ),
-      }),
-    );
+    return (
+      (data || []) as (DietMeal & { diet_meal_items: (DietMealItem & { food: Food })[] })[]
+    ).map((meal) => ({
+      ...meal,
+      diet_meal_items: (meal.diet_meal_items ?? []).sort(
+        (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
+      ),
+    }));
   },
 
   createDietMeal: async (input: CreateDietMealInput): Promise<DietMeal> => {
@@ -329,7 +326,7 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
     targetDay: number,
     sourceMeals: (DietMeal & { diet_meal_items?: DietMealItem[] })[],
   ): Promise<void> => {
-    await (createNutritionService(supabase)).clearDietDay(dietPlanId, targetDay);
+    await createNutritionService(supabase).clearDietDay(dietPlanId, targetDay);
 
     for (const sourceMeal of sourceMeals) {
       const { data: newMeal, error: mealError } = await supabase

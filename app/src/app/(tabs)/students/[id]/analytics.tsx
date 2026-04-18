@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { createGamificationService, type DailyGoal } from '@meupersonal/shared';
+import { supabase } from '@meupersonal/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -7,7 +9,8 @@ import { ConsistencyHeatmap } from '@/components/gamification/ConsistencyHeatmap
 import { StudentNutritionAnalytics } from '@/components/nutrition/StudentNutritionAnalytics';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { WorkoutAnalytics } from '@/components/workout/WorkoutAnalytics';
-import { DailyGoal, gamificationService } from '@/services/gamification';
+
+const gamificationService = createGamificationService(supabase);
 
 type Tab = 'overview' | 'workouts' | 'nutrition';
 

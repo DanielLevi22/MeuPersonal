@@ -1,5 +1,5 @@
+import type { DailyGoal } from '@meupersonal/shared';
 import { ScrollView, Text, View } from 'react-native';
-import type { DailyGoal } from '@/services/gamification';
 
 interface ConsistencyHeatmapProps {
   history: DailyGoal[];

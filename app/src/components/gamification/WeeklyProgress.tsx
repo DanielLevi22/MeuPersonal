@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { DailyGoal } from '@meupersonal/shared';
 import { Text, View } from 'react-native';
 import { colors as brandColors } from '@/constants/colors';
-import type { DailyGoal } from '@/services/gamification';
 
 interface WeeklyProgressProps {
   weeklyGoals: DailyGoal[];
