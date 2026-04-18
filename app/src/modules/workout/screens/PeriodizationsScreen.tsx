@@ -74,7 +74,7 @@ export default function PeriodizationsScreen() {
         <PremiumCard
           title={item.name || 'Sem nome'}
           subtitle={`${item.student?.full_name || 'Aluno'} • ${phaseCount} ${phaseCount === 1 ? 'Fase' : 'Fases'}`}
-          image={PERIODIZATION_IMAGES[item.type as string] || PERIODIZATION_IMAGES.default}
+          image={PERIODIZATION_IMAGES[item.objective as string] || PERIODIZATION_IMAGES.default}
           onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as never)}
           badge={<StatusBadge status={item.status} />}
           containerStyle={{ marginBottom: 24 }}
@@ -88,8 +88,8 @@ export default function PeriodizationsScreen() {
                 style={{ marginRight: 8 }}
               />
               <Text className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
-                {new Date(item.start_date).toLocaleDateString()} -{' '}
-                {new Date(item.end_date).toLocaleDateString()}
+                {item.start_date ? new Date(item.start_date).toLocaleDateString() : '—'} -{' '}
+                {item.end_date ? new Date(item.end_date).toLocaleDateString() : '—'}
               </Text>
             </View>
             <View className="flex-row items-center">

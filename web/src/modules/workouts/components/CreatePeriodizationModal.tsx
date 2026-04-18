@@ -24,7 +24,6 @@ interface InitialData {
   student_id: string;
   start_date: string;
   end_date: string;
-  notes?: string;
 }
 
 interface Props {
@@ -52,7 +51,6 @@ export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, ini
       setStudentId(initialData?.student_id ?? "");
       setStartDate(initialData?.start_date?.split("T")[0] ?? "");
       setEndDate(initialData?.end_date?.split("T")[0] ?? "");
-      setNotes(initialData?.notes ?? "");
     }
   }, [isOpen, initialData]);
 
@@ -76,7 +74,6 @@ export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, ini
           objective,
           start_date: startDate,
           end_date: endDate,
-          notes: notes || undefined,
         },
       });
     } else {

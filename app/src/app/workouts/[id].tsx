@@ -30,8 +30,8 @@ interface WorkoutItem {
   sets: number;
   reps: number | string;
   weight?: string;
-  rest_time: number;
-  order: number;
+  rest_seconds: number;
+  order_index: number;
 }
 
 export default function WorkoutDetailScreen() {
@@ -77,14 +77,14 @@ export default function WorkoutDetailScreen() {
       setWorkout(workoutData);
 
       const { data: itemsData, error: itemsError } = await supabase
-        .from('workout_items')
+        .from('workout_exercises')
         .select(`
           id,
           sets,
           reps,
           weight,
-          rest_time,
-          "order",
+          rest_seconds,
+          order_index,
           exercise:exercises (
             id,
             name,
@@ -93,7 +93,7 @@ export default function WorkoutDetailScreen() {
           )
         `)
         .eq('workout_id', id)
-        .order('order', { ascending: true });
+        .order('order_index', { ascending: true });
       if (itemsError) throw itemsError;
       // Transform to match interface (exercise may come as array)
       const transformed = (itemsData || []).map(
@@ -102,8 +102,8 @@ export default function WorkoutDetailScreen() {
           sets: number;
           reps: string;
           weight?: string;
-          rest_time: number;
-          order: number;
+          rest_seconds: number;
+          order_index: number;
           exercise: unknown;
         }) => ({
           ...item,
@@ -140,7 +140,7 @@ export default function WorkoutDetailScreen() {
             setLoading(true);
 
             const currentMaxOrder =
-              workoutItems.length > 0 ? Math.max(...workoutItems.map((i) => i.order)) : -1;
+              workoutItems.length > 0 ? Math.max(...workoutItems.map((i) => i.order_index)) : -1;
 
             const newItems = selectedExercises.map((ex, index) => ({
               workout_id: id,
@@ -148,11 +148,11 @@ export default function WorkoutDetailScreen() {
               sets: ex.sets,
               reps: ex.reps.toString(),
               weight: ex.weight,
-              rest_time: ex.rest_seconds,
-              order: currentMaxOrder + 1 + index,
+              rest_seconds: ex.rest_seconds,
+              order_index: currentMaxOrder + 1 + index,
             }));
 
-            const { error } = await supabase.from('workout_items').insert(newItems);
+            const { error } = await supabase.from('workout_exercises').insert(newItems);
 
             if (error) throw error;
 
@@ -225,7 +225,7 @@ export default function WorkoutDetailScreen() {
           sets: updatedExercise.sets,
           reps: updatedExercise.reps.toString(),
           weight: updatedExercise.weight,
-          rest_time: updatedExercise.rest_seconds,
+          rest_seconds: updatedExercise.rest_seconds,
         })
         .eq('id', editingItem.id);
 
@@ -485,7 +485,7 @@ export default function WorkoutDetailScreen() {
                         </Text>
                         <View className="flex-row items-baseline gap-0.5">
                           <Text className="text-white text-sm font-black italic">
-                            {item.rest_time}
+                            {item.rest_seconds}
                           </Text>
                           <Text className="text-zinc-500 text-[10px]">s</Text>
                         </View>
@@ -611,6 +611,9 @@ export default function WorkoutDetailScreen() {
             muscle_group: editingItem.exercise.muscle_group,
             description: null,
             video_url: editingItem.exercise.video_url || null,
+            is_verified: false,
+            created_by: null,
+            created_at: new Date().toISOString(),
           }}
           initialData={{
             id: editingItem.exercise.id,
@@ -622,7 +625,7 @@ export default function WorkoutDetailScreen() {
                 ? parseInt(editingItem.reps, 10)
                 : editingItem.reps,
             weight: editingItem.weight || '',
-            rest_seconds: editingItem.rest_time,
+            rest_seconds: editingItem.rest_seconds,
             video_url: editingItem.exercise.video_url,
           }}
           onSave={handleSaveExercise}

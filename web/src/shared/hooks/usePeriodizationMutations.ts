@@ -1,55 +1,35 @@
 "use client";
 
+import {
+  createWorkoutsService,
+  type TrainingStatus,
+  type UpdatePeriodizationInput,
+} from "@meupersonal/shared";
 import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-  Periodization,
-  PeriodizationObjective,
-  PeriodizationStatus,
-} from "./usePeriodizations";
+import { useAuthUser } from "./useAuthUser";
+
+export type { UpdatePeriodizationInput };
+
+const workoutsService = createWorkoutsService(supabase);
 
 export interface CreatePeriodizationInput {
   student_id: string;
   name: string;
-  objective: PeriodizationObjective;
-  start_date: string; // ISO date string
-  end_date: string; // ISO date string
+  objective?: string;
+  start_date?: string;
+  end_date?: string;
   notes?: string;
-}
-
-export interface UpdatePeriodizationInput {
-  id: string;
-  data: Partial<Omit<CreatePeriodizationInput, "student_id">>;
-}
-
-export interface UpdatePeriodizationStatusInput {
-  id: string;
-  status: PeriodizationStatus;
 }
 
 export function useCreatePeriodization() {
   const queryClient = useQueryClient();
+  const { data: authUser } = useAuthUser();
 
   return useMutation({
     mutationFn: async (input: CreatePeriodizationInput) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data, error } = await supabase
-        .from("training_periodizations")
-        .insert({
-          ...input,
-          personal_id: user.id,
-          professional_id: user.id,
-          status: "planned",
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      if (!authUser?.id) throw new Error("Usuário não autenticado");
+      return workoutsService.createPeriodization({ specialist_id: authUser.id, ...input });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["periodizations"] });
@@ -61,16 +41,8 @@ export function useUpdatePeriodization() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: UpdatePeriodizationInput) => {
-      const { data: result, error } = await supabase
-        .from("training_periodizations")
-        .update(data)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result as Periodization;
+    mutationFn: async ({ id, data }: { id: string; data: UpdatePeriodizationInput }) => {
+      return workoutsService.updatePeriodization(id, data);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["periodizations"] });
@@ -83,16 +55,8 @@ export function useUpdatePeriodizationStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, status }: UpdatePeriodizationStatusInput) => {
-      const { data, error } = await supabase
-        .from("training_periodizations")
-        .update({ status })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ id, status }: { id: string; status: TrainingStatus }) => {
+      return workoutsService.updatePeriodization(id, { status });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["periodizations"] });
@@ -106,11 +70,7 @@ export function useDeletePeriodization() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("training_periodizations").delete().eq("id", id);
-
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => workoutsService.deletePeriodization(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["periodizations"] });
     },
@@ -118,37 +78,27 @@ export function useDeletePeriodization() {
 }
 
 export function useActivatePeriodization() {
-  const updateStatus = useUpdatePeriodizationStatus();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      // First, deactivate any other active periodizations for the same student
-      const { data: periodization } = await supabase
-        .from("training_periodizations")
-        .select("student_id")
-        .eq("id", id)
-        .single();
-
-      if (periodization) {
-        await supabase
-          .from("training_periodizations")
-          .update({ status: "completed" })
-          .eq("student_id", periodization.student_id)
-          .eq("status", "active");
-      }
-
-      // Then activate this one
-      return updateStatus.mutateAsync({ id, status: "active" });
+    mutationFn: (id: string) => workoutsService.activatePeriodization(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["periodizations"] });
+      queryClient.invalidateQueries({ queryKey: ["periodization", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["active-periodization"] });
     },
   });
 }
 
 export function useCompletePeriodization() {
-  const updateStatus = useUpdatePeriodizationStatus();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      return updateStatus.mutateAsync({ id, status: "completed" });
+    mutationFn: (id: string) => workoutsService.updatePeriodization(id, { status: "completed" }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["periodizations"] });
+      queryClient.invalidateQueries({ queryKey: ["periodization", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["active-periodization"] });
     },
   });
 }

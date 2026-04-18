@@ -107,7 +107,7 @@ export const WorkoutExerciseCard = React.memo(function WorkoutExerciseCard({
             <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-lg border border-white/5">
               <Ionicons name="timer-outline" size={14} color="#FF6B35" style={{ marginRight: 6 }} />
               <Text className={`text-xs font-bold ${isEdited ? 'text-blue-400' : 'text-zinc-200'}`}>
-                {effectiveItem.rest_time}s
+                {effectiveItem.rest_seconds}s
               </Text>
             </View>
 
@@ -150,11 +150,11 @@ export const WorkoutExerciseCard = React.memo(function WorkoutExerciseCard({
             <View className="flex-1 h-12 bg-black/40 rounded-xl overflow-hidden border border-white/10">
               <View
                 className={`h-full ${isCompleted ? 'bg-emerald-500' : 'bg-orange-500'}`}
-                style={{ width: `${(completed / effectiveItem.sets) * 100}%` }}
+                style={{ width: `${(completed / (effectiveItem.sets ?? 1)) * 100}%` }}
               />
               <View className="absolute inset-0 items-center justify-center">
                 <Text className="text-white font-black text-[10px] uppercase tracking-widest drop-shadow">
-                  {completed} / {effectiveItem.sets} CONCLUÍDOS
+                  {completed} / {effectiveItem.sets ?? 0} CONCLUÍDOS
                 </Text>
               </View>
             </View>

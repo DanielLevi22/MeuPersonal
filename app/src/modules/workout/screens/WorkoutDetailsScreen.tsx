@@ -52,7 +52,7 @@ export default function WorkoutDetailsScreen() {
   const [workout, setWorkout] = useState<WorkoutModel | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  type StoreExerciseItem = NonNullable<WorkoutModel['items']>[number];
+  type StoreExerciseItem = NonNullable<WorkoutModel['exercises']>[number];
 
   // Edit State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -85,8 +85,8 @@ export default function WorkoutDetailsScreen() {
     }
 
     // 2. Add muscle groups from exercises
-    if (workout?.items) {
-      const exerciseGroups = workout.items
+    if (workout?.exercises) {
+      const exerciseGroups = workout.exercises
         .map((item: StoreExerciseItem) => item.exercise?.muscle_group)
         .filter((g: string | undefined | null) => g && g !== workout.muscle_group);
       groups = [...groups, ...new Set(exerciseGroups)] as string[];
@@ -137,7 +137,7 @@ export default function WorkoutDetailsScreen() {
             sets: updatedExercise.sets,
             reps: updatedExercise.reps?.toString() || '0',
             weight: updatedExercise.weight,
-            rest_time: updatedExercise.rest_seconds,
+            rest_seconds: updatedExercise.rest_seconds,
           })
           .eq('id', editingItem.id);
 
@@ -175,14 +175,14 @@ export default function WorkoutDetailsScreen() {
         if (refreshedWorkout) {
           setWorkout(refreshedWorkout);
           console.log('✅ Workout data refreshed');
-          const refreshedItem = refreshedWorkout.items?.find(
+          const refreshedItem = refreshedWorkout.exercises?.find(
             (i: StoreExerciseItem) => i.id === editingItem.id
           );
           console.log('📊 Refreshed exercise video_url:', refreshedItem?.exercise?.video_url);
           console.log('📊 Full refreshed item:', refreshedItem);
           console.log(
             '📋 Exercise order after refresh:',
-            refreshedWorkout.items?.map((i: StoreExerciseItem) => ({
+            refreshedWorkout.exercises?.map((i: StoreExerciseItem) => ({
               name: i.exercise?.name,
               order: (i as unknown as { order: number }).order,
             }))
@@ -258,7 +258,7 @@ export default function WorkoutDetailsScreen() {
                         color="#FF6B35"
                         style={{ marginRight: 4 }}
                       />
-                      <Text className="text-zinc-200 text-xs font-bold">{item.rest_time}s</Text>
+                      <Text className="text-zinc-200 text-xs font-bold">{item.rest_seconds}s</Text>
                     </View>
 
                     {item.weight && (
@@ -383,7 +383,7 @@ export default function WorkoutDetailsScreen() {
                 Lista de Exercícios
               </Text>
               <Text className="text-zinc-500 text-xs font-sans">
-                {workout.items?.length || 0} movimentos planejados
+                {workout.exercises?.length || 0} movimentos planejados
               </Text>
             </View>
 
@@ -391,7 +391,7 @@ export default function WorkoutDetailsScreen() {
           </View>
 
           <FlatList
-            data={workout.items || []}
+            data={workout.exercises || []}
             renderItem={renderExerciseItem}
             keyExtractor={(item: StoreExerciseItem, index: number) =>
               item?.id || `exercise-${index}`
@@ -437,18 +437,21 @@ export default function WorkoutDetailsScreen() {
             muscle_group: editingItem.exercise?.muscle_group || '',
             video_url: editingItem.exercise?.video_url || null,
             description: editingItem.exercise?.description || null,
+            is_verified: false,
+            created_by: null,
+            created_at: new Date().toISOString(),
           }}
           initialData={{
             id: editingItem.exercise?.id || '',
             name: editingItem.exercise?.name || '',
             muscle_group: editingItem.exercise?.muscle_group || '',
-            sets: editingItem.sets,
+            sets: editingItem.sets ?? 0,
             reps:
               typeof editingItem.reps === 'string'
                 ? parseInt(editingItem.reps, 10)
-                : editingItem.reps,
+                : (editingItem.reps ?? 0),
             weight: editingItem.weight || '',
-            rest_seconds: editingItem.rest_time,
+            rest_seconds: editingItem.rest_seconds ?? 60,
             video_url: editingItem.exercise?.video_url || undefined,
           }}
           onSave={(data) =>

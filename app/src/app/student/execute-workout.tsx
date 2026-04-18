@@ -138,8 +138,12 @@ export default function ExecuteWorkoutScreen() {
 
       // Prepare items data for store
       const sessionItems = Object.values(progress).map((prog) => ({
-        workoutItemId: prog.id,
-        setsCompleted: prog.setsCompleted,
+        workoutExerciseId: prog.id,
+        setsData: Array.from({ length: prog.setsCompleted }, () => ({
+          sets: 1,
+          reps: 0,
+          weight: prog.weight ? parseFloat(prog.weight) : undefined,
+        })),
       }));
 
       // Save session via Store (consistent logic)

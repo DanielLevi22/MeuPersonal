@@ -1,32 +1,16 @@
 "use client";
 
+import { type CreateExerciseInput, createWorkoutsService } from "@meupersonal/shared";
 import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export interface CreateExerciseInput {
-  name: string;
-  muscle_group: string;
-  video_url?: string;
-}
+const workoutsService = createWorkoutsService(supabase);
 
 export function useCreateExercise() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (exercise: CreateExerciseInput) => {
-      const { data, error } = await supabase
-        .from("exercises")
-        .insert({
-          name: exercise.name,
-          muscle_group: exercise.muscle_group,
-          video_url: exercise.video_url || null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: (exercise: CreateExerciseInput) => workoutsService.createExercise(exercise),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["exercises"] });
     },

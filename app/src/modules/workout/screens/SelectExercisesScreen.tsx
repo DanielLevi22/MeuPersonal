@@ -19,7 +19,8 @@ import type { Exercise, SelectedExercise } from '../store/workoutStore';
 import { useWorkoutStore } from '../store/workoutStore';
 
 export default function SelectExercisesScreen() {
-  const { data: exercisesData = [], isLoading } = useExercises();
+  const { data: rawExercisesData = [], isLoading } = useExercises();
+  const exercisesData = rawExercisesData as Exercise[];
   const createExerciseMutation = useCreateExercise();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -168,13 +169,17 @@ export default function SelectExercisesScreen() {
 
     if (workoutId) {
       try {
-        const items = selectedExercises.map((ex) => ({
+        const items = selectedExercises.map((ex, index) => ({
+          id: `temp-${ex.id}-${index}`,
+          workout_id: workoutId as string,
           exercise_id: ex.id,
           sets: ex.sets || 3,
           reps: ex.reps?.toString() || '10',
           weight: ex.weight || '0',
-          rest_time: ex.rest_seconds || 60,
-          notes: '',
+          rest_seconds: ex.rest_seconds || 60,
+          order_index: index,
+          notes: null,
+          created_at: new Date().toISOString(),
         }));
 
         await addWorkoutItems(workoutId as string, items as Parameters<typeof addWorkoutItems>[1]);
@@ -593,6 +598,9 @@ export default function SelectExercisesScreen() {
             muscle_group: '',
             video_url: null,
             description: null,
+            is_verified: false,
+            created_by: null,
+            created_at: new Date().toISOString(),
           }
         }
         initialData={editingIndex !== null ? selectedExercises[editingIndex] : undefined}

@@ -9,7 +9,6 @@ import {
   useActivatePeriodization,
   useCompletePeriodization,
 } from "@/shared/hooks/usePeriodizationMutations";
-import type { PeriodizationStatus } from "@/shared/hooks/usePeriodizations";
 import { usePeriodization } from "@/shared/hooks/usePeriodizations";
 import type { TrainingPlan } from "@/shared/hooks/useTrainingPlans";
 import { useTrainingPlans } from "@/shared/hooks/useTrainingPlans";
@@ -24,22 +23,10 @@ const OBJECTIVE_LABELS: Record<string, string> = {
   general_fitness: "Saúde Geral",
 };
 
-const STATUS_CONFIG: Record<PeriodizationStatus, { label: string; className: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   planned: { label: "Planejada", className: "bg-blue-500/10 text-blue-400" },
   active: { label: "Ativa", className: "bg-emerald-500/10 text-emerald-400" },
   completed: { label: "Concluída", className: "bg-white/5 text-muted-foreground" },
-  cancelled: { label: "Cancelada", className: "bg-red-500/10 text-red-400" },
-};
-
-const SPLIT_LABELS: Record<string, string> = {
-  abc: "ABC",
-  abcd: "ABCD",
-  abcde: "ABCDE",
-  abcdef: "ABCDEF",
-  upper_lower: "Superior / Inferior",
-  full_body: "Full Body",
-  push_pull_legs: "Push / Pull / Legs",
-  custom: "Personalizado",
 };
 
 const PLAN_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -58,7 +45,6 @@ function formatDate(iso: string) {
 
 function PlanCard({ plan, periodizationId }: { plan: TrainingPlan; periodizationId: string }) {
   const statusCfg = PLAN_STATUS_CONFIG[plan.status] ?? PLAN_STATUS_CONFIG.draft;
-  const split = SPLIT_LABELS[plan.training_split] ?? plan.training_split;
 
   return (
     <Link
@@ -86,8 +72,8 @@ function PlanCard({ plan, periodizationId }: { plan: TrainingPlan; periodization
             {plan.name}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {split} · {plan.weekly_frequency}×/semana · {formatDate(plan.start_date)} →{" "}
-            {formatDate(plan.end_date)}
+            {plan.start_date ? formatDate(plan.start_date) : "—"} →{" "}
+            {plan.end_date ? formatDate(plan.end_date) : "—"}
           </p>
         </div>
       </div>
@@ -132,12 +118,9 @@ export default function PeriodizationDetailsPage() {
       const { error } = await supabase.from("training_plans").insert({
         periodization_id: periodizationId,
         name: `Fase ${plans.length + 1}`,
-        training_split: "ABC",
-        weekly_frequency: 3,
         start_date: today,
         end_date: in30Days,
         status: "draft",
-        notes: "",
       });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["training-plans", periodizationId] });
@@ -178,7 +161,7 @@ export default function PeriodizationDetailsPage() {
   }
 
   const status = STATUS_CONFIG[periodization.status] ?? STATUS_CONFIG.planned;
-  const objective = OBJECTIVE_LABELS[periodization.objective] ?? periodization.objective;
+  const objective = OBJECTIVE_LABELS[periodization.objective ?? ""] ?? periodization.objective;
 
   return (
     <div className="space-y-6">
@@ -210,17 +193,13 @@ export default function PeriodizationDetailsPage() {
             <div className="flex flex-wrap gap-3 mt-3 text-sm text-muted-foreground">
               <span className="px-2 py-0.5 rounded-md bg-white/5 text-xs">{objective}</span>
               <span>
-                {formatDate(periodization.start_date)} → {formatDate(periodization.end_date)}
+                {periodization.start_date ? formatDate(periodization.start_date) : "—"} →{" "}
+                {periodization.end_date ? formatDate(periodization.end_date) : "—"}
               </span>
               <span>
                 {plans.length} fase{plans.length !== 1 ? "s" : ""}
               </span>
             </div>
-            {periodization.notes && (
-              <p className="text-sm text-muted-foreground mt-3 border-t border-white/5 pt-3">
-                {periodization.notes}
-              </p>
-            )}
           </div>
 
           {/* Status actions */}
@@ -314,11 +293,16 @@ export default function PeriodizationDetailsPage() {
         periodizationId={periodizationId}
         initialData={{
           name: periodization.name,
-          objective: periodization.objective,
+          objective: periodization.objective as
+            | "hypertrophy"
+            | "strength"
+            | "endurance"
+            | "weight_loss"
+            | "conditioning"
+            | "general_fitness",
           student_id: periodization.student_id,
-          start_date: periodization.start_date,
-          end_date: periodization.end_date,
-          notes: periodization.notes ?? undefined,
+          start_date: periodization.start_date ?? "",
+          end_date: periodization.end_date ?? "",
         }}
       />
     </div>

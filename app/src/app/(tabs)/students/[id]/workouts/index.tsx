@@ -40,8 +40,8 @@ export default function StudentWorkoutsScreen() {
       name: string;
       description?: string;
       status: string;
-      start_date: string;
-      end_date: string;
+      start_date: string | null;
+      end_date: string | null;
     };
   }) => (
     <TouchableOpacity
@@ -81,8 +81,8 @@ export default function StudentWorkoutsScreen() {
               style={{ marginRight: 6 }}
             />
             <Text className="text-zinc-300 text-xs font-bold">
-              {new Date(item.start_date).toLocaleDateString()} -{' '}
-              {new Date(item.end_date).toLocaleDateString()}
+              {item.start_date ? new Date(item.start_date).toLocaleDateString() : '—'} -{' '}
+              {item.end_date ? new Date(item.end_date).toLocaleDateString() : '—'}
             </Text>
           </View>
         </View>

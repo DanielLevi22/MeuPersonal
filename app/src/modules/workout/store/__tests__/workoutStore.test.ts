@@ -86,11 +86,10 @@ describe('workoutStore', () => {
     await useWorkoutStore.getState().createTrainingPlan({
       periodization_id: 'p1',
       name: 'Phase 1',
-      training_split: 'ABC',
-      weekly_frequency: 3,
       start_date: '2024-01-01',
       end_date: '2024-02-01',
-      status: 'active',
+      status: 'planned',
+      order_index: 0,
     });
 
     const state = useWorkoutStore.getState();
@@ -109,9 +108,13 @@ describe('workoutStore', () => {
           id: 'w1',
           training_plan_id: 'tp1',
           title: 'W1',
+          specialist_id: 'spec1',
           created_at: '',
+          updated_at: '',
           description: null,
           muscle_group: null,
+          difficulty: null,
+          day_of_week: null,
         },
       ],
     });
@@ -119,12 +122,15 @@ describe('workoutStore', () => {
     await useWorkoutStore.getState().addWorkoutItems('w1', [
       {
         id: 'wi1',
+        workout_id: 'w1',
         exercise_id: 'ex1',
         sets: 3,
         reps: '10',
         weight: '10',
-        rest_time: 60,
-        notes: '',
+        rest_seconds: 60,
+        order_index: 0,
+        notes: null,
+        created_at: '',
       },
     ]);
 
@@ -202,12 +208,15 @@ describe('workoutStore', () => {
     await useWorkoutStore.getState().addWorkoutItems('w1', [
       {
         id: 'wi2',
+        workout_id: 'w1',
         exercise_id: 'ex1',
         sets: 0, // Edge case: 0 sets
         reps: '0', // Edge case: 0 reps
         weight: '0',
-        rest_time: 0,
-        notes: '',
+        rest_seconds: 0,
+        order_index: 0,
+        notes: null,
+        created_at: '',
       },
     ]);
 
@@ -496,7 +505,7 @@ describe('workoutStore', () => {
     await useWorkoutStore.getState().createWorkout({
       training_plan_id: trainingPlanId,
       title: 'New Workout',
-      personal_id: 'p1',
+      specialist_id: 'p1',
     });
 
     expect(refetchCalled).toBe(true);

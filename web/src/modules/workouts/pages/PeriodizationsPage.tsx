@@ -15,11 +15,10 @@ const OBJECTIVE_LABELS: Record<string, string> = {
   general_fitness: "Saúde Geral",
 };
 
-const STATUS_CONFIG: Record<PeriodizationStatus, { label: string; className: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   planned: { label: "Planejada", className: "bg-blue-500/10 text-blue-400" },
   active: { label: "Ativa", className: "bg-emerald-500/10 text-emerald-400" },
   completed: { label: "Concluída", className: "bg-white/5 text-muted-foreground" },
-  cancelled: { label: "Cancelada", className: "bg-red-500/10 text-red-400" },
 };
 
 function formatDate(iso: string) {
@@ -32,7 +31,7 @@ function formatDate(iso: string) {
 
 function PeriodizationCard({ p }: { p: Periodization }) {
   const status = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.planned;
-  const objective = OBJECTIVE_LABELS[p.objective] ?? p.objective;
+  const objective = OBJECTIVE_LABELS[p.objective ?? ""] ?? p.objective;
 
   return (
     <Link
@@ -60,7 +59,8 @@ function PeriodizationCard({ p }: { p: Periodization }) {
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="px-2 py-0.5 rounded-md bg-white/5">{objective}</span>
         <span>
-          {formatDate(p.start_date)} → {formatDate(p.end_date)}
+          {p.start_date ? formatDate(p.start_date) : "—"} →{" "}
+          {p.end_date ? formatDate(p.end_date) : "—"}
         </span>
       </div>
 
@@ -87,7 +87,7 @@ export default function PeriodizationsPage() {
   const filtered = periodizations.filter((p) => {
     const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.student?.full_name.toLowerCase().includes(search.toLowerCase());
+      (p.student?.full_name ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
     return matchSearch && matchStatus;
   });

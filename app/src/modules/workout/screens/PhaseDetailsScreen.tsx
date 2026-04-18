@@ -171,7 +171,7 @@ export default function PhaseDetailsScreen() {
         return adjustedDate.toDateString();
       };
 
-      const lastDate = getGymDateString(new Date(lastSession.completed_at));
+      const lastDate = getGymDateString(new Date(lastSession.completed_at ?? ''));
       const today = getGymDateString(new Date());
 
       if (lastDate === today) {
@@ -240,8 +240,6 @@ export default function PhaseDetailsScreen() {
       setIsGenerating(true);
       try {
         // Create empty workouts for each letter in the split
-        await updateTrainingPlan(phase.id, { training_split: finalSplit });
-
         // Delete old workouts first
         const { error: deleteError } = await supabase
           .from('workouts')
@@ -256,7 +254,7 @@ export default function PhaseDetailsScreen() {
             training_plan_id: phase.id,
             title: `Treino ${letter}`,
             description: '',
-            personal_id: user.id,
+            specialist_id: user.id,
           });
         }
 
@@ -274,7 +272,7 @@ export default function PhaseDetailsScreen() {
         setIsGenerating(false);
       }
     },
-    [phase, user?.id, updateTrainingPlan, createWorkout, fetchWorkoutsForPhase, showAlert]
+    [phase, user?.id, createWorkout, fetchWorkoutsForPhase, showAlert]
   );
 
   const handleAIAssist = useCallback(
@@ -288,13 +286,11 @@ export default function PhaseDetailsScreen() {
         return;
       }
 
-      // Update the split first
-      await updateTrainingPlan(phase.id, { training_split: finalSplit });
       setShowSplitModal(false);
       setCustomSplit('');
       setShowAIModal(true);
     },
-    [phase, customSplit, showAlert, updateTrainingPlan]
+    [phase, customSplit, showAlert]
   );
 
   const _handleToggleStatus = useCallback(() => {
@@ -304,11 +300,11 @@ export default function PhaseDetailsScreen() {
   }, [phase]);
 
   const handleUpdateStatus = useCallback(
-    async (newStatus: 'draft' | 'active' | 'completed') => {
+    async (newStatus: 'planned' | 'active' | 'completed') => {
       if (!phase) return;
 
       const statusLabel =
-        newStatus === 'draft' ? 'Rascunho' : newStatus === 'active' ? 'Ativo' : 'Concluído';
+        newStatus === 'planned' ? 'Planejado' : newStatus === 'active' ? 'Ativo' : 'Concluído';
 
       try {
         await updateTrainingPlan(phase.id, { status: newStatus });
@@ -355,7 +351,7 @@ export default function PhaseDetailsScreen() {
         training_plan_id: phase.id,
         title: 'Novo Treino',
         description: '',
-        personal_id: user.id,
+        specialist_id: user.id,
       });
       showAlert('Treino Criado 🏋️', 'Novo treino adicionado com sucesso à sua fase.', 'success');
     } catch (_error: unknown) {
@@ -399,7 +395,7 @@ export default function PhaseDetailsScreen() {
             <View className="flex-row gap-2">
               <IconButton
                 icon={
-                  phase.status === 'draft'
+                  phase.status === 'planned'
                     ? 'document-text-outline'
                     : phase.status === 'active'
                       ? 'play-outline'
@@ -407,7 +403,7 @@ export default function PhaseDetailsScreen() {
                 }
                 onPress={() => setShowStatusModalMenu(true)}
                 iconColor={
-                  phase.status === 'draft'
+                  phase.status === 'planned'
                     ? colors.status.warning
                     : phase.status === 'active'
                       ? colors.status.success
@@ -455,7 +451,7 @@ export default function PhaseDetailsScreen() {
                 className="flex-row items-center bg-white/5 self-start px-4 py-2.5 rounded-2xl border border-white/5"
               >
                 <Text className="text-white font-extrabold text-xl mr-2 uppercase">
-                  {phase.training_split || '--'}
+                  {phase.name || '--'}
                 </Text>
                 {!isStudentView && <Ionicons name="chevron-down" size={16} color="#FF6B35" />}
               </TouchableOpacity>
@@ -476,7 +472,7 @@ export default function PhaseDetailsScreen() {
                   style={{ marginRight: 8 }}
                 />
                 <Text className="font-extrabold text-lg" style={{ color: colors.primary.start }}>
-                  {phase.weekly_frequency || 0}x
+                  —
                 </Text>
               </View>
             </View>
@@ -495,7 +491,7 @@ export default function PhaseDetailsScreen() {
                 className="bg-white/5 p-3 rounded-2xl border border-white/5 flex-row items-center justify-between"
               >
                 <Text className="text-zinc-300 font-bold text-sm">
-                  {new Date(phase.start_date).toLocaleDateString('pt-BR')}
+                  {phase.start_date ? new Date(phase.start_date).toLocaleDateString('pt-BR') : '—'}
                 </Text>
                 {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#52525B" />}
               </TouchableOpacity>
@@ -511,7 +507,7 @@ export default function PhaseDetailsScreen() {
                 className="bg-white/5 p-3 rounded-2xl border border-white/10 flex-row items-center justify-between"
               >
                 <Text className="text-zinc-300 font-bold text-sm">
-                  {new Date(phase.end_date).toLocaleDateString('pt-BR')}
+                  {phase.end_date ? new Date(phase.end_date).toLocaleDateString('pt-BR') : '—'}
                 </Text>
                 {!isStudentView && <Ionicons name="calendar-outline" size={14} color="#52525B" />}
               </TouchableOpacity>
@@ -579,7 +575,7 @@ export default function PhaseDetailsScreen() {
                       subtitle={
                         isWorkoutDoneToday
                           ? `Bom descanso! O próximo treino será: ${suggestedWorkout.title}`
-                          : `${suggestedWorkout.items?.length || 0} exercícios • ~60 min`
+                          : `${suggestedWorkout.exercises?.length || 0} exercícios • ~60 min`
                       }
                       image={
                         isWorkoutDoneToday
@@ -694,8 +690,8 @@ export default function PhaseDetailsScreen() {
             visible={showAIModal}
             onClose={() => setShowAIModal(false)}
             trainingPlanId={phase.id}
-            split={phase.training_split || 'ABC'}
-            goal={phase.description || 'Hipertrofia'}
+            split={'ABC'}
+            goal={phase.name || 'Hipertrofia'}
             studentId={(phase as unknown as { student_id: string }).student_id} // Assuming phase has student_id or we get it from context
           />
         )}
@@ -781,7 +777,7 @@ export default function PhaseDetailsScreen() {
                     style={{ marginRight: 4 }}
                   />
                   <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
-                    {workout.muscle_group || 'Geral'} • {workout.items?.length || 0} exercícios
+                    {workout.muscle_group || 'Geral'} • {workout.exercises?.length || 0} exercícios
                   </Text>
                 </View>
               </View>
@@ -878,7 +874,7 @@ export default function PhaseDetailsScreen() {
                       <TouchableOpacity
                         key={split}
                         className={`px-6 py-4 rounded-xl border ${
-                          phase.training_split === split
+                          pendingSplit === split
                             ? 'bg-orange-500 border-orange-500'
                             : 'bg-zinc-950 border-zinc-800'
                         }`}
@@ -886,7 +882,7 @@ export default function PhaseDetailsScreen() {
                       >
                         <Text
                           className={`font-bold text-lg ${
-                            phase.training_split === split ? 'text-white' : 'text-zinc-400'
+                            pendingSplit === split ? 'text-white' : 'text-zinc-400'
                           }`}
                         >
                           {split}
@@ -942,7 +938,7 @@ export default function PhaseDetailsScreen() {
                     setShowWarningModal(false);
                     // Helper to proceed with AI
                     const proceedWithAI = async () => {
-                      if (workouts.length > 0 && phase.training_split !== pendingSplit) {
+                      if (workouts.length > 0) {
                         setIsGenerating(true);
                         try {
                           const { error } = await supabase
@@ -1130,21 +1126,21 @@ export default function PhaseDetailsScreen() {
 
             <View className="gap-3">
               <TouchableOpacity
-                onPress={() => handleUpdateStatus('draft')}
-                className={`flex-row items-center p-4 rounded-2xl border ${phase.status === 'draft' ? 'bg-orange-500/10 border-orange-500/30' : 'bg-white/5 border-white/5'}`}
+                onPress={() => handleUpdateStatus('planned')}
+                className={`flex-row items-center p-4 rounded-2xl border ${phase.status === 'planned' ? 'bg-orange-500/10 border-orange-500/30' : 'bg-white/5 border-white/5'}`}
               >
                 <View
-                  className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${phase.status === 'draft' ? 'bg-orange-500/20' : 'bg-zinc-900'}`}
+                  className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${phase.status === 'planned' ? 'bg-orange-500/20' : 'bg-zinc-900'}`}
                 >
                   <Ionicons
                     name="document-text"
                     size={20}
-                    color={phase.status === 'draft' ? '#FF6B35' : '#71717A'}
+                    color={phase.status === 'planned' ? '#FF6B35' : '#71717A'}
                   />
                 </View>
                 <View className="flex-1">
                   <Text
-                    className={`font-bold ${phase.status === 'draft' ? 'text-white' : 'text-zinc-300'}`}
+                    className={`font-bold ${phase.status === 'planned' ? 'text-white' : 'text-zinc-300'}`}
                   >
                     Rascunho
                   </Text>
@@ -1152,7 +1148,7 @@ export default function PhaseDetailsScreen() {
                     Fase em planejamento, não visível ao aluno
                   </Text>
                 </View>
-                {phase.status === 'draft' && (
+                {phase.status === 'planned' && (
                   <Ionicons name="checkmark-circle" size={20} color="#FF6B35" />
                 )}
               </TouchableOpacity>

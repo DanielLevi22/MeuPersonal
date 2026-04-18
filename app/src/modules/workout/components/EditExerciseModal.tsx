@@ -41,11 +41,19 @@ export function EditExerciseModal({ visible, item, onClose, onSave }: EditExerci
       setSets(String(item.sets));
       setReps(String(item.reps));
       setWeight(String(item.weight || ''));
-      setRestTime(String(item.rest_time || 60));
+      setRestTime(String(item.rest_seconds || 60));
       setVideoUrl(item.exercise?.video_url || '');
       console.log('🔄 EditExerciseModal initialized with video_url:', item.exercise?.video_url);
     }
-  }, [item?.id, visible, item?.exercise?.video_url, item?.reps, item?.rest_time, item?.sets, item]); // Only re-run when item ID or visibility changes
+  }, [
+    item?.id,
+    visible,
+    item?.exercise?.video_url,
+    item?.reps,
+    item?.rest_seconds,
+    item?.sets,
+    item,
+  ]); // Only re-run when item ID or visibility changes
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -120,7 +128,7 @@ export function EditExerciseModal({ visible, item, onClose, onSave }: EditExerci
       sets: setsNum,
       reps: reps.trim(),
       weight: weight.trim(),
-      rest_time: restNum,
+      rest_seconds: restNum,
       exercise: item.exercise
         ? {
             ...item.exercise,

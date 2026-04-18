@@ -56,7 +56,7 @@ export function analyzeExerciseProgression(
 
   // Analyze weight progression
   const currentWeight = parseFloat(String(currentItem.weight)) || 0;
-  const previousWeight = parseFloat(String(previousSessionItem.weight)) || 0;
+  const previousWeight = parseFloat(String(previousSessionItem.sets_data?.[0]?.weight ?? 0)) || 0;
 
   const weightChange = calculateMetricChange(currentWeight, previousWeight, 'kg');
   if (weightChange) {
@@ -64,7 +64,7 @@ export function analyzeExerciseProgression(
   }
 
   // Analyze sets completed progression
-  const previousSetsCompleted = previousSessionItem.sets_completed || 0;
+  const previousSetsCompleted = previousSessionItem.sets_data?.length || 0;
 
   if (currentSetsCompleted > 0 || previousSetsCompleted > 0) {
     const setsChange = calculateMetricChange(currentSetsCompleted, previousSetsCompleted, '');

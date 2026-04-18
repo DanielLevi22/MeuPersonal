@@ -186,7 +186,8 @@ export default function PeriodizationDetailsScreen() {
           {/* Premium Header */}
           <ImageBackground
             source={
-              PERIODIZATION_IMAGES[periodization.type || 'default'] || PERIODIZATION_IMAGES.default
+              PERIODIZATION_IMAGES[periodization.objective || 'default'] ||
+              PERIODIZATION_IMAGES.default
             }
             className="h-96 w-full relative"
             resizeMode="cover"
@@ -227,7 +228,7 @@ export default function PeriodizationDetailsScreen() {
                       className="text-[10px] font-bold uppercase tracking-widest"
                       style={{ color: colors.primary.start }}
                     >
-                      {periodization.type || 'Planejamento'}
+                      {periodization.objective || 'Planejamento'}
                     </Text>
                   </View>
                   <View className="ml-2">
@@ -253,10 +254,12 @@ export default function PeriodizationDetailsScreen() {
                       style={{ marginRight: 8 }}
                     />
                     <Text className="text-white font-bold text-xs">
-                      {new Date(periodization.start_date).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                      })}
+                      {periodization.start_date
+                        ? new Date(periodization.start_date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                          })
+                        : '—'}
                     </Text>
                   </View>
                   <View className="flex-row items-center bg-white/10 px-3 py-2 rounded-xl border border-white/5">
@@ -267,10 +270,12 @@ export default function PeriodizationDetailsScreen() {
                       style={{ marginRight: 8 }}
                     />
                     <Text className="text-white font-bold text-xs">
-                      {new Date(periodization.end_date).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                      })}
+                      {periodization.end_date
+                        ? new Date(periodization.end_date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                          })
+                        : '—'}
                     </Text>
                   </View>
                 </View>
@@ -427,8 +432,7 @@ export default function PeriodizationDetailsScreen() {
                                   className="text-zinc-500 text-[10px] font-bold ml-1 uppercase"
                                   style={{ color: colors.text.muted }}
                                 >
-                                  {phase.training_split || 'Split A/B'} • {phase.weekly_frequency}x
-                                  por semana
+                                  {phase.name}
                                 </Text>
                               </View>
                             </View>
@@ -474,13 +478,17 @@ export default function PeriodizationDetailsScreen() {
                                 className="text-zinc-400 text-[10px] font-bold ml-2"
                                 style={{ color: colors.text.secondary }}
                               >
-                                {new Date(phase.start_date).toLocaleDateString('pt-BR', {
-                                  month: 'short',
-                                })}{' '}
+                                {phase.start_date
+                                  ? new Date(phase.start_date).toLocaleDateString('pt-BR', {
+                                      month: 'short',
+                                    })
+                                  : '—'}{' '}
                                 -{' '}
-                                {new Date(phase.end_date).toLocaleDateString('pt-BR', {
-                                  month: 'short',
-                                })}
+                                {phase.end_date
+                                  ? new Date(phase.end_date).toLocaleDateString('pt-BR', {
+                                      month: 'short',
+                                    })
+                                  : '—'}
                               </Text>
                             </View>
 
@@ -521,14 +529,12 @@ export default function PeriodizationDetailsScreen() {
                           await createTrainingPlan({
                             periodization_id: periodization.id,
                             name: `Fase ${currentPeriodizationPhases.length + 1}`,
-                            training_split: 'ABC',
-                            weekly_frequency: 3,
                             start_date: new Date().toISOString().split('T')[0],
                             end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                               .toISOString()
                               .split('T')[0],
-                            status: 'draft',
-                            notes: '',
+                            status: 'planned',
+                            order_index: currentPeriodizationPhases.length,
                           });
                           Alert.alert('Sucesso', 'Fase criada!');
                         } catch (_error) {

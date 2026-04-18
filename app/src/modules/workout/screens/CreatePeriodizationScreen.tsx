@@ -132,12 +132,10 @@ export default function CreatePeriodizationScreen() {
       objective,
       student_id: studentId,
       student_name: students.find((s) => s.id === studentId)?.full_name,
-      personal_id: user.id,
-      professional_id: user.id,
+      specialist_id: user.id,
       start_date: startDate.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       status: 'active',
-      notes: notes || null,
     });
 
     setLoading(true);
@@ -148,19 +146,17 @@ export default function CreatePeriodizationScreen() {
         name,
         objective,
         student_id: studentId,
-        personal_id: user.id,
-        professional_id: user.id,
+        specialist_id: user.id,
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
         status: 'active',
-        notes: notes || null,
-      } as Parameters<typeof createPeriodization>[0]);
+      });
 
       console.log('✅ Periodization created successfully!');
       console.log('📦 Response data:', data);
       console.log('🔑 Periodization ID:', data.id);
       console.log('👤 Student ID:', data.student_id);
-      console.log('👨‍💼 Professional ID:', data.professional_id);
+      console.log('👨‍💼 Specialist ID:', data.specialist_id);
 
       // Refresh periodizations to ensure the new one is in the cache
       const { fetchPeriodizations } = useWorkoutStore.getState();
@@ -176,17 +172,7 @@ export default function CreatePeriodizationScreen() {
       setLoading(false);
       console.log('=== PERIODIZATION CREATION FLOW ENDED ===\n');
     }
-  }, [
-    name,
-    objective,
-    studentId,
-    user?.id,
-    students,
-    startDate,
-    endDate,
-    notes,
-    createPeriodization,
-  ]);
+  }, [name, objective, studentId, user?.id, students, startDate, endDate, createPeriodization]);
 
   const selectedStudent = students.find((s) => s.id === studentId);
   const selectedObjective = OBJECTIVE_OPTIONS.find((o) => o.value === objective);

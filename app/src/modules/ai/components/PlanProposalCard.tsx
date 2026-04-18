@@ -45,28 +45,24 @@ export function PlanProposalCard({
       const periodization = await createPeriodization({
         name: proposal.name,
         student_id: studentId,
-        personal_id: user.id,
-        start_date: new Date().toISOString(),
-        end_date: new Date(
-          Date.now() + proposal.durationWeeks * 7 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        type: ((
+        specialist_id: user.id,
+        objective: ((
           {
             Hipertrofia: 'hypertrophy',
             Força: 'strength',
             Emagrecimento: 'weight_loss',
             Resistência: 'conditioning',
-            Adaptação: 'adaptation',
           } as const
         )[
-          (['Hipertrofia', 'Força', 'Emagrecimento', 'Resistência', 'Adaptação'].includes(
-            proposal.goal
-          )
+          (['Hipertrofia', 'Força', 'Emagrecimento', 'Resistência'].includes(proposal.goal)
             ? proposal.goal
             : 'Hipertrofia') as string
-        ] || 'hypertrophy') as 'hypertrophy' | 'strength' | 'adaptation',
+        ] || 'hypertrophy') as 'hypertrophy' | 'strength' | 'weight_loss' | 'conditioning',
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: new Date(Date.now() + proposal.durationWeeks * 7 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
         status: 'active',
-        notes: `Gerado por I.A. (Nível: ${proposal.level})`,
       });
 
       // 2. Create the Training Plans (Phases) — structure only, NO workout generation
@@ -83,12 +79,10 @@ export function PlanProposalCard({
           await createTrainingPlan({
             periodization_id: periodization.id,
             name: phase.name,
-            description: phase.focus,
-            training_split: 'TBD',
-            weekly_frequency: 3,
-            start_date: currentDate.toISOString(),
-            end_date: endDate.toISOString(),
-            status: 'draft',
+            start_date: currentDate.toISOString().split('T')[0],
+            end_date: endDate.toISOString().split('T')[0],
+            status: 'planned',
+            order_index: i,
           });
 
           currentDate = endDate;

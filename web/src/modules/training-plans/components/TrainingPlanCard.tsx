@@ -12,17 +12,6 @@ interface TrainingPlanCardProps {
   onClone: () => void;
 }
 
-const splitLabels: Record<string, string> = {
-  abc: "ABC",
-  abcd: "ABCD",
-  abcde: "ABCDE",
-  abcdef: "ABCDEF",
-  upper_lower: "Superior/Inferior",
-  full_body: "Full Body",
-  push_pull_legs: "Push/Pull/Legs",
-  custom: "Personalizado",
-};
-
 const statusColors: Record<string, string> = {
   draft: "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/30",
   active: "bg-primary/10 text-primary border-primary/30",
@@ -42,8 +31,8 @@ export function TrainingPlanCard({
   onDelete,
   onClone,
 }: TrainingPlanCardProps) {
-  const startDate = new Date(trainingPlan.start_date);
-  const endDate = new Date(trainingPlan.end_date);
+  const startDate = new Date(trainingPlan.start_date ?? "");
+  const endDate = new Date(trainingPlan.end_date ?? "");
 
   return (
     <div className="relative bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-2xl group">
@@ -56,16 +45,10 @@ export function TrainingPlanCard({
             >
               {statusLabels[trainingPlan.status]}
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-secondary/10 text-secondary border border-secondary/30">
-              {splitLabels[trainingPlan.training_split]}
-            </span>
           </div>
           <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
             {trainingPlan.name}
           </h3>
-          {trainingPlan.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">{trainingPlan.description}</p>
-          )}
         </div>
 
         {/* Actions */}
@@ -137,8 +120,8 @@ export function TrainingPlanCard({
           <p className="text-lg font-bold text-foreground">{trainingPlan.workouts_count || 0}</p>
         </div>
         <div className="bg-background/50 rounded-lg p-3 text-center">
-          <p className="text-xs text-muted-foreground mb-1">Frequência</p>
-          <p className="text-lg font-bold text-foreground">{trainingPlan.weekly_frequency}x</p>
+          <p className="text-xs text-muted-foreground mb-1">Treinos</p>
+          <p className="text-lg font-bold text-foreground">{trainingPlan.workouts_count || 0}</p>
         </div>
         <div className="bg-background/50 rounded-lg p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Duração</p>
@@ -148,20 +131,6 @@ export function TrainingPlanCard({
           </p>
         </div>
       </div>
-
-      {/* Goals */}
-      {trainingPlan.goals && trainingPlan.goals.length > 0 && (
-        <div className="mb-4">
-          <p className="text-xs text-muted-foreground mb-2">Metas:</p>
-          <div className="flex flex-wrap gap-2">
-            {trainingPlan.goals.map((goal, index) => (
-              <span key={index} className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                🎯 {goal}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* View Button */}
       <button

@@ -56,9 +56,7 @@ describe("useCreateWorkout", () => {
     result.current.mutate({
       title: "Treino A",
       training_plan_id: "plan-1",
-      identifier: "A",
-      estimated_duration: 60,
-      difficulty_level: "intermediate",
+      difficulty: "intermediate",
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -67,11 +65,9 @@ describe("useCreateWorkout", () => {
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Treino A",
-        personal_id: authedUser.id,
+        specialist_id: authedUser.id,
         training_plan_id: "plan-1",
-        identifier: "A",
-        estimated_duration: 60,
-        difficulty_level: "intermediate",
+        difficulty: "intermediate",
       }),
     );
     expect(result.current.data).toEqual(created);
@@ -113,28 +109,16 @@ describe("useUpdateWorkout", () => {
     result.current.mutate({
       id: "workout-2",
       title: "Treino B Atualizado",
-      estimated_duration: 45,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(mockFrom).toHaveBeenCalledWith("workouts");
     expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Treino B Atualizado", estimated_duration: 45 }),
+      expect.objectContaining({ title: "Treino B Atualizado" }),
     );
     expect(eqMock).toHaveBeenCalledWith("id", "workout-2");
     expect(result.current.data).toEqual(updated);
-  });
-
-  it("throws when user is not authenticated", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-
-    const { result } = renderHook(() => useUpdateWorkout(), { wrapper });
-    result.current.mutate({ id: "workout-2", title: "X" });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("Usuário não autenticado");
-    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it("throws when supabase returns an error", async () => {

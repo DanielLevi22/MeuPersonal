@@ -1,62 +1,31 @@
-// Workout Module Types
-// Centralized TypeScript interfaces for type safety and better developer experience
-
-export interface Exercise {
-  id: string;
-  name: string;
-  muscle_group: string | null;
-  description: string | null;
-  video_url: string | null;
-}
-
-export interface WorkoutItem {
-  id: string;
-  exercise_id: string;
-  exercise?: Exercise;
-  sets: number;
-  reps: string;
-  weight: string;
-  rest_time: number;
-  notes: string;
-}
-
-export interface Workout {
-  id: string;
-  title: string;
-  description: string | null;
-  items?: WorkoutItem[];
-  training_plan_id?: string;
-  muscle_group?: string | null;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  personal_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  duration_minutes?: number;
-  exercises_count?: number;
-}
+// Alias for backward-compatibility within app module
+export type {
+  DayOfWeek,
+  Exercise,
+  Periodization,
+  TrainingPlan,
+  TrainingStatus,
+  Workout,
+  WorkoutDifficulty,
+  WorkoutExercise,
+  WorkoutExercise as WorkoutItem,
+  WorkoutSession,
+  WorkoutSessionExercise,
+} from '@meupersonal/shared';
 
 export interface SessionItem {
   id?: string;
-  workout_item_id: string;
-  sets_completed: number;
-  weight?: number;
-  reps?: number;
-  // Edited parameters from the session
+  workout_exercise_id: string;
+  sets_data: {
+    sets: number;
+    reps: number;
+    weight?: number;
+    rest_seconds?: number;
+  }[];
   editedSets?: number;
   editedReps?: number;
   editedWeight?: number;
-  editedRestTime?: number;
-}
-
-export interface WorkoutSession {
-  id: string;
-  workout_id: string;
-  student_id: string;
-  started_at: string;
-  completed_at: string;
-  items: SessionItem[];
-  intensity?: number;
-  notes?: string;
+  editedRestSeconds?: number;
 }
 
 export type ProgressionType = 'improved' | 'decreased' | 'maintained';
@@ -75,14 +44,7 @@ export interface ProgressionAnalysis {
 }
 
 export interface EditedWorkoutItems {
-  [itemId: string]: WorkoutItem;
-}
-
-export interface ProgressionSummaryItem {
-  exerciseName: string;
-  improvements: string[];
-  decreases: string[];
-  maintained: string[];
+  [itemId: string]: import('@meupersonal/shared').WorkoutExercise;
 }
 
 export interface ShareStats {
@@ -99,12 +61,8 @@ export interface SaveSessionParams {
   startedAt: string;
   completedAt: string;
   items: {
-    workoutItemId: string;
-    setsCompleted: number;
-    editedSets?: number;
-    editedReps?: number;
-    editedWeight?: number;
-    editedRestTime?: number;
+    workoutExerciseId: string;
+    setsData: unknown[];
   }[];
   intensity: number;
   notes: string;
