@@ -1,7 +1,7 @@
 # PRD: shared-nutrition-service
 
 **Data de criação:** 2026-04-18
-**Status:** approved
+**Status:** done
 **Branch:** feature/shared-nutrition-service
 **Autor:** Daniel Levi
 
