@@ -4,7 +4,6 @@ import type { UpdateWorkoutInput } from "@meupersonal/shared";
 import { createWorkoutsService } from "@meupersonal/shared";
 import { supabase } from "@meupersonal/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuthUser } from "./useAuthUser";
 
 export type { UpdateWorkoutInput };
 
@@ -29,12 +28,14 @@ export interface CreateWorkoutInput {
 
 export function useCreateWorkout() {
   const queryClient = useQueryClient();
-  const { data: authUser } = useAuthUser();
 
   return useMutation({
     mutationFn: async (workout: CreateWorkoutInput) => {
-      if (!authUser?.id) throw new Error("Usuário não autenticado");
-      return workoutsService.createWorkout({ specialist_id: authUser.id, ...workout });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error("Usuário não autenticado");
+      return workoutsService.createWorkout({ specialist_id: user.id, ...workout });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workouts"] });
