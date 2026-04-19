@@ -29,6 +29,7 @@ describe('nutritionStore', () => {
         return {
           select: jest.fn().mockReturnThis(),
           or: jest.fn().mockReturnThis(),
+          ilike: jest.fn().mockReturnThis(),
           range: jest.fn().mockResolvedValue({ data: mockFoods, error: null }),
         };
       }
@@ -82,6 +83,7 @@ describe('nutritionStore', () => {
         return {
           select: jest.fn().mockReturnThis(),
           or: jest.fn().mockReturnThis(),
+          ilike: jest.fn().mockReturnThis(),
           range: jest.fn().mockResolvedValue({ data: [], error: null }),
         };
       }
