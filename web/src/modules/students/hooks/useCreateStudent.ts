@@ -7,11 +7,6 @@ export interface CreateStudentInput {
   fullName: string;
   email: string;
   password: string;
-  phone?: string;
-  weight?: string;
-  height?: string;
-  notes?: string;
-  experience_level?: "Iniciante" | "Intermediário" | "Avançado";
 }
 
 export function useCreateStudent() {

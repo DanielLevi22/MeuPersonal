@@ -33,10 +33,24 @@ export default function LoginPage() {
         return;
       }
 
-      // Wait for auth store to update
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Wait for auth store to finish loading profile
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(resolve, 5000); // max 5s fallback
+        const unsub = useAuthStore.subscribe((state) => {
+          if (!state.isLoading) {
+            clearTimeout(timeout);
+            unsub();
+            resolve();
+          }
+        });
+      });
 
-      const { accountType } = useAuthStore.getState();
+      const { accountType, user: authUser } = useAuthStore.getState();
+
+      if (!authUser) {
+        setError("Perfil não encontrado. Crie uma nova conta ou contate o suporte.");
+        return;
+      }
 
       if (accountType === "admin") {
         router.push("/admin");

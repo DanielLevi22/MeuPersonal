@@ -1,12 +1,11 @@
 "use client";
 
-import { createAuthService, type ServiceType } from "@meupersonal/shared";
+import type { ServiceType } from "@meupersonal/shared";
 import { supabase } from "@meupersonal/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-const authService = createAuthService(supabase);
+import { useAuthStore } from "@/modules/auth";
 
 const SERVICE_OPTIONS: { value: ServiceType; label: string; description: string }[] = [
   {
@@ -59,24 +58,43 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const { data, error: authError } = await authService.signUpSpecialist({
-        email: email.trim().toLowerCase(),
-        password,
-        full_name: fullName.trim(),
-        service_types: selectedServices,
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          full_name: fullName.trim(),
+          service_types: selectedServices,
+        }),
       });
 
-      if (authError) throw authError;
-      if (!data.user) throw new Error("Erro ao criar usuário");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erro ao criar conta");
+
+      // Sign in to get session (user was created server-side)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (signInError) throw signInError;
+
+      // Wait for auth store to finish loading profile
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(resolve, 5000);
+        const unsub = useAuthStore.subscribe((state) => {
+          if (!state.isLoading) {
+            clearTimeout(timeout);
+            unsub();
+            resolve();
+          }
+        });
+      });
 
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao criar conta";
-      if (message.toLowerCase().includes("already registered")) {
-        setError("Este e-mail já possui uma conta. Faça login.");
-      } else {
-        setError(message);
-      }
+      setError(message);
     } finally {
       setLoading(false);
     }

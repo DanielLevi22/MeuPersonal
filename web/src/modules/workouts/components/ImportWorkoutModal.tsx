@@ -1,8 +1,10 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
+import { importWorkoutAction } from "@/app/dashboard/workouts/actions";
 import { useWorkouts } from "@/shared/hooks/useWorkouts";
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 
 export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [importing, setImporting] = useState<string | null>(null);
   const [imported, setImported] = useState<Set<string>>(new Set());
@@ -24,59 +27,13 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
   const handleImport = async (workoutId: string) => {
     setImporting(workoutId);
     try {
-      // 1. Get user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Não autenticado");
-
-      // 2. Fetch source workout items
-      const { data: sourceItems } = await supabase
-        .from("workout_exercises")
-        .select("*")
-        .eq("workout_id", workoutId)
-        .order("order_index", { ascending: true });
-
-      // 3. Fetch source workout data
-      const { data: source, error: srcErr } = await supabase
-        .from("workouts")
-        .select("*")
-        .eq("id", workoutId)
-        .single();
-      if (srcErr) throw srcErr;
-
-      // 4. Create new workout linked to this phase
-      const { data: newWorkout, error: wErr } = await supabase
-        .from("workouts")
-        .insert({
-          training_plan_id: phaseId,
-          title: source.title,
-          description: source.description,
-          specialist_id: user.id,
-          muscle_group: source.muscle_group,
-          difficulty: source.difficulty,
-        })
-        .select()
-        .single();
-      if (wErr) throw wErr;
-
-      // 5. Duplicate items
-      if (sourceItems && sourceItems.length > 0) {
-        const newItems = sourceItems.map((item) => ({
-          workout_id: newWorkout.id,
-          exercise_id: item.exercise_id,
-          order_index: item.order_index,
-          sets: item.sets,
-          reps: item.reps,
-          weight: item.weight,
-          rest_seconds: item.rest_seconds,
-          notes: item.notes,
-        }));
-        await supabase.from("workout_exercises").insert(newItems);
-      }
-
+      await importWorkoutAction(workoutId, phaseId);
       queryClient.invalidateQueries({ queryKey: ["workouts-by-plan", phaseId] });
+      router.refresh();
       setImported((prev) => new Set([...prev, workoutId]));
+      toast.success("Treino importado com sucesso");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao importar treino");
     } finally {
       setImporting(null);
     }
@@ -187,7 +144,6 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
                       : "bg-white/5 border-white/10 hover:border-primary/40 hover:bg-white/10"
                   } disabled:opacity-60`}
                 >
-                  {/* Badge */}
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-primary font-bold text-sm">
                       {workout.title.charAt(0).toUpperCase()}
@@ -197,8 +153,8 @@ export function ImportWorkoutModal({ isOpen, onClose, phaseId }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{workout.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {workout.exercises_count ?? 0} exercício
-                      {(workout.exercises_count ?? 0) !== 1 ? "s" : ""}
+                      {workout.exercises?.length ?? 0} exercício
+                      {(workout.exercises?.length ?? 0) !== 1 ? "s" : ""}
                     </p>
                   </div>
 

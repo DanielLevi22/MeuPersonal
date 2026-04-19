@@ -351,7 +351,10 @@ export default function PeriodizationDetailsScreen() {
 
             <View className="gap-4">
               {currentPeriodizationPhases
-                .filter((phase) => !isStudentView || phase.status === 'active')
+                .filter(
+                  (phase) =>
+                    !isStudentView || phase.status === 'active' || phase.status === 'planned'
+                )
                 .map((phase, index) => {
                   const phaseIsActive = phase.status === 'active';
                   const isLast = index === currentPeriodizationPhases.length - 1;

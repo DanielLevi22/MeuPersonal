@@ -1,10 +1,9 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
-import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { addPhaseAction } from "@/app/dashboard/workouts/actions";
 import {
   useActivatePeriodization,
   useCompletePeriodization,
@@ -30,7 +29,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 const PLAN_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: "Rascunho", className: "bg-white/5 text-muted-foreground" },
+  planned: { label: "Planejada", className: "bg-blue-500/10 text-blue-400" },
   active: { label: "Ativa", className: "bg-emerald-500/10 text-emerald-400" },
   completed: { label: "Concluída", className: "bg-white/5 text-muted-foreground" },
 };
@@ -44,7 +43,7 @@ function formatDate(iso: string) {
 }
 
 function PlanCard({ plan, periodizationId }: { plan: TrainingPlan; periodizationId: string }) {
-  const statusCfg = PLAN_STATUS_CONFIG[plan.status] ?? PLAN_STATUS_CONFIG.draft;
+  const statusCfg = PLAN_STATUS_CONFIG[plan.status] ?? PLAN_STATUS_CONFIG.planned;
 
   return (
     <Link
@@ -101,7 +100,6 @@ export default function PeriodizationDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const periodizationId = params.id as string;
-  const queryClient = useQueryClient();
   const [addingPhase, setAddingPhase] = useState(false);
   const [editingPeriodization, setEditingPeriodization] = useState(false);
 
@@ -112,19 +110,9 @@ export default function PeriodizationDetailsPage() {
 
   const handleAddPhase = async () => {
     setAddingPhase(true);
-    const today = new Date().toISOString().split("T")[0];
-    const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     try {
-      const { error } = await supabase.from("training_plans").insert({
-        periodization_id: periodizationId,
-        name: `Fase ${plans.length + 1}`,
-        start_date: today,
-        end_date: in30Days,
-        status: "draft",
-      });
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ["training-plans", periodizationId] });
-      queryClient.invalidateQueries({ queryKey: ["periodization", periodizationId] });
+      await addPhaseAction(periodizationId);
+      router.refresh();
     } finally {
       setAddingPhase(false);
     }

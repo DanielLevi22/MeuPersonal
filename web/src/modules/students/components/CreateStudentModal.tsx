@@ -12,17 +12,10 @@ interface CreateStudentModalProps {
   onClose: () => void;
 }
 
-const EXPERIENCE_LEVELS = ["Iniciante", "Intermediário", "Avançado"] as const;
-
 export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
-  const [notes, setNotes] = useState("");
-  const [level, setLevel] = useState<(typeof EXPERIENCE_LEVELS)[number] | "">("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -32,11 +25,6 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
     setFullName("");
     setEmail("");
     setPassword("");
-    setPhone("");
-    setWeight("");
-    setHeight("");
-    setNotes("");
-    setLevel("");
     setError(null);
     setSuccess(false);
     createStudent.reset();
@@ -47,25 +35,15 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
     onClose();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
     try {
-      await createStudent.mutateAsync({
-        fullName,
-        email,
-        password,
-        phone: phone || undefined,
-        weight: weight || undefined,
-        height: height || undefined,
-        notes: notes || undefined,
-        experience_level: (level as (typeof EXPERIENCE_LEVELS)[number]) || undefined,
-      });
+      await createStudent.mutateAsync({ fullName, email, password });
       setSuccess(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao criar aluno";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Erro ao criar aluno");
     }
   };
 
@@ -144,65 +122,6 @@ export function CreateStudentModal({ isOpen, onClose }: CreateStudentModalProps)
             placeholder="Mínimo 6 caracteres"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-          />
-        </FormField>
-
-        <FormField label="Telefone" htmlFor="phone" optional>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="(11) 99999-9999"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </FormField>
-
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Peso (kg)" htmlFor="weight" optional>
-            <Input
-              id="weight"
-              type="number"
-              step="0.1"
-              placeholder="70.5"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-            />
-          </FormField>
-          <FormField label="Altura (cm)" htmlFor="height" optional>
-            <Input
-              id="height"
-              type="number"
-              placeholder="175"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-            />
-          </FormField>
-        </div>
-
-        <FormField label="Nível de Experiência" htmlFor="level" optional>
-          <select
-            id="level"
-            value={level}
-            onChange={(e) => setLevel(e.target.value as typeof level)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="">Selecionar...</option>
-            {EXPERIENCE_LEVELS.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField label="Observações" htmlFor="notes" optional>
-          <textarea
-            id="notes"
-            placeholder="Objetivo, restrições, histórico..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
           />
         </FormField>
 

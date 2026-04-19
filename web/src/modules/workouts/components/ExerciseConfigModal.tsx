@@ -104,10 +104,12 @@ export function ExerciseConfigModal({
               Carga (kg) - Opcional
             </label>
             <input
-              type="text"
+              type="number"
+              min="0"
+              step="0.5"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              placeholder="Ex: 20, 15-20, livre"
+              placeholder="Ex: 20"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
           </div>

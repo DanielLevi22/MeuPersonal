@@ -7,13 +7,19 @@ const config = getDefaultConfig(__dirname);
 // Explicitly set the project root to ensure correct resolution regardless of execution context
 config.projectRoot = __dirname;
 
+// Watch the shared package so Metro picks up changes
+const sharedPackagePath = path.resolve(__dirname, '../shared');
+config.watchFolders = [...(config.watchFolders ?? []), sharedPackagePath];
+
 // Add support for GLB/GLTF 3D model files
 config.resolver.assetExts.push('glb', 'gltf', 'png', 'jpg');
 
 // Polyfill Node built-ins for packages like react-native-svg that import 'buffer'
+// Also map @meupersonal/* workspace packages that Metro can't resolve via tsconfig aliases
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
   buffer: require.resolve('buffer'),
+  '@meupersonal/shared': path.resolve(__dirname, '../shared/src'),
 };
 
 // Normalize path to use forward slashes for Windows compatibility
