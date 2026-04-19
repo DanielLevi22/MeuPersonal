@@ -47,11 +47,6 @@ describe("useCreateStudent", () => {
       fullName: "João Silva",
       email: "joao@example.com",
       password: "senha123",
-      phone: "(11) 99999-9999",
-      weight: "75",
-      height: "175",
-      notes: "Objetivo: hipertrofia",
-      experience_level: "Iniciante",
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

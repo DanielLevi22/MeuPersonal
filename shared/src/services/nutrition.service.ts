@@ -21,10 +21,12 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
   searchFoods: async (query: string, page = 0, pageSize = 10): Promise<Food[]> => {
     const from = page * pageSize;
     const to = from + pageSize - 1;
+    // Uses ilike for broad partial matching. After migration 0002 is applied on all
+    // environments, switch to: .or(`name.ilike.%${query}%,search_vector.fts.${query}`)
     const { data, error } = await supabase
       .from("foods")
       .select("*")
-      .or(`name.ilike.%${query}%,search_vector.fts.${query}`)
+      .ilike("name", `%${query}%`)
       .range(from, to);
     if (error) throw error;
     return (data || []) as Food[];

@@ -22,7 +22,7 @@ async function getCallerSpecialist(request: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.account_type !== "specialist") return null;
+  if ((profile as unknown as Record<string, unknown>)?.account_type !== "specialist") return null;
   return user;
 }
 
@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
     const studentId = newUser.user.id;
 
     // Upsert profile with account_status = 'invited' (Fluxo A)
-    await supabaseAdmin.from("profiles").upsert(
+    await supabaseAdmin.from("profiles" as never).upsert(
       {
         id: studentId,
         email,
         full_name: fullName,
         account_type: "student",
         account_status: "invited",
-      },
+      } as never,
       { onConflict: "id" },
     );
 
@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
       .eq("specialist_id", caller.id);
 
     const serviceList =
-      services && services.length > 0 ? services.map((s) => s.service_type) : ["personal_training"];
+      services && services.length > 0
+        ? (services as { service_type: string }[]).map((s) => s.service_type)
+        : ["personal_training"];
 
     // Create links in student_specialists
     const links = serviceList.map((service_type) => ({
@@ -88,10 +90,20 @@ export async function POST(request: NextRequest) {
       status: "active",
     }));
 
-    await supabaseAdmin.from("student_specialists").upsert(links, {
-      onConflict: "student_id,specialist_id,service_type",
-      ignoreDuplicates: true,
-    });
+    const { error: linkError } = await supabaseAdmin
+      .from("student_specialists" as never)
+      .upsert(links as never[], {
+        onConflict: "student_id,specialist_id,service_type",
+        ignoreDuplicates: true,
+      });
+
+    if (linkError) {
+      console.error("[POST /api/students] student_specialists upsert error:", linkError);
+      return NextResponse.json(
+        { error: "Erro ao vincular aluno ao especialista" },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ success: true, student_id: studentId }, { status: 201 });
   } catch (error) {

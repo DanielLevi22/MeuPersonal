@@ -31,9 +31,6 @@ export default function CreateStudentScreen() {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [level, setLevel] = useState<'Iniciante' | 'Intermediário' | 'Avançado' | null>(null);
 
   // Measurements (Circumferences)
   const [neck, setNeck] = useState('');
@@ -122,8 +119,8 @@ export default function CreateStudentScreen() {
       if (hasMeasurements) {
         const p = (v: string) => (v ? parseFloat(v) : null);
         await addPhysicalAssessment(result.studentId, {
-          weight: p(weight),
-          height: p(height),
+          weight: null,
+          height: null,
           neck: p(neck),
           shoulder: p(shoulder),
           chest: p(chest),
@@ -313,35 +310,6 @@ export default function CreateStudentScreen() {
 
                   <View className="flex-row gap-4">
                     {renderInput('Idade', age, setAge, '0', undefined, 'min-w-[28%]')}
-                    {renderInput('Peso (kg)', weight, setWeight, '0.0', undefined, 'min-w-[28%]')}
-                    {renderInput('Altura (m)', height, setHeight, '0.00', undefined, 'min-w-[28%]')}
-                  </View>
-
-                  {/* Level Selector */}
-                  <View className="mb-4">
-                    <Text className="text-white font-medium mb-3 ml-1">Nível de Experiência</Text>
-                    <View className="flex-row gap-3">
-                      {(['Iniciante', 'Intermediário', 'Avançado'] as const).map((l) => (
-                        <TouchableOpacity
-                          key={l}
-                          onPress={() => {
-                            Haptics.selectionAsync();
-                            setLevel(l);
-                          }}
-                          className={`flex-1 items-center justify-center h-12 rounded-xl border ${
-                            level === l
-                              ? 'bg-orange-500 border-orange-500'
-                              : 'bg-zinc-900 border-zinc-800'
-                          }`}
-                        >
-                          <Text
-                            className={`font-bold ${level === l ? 'text-white' : 'text-zinc-400'}`}
-                          >
-                            {l}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
                   </View>
                 </View>
               </View>

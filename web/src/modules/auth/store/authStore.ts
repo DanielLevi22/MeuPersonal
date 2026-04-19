@@ -50,8 +50,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateSession: async (session) => {
     const state = get();
 
-    // Prevent duplicate initialization
-    if (state.isLoading && state.session?.user?.id === session?.user?.id) {
+    // Prevent duplicate initialization for the same logged-in user
+    if (
+      state.isLoading &&
+      state.session?.user?.id &&
+      state.session?.user?.id === session?.user?.id
+    ) {
       console.log("⏭️ Already initializing session for this user, skipping...");
       return;
     }
@@ -75,17 +79,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = session.user;
 
       try {
-        console.log("🔄 Fetching user context for:", user.id);
-        const context = await getUserContextJWT(user.id);
-        console.log("📊 User context loaded:", context);
-
+        const context = await getUserContextJWT(user.id, session);
         const abilities = defineAbilitiesFor(context);
-
         const services = context.services || [];
-
-        if (context.accountType === "admin") {
-          console.log("🔐 Admin access granted:", { userId: user.id, email: user.email });
-        }
 
         set({
           session,
@@ -96,15 +92,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           services,
           isLoading: false,
         });
-
-        console.log("✅ AuthStore updated:", {
-          accountType: context.accountType,
-          services,
-          hasAbilities: !!abilities,
-        });
       } catch (error) {
-        console.error("Error loading user context:", error);
-        set({ session, user, accountStatus: null, services: [], isLoading: false });
+        // Profile not found in DB — user exists in Auth but has no profile row.
+        // Sign out to prevent a broken session state.
+        console.error("Failed to load user profile, signing out:", error);
+        await supabase.auth.signOut();
+        set({
+          session: null,
+          user: null,
+          accountType: null,
+          accountStatus: null,
+          abilities: null,
+          services: [],
+          isLoading: false,
+        });
       }
     } catch (error) {
       console.error("Error updating session:", error);

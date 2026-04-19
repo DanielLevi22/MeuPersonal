@@ -34,26 +34,32 @@ export default function PeriodizationsScreen() {
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && accountType) {
       fetchPeriodizations(user.id);
     }
-  }, [user?.id, fetchPeriodizations]);
+  }, [user?.id, accountType, fetchPeriodizations]);
 
   const filteredPeriodizations = useMemo(() => {
     if (!searchQuery.trim()) {
-      return periodizations.filter((p) => p.status === 'active');
+      return accountType === 'specialist'
+        ? periodizations
+        : periodizations.filter((p) => p.status === 'active' || p.status === 'planned');
     }
 
     const query = searchQuery.toLowerCase();
     return periodizations.filter((periodization) => {
-      // Filter by active status
-      if (periodization.status !== 'active') return false;
+      if (
+        accountType !== 'specialist' &&
+        periodization.status !== 'active' &&
+        periodization.status !== 'planned'
+      )
+        return false;
 
       const name = periodization.name?.toLowerCase() || '';
       const studentName = periodization.student?.full_name?.toLowerCase() || '';
       return name.includes(query) || studentName.includes(query);
     });
-  }, [periodizations, searchQuery]);
+  }, [periodizations, searchQuery, accountType]);
 
   type PeriodizationItem = ReturnType<typeof useWorkoutStore.getState>['periodizations'][number] & {
     phases?: unknown[];
@@ -170,7 +176,7 @@ export default function PeriodizationsScreen() {
                 <Ionicons name="calendar-outline" size={64} color="#52525B" />
               </View>
               <Text className="text-white text-xl font-bold mb-2 text-center font-display">
-                Nenhuma periodização ativa
+                Nenhuma periodização
               </Text>
               <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
                 {accountType === 'specialist'

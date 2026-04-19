@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { updatePhaseStatusAction } from "@/app/dashboard/workouts/actions";
 import {
   useDeleteTrainingPlan,
   useUpdateTrainingPlan,
@@ -21,9 +22,9 @@ import { ImportWorkoutModal } from "../components/ImportWorkoutModal";
 const SPLITS = ["A", "AB", "ABC", "ABCD", "ABCDE", "ABCDEF"];
 
 const PLAN_STATUS_CONFIG = {
-  draft: {
-    label: "Rascunho",
-    className: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20",
+  planned: {
+    label: "Planejado",
+    className: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
   },
   active: {
     label: "Ativo",
@@ -50,8 +51,8 @@ function WorkoutCard({ workout, onDelete }: { workout: Workout; onDelete: (w: Wo
             {workout.title}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {workout.exercises_count ?? 0} exercício
-            {(workout.exercises_count ?? 0) !== 1 ? "s" : ""}
+            {workout.exercises?.length ?? 0} exercício
+            {(workout.exercises?.length ?? 0) !== 1 ? "s" : ""}
           </p>
         </div>
         <svg
@@ -173,12 +174,11 @@ export default function PhaseDetailsPage() {
   );
 
   const handleUpdateStatus = useCallback(
-    async (status: "draft" | "active" | "completed") => {
-      await supabase.from("training_plans").update({ status }).eq("id", phaseId);
-      queryClient.invalidateQueries({ queryKey: ["training-plan", phaseId] });
-      queryClient.invalidateQueries({ queryKey: ["training-plans"] });
+    async (status: "planned" | "active" | "completed") => {
+      await updatePhaseStatusAction(phaseId, periodizationId, status);
+      router.refresh();
     },
-    [phaseId, queryClient],
+    [phaseId, periodizationId, router],
   );
 
   const isLoading = loadingPlan || loadingWorkouts;
@@ -212,7 +212,8 @@ export default function PhaseDetailsPage() {
   }
 
   const statusCfg =
-    PLAN_STATUS_CONFIG[plan.status as keyof typeof PLAN_STATUS_CONFIG] ?? PLAN_STATUS_CONFIG.draft;
+    PLAN_STATUS_CONFIG[plan.status as keyof typeof PLAN_STATUS_CONFIG] ??
+    PLAN_STATUS_CONFIG.planned;
 
   return (
     <div className="space-y-6">
@@ -257,7 +258,7 @@ export default function PhaseDetailsPage() {
             </button>
             {showStatusMenu && (
               <div className="absolute right-0 top-full mt-1 bg-surface border border-white/10 rounded-xl shadow-xl z-20 p-1.5 flex flex-col gap-0.5 min-w-[140px]">
-                {(["draft", "active", "completed"] as const).map((s) => {
+                {(["planned", "active", "completed"] as const).map((s) => {
                   const cfg = PLAN_STATUS_CONFIG[s];
                   return (
                     <button

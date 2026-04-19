@@ -1,11 +1,14 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useDeleteWorkoutItem } from "@/shared/hooks/useWorkoutMutations";
+import {
+  addExerciseAction,
+  deleteExerciseAction,
+  updateExerciseAction,
+} from "@/app/dashboard/workouts/actions";
 import { useWorkout, useWorkoutItems, type WorkoutItem } from "@/shared/hooks/useWorkouts";
 import { CreateWorkoutModal } from "../components/CreateWorkoutModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
@@ -22,10 +25,13 @@ export default function WorkoutDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const workoutId = params.workoutId as string;
+  const periodizationId = params.id as string | undefined;
+  const phaseId = params.phaseId as string | undefined;
   const queryClient = useQueryClient();
 
   const [editWorkoutOpen, setEditWorkoutOpen] = useState(false);
   const [selectExercisesOpen, setSelectExercisesOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [configExercise, setConfigExercise] = useState<{
     id: string;
     name: string;
@@ -37,7 +43,6 @@ export default function WorkoutDetailsPage() {
 
   const { data: workout, isLoading: loadingWorkout } = useWorkout(workoutId);
   const { data: items = [], isLoading: loadingItems } = useWorkoutItems(workoutId);
-  const deleteItemMutation = useDeleteWorkoutItem();
 
   const isLoading = loadingWorkout || loadingItems;
 
@@ -52,62 +57,63 @@ export default function WorkoutDetailsPage() {
   };
 
   const handleSaveExercise = async (ex: SelectedExercise) => {
-    const { error } = await supabase.from("workout_exercises").insert({
-      workout_id: workoutId,
-      exercise_id: ex.id,
-      order_index: items.length,
-      sets: ex.sets,
-      reps: String(ex.reps),
-      rest_seconds: ex.rest_seconds,
-      weight: ex.weight || null,
-      notes: null,
-    });
-    if (error) {
+    try {
+      await addExerciseAction(
+        workoutId,
+        periodizationId ?? workout?.training_plan_id ?? "",
+        phaseId ?? workout?.training_plan_id ?? "",
+        {
+          exercise_id: ex.id,
+          order_index: items.length,
+          sets: ex.sets,
+          reps: String(ex.reps),
+          rest_seconds: ex.rest_seconds,
+          weight: ex.weight || null,
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
+      router.refresh();
+      setConfigExercise(null);
+      toast.success("Exercício adicionado");
+    } catch {
       toast.error("Erro ao adicionar exercício");
-      return;
     }
-    queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
-    queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
-    queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
-    setConfigExercise(null);
-    toast.success("Exercício adicionado");
   };
 
   const handleUpdateExercise = async (ex: SelectedExercise) => {
     if (!editingItem) return;
-    const { error } = await supabase
-      .from("workout_exercises")
-      .update({
+    try {
+      await updateExerciseAction(editingItem.id, workoutId, {
         sets: ex.sets,
         reps: String(ex.reps),
         rest_seconds: ex.rest_seconds,
         weight: ex.weight || null,
-      })
-      .eq("id", editingItem.id);
-    if (error) {
+      });
+      queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
+      router.refresh();
+      setEditingItem(null);
+      toast.success("Exercício atualizado");
+    } catch {
       toast.error("Erro ao atualizar exercício");
-      return;
     }
-    queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
-    setEditingItem(null);
-    toast.success("Exercício atualizado");
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingItem) return;
-    deleteItemMutation.mutate(deletingItem.id, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
-        queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
-        queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
-        toast.success("Exercício removido");
-        setDeletingItem(null);
-      },
-      onError: () => {
-        toast.error("Erro ao remover exercício");
-        setDeletingItem(null);
-      },
-    });
+    setDeleting(true);
+    try {
+      await deleteExerciseAction(deletingItem.id, workoutId);
+      queryClient.invalidateQueries({ queryKey: ["workout-items", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["workouts-by-plan"] });
+      router.refresh();
+      setDeletingItem(null);
+      toast.success("Exercício removido");
+    } catch {
+      toast.error("Erro ao remover exercício");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -351,7 +357,7 @@ export default function WorkoutDetailsPage() {
         onConfirm={handleConfirmDelete}
         title="Remover exercício"
         itemName={deletingItem?.exercise?.name ?? "este exercício"}
-        isLoading={deleteItemMutation.isPending}
+        isLoading={deleting}
       />
     </div>
   );
