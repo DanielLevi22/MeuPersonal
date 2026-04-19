@@ -143,6 +143,186 @@ feature/rewrite-system      → feature_flags, feature_access, admin panel
 
 ---
 
+## Novos módulos — Eleva Pro (adicionados em 2026-04-19)
+
+As tabelas abaixo estendem o schema canônico das 25 tabelas originais.
+Toda nova tabela segue as mesmas regras: RLS obrigatório, uuid, timestamptz.
+
+```
+AI
+  ai_chat_sessions            → student_id, specialist_id, module, created_at
+  ai_chat_messages            → session_id, role, content, metadata (jsonb)
+
+Engagement
+  daily_habit_logs            → student_id, log_date, sleep_quality, energy_level, hydration_ok
+  weekly_reviews              → student_id, week_start, week_end, summary_text, metrics (jsonb)
+
+Check-in e Progresso
+  student_checkins            → student_id, photo_urls[], analysis_text, analysis_metadata (jsonb)
+  pending_plan_adjustments    → student_id, checkin_id, module, before_snapshot, after_snapshot,
+                                diff_summary, reason, status (pending/approved/rejected)
+
+Notificações
+  student_notifications       → student_id, type, title, body, metadata, read_at, push_sent_at
+
+Billing
+  subscription_plans          → id (text PK), name, audience, price_brl, max_students, features (jsonb)
+  subscriptions               → user_id, plan_id, status, provider, provider_subscription_id,
+                                current_period_start, current_period_end, trial_end
+  payment_events              → subscription_id, provider, event_type, payload (jsonb)
+
+Marketplace
+  specialist_public_profiles  → id (FK profiles), display_name, bio, specialties[], city,
+                                price_range_min, price_range_max, cref, is_verified
+  student_reviews             → specialist_id, student_id, student_specialist_id,
+                                rating_overall, comment, specialist_reply
+  marketplace_leads           → student_id, specialist_id, status, student_message
+
+Especialista
+  specialist_alerts           → specialist_id, student_id, type, severity, resolved_at
+  specialist_whatsapp_settings → specialist_id, phone_number, is_active, alert_types[], quiet_hours
+  admin_audit_logs            → admin_id, action, target_type, target_id, details (jsonb)
+```
+
+**Total novo: +17 tabelas → 42 tabelas no total**
+
+---
+
+## Arquitetura de IA — regras que não mudam
+
+### Modelo por função (não negociar)
+
+| Função | Modelo | Regra |
+|---|---|---|
+| Orquestrador de chat (treino/nutrição) | `claude-sonnet-4-6` | Multi-turn complexo, tool use |
+| Sub-agentes (gerar JSON estruturado) | `claude-haiku-4-5-20251001` | 10x mais barato, nunca usar Sonnet aqui |
+| Assistente diário, briefing, review | `claude-haiku-4-5-20251001` | Tarefas estruturadas, baixa latência |
+| Análise de check-in com foto | `claude-sonnet-4-6` + Vision | Único com vision nativa no Claude |
+
+```typescript
+// Constantes — nunca hardcodar strings de modelo
+export const AI_MODELS = {
+  ORCHESTRATOR: "claude-sonnet-4-6",
+  SUBAGENT:     "claude-haiku-4-5-20251001",
+} as const;
+```
+
+### Prompt caching — obrigatório onde contexto > 1000 tokens
+
+```typescript
+// Contexto do aluno vai em bloco cacheável — Claude cacheia por 5 min
+// Em sessão de 10 mensagens: paga o contexto 1x, economiza ~85%
+content: [
+  { type: "text", text: studentContext, cache_control: { type: "ephemeral" } },
+  { type: "text", text: userMessage }
+]
+```
+
+### Onde vive o código de IA
+
+```
+web/src/app/api/ai/
+  chat/[studentId]/route.ts       → orquestrador SSE (especialista)
+  student/briefing/route.ts       → briefing pré-treino (REST, sem streaming)
+  student/chat/route.ts           → assistente diário (SSE)
+  student/checkin/route.ts        → análise de check-in com visão
+  student/onboarding/route.ts     → criação de plano autônomo (SSE)
+  student/plan/approve/route.ts   → aprovação de ajuste de plano
+  report/weekly/route.ts          → chamado pelo cron job
+```
+
+**Nunca criar chamadas de IA fora de `/api/ai/`. Nunca chamar Anthropic direto do mobile.**
+
+### Chat usa SSE. Tarefas pontuais usam REST.
+
+```
+SSE  → ai-coach-chat, assistente diário, onboarding
+REST → briefing, análise de check-in, review semanal (cron)
+```
+
+---
+
+## Billing — gates de features
+
+Toda feature premium passa por `checkFeatureAccess()` antes de processar:
+
+```typescript
+// web/src/lib/billing/checkFeature.ts
+export async function checkFeatureAccess(
+  userId: string,
+  feature: "ai_chat" | "checkin_analysis" | "whatsapp_alerts" | "marketplace"
+): Promise<{ allowed: boolean; limit?: number; used?: number }>
+```
+
+Providers: **Stripe** (cartão) + **Asaas** (PIX/boleto). Webhooks processados em `/api/webhooks/`.
+
+---
+
+## Notificações — um canal, múltiplas entregas
+
+```
+Trigger (cron ou evento)
+  → INSERT em student_notifications
+  → Se mobile com push_token → Expo Push API
+  → Se especialista com WhatsApp ativo (plano Pro+) → Meta Business API
+```
+
+WhatsApp usa templates pré-aprovados pela Meta — nunca mensagem livre.
+Número do especialista requer consentimento explícito (LGPD).
+
+---
+
+## Cron jobs (Vercel Cron → Next.js Route Handlers)
+
+| Job | Horário | O que faz |
+|---|---|---|
+| Review semanal alunos | Dom 20h | Haiku gera resumo, salva em `weekly_reviews` |
+| Relatório especialista | Dom 21h | Consolida alunos, notifica especialista |
+| Verificação de abandono | Diário 9h | Query SQL → insere em `specialist_alerts` |
+| Expiração de trials | Diário 0h | Atualiza `subscriptions` vencidas |
+
+---
+
+## Anti-padrões — proibido no codebase
+
+```typescript
+// ❌ Query Supabase inline em componente ou página
+const { data } = await supabase.from("workouts").select("*");
+// ✅ Usar service de /shared/src/services/
+
+// ❌ Chamar Anthropic API no mobile (expõe API key)
+const r = await anthropic.messages.create({ ... });
+// ✅ Chamar BFF: fetch("/api/ai/chat/studentId")
+
+// ❌ Sonnet para tarefa estruturada (10x mais caro)
+model: "claude-sonnet-4-6" // para gerar JSON de 3 campos
+// ✅ model: "claude-haiku-4-5-20251001"
+
+// ❌ Contexto grande sem cache
+content: studentContext + userMessage // paga tokens inteiros toda mensagem
+// ✅ cache_control: { type: "ephemeral" } no bloco de contexto
+
+// ❌ Tabela sem RLS
+CREATE TABLE nova_tabela (...); -- qualquer auth user lê tudo
+// ✅ ALTER TABLE nova_tabela ENABLE ROW LEVEL SECURITY; imediatamente após
+```
+
+---
+
+## Checklist de PR — obrigatório antes de abrir
+
+- [ ] Nenhuma query Supabase fora de `/shared/src/services/` ou `/api/`
+- [ ] Toda nova tabela tem `ENABLE ROW LEVEL SECURITY` + políticas
+- [ ] Nenhuma chave de API no código (só em variáveis de ambiente)
+- [ ] Nenhum `any` no TypeScript sem justificativa em comentário
+- [ ] Modelo de IA correto (Haiku para tarefas simples, Sonnet para orquestração)
+- [ ] Prompt caching aplicado onde contexto > 1000 tokens
+- [ ] `biome check` limpo
+- [ ] `tsc --noEmit` limpo
+- [ ] Testes para lógica de negócio nova
+
+---
+
 ## Referências
 
 Para detalhes técnicos de cada módulo, consultar os relatórios:
@@ -150,3 +330,5 @@ Para detalhes técnicos de cada módulo, consultar os relatórios:
 - [Auth](AUTH_MODULE_REPORT.md) · [Students](STUDENTS_MODULE_REPORT.md) · [Nutrition](NUTRITION_MODULE_REPORT.md)
 - [Workouts](WORKOUTS_MODULE_REPORT.md) · [Assessment](ASSESSMENT_MODULE_REPORT.md)
 - [Gamification](GAMIFICATION_MODULE_REPORT.md) · [Chat](CHAT_MODULE_REPORT.md) · [System](SYSTEM_MODULE_REPORT.md)
+
+Para PRDs dos novos módulos: [docs/PRDs/README.md](PRDs/README.md)
