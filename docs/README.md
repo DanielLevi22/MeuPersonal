@@ -272,6 +272,25 @@ erDiagram
 
 ---
 
+## Documentação técnica por módulo
+
+Cada módulo tem seu próprio documento com **C4 Nível 3**, diagramas de fluxo, state diagrams e endpoints. Entre aqui para entender como um módulo funciona internamente.
+
+| Módulo | Documento | Status |
+|---|---|---|
+| **IA** | [modules/ai/README.md](modules/ai/README.md) | ✅ Documentado |
+| Treinos | [modules/workouts/README.md](modules/workouts/README.md) | 🔲 A fazer |
+| Nutrição | [modules/nutrition/README.md](modules/nutrition/README.md) | 🔲 A fazer |
+| Alunos | [modules/students/README.md](modules/students/README.md) | 🔲 A fazer |
+| Billing | [modules/billing/README.md](modules/billing/README.md) | 🔲 A fazer |
+| Engagement | [modules/engagement/README.md](modules/engagement/README.md) | 🔲 A fazer |
+| Marketplace | [modules/marketplace/README.md](modules/marketplace/README.md) | 🔲 A fazer |
+| Admin | [modules/admin/README.md](modules/admin/README.md) | 🔲 A fazer |
+
+> Template para novos módulos: [modules/_template.md](modules/_template.md)
+
+---
+
 ## Documentos de referência
 
 | Documento | Propósito |
