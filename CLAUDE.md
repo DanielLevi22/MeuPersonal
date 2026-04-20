@@ -678,24 +678,25 @@ scoop install maestro
 
 ## Separação de ambientes Supabase
 
-**Status**: ⚠️ Pendente — dev e prod ainda apontam para o mesmo projeto. Resolver antes do lançamento.
+**Status**: 🟡 Em progresso — projetos criados, secrets pendentes no GitHub.
 
-### Estrutura alvo
+### Estrutura de ambientes
 
 | Ambiente | Branch | Projeto Supabase | Arquivo local |
 |---|---|---|---|
-| Development | `development` | projeto dev (atual) | `app/.env.development`, `web/.env` |
-| Staging | `development` → EAS preview | projeto staging (criar) | `app/.env.preview` |
-| Production | `main` → EAS production | projeto prod (criar) | `app/.env.production` |
+| Development | local | `elevapro-dev` | `app/.env.development`, `web/.env` |
+| Staging | `development` → EAS preview / Vercel preview | `elevapro-stage` | `app/.env.preview` |
+| Production | `main` → EAS production / Vercel production | `elevapro-prod` (criar antes do lançamento) | `app/.env.production` |
 
 ### Checklist para separar os ambientes
 
 #### 1. Criar projetos no Supabase Dashboard
-- [ ] Criar projeto **staging** em supabase.com
-- [ ] Criar projeto **production** em supabase.com
+- [x] Criar projeto **dev** → `elevapro-dev`
+- [x] Criar projeto **staging** → `elevapro-stage`
+- [ ] Criar projeto **production** → `elevapro-prod` (antes do lançamento)
 
 #### 2. Aplicar migrations em cada projeto
-As 12 migrations estão em `app/drizzle/` (0000 → 0011). Aplicar via SQL Editor do Supabase Dashboard na ordem:
+As migrations estão em `app/drizzle/` (0000 → 0011). Aplicar via SQL Editor do Supabase Dashboard na ordem:
 ```
 0000_dark_leopardon.sql
 0001_create_periodizations.sql
@@ -712,14 +713,22 @@ As 12 migrations estão em `app/drizzle/` (0000 → 0011). Aplicar via SQL Edito
 ```
 
 #### 3. Atualizar variáveis locais
-- [ ] `app/.env.preview` → URL e anon key do projeto staging
-- [ ] `app/.env.production` → URL e anon key do projeto production
-- [ ] `web/.env` → continua apontando para dev (já correto)
+- [ ] `app/.env.preview` → URL e anon key do `elevapro-stage`
+- [ ] `app/.env.production` → URL e anon key do `elevapro-prod`
+- [x] `web/.env` → aponta para `elevapro-dev` (correto)
 
-#### 4. Atualizar GitHub Secrets
-- [ ] `EXPO_PUBLIC_SUPABASE_URL_PREVIEW` + `EXPO_PUBLIC_SUPABASE_ANON_KEY_PREVIEW` → staging
-- [ ] `EXPO_PUBLIC_SUPABASE_URL_PROD` + `EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD` → production
-- [ ] `NEXT_PUBLIC_SUPABASE_URL_PROD` + `NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD` → production
+#### 4. Cadastrar GitHub Secrets (Settings → Secrets → Actions)
+Para staging (`elevapro-stage`) — **fazer agora**:
+- [ ] `EXPO_PUBLIC_SUPABASE_URL_PREVIEW` → Project URL do elevapro-stage
+- [ ] `EXPO_PUBLIC_SUPABASE_ANON_KEY_PREVIEW` → anon key do elevapro-stage
+- [ ] `NEXT_PUBLIC_SUPABASE_URL_PREVIEW` → Project URL do elevapro-stage
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY_PREVIEW` → anon key do elevapro-stage
+
+Para production (`elevapro-prod`) — fazer antes do lançamento:
+- [ ] `EXPO_PUBLIC_SUPABASE_URL_PROD` + `EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD`
+- [ ] `NEXT_PUBLIC_SUPABASE_URL_PROD` + `NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD`
+
+> Credenciais em: Supabase Dashboard → projeto → Settings → API
 
 ### Prefixos de variáveis por plataforma
 
