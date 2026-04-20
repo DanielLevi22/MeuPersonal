@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MeuPersonal - Dashboard",
-  description: "Dashboard de profissionais - MeuPersonal",
+  title: "Eleva Pro — Acompanhamento profissional de treino e nutrição",
+  description:
+    "Plataforma de gestão para personal trainers e nutricionistas com IA. Gerencie alunos, crie planos e acompanhe resultados reais.",
 };
 
 export default function RootLayout({

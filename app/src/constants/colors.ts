@@ -1,6 +1,6 @@
 /**
  * Energy Gradient Color System
- * Mobile-only color palette for MeuPersonal app
+ * Mobile-only color palette for Eleva Pro
  *
  * Design Philosophy:
  * - Vibrant orange-to-pink gradients for energy and motivation

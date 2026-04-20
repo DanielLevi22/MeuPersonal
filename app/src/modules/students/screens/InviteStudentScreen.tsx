@@ -14,7 +14,7 @@ export default function InviteStudentScreen() {
     if (!code) return;
     try {
       await Share.share({
-        message: `Olá ${name}! 💪\n\nJá cadastrei seu perfil no MeuPersonal.\nUse o código *${code}* para acessar seus treinos!\n\nEste código expira em 7 dias.\n\nBaixe o app agora!`,
+        message: `Olá ${name}! 💪\n\nJá cadastrei seu perfil no Eleva Pro.\nUse o código *${code}* para acessar seus treinos!\n\nEste código expira em 7 dias.\n\nBaixe o app agora!`,
       });
     } catch (_error) {
       Alert.alert('Erro', 'Não foi possível compartilhar.');
