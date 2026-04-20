@@ -68,11 +68,11 @@ export function LoginScreen() {
           </View>
 
           <Text className="text-5xl font-extrabold text-foreground mb-4 tracking-tight">
-            MeuPersonal
+            Eleva Pro
           </Text>
 
           <Text className="text-lg text-zinc-400 text-center px-4 leading-7">
-            Transforme seu corpo,{'\n'}transforme sua vida
+            Eleva seu nível.{'\n'}Acompanhamento que não para.
           </Text>
           <Text className="text-4xl mt-2">💪</Text>
         </View>

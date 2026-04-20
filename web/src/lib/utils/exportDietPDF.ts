@@ -54,7 +54,7 @@ export async function exportDietToPDF(dietPlan: DietPlan, meals: DietMeal[], stu
   // Header
   doc.setFontSize(24);
   doc.setTextColor(0, 255, 136); // Primary color
-  doc.text("MeuPersonal", 105, yPosition, { align: "center" });
+  doc.text("Eleva Pro", 105, yPosition, { align: "center" });
 
   yPosition += 10;
   doc.setFontSize(18);

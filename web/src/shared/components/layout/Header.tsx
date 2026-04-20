@@ -5,8 +5,8 @@ export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-white/10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-primary">
-          MeuPersonal
+        <Link href="/" className="text-xl font-bold text-primary tracking-tight">
+          Eleva Pro
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">

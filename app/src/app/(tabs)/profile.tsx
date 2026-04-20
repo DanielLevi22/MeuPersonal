@@ -230,7 +230,7 @@ export default function ProfileScreen() {
         </View>
 
         <Text className="text-center text-zinc-700 font-bold text-[10px] mt-10 uppercase tracking-widest">
-          MeuPersonal v1.2.0 • Energy Build
+          Eleva Pro v1.2.0
         </Text>
       </ScrollView>
     </ScreenLayout>

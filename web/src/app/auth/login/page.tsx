@@ -82,8 +82,8 @@ export default function LoginPage() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 space-y-8">
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-              MeuPersonal
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent tracking-tight">
+              Eleva Pro
             </h1>
             <p className="text-muted-foreground text-sm">Dashboard de Profissionais</p>
           </div>

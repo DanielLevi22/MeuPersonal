@@ -18,7 +18,7 @@ const reviews = [
   {
     name: "Jill",
     username: "@jill",
-    body: "Aumentei minha retenção de alunos em 40% usando o MeuPersonal.",
+    body: "Aumentei minha retenção de alunos em 40% desde que comecei a usar o Eleva Pro.",
     img: "https://avatar.vercel.sh/jill",
   },
   {
@@ -95,20 +95,20 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 border border-white/10 backdrop-blur-md mb-8 animate-fade-in-up">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-sm font-medium text-muted-foreground">
-              A revolução do fitness chegou
+              Para personal trainers e nutricionistas sérios
             </span>
           </div>
 
           <h1 className="text-5xl md:text-8xl font-display font-bold mb-8 leading-tight tracking-tight">
-            SEU CORPO <br />
+            ELEVA <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-secondary animate-gradient-x">
-              EM OUTRO NÍVEL
+              SEU NÍVEL.
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
-            A plataforma definitiva que une treino, nutrição e gamificação. Potencialize seus
-            resultados com tecnologia de ponta.
+            Gerencie alunos, crie planos de treino e nutrição e acompanhe resultados reais — com
+            inteligência artificial que trabalha para você, não no lugar de você.
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
@@ -266,15 +266,15 @@ export default function Home() {
           </div>
 
           <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-8 tracking-tight">
-            PRONTO PARA O <br />
+            PRONTO PARA <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">
-              PRÓXIMO NÍVEL?
+              ELEVAR SEU NÍVEL?
             </span>
           </h2>
 
           <p className="text-zinc-400 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">
-            Não é apenas um app. É o seu novo estilo de vida. <br className="hidden md:block" />
-            Comece sua transformação hoje mesmo.
+            Acompanhamento que não para. Resultado que não mente. <br className="hidden md:block" />
+            Experimente 14 dias grátis, sem cartão.
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">

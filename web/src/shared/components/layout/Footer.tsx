@@ -6,11 +6,11 @@ export function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <Link href="/" className="text-xl font-bold text-primary mb-4 block">
-              MeuPersonal
+            <Link href="/" className="text-xl font-bold text-primary mb-4 block tracking-tight">
+              Eleva Pro
             </Link>
             <p className="text-sm text-muted-foreground">
-              A plataforma completa para personal trainers e alunos.
+              A plataforma profissional para personal trainers e nutricionistas que querem crescer.
             </p>
           </div>
 
@@ -44,14 +44,14 @@ export function Footer() {
           <div>
             <h4 className="font-bold mb-4">Contato</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>suporte@meupersonal.app</li>
+              <li>suporte@elevapro.com.br</li>
               <li>Instagram</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} MeuPersonal. Todos os direitos reservados.
+          © {new Date().getFullYear()} Eleva Pro. Todos os direitos reservados.
         </div>
       </div>
     </footer>

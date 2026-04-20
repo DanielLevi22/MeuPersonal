@@ -135,10 +135,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-8">
             <div className="flex flex-col gap-1">
               <h1 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">
-                Meu<span className="text-primary">Personal</span>
+                Eleva<span className="text-primary"> Pro</span>
               </h1>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.3em] pl-0.5">
-                Control System
+                Dashboard
               </p>
             </div>
 

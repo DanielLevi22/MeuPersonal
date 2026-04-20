@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Logo */}
         <div className="p-6 border-b border-border">
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            MeuPersonal Admin
+            Eleva Pro Admin
           </h1>
         </div>
 
