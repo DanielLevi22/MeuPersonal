@@ -13,6 +13,7 @@ on:
       - main
     paths:
       - "web/**"
+      - "shared/**"
     tags:
       - "web/v*.*.*"
 
@@ -52,9 +53,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     if: github.ref == 'refs/heads/development'
-    defaults:
-      run:
-        working-directory: ./web
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -69,6 +67,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./web
 
       - name: Pull Vercel project config
         run: npx vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
@@ -90,9 +89,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/web/v')
-    defaults:
-      run:
-        working-directory: ./web
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -107,6 +103,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./web
 
       - name: Pull Vercel project config
         run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
@@ -159,7 +156,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "MeuPersonal Web ${{ github.ref_name }}"
+          name: "Eleva Pro Web ${{ github.ref_name }}"
           body: |
             ## ${{ github.ref_name }}
 

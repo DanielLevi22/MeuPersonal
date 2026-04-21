@@ -205,7 +205,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "MeuPersonal App ${{ github.ref_name }}"
+          name: "Eleva Pro App ${{ github.ref_name }}"
           body: |
             ## ${{ github.ref_name }}
 

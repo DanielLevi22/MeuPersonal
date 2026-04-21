@@ -79,9 +79,7 @@ try {
 
 const today = new Date().toISOString().split("T")[0];
 let template = fs.readFileSync(templatePath, "utf-8");
-template = template
-  .replace(/\{\{FEATURE_NAME\}\}/g, featureName)
-  .replace(/\{\{DATE\}\}/g, today);
+template = template.replace(/\{\{FEATURE_NAME\}\}/g, featureName).replace(/\{\{DATE\}\}/g, today);
 
 fs.writeFileSync(prdPath, template, "utf-8");
 
