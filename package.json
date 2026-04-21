@@ -17,6 +17,12 @@
     "env:sync:preview": "node scripts/sync-env.js preview",
     "env:sync:production": "node scripts/sync-env.js production"
   },
+  "overrides": {
+    "react-test-renderer": "^19.2.0",
+    "@testing-library/react-native": {
+      "react-test-renderer": "^19.2.0"
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
     "@commitlint/cli": "^20.4.2",
