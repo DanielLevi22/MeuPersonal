@@ -43,8 +43,6 @@
       "Bash(node /c/pessoal/MeuPersonal/scripts/new-feature.js shared-gamification-service)",
       "Bash(npx supabase *)"
     ],
-    "additionalDirectories": [
-      "C:\\pessoal\\MeuPersonal\\app\\src\\app\\(tabs)\\students\\[id]"
-    ]
+    "additionalDirectories": ["C:\\pessoal\\MeuPersonal\\app\\src\\app\\(tabs)\\students\\[id]"]
   }
 }
