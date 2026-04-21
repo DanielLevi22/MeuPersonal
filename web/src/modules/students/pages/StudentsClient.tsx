@@ -1,6 +1,6 @@
 "use client";
 
-import type { Student } from "@meupersonal/shared";
+import type { Student } from "@elevapro/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CreateStudentModal } from "../components/CreateStudentModal";

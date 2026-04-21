@@ -28,7 +28,7 @@ jest.mock('../../../workout/store/workoutStore', () => ({
   useWorkoutStore: { getState: () => ({ reset: mockWorkoutReset }) },
 }));
 
-import { getUserContextJWT } from '@meupersonal/supabase';
+import { getUserContextJWT } from '@elevapro/supabase';
 import { useNutritionStore } from '../../../nutrition/store/nutritionStore';
 import { useStudentStore } from '../../../students/store/studentStore';
 import { useWorkoutStore } from '../../../workout/store/workoutStore';

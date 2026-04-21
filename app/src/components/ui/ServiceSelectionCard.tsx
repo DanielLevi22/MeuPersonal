@@ -1,5 +1,5 @@
+import type { ServiceType } from '@elevapro/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import type { ServiceType } from '@meupersonal/supabase';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { cn } from '@/lib/utils';
 

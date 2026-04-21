@@ -1,10 +1,10 @@
-import { createAuthService } from '@meupersonal/shared';
+import { createAuthService } from '@elevapro/shared';
 import {
   type AccountType,
   type AppAbility,
   defineAbilitiesFor,
   getUserContextJWT,
-} from '@meupersonal/supabase';
+} from '@elevapro/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { supabase } from '../../../lib/supabase';

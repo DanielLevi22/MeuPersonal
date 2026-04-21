@@ -1,6 +1,6 @@
+import type { AccountType } from '@elevapro/supabase';
+import { supabase } from '@elevapro/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import type { AccountType } from '@meupersonal/supabase';
-import { supabase } from '@meupersonal/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';

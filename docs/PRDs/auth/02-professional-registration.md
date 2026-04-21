@@ -87,7 +87,7 @@ Usuário preenche formulário
 
 ## Impacto em outros módulos
 
-- Depende de `@meupersonal/shared` (AuthService, authStore, tipos)
+- Depende de `@elevapro/shared` (AuthService, authStore, tipos)
 - Nenhum outro módulo afetado
 
 ---

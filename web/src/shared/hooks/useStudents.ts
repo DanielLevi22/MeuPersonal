@@ -1,11 +1,11 @@
 "use client";
 
-import { createStudentsService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import { createStudentsService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-export type { Student } from "@meupersonal/shared";
+export type { Student } from "@elevapro/shared";
 
 const studentsService = createStudentsService(supabase);
 

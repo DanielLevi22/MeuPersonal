@@ -1,7 +1,7 @@
 "use client";
 
-import { createWorkoutsService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import { createWorkoutsService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthUser } from "./useAuthUser";
 
@@ -9,7 +9,7 @@ export type {
   Periodization,
   PeriodizationObjective,
   TrainingStatus as PeriodizationStatus,
-} from "@meupersonal/shared";
+} from "@elevapro/shared";
 
 const workoutsService = createWorkoutsService(supabase);
 

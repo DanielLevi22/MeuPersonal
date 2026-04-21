@@ -1,4 +1,4 @@
-import { supabase } from '@meupersonal/supabase';
+import { supabase } from '@elevapro/supabase';
 
 type SessionItem = {
   id: string;

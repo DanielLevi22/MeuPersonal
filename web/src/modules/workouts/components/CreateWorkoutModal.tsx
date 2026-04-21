@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 import { useEffect, useState } from "react";
 import type { Exercise } from "@/shared/hooks/useExercises";
 import { useStudents } from "@/shared/hooks/useStudents";

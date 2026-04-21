@@ -1,4 +1,4 @@
-import type { DietMeal, DietMealItem, DietPlan } from '@meupersonal/shared';
+import type { DietMeal, DietMealItem, DietPlan } from '@elevapro/shared';
 import { GeminiService } from '@/modules/ai/services/GeminiService';
 
 export interface ChatMessage {

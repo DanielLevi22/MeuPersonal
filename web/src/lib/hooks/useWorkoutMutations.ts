@@ -1,6 +1,6 @@
 "use client";
 
-import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
+import { defineAbilitiesFor, supabase } from "@elevapro/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 

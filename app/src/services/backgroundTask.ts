@@ -1,4 +1,4 @@
-import { supabase } from '@meupersonal/supabase';
+import { supabase } from '@elevapro/supabase';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { useNutritionStore } from '@/modules/nutrition/routes/index';

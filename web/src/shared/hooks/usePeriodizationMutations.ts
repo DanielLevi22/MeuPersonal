@@ -4,8 +4,8 @@ import {
   createWorkoutsService,
   type TrainingStatus,
   type UpdatePeriodizationInput,
-} from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+} from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthUser } from "./useAuthUser";
 

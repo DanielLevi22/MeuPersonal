@@ -1,6 +1,6 @@
 "use client";
 
-import type { DietMeal, DietMealItem, Food } from "@meupersonal/shared";
+import type { DietMeal, DietMealItem, Food } from "@elevapro/shared";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";

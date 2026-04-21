@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mockFrom = vi.fn();
 
-vi.mock("@meupersonal/supabase", () => ({
+vi.mock("@elevapro/supabase", () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
   },

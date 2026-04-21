@@ -1,8 +1,8 @@
 "use client";
 
-import type { UpdateWorkoutInput } from "@meupersonal/shared";
-import { createWorkoutsService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import type { UpdateWorkoutInput } from "@elevapro/shared";
+import { createWorkoutsService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type { UpdateWorkoutInput };

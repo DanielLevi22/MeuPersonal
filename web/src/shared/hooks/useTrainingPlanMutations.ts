@@ -4,11 +4,11 @@ import {
   type CreateTrainingPlanInput,
   createWorkoutsService,
   type UpdateTrainingPlanInput,
-} from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+} from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export type { CreateTrainingPlanInput, UpdateTrainingPlanInput } from "@meupersonal/shared";
+export type { CreateTrainingPlanInput, UpdateTrainingPlanInput } from "@elevapro/shared";
 
 const workoutsService = createWorkoutsService(supabase);
 

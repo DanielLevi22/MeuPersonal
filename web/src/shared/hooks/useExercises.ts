@@ -1,10 +1,10 @@
 "use client";
 
-import { createWorkoutsService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import { createWorkoutsService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useQuery } from "@tanstack/react-query";
 
-export type { Exercise } from "@meupersonal/shared";
+export type { Exercise } from "@elevapro/shared";
 
 const workoutsService = createWorkoutsService(supabase);
 

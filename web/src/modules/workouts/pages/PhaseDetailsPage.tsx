@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";

@@ -1,7 +1,7 @@
 "use client";
 
-import type { DietMeal, DietMealItem, DietPlan, Food } from "@meupersonal/core";
-import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
+import type { DietMeal, DietMealItem, DietPlan, Food } from "@elevapro/core";
+import { defineAbilitiesFor, supabase } from "@elevapro/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { StrategyResult } from "../../shared/utils/dietStrategies";

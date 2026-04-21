@@ -1,5 +1,5 @@
+import type { DietPlan } from '@elevapro/core';
 import { Ionicons } from '@expo/vector-icons';
-import type { DietPlan } from '@meupersonal/core';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';

@@ -1,4 +1,4 @@
-import { setSupabaseStorage, supabase } from '@meupersonal/supabase';
+import { setSupabaseStorage, supabase } from '@elevapro/supabase';
 import * as SecureStore from 'expo-secure-store';
 import 'react-native-url-polyfill/auto';
 

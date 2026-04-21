@@ -19,7 +19,7 @@ const mockFrom = vi.fn(() => ({
   delete: mockDelete,
 }));
 
-vi.mock("@meupersonal/supabase", () => ({
+vi.mock("@elevapro/supabase", () => ({
   supabase: {
     auth: { getUser: mockGetUser },
     from: mockFrom,

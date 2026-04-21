@@ -1,7 +1,7 @@
 "use client";
 
-import { type CreateExerciseInput, createWorkoutsService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import { type CreateExerciseInput, createWorkoutsService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const workoutsService = createWorkoutsService(supabase);

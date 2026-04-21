@@ -55,7 +55,7 @@ consumers existentes funcionando sem alteração.
 
 Lógica de leaderboard (duas estratégias: `my_students` e `global`) extraída para
 `gamificationService.fetchLeaderboard`. Import de `supabase` mantido para instanciar o factory.
-`LeaderboardEntry` agora importado de `@meupersonal/shared`.
+`LeaderboardEntry` agora importado de `@elevapro/shared`.
 
 ### Componentes atualizados (type imports)
 

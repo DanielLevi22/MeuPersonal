@@ -121,7 +121,7 @@ export const mockSupabase = {
   removeChannel: jest.fn().mockResolvedValue({}),
 };
 
-jest.mock('@meupersonal/supabase', () => ({
+jest.mock('@elevapro/supabase', () => ({
   supabase: mockSupabase,
   setSupabaseStorage: jest.fn(),
   getUserContextJWT: jest.fn(),

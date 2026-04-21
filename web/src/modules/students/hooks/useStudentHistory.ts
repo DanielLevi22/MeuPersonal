@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 import { useQuery } from "@tanstack/react-query";
 import type { HistoryEvent } from "@/app/api/students/[id]/history/route";
 

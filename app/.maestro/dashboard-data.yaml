@@ -1,4 +1,4 @@
-appId: com.meupersonal.app
+appId: com.Eleva Pro.app
 ---
 - runFlow: student-login.yaml
 - assertVisible: "Olá,.*"

@@ -1,6 +1,6 @@
 "use client";
 
-import type { DietPlan } from "@meupersonal/shared";
+import type { DietPlan } from "@elevapro/shared";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AnimatePresence, motion } from "framer-motion";

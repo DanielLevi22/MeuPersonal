@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface PendingProfile {

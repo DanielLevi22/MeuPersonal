@@ -1,8 +1,8 @@
 // Nutrition Module - Public API
 // This module handles nutrition plans, meals, and dietary tracking
 
-// Types (re-export from @meupersonal/core)
-export type { DietMeal, DietMealItem, DietPlan, Food } from '@meupersonal/core';
+// Types (re-export from @elevapro/core)
+export type { DietMeal, DietMealItem, DietPlan, Food } from '@elevapro/core';
 // Components
 export {
   DailyNutrition,

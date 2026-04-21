@@ -1,4 +1,4 @@
-import { supabase } from '@meupersonal/supabase';
+import { supabase } from '@elevapro/supabase';
 import { AnamnesisResponse, StudentAnamnesis } from '../types/assessment';
 
 export const AnamnesisService = {

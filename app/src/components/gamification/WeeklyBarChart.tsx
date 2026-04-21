@@ -1,4 +1,4 @@
-import type { DailyGoal } from '@meupersonal/shared';
+import type { DailyGoal } from '@elevapro/shared';
 import { useMemo, useState } from 'react';
 import { Dimensions, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
