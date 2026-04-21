@@ -1,6 +1,6 @@
+import { createGamificationService, type LeaderboardEntry } from '@elevapro/shared';
+import { supabase } from '@elevapro/supabase'; // needed for gamificationService factory
 import { Ionicons } from '@expo/vector-icons';
-import { createGamificationService, type LeaderboardEntry } from '@meupersonal/shared';
-import { supabase } from '@meupersonal/supabase'; // needed for gamificationService factory
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';

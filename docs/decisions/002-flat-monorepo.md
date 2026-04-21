@@ -33,10 +33,10 @@ Estrutura alvo:
 ```
 /MeuPersonal
   /packages
-    /core        → @meupersonal/core
-    /supabase    → @meupersonal/supabase
-  /web           → importa @meupersonal/core
-  /app           → importa @meupersonal/core
+    /core        → @elevapro/core
+    /supabase    → @elevapro/supabase
+  /web           → importa @elevapro/core
+  /app           → importa @elevapro/core
   package.json   → workspaces: ["web", "app", "packages/*"]
 ```
 

@@ -31,5 +31,5 @@ const { user, signIn, signOut } = useAuthStore();
 
 ## Dependências
 
-- `@meupersonal/supabase` - Cliente Supabase
+- `@elevapro/supabase` - Cliente Supabase
 - `zustand` - State management

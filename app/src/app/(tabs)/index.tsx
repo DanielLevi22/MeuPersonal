@@ -1,5 +1,5 @@
+import { supabase } from '@elevapro/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@meupersonal/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

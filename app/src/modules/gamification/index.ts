@@ -5,5 +5,5 @@ export type {
   LeaderboardPeriod,
   LeaderboardScope,
   StudentStreak,
-} from '@meupersonal/shared';
+} from '@elevapro/shared';
 export { useGamificationStore } from './store/gamificationStore';

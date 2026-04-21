@@ -1,5 +1,5 @@
-import type { DietPlan } from '@meupersonal/core';
-import { supabase } from '@meupersonal/supabase';
+import type { DietPlan } from '@elevapro/core';
+import { supabase } from '@elevapro/supabase';
 import { AssistantService } from '@/modules/ai';
 
 export interface WeeklyAdherenceData {

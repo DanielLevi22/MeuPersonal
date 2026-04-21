@@ -89,7 +89,7 @@ Se novos dados foram identificados como conformes, atualizar `docs/LGPD_COMPLIAN
 
 ---
 
-## Referência rápida — bases legais mais usadas no MeuPersonal
+## Referência rápida — bases legais mais usadas no Eleva Pro
 
 | Situação | Base legal | Artigo |
 |----------|------------|--------|

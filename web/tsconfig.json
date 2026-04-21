@@ -31,9 +31,9 @@
       "@/workout": ["./src/modules/workouts"],
       "@/workouts": ["./src/modules/workouts"],
       "@/training-plans": ["./src/modules/training-plans"],
-      "@meupersonal/core": ["./src/packages/core"],
-      "@meupersonal/supabase": ["./src/packages/supabase"],
-      "@meupersonal/shared": ["../shared/src"],
+      "@elevapro/core": ["./src/packages/core"],
+      "@elevapro/supabase": ["./src/packages/supabase"],
+      "@elevapro/shared": ["../shared/src"],
       "@supabase/supabase-js": ["./node_modules/@supabase/supabase-js"],
       "zustand": ["./node_modules/zustand"],
       "zustand/*": ["./node_modules/zustand/*"]

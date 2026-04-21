@@ -1,6 +1,6 @@
 # E2E Testing with Maestro
 
-This directory contains end-to-end tests for the MeuPersonal mobile app using [Maestro](https://maestro.mobile.dev/).
+This directory contains end-to-end tests for the Eleva Pro mobile app using [Maestro](https://maestro.mobile.dev/).
 
 ## Prerequisites
 
@@ -185,7 +185,7 @@ jobs:
 
 Example:
 ```yaml
-appId: com.meupersonal.app
+appId: com.Eleva Pro.app
 ---
 # Your Test Name
 # Description of what this tests

@@ -15,11 +15,11 @@ config.watchFolders = [...(config.watchFolders ?? []), sharedPackagePath];
 config.resolver.assetExts.push('glb', 'gltf', 'png', 'jpg');
 
 // Polyfill Node built-ins for packages like react-native-svg that import 'buffer'
-// Also map @meupersonal/* workspace packages that Metro can't resolve via tsconfig aliases
+// Also map @elevapro/* workspace packages that Metro can't resolve via tsconfig aliases
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
   buffer: require.resolve('buffer'),
-  '@meupersonal/shared': path.resolve(__dirname, '../shared/src'),
+  '@elevapro/shared': path.resolve(__dirname, '../shared/src'),
 };
 
 // Normalize path to use forward slashes for Windows compatibility

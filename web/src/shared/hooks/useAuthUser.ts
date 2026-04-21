@@ -1,7 +1,7 @@
 "use client";
 
-import { createAuthService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import { createAuthService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useQuery } from "@tanstack/react-query";
 
 const authService = createAuthService(supabase);

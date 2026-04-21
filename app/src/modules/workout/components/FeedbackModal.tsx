@@ -1,5 +1,5 @@
+import type { WorkoutFeedback } from '@elevapro/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import type { WorkoutFeedback } from '@meupersonal/supabase';
 import { useState } from 'react';
 import {
   ActivityIndicator,

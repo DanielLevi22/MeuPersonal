@@ -11,7 +11,7 @@ export type {
   WorkoutExercise as WorkoutItem,
   WorkoutSession,
   WorkoutSessionExercise,
-} from '@meupersonal/shared';
+} from '@elevapro/shared';
 
 export interface SessionItem {
   id?: string;
@@ -44,7 +44,7 @@ export interface ProgressionAnalysis {
 }
 
 export interface EditedWorkoutItems {
-  [itemId: string]: import('@meupersonal/shared').WorkoutExercise;
+  [itemId: string]: import('@elevapro/shared').WorkoutExercise;
 }
 
 export interface ShareStats {

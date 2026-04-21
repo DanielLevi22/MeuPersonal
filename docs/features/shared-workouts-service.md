@@ -53,7 +53,7 @@ Centralização de toda a lógica de queries do módulo workouts em `shared/`, s
 
 ### Infra
 
-- `web/vitest.config.ts` — adicionado alias `@meupersonal/shared → ../shared/src`
+- `web/vitest.config.ts` — adicionado alias `@elevapro/shared → ../shared/src`
 - `shared/src/index.ts` — exporta types e service de workouts
 
 ---
@@ -64,7 +64,7 @@ Centralização de toda a lógica de queries do módulo workouts em `shared/`, s
 
 **`workoutLogStore` fora do escopo:** timer de execução em tempo real e progresso de séries têm estado efêmero (não persiste entre renders). Migrar seria alto risco sem ganho imediato.
 
-**Testes web:** `vitest.config.ts` precisou do alias `@meupersonal/shared` para resolver o import em testes. O hook `useCreateWorkout` foi refatorado para chamar `supabase.auth.getUser()` diretamente no `mutationFn` (em vez de `useAuthUser`) para evitar race condition nos testes.
+**Testes web:** `vitest.config.ts` precisou do alias `@elevapro/shared` para resolver o import em testes. O hook `useCreateWorkout` foi refatorado para chamar `supabase.auth.getUser()` diretamente no `mutationFn` (em vez de `useAuthUser`) para evitar race condition nos testes.
 
 ---
 

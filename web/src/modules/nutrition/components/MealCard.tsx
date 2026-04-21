@@ -1,6 +1,6 @@
 "use client";
 
-import type { DietMeal, DietMealItem, Food } from "@meupersonal/shared";
+import type { DietMeal, DietMealItem, Food } from "@elevapro/shared";
 
 interface MealCardProps {
   meal: DietMeal & { meal_foods?: (DietMealItem & { food: Food })[] };

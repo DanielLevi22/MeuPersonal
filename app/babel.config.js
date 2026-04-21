@@ -7,8 +7,8 @@ module.exports = (api) => {
         'module-resolver',
         {
           alias: {
-            '@meupersonal/core': './src/packages/core',
-            '@meupersonal/supabase': './src/packages/supabase',
+            '@elevapro/core': './src/packages/core',
+            '@elevapro/supabase': './src/packages/supabase',
           },
         },
       ],

@@ -6,8 +6,8 @@ import {
   type DietPlan,
   type Food,
   type MealLog,
-} from '@meupersonal/shared';
-import { supabase } from '@meupersonal/supabase';
+} from '@elevapro/shared';
+import { supabase } from '@elevapro/supabase';
 import { create } from 'zustand';
 import { useAuthStore } from '@/auth';
 import { cancelPlanNotifications } from '@/services/notificationService';

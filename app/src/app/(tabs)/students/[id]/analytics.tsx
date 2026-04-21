@@ -1,6 +1,6 @@
+import { createGamificationService, type DailyGoal } from '@elevapro/shared';
+import { supabase } from '@elevapro/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { createGamificationService, type DailyGoal } from '@meupersonal/shared';
-import { supabase } from '@meupersonal/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';

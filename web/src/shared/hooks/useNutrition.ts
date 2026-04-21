@@ -9,8 +9,8 @@ import {
   type DietPlan,
   type Food,
   type MealLog,
-} from "@meupersonal/shared";
-import { defineAbilitiesFor, supabase } from "@meupersonal/supabase";
+} from "@elevapro/shared";
+import { defineAbilitiesFor, supabase } from "@elevapro/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { StrategyResult } from "../utils/dietStrategies";
 import { useAuthUser } from "./useAuthUser";

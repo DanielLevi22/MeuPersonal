@@ -1,8 +1,4 @@
-import {
-  createStudentsService,
-  type PhysicalAssessment,
-  type ServiceType,
-} from '@meupersonal/shared';
+import { createStudentsService, type PhysicalAssessment, type ServiceType } from '@elevapro/shared';
 import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { supabase } from '../../../lib/supabase';

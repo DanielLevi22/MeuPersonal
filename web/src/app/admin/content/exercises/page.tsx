@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 

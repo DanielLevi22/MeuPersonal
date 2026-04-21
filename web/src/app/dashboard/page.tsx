@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 import { useEffect, useState } from "react";
 import { ActivityFeed, QuickActions, StatCard } from "@/dashboard";
 import { useDashboardStats } from "@/shared/hooks/useDashboardStats";

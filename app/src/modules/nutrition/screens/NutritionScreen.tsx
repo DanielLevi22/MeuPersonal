@@ -1,5 +1,5 @@
+import type { DietPlan } from '@elevapro/shared';
 import { Ionicons } from '@expo/vector-icons';
-import type { DietPlan } from '@meupersonal/shared';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useFocusEffect, useRouter } from 'expo-router';

@@ -1,8 +1,8 @@
 "use client";
 
-import type { Workout, WorkoutExercise } from "@meupersonal/shared";
-import { createWorkoutsService } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import type { Workout, WorkoutExercise } from "@elevapro/shared";
+import { createWorkoutsService } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthUser } from "./useAuthUser";
 

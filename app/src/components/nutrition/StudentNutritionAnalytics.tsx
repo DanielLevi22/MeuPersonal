@@ -1,5 +1,5 @@
-import { createGamificationService, type DailyGoal } from '@meupersonal/shared';
-import { supabase } from '@meupersonal/supabase';
+import { createGamificationService, type DailyGoal } from '@elevapro/shared';
+import { supabase } from '@elevapro/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { Dimensions, Text, View } from 'react-native';

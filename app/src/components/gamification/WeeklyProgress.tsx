@@ -1,5 +1,5 @@
+import type { DailyGoal } from '@elevapro/shared';
 import { Ionicons } from '@expo/vector-icons';
-import type { DailyGoal } from '@meupersonal/shared';
 import { Text, View } from 'react-native';
 import { colors as brandColors } from '@/constants/colors';
 

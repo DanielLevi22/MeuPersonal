@@ -44,7 +44,7 @@ export function Footer() {
           <div>
             <h4 className="font-bold mb-4">Contato</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>suporte@elevapro.com.br</li>
+              <li>suporte@elevapro/.com.br</li>
               <li>Instagram</li>
             </ul>
           </div>

@@ -114,5 +114,5 @@ manter compatibilidade com `MealCard` (web) e `exportDietPDF` sem alterar escopo
 e lógica de stats complexa — fora do escopo do service, mantidos inline no hook.
 
 **Tipos `number | null`:** o schema Supabase permite NULL em campos de macros. O código anterior
-usava `number` não-nullable via tipos do `@meupersonal/core`, causando erros silenciosos.
+usava `number` não-nullable via tipos do `@elevapro/core`, causando erros silenciosos.
 A migração expõe esses nulls e força `?? 0` nos pontos de uso aritmético.

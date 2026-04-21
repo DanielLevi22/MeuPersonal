@@ -9,7 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { supabase } from '@meupersonal/supabase';
+import { supabase } from '@elevapro/supabase';
 import { useAuthStore } from '@/auth';
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/query-client';

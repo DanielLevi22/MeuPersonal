@@ -1,4 +1,4 @@
-import { createStudentsService } from "@meupersonal/shared";
+import { createStudentsService } from "@elevapro/shared";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { StudentsClient } from "@/modules/students/pages/StudentsClient";
 

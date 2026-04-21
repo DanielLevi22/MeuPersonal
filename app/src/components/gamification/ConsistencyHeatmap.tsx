@@ -1,4 +1,4 @@
-import type { DailyGoal } from '@meupersonal/shared';
+import type { DailyGoal } from '@elevapro/shared';
 import { ScrollView, Text, View } from 'react-native';
 
 interface ConsistencyHeatmapProps {

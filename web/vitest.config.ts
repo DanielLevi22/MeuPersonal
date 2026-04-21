@@ -17,9 +17,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
-      "@meupersonal/core": resolve(__dirname, "./src/packages/core"),
-      "@meupersonal/supabase": resolve(__dirname, "./src/packages/supabase"),
-      "@meupersonal/shared": resolve(__dirname, "../shared/src"),
+      "@elevapro/core": resolve(__dirname, "./src/packages/core"),
+      "@elevapro/supabase": resolve(__dirname, "./src/packages/supabase"),
+      "@elevapro/shared": resolve(__dirname, "../shared/src"),
     },
   },
 });

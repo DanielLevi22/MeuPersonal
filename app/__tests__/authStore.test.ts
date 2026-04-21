@@ -1,7 +1,7 @@
 import { useAuthStore } from '../src/modules/auth/store/authStore';
 
 // Mock Supabase
-jest.mock('@meupersonal/supabase', () => ({
+jest.mock('@elevapro/supabase', () => ({
   supabase: {
     auth: {
       signInWithPassword: jest.fn(),

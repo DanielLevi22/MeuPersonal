@@ -10,14 +10,14 @@
 ## As 3 perguntas obrigatórias
 
 ### O quê?
-Criar o pacote `shared/` na raiz do monorepo com `AuthService`, `authStore` e tipos compartilhados, de forma que tanto `app/` (React Native) quanto `web/` (Next.js) importem a mesma lógica via `@meupersonal/shared`.
+Criar o pacote `shared/` na raiz do monorepo com `AuthService`, `authStore` e tipos compartilhados, de forma que tanto `app/` (React Native) quanto `web/` (Next.js) importem a mesma lógica via `@elevapro/shared`.
 
 ### Por quê?
 Sem `shared/`, AuthService e authStore serão duplicados — dois lugares para manter a mesma lógica de autenticação. Qualquer bug ou mudança de contrato do Supabase precisaria ser corrigida em dois arquivos. O `shared/` é o prerequisito para qualquer feature do Auth (e módulos seguintes).
 
 ### Como saberemos que está pronto?
 - [ ] `shared/src/` existe na raiz do monorepo com a estrutura definida
-- [ ] `@meupersonal/shared` importável em `app/` e `web/` via path alias no tsconfig
+- [ ] `@elevapro/shared` importável em `app/` e `web/` via path alias no tsconfig
 - [ ] `AuthService` com métodos: `signIn`, `signUp`, `signOut`, `getSession`, `resetPassword`
 - [ ] `authStore` (Zustand) com: `user`, `profile`, `session`, `isLoading`, `setSession`, `clearSession`
 - [ ] Tipos exportados: `Profile`, `AccountType`, `ServiceType`, `AuthState`
@@ -38,7 +38,7 @@ O monorepo tem `app/` (Expo) e `web/` (Next.js). Ambos já têm pacotes internos
 - `authStore` — Zustand store de autenticação
 - Tipos base de Auth: `Profile`, `AccountType`, `ServiceType`, `AuthState`
 - `tsconfig.json` em `shared/` para type-checking isolado
-- Path alias `@meupersonal/shared` em `app/tsconfig.json` e `web/tsconfig.json`
+- Path alias `@elevapro/shared` em `app/tsconfig.json` e `web/tsconfig.json`
 
 ### Fora do escopo
 - Componentes de UI de auth (telas, formulários) — vão em `app/` e `web/` separadamente
@@ -67,7 +67,7 @@ shared/
 
 ```
 app/ ou web/
-  → import { AuthService } from '@meupersonal/shared'
+  → import { AuthService } from '@elevapro/shared'
   → AuthService.signIn(email, password)
   → supabase.auth.signInWithPassword()
   ← { data: { session, user }, error }
@@ -90,7 +90,7 @@ app/ ou web/
 ## Decisões técnicas
 
 - **Path alias vs npm workspace**: usa path alias (`../../shared/src`) para manter consistência com o padrão já existente (`core`, `supabase`). Npm workspaces adicionaria complexidade sem benefício real neste momento.
-- **Supabase client**: `AuthService` recebe o cliente Supabase como parâmetro ou importa de `@meupersonal/supabase` — manter compatibilidade com o cliente existente.
+- **Supabase client**: `AuthService` recebe o cliente Supabase como parâmetro ou importa de `@elevapro/supabase` — manter compatibilidade com o cliente existente.
 - **Zustand sem persistência no shared/**: a persistência (MMKV no mobile, localStorage no web) é configurada em cada plataforma ao criar o store, não no shared/.
 
 ---

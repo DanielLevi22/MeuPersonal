@@ -1,7 +1,7 @@
 "use client";
 
-import type { ServiceType } from "@meupersonal/shared";
-import { supabase } from "@meupersonal/supabase";
+import type { ServiceType } from "@elevapro/shared";
+import { supabase } from "@elevapro/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

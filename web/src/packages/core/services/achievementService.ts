@@ -1,4 +1,4 @@
-import { supabase } from "@meupersonal/supabase";
+import { supabase } from "@elevapro/supabase";
 
 // Replace expo-notifications for the web build
 const Notifications = {

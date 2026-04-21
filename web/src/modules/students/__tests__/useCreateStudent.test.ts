@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Mock Supabase
 const mockGetSession = vi.fn();
 
-vi.mock("@meupersonal/supabase", () => ({
+vi.mock("@elevapro/supabase", () => ({
   supabase: {
     auth: { getSession: mockGetSession },
   },

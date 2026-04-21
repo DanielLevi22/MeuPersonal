@@ -61,7 +61,7 @@ src/modules/<feature>/
 
 ```
 ✅ Módulo → shared/
-✅ Módulo → @meupersonal/core ou @meupersonal/supabase
+✅ Módulo → @elevapro/core ou @elevapro/supabase
 ✅ Screen  → Módulo (via index.ts)
 ❌ Módulo  → Módulo (importação direta proibida)
 ❌ shared/ → Módulo
@@ -79,14 +79,14 @@ Comunicação entre módulos: via Zustand store global ou props. Auth é exceç�
 @/workout             → ./src/modules/workout
 @/students            → ./src/modules/students
 @/auth                → ./src/modules/auth
-@meupersonal/core     → ./src/packages/core
-@meupersonal/supabase → ./src/packages/supabase
+@elevapro/core     → ./src/packages/core
+@elevapro/supabase → ./src/packages/supabase
 
 // Web (web/)
 @/*                   → ./src/*
 @/workout             → ./src/modules/workouts  (pasta é plural no web)
 @/nutrition           → ./src/modules/nutrition
-@meupersonal/core     → ./src/packages/core
+@elevapro/core     → ./src/packages/core
 ```
 
 ### Naming conventions
@@ -218,7 +218,7 @@ export const createStudentsService = (supabase: SupabaseClient) => ({
 
 ```tsx
 // ✅ Correto — Server Component (padrão no App Router)
-import { createStudentsService } from '@meupersonal/shared';
+import { createStudentsService } from '@elevapro/shared';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 async function StudentsPage() {
@@ -291,7 +291,7 @@ Toda ação protegida precisa de **duas camadas**:
 2. **RLS** no Supabase (bloquear no banco)
 
 ```ts
-import { defineAbilitiesFor } from '@meupersonal/supabase';
+import { defineAbilitiesFor } from '@elevapro/supabase';
 const ability = defineAbilitiesFor(user.role);
 if (ability.can('create', 'Workout')) { ... }
 ```
@@ -510,7 +510,7 @@ Arquivo local: `web/.env` ou `web/.env.local` (ignorado pelo git)
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública do Supabase |
 | `EXPO_PUBLIC_DATABASE_URL` | URL PostgreSQL direto — **apenas para migrations Drizzle, nunca expor no cliente** |
 
-> ⚠️ O cliente Supabase compartilhado (`@meupersonal/supabase`) aceita ambos os prefixos `EXPO_PUBLIC_` e `NEXT_PUBLIC_`. Prefira `NEXT_PUBLIC_` no web para clareza.
+> ⚠️ O cliente Supabase compartilhado (`@elevapro/supabase`) aceita ambos os prefixos `EXPO_PUBLIC_` e `NEXT_PUBLIC_`. Prefira `NEXT_PUBLIC_` no web para clareza.
 
 ### CI/CD (GitHub Secrets)
 
@@ -567,7 +567,7 @@ export function useCreateWorkout() {
 - [ ] Migration SQL com `drizzle-kit`
 - [ ] RLS habilitado na tabela (`alter table X enable row level security`)
 - [ ] Políticas RLS para cada role que precisa de acesso
-- [ ] Tipos TypeScript atualizados em `@meupersonal/supabase/types.ts`
+- [ ] Tipos TypeScript atualizados em `@elevapro/supabase/types.ts`
 - [ ] CASL abilities atualizadas se necessário
 
 ### Checklist pós-feature

@@ -3,8 +3,8 @@ import {
   createGamificationService,
   type DailyGoal,
   type StudentStreak,
-} from '@meupersonal/shared';
-import { supabase } from '@meupersonal/supabase';
+} from '@elevapro/shared';
+import { supabase } from '@elevapro/supabase';
 import { create } from 'zustand';
 
 const gamificationService = createGamificationService(supabase);

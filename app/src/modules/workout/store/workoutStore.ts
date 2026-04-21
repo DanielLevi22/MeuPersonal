@@ -7,9 +7,9 @@ import type {
   Workout,
   WorkoutExercise,
   WorkoutSession,
-} from '@meupersonal/shared';
-import { createWorkoutsService } from '@meupersonal/shared';
-import { supabase } from '@meupersonal/supabase';
+} from '@elevapro/shared';
+import { createWorkoutsService } from '@elevapro/shared';
+import { supabase } from '@elevapro/supabase';
 import { create } from 'zustand';
 import { useAuthStore } from '@/modules/auth/store/authStore';
 import { type AIWorkoutItem, WorkoutAIService } from '../services/WorkoutAIService';

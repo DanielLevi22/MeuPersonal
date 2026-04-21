@@ -1,5 +1,5 @@
+import { supabase } from '@elevapro/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@meupersonal/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';

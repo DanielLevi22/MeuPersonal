@@ -7,9 +7,9 @@ module.exports = {
     '^@/students$': '<rootDir>/src/modules/students',
     '^@/auth$': '<rootDir>/src/modules/auth',
     '^@/assessment$': '<rootDir>/src/modules/assessment',
-    '^@meupersonal/core(.*)$': '<rootDir>/src/packages/core$1',
-    '^@meupersonal/supabase(.*)$': '<rootDir>/src/packages/supabase$1',
-    '^@meupersonal/shared(.*)$': '<rootDir>/../shared/src$1',
+    '^@elevapro/core(.*)$': '<rootDir>/src/packages/core$1',
+    '^@elevapro/supabase(.*)$': '<rootDir>/src/packages/supabase$1',
+    '^@elevapro/shared(.*)$': '<rootDir>/../shared/src$1',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   // Permite que arquivos em shared/ resolvam node_modules de app/

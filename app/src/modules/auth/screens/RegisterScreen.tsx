@@ -1,5 +1,5 @@
+import { createAuthService, type ServiceType } from '@elevapro/shared';
 import { Ionicons } from '@expo/vector-icons';
-import { createAuthService, type ServiceType } from '@meupersonal/shared';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
