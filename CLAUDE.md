@@ -1,4 +1,4 @@
-# CLAUDE.md — MeuPersonal
+# CLAUDE.md — Eleva Pro
 
 Guia operacional para o agente. Leia antes de qualquer sessão de trabalho.
 

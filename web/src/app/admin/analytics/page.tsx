@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useAnalytics } from "@/shared/hooks/useAnalytics";
+import { useState } from "react";
 
 export default function AnalyticsPage() {
   const { data, isLoading } = useAnalytics();
@@ -169,7 +169,7 @@ export default function AnalyticsPage() {
                 data?.userMetrics.usersByType.professional || 0,
                 data?.userMetrics.totalUsers || 0,
               )}
-              % do total
+              % do   total
             </p>
           </div>
 

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -n '135,165p' web/src/shared/utils/exportDietPDF.ts)",
+      "Bash(sed -n '195,215p' web/src/shared/utils/exportDietPDF.ts)",
+      "Bash(sed -n '265,280p' web/src/shared/utils/exportDietPDF.ts)",
+      "Bash(sed -n '315,325p' web/src/shared/utils/exportDietPDF.ts)"
+    ]
+  }
+}
