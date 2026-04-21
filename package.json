@@ -2,6 +2,11 @@
   "name": "eleva-pro",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "web",
+    "app",
+    "shared"
+  ],
   "packageManager": "npm@10.2.4",
   "scripts": {
     "prepare": "husky",
