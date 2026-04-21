@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
                 data?.userMetrics.newUsersThisMonth || 0,
                 data?.userMetrics.totalUsers || 0,
               )}
-              % do total
+              % do total teste ci
             </p>
           </div>
 
