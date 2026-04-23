@@ -25,7 +25,7 @@ export default function DashboardPage() {
         }
 
         if (user) {
-          console.log("✅ User authenticated:", user.id, user.email);
+          console.log("✅ User authenticateds:", user.id, user.email);
 
           // Try to get full name from profiles
           const { data: profile, error: profileError } = await supabase
