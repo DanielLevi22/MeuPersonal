@@ -229,6 +229,36 @@ export default function StudentDetailsPage() {
           </p>
         </Link>
 
+        {/* AI Coach Module */}
+        <Link
+          href={`/dashboard/students/${studentId}/ai-coach`}
+          className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 md:col-span-2"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">AI Coach</h3>
+                <p className="text-muted-foreground text-sm mt-0.5">
+                  Crie periodizações e fichas de treino com assistência de inteligência artificial.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-white/5 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors shrink-0">
+              Abrir Chat
+            </span>
+          </div>
+        </Link>
+
         {/* History Module */}
         <Link
           href={`/dashboard/students/${studentId}/history`}
