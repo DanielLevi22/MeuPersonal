@@ -11,6 +11,8 @@ if (!supabaseUrl || !serviceRoleKey || serviceRoleKey === "PREENCHER_service_rol
   }
 }
 
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey || "placeholder", {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+export const supabaseAdmin = createClient(
+  supabaseUrl || "https://placeholder.supabase.co",
+  serviceRoleKey || "placeholder",
+  { auth: { autoRefreshToken: false, persistSession: false } },
+);
