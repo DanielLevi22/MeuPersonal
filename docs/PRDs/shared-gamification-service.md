@@ -53,7 +53,7 @@ O gamification não tem módulo estruturado — o service vive em `app/src/servi
 | Tabela | Operação |
 |--------|----------|
 | `daily_goals` | SELECT, UPDATE |
-| `streaks` | SELECT, UPDATE |
+| `student_streaks` | SELECT, UPDATE |
 | `achievements` | SELECT |
 | `ranking_scores` | SELECT |
 | `coachings` | SELECT (para leaderboard de alunos do especialista) |
@@ -67,7 +67,7 @@ O gamification não tem módulo estruturado — o service vive em `app/src/servi
 
 **Ranking inline → service:** a lógica de leaderboard em `ranking.tsx` tem duas estratégias (my_students e global) com queries complexas — extrair para `fetchLeaderboard` no service.
 
-**Duplicatas em `packages/core`:** `achievementService.ts` e `streakService.ts` usam tabela `student_streaks` (nome legado, a tabela atual é `streaks`) e nunca foram importados por ninguém. Remover sem substituir.
+**Duplicatas em `packages/core`:** `achievementService.ts` e `streakService.ts` nunca foram importados por ninguém. Remover sem substituir. A tabela correta é `student_streaks` (o nome `streaks` no PRD original estava errado).
 
 ---
 
