@@ -1,0 +1,92 @@
+import type Anthropic from "@anthropic-ai/sdk";
+
+export const WORKOUT_TOOLS: Anthropic.Tool[] = [
+  {
+    name: "propose_periodization",
+    description:
+      "Apresenta uma proposta de periodização (macrociclo) para o especialista revisar. Use SOMENTE após ter discutido e concordado sobre: objetivo principal, duração total em semanas e as fases/mesociclos. NÃO inclua divisão de treino nem exercícios — isso vem depois.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: {
+          type: "string",
+          description: 'Nome da periodização (ex: "Hipertrofia 12 Semanas")',
+        },
+        goal: {
+          type: "string",
+          description: "Objetivo principal (Hipertrofia, Força, Emagrecimento, Condicionamento)",
+        },
+        durationWeeks: {
+          type: "number",
+          description: "Duração total em semanas",
+        },
+        level: {
+          type: "string",
+          description: "Nível do aluno (Iniciante, Intermediário, Avançado)",
+        },
+        phases: {
+          type: "array",
+          description: "Lista de fases/mesociclos da periodização",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome da fase (ex: Adaptação, Hipertrofia)" },
+              weeks: { type: "number", description: "Duração desta fase em semanas" },
+              focus: {
+                type: "string",
+                description: "Foco desta fase (ex: Resistência Muscular, Volume Máximo)",
+              },
+            },
+            required: ["name", "weeks", "focus"],
+          },
+        },
+      },
+      required: ["name", "goal", "durationWeeks", "level", "phases"],
+    },
+  },
+  {
+    name: "save_periodization",
+    description:
+      "Salva a periodização no banco de dados após confirmação explícita do especialista. Use SOMENTE quando o especialista aprovar a proposta com palavras como 'ok', 'pode salvar', 'confirma', 'aprovado'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string" },
+        goal: { type: "string" },
+        durationWeeks: { type: "number" },
+        level: { type: "string" },
+        phases: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              weeks: { type: "number" },
+              focus: { type: "string" },
+            },
+            required: ["name", "weeks", "focus"],
+          },
+        },
+      },
+      required: ["name", "goal", "durationWeeks", "level", "phases"],
+    },
+  },
+  {
+    name: "query_exercises",
+    description:
+      "Busca exercícios disponíveis no banco. Use para consultar opções antes de sugerir ao especialista.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        muscle_group: {
+          type: "string",
+          description: "Filtrar por grupo muscular (ex: Peito, Costas, Pernas, Ombros, Braços)",
+        },
+        search_term: {
+          type: "string",
+          description: "Buscar por nome de exercício (ex: Supino, Agachamento)",
+        },
+      },
+    },
+  },
+];

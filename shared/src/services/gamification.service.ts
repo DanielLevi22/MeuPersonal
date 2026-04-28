@@ -33,7 +33,7 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
   },
 
   getStreak: async (studentId?: string): Promise<StudentStreak | null> => {
-    let query = supabase.from("streaks").select("*");
+    let query = supabase.from("student_streaks").select("*");
     if (studentId) query = query.eq("student_id", studentId);
     const { data, error } = await query.maybeSingle();
     if (error) throw error;
@@ -65,16 +65,15 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
   },
 
   calculateDailyGoals: async (studentId: string, date: string): Promise<void> => {
-    const { error } = await supabase.rpc("calculate_daily_goals", {
-      p_student_id: studentId,
-      p_date: date,
-    });
+    const { error } = await supabase
+      .from("daily_goals")
+      .upsert({ student_id: studentId, date }, { onConflict: "student_id,date", ignoreDuplicates: true });
     if (error) throw error;
   },
 
   useStreakFreeze: async (studentId: string): Promise<void> => {
     const { data: streak, error: fetchError } = await supabase
-      .from("streaks")
+      .from("student_streaks")
       .select("*")
       .eq("student_id", studentId)
       .single();
@@ -83,7 +82,7 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
 
     const today = new Date().toISOString().split("T")[0];
     const { error } = await supabase
-      .from("streaks")
+      .from("student_streaks")
       .update({ freeze_available: streak.freeze_available - 1, last_freeze_date: today })
       .eq("id", streak.id);
     if (error) throw error;
