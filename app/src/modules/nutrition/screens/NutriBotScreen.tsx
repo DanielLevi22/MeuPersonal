@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAuthStore } from '@/auth';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { colors as brandColors } from '@/constants/colors';
 import { useNutritionStore } from '@/modules/nutrition/routes';
@@ -19,7 +20,8 @@ import { type ChatMessage, NutriBotService } from '@/modules/nutrition/services/
 
 export default function NutriBotScreen() {
   const router = useRouter();
-  const { currentDietPlan, meals, mealItems } = useNutritionStore();
+  const { session } = useAuthStore();
+  const { currentDietPlan } = useNutritionStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -51,9 +53,7 @@ export default function NutriBotScreen() {
       const responseText = await NutriBotService.sendMessage(
         messages,
         userMsg.content,
-        currentDietPlan,
-        meals,
-        mealItems
+        session?.access_token ?? ''
       );
 
       // Prepare placeholder message

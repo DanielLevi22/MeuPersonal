@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useAuthStore } from '@/auth';
 import { Button } from '@/components/ui/Button';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { colors as brandColors } from '@/constants/colors';
@@ -16,6 +17,7 @@ import {
 
 export default function ScanFoodScreen() {
   const router = useRouter();
+  const { session } = useAuthStore();
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<FoodAnalysisResult | null>(null);
@@ -66,7 +68,10 @@ export default function ScanFoodScreen() {
     setAnalyzing(true);
     setResult(null);
     try {
-      const analysis = await FoodRecognitionService.analyzeFoodImage(uri);
+      const analysis = await FoodRecognitionService.analyzeFoodImage(
+        uri,
+        session?.access_token ?? ''
+      );
       setResult(analysis);
     } catch (_e) {
       Alert.alert('Erro', 'Falha na análise da imagem.');

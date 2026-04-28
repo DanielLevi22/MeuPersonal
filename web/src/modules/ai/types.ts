@@ -40,6 +40,34 @@ export interface StudentContext {
   }[];
 }
 
+export interface BulkWorkoutExercise {
+  exercise_name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+  notes?: string;
+}
+
+export interface BulkWorkoutItem {
+  title: string;
+  muscle_group?: string;
+  difficulty?: string;
+  day_of_week?: string;
+  description?: string;
+  exercises?: BulkWorkoutExercise[];
+}
+
+export interface BulkWorkoutProposal {
+  phase_id: string;
+  phase_name: string;
+  workouts: BulkWorkoutItem[];
+}
+
+export interface AiSessionState {
+  savedWorkouts: { id: string; title: string; phaseId: string }[];
+  pendingWorkoutProposal?: BulkWorkoutProposal;
+}
+
 export type SseEvent =
   | { type: "text"; content: string }
   | { type: "proposal"; data: PeriodizationProposal }
