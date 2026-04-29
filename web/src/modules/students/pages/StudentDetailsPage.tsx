@@ -259,6 +259,32 @@ export default function StudentDetailsPage() {
           </div>
         </Link>
 
+        {/* Metrics Module */}
+        <Link
+          href={`/dashboard/students/${studentId}/metrics`}
+          className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5"
+        >
+          <div className="flex items-start justify-between mb-6">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              Ver Gráficos
+            </span>
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Métricas</h3>
+          <p className="text-muted-foreground">
+            Frequência de treinos, volume por músculo, evolução de cargas e distribuição de estímulo.
+          </p>
+        </Link>
+
         {/* History Module */}
         <Link
           href={`/dashboard/students/${studentId}/history`}
