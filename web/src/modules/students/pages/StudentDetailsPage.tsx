@@ -281,7 +281,8 @@ export default function StudentDetailsPage() {
           </div>
           <h3 className="text-xl font-bold text-foreground mb-2">Métricas</h3>
           <p className="text-muted-foreground">
-            Frequência de treinos, volume por músculo, evolução de cargas e distribuição de estímulo.
+            Frequência de treinos, volume por músculo, evolução de cargas e distribuição de
+            estímulo.
           </p>
         </Link>
 
