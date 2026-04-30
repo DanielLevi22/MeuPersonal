@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import type { ChatMessage, ChatSession } from "../types";
+import type { AiSessionState, ChatMessage, ChatSession } from "../types";
 
 export async function getOrCreateSession(
   studentId: string,
@@ -103,6 +103,28 @@ export async function savePeriodization(
   if (phaseError) throw new Error(`Failed to save phases: ${phaseError.message}`);
 
   return periodId;
+}
+
+export async function getSessionState(sessionId: string): Promise<AiSessionState> {
+  const { data } = await supabaseAdmin
+    .from("ai_chat_sessions" as never)
+    .select("state")
+    .eq("id" as never, sessionId as never)
+    .single();
+  const row = data as { state: AiSessionState | null } | null;
+  return row?.state ?? { savedWorkouts: [] };
+}
+
+export async function updateSessionState(
+  sessionId: string,
+  patch: Partial<AiSessionState>,
+): Promise<void> {
+  const current = await getSessionState(sessionId);
+  const next = { ...current, ...patch };
+  await supabaseAdmin
+    .from("ai_chat_sessions" as never)
+    .update({ state: next } as never)
+    .eq("id" as never, sessionId as never);
 }
 
 export type { ChatMessage, ChatSession };

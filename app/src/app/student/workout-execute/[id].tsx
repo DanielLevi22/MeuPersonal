@@ -10,21 +10,75 @@ import { Card } from '@/components/ui/Card';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { LiveWorkoutOverlay } from '@/components/workout/LiveWorkoutOverlay';
 import { schedulePostWorkoutReminder } from '@/services/notificationService';
-import { useWorkoutTimer } from '@/workout';
+import { useWorkoutTimer, type WorkoutExercise, workoutSessionStore } from '@/workout';
 
-interface Exercise {
-  id: string;
-  exercise_id: string;
-  exercise: {
-    id: string;
-    name: string;
-    muscle_group: string;
-  };
-  sets: number;
-  reps: string;
-  weight?: string;
-  rest_time: number;
-  order: number;
+async function loadWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]> {
+  const { data, error } = await supabase
+    .from('workout_exercises')
+    .select(
+      'id, exercise_id, sets, reps, weight, rest_seconds, order_index, exercise:exercises(id, name, muscle_group)'
+    )
+    .eq('workout_id', workoutId)
+    .order('order_index', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as WorkoutExercise[];
+}
+
+async function createWorkoutSession(workoutId: string, studentId: string): Promise<string> {
+  const { data: existing } = await supabase
+    .from('workout_sessions')
+    .select('id')
+    .eq('workout_id', workoutId)
+    .eq('student_id', studentId)
+    .is('completed_at', null)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return (existing as { id: string }).id;
+
+  const { data, error } = await supabase
+    .from('workout_sessions')
+    .insert({ workout_id: workoutId, student_id: studentId, started_at: new Date().toISOString() })
+    .select('id')
+    .single();
+
+  if (error || !data) throw new Error('Failed to create workout session');
+  return (data as { id: string }).id;
+}
+
+async function batchSaveSession(sessionId: string): Promise<void> {
+  const states = workoutSessionStore.getAll();
+  for (const ex of states) {
+    const { data: sessionEx, error } = await supabase
+      .from('workout_session_exercises')
+      .insert({
+        session_id: sessionId,
+        workout_exercise_id: ex.workoutExerciseId,
+        exercise_id: ex.exerciseId,
+      })
+      .select('id')
+      .single();
+
+    if (error || !sessionEx) continue;
+
+    const setRows = ex.sets.map((s, idx) => ({
+      session_exercise_id: (sessionEx as { id: string }).id,
+      set_index: idx,
+      reps_prescribed: ex.repsPrescribed,
+      reps_actual: s.repsActual,
+      weight_prescribed: ex.weightPrescribed ? parseFloat(ex.weightPrescribed) : null,
+      weight_actual: s.weightActual,
+      rest_prescribed: ex.restPrescribed,
+      rest_actual: s.restActual,
+      completed: s.completed,
+      skipped: s.skipped,
+    }));
+
+    if (setRows.length > 0) {
+      await supabase.from('workout_session_sets').insert(setRows);
+    }
+  }
 }
 
 export default function StudentWorkoutExecuteScreen() {
@@ -35,150 +89,102 @@ export default function StudentWorkoutExecuteScreen() {
   const [workout, setWorkout] = useState<{ title: string; description: string | null } | null>(
     null
   );
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
+  const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Timer Hook
   const { timeLeft, isActive, totalTime, startTimer, stopTimer, addTime, subtractTime } =
     useWorkoutTimer();
 
-  const loadCompletedExercises = useCallback(async (sessId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('workout_exercise_logs')
-        .select('workout_item_id')
-        .eq('workout_session_id', sessId)
-        .eq('completed', true);
+  const refreshCompletedFromStore = useCallback(() => {
+    const done = exercises
+      .filter((ex) => workoutSessionStore.isExerciseComplete(ex.id))
+      .map((ex) => ex.id);
+    setCompletedIds(new Set(done));
+  }, [exercises]);
 
-      if (!error && data) {
-        const completed = new Set(data.map((log) => log.workout_item_id));
-        setCompletedExercises(completed);
-      }
-    } catch (error) {
-      console.error('Error loading completed exercises:', error);
-    }
-  }, []);
-
-  const fetchWorkoutAndStartSession = useCallback(async () => {
-    try {
-      console.log('🏋️ Fetching workout for student, ID:', id, 'User:', user?.id);
-
-      // Fetch workout details
-      const { data: workoutData, error: workoutError } = await supabase
-        .from('workouts')
-        .select('id, title, description')
-        .eq('id', id)
-        .single();
-
-      if (workoutError) throw workoutError;
-      setWorkout(workoutData);
-
-      // Fetch exercises
-      const { data: exercisesData, error: exercisesError } = await supabase
-        .from('workout_items')
-        .select(`
-          id,
-          exercise_id,
-          sets,
-          reps,
-          weight,
-          rest_time,
-          order,
-          exercise:exercises (
-            id,
-            name,
-            muscle_group
-          )
-        `)
-        .eq('workout_id', id)
-        .order('order', { ascending: true });
-
-      if (exercisesError) throw exercisesError;
-
-      const transformed = (exercisesData || []).map(
-        (item: {
-          id: string;
-          exercise_id: string;
-          sets: number;
-          reps: string;
-          weight?: string;
-          rest_time: number;
-          order: number;
-          exercise: unknown;
-        }) => ({
-          ...item,
-          exercise: (Array.isArray(item.exercise)
-            ? (item.exercise as Exercise['exercise'][])[0]
-            : item.exercise) as Exercise['exercise'],
-        })
-      );
-
-      setExercises(transformed);
-
-      // Create or get active workout session
-      const { data: existingSession } = await supabase
-        .from('workout_sessions')
-        .select('id')
-        .eq('workout_id', id)
-        .eq('student_id', user?.id)
-        .is('completed_at', null)
-        .order('started_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (existingSession) {
-        setSessionId(existingSession.id);
-        await loadCompletedExercises(existingSession.id);
-      } else {
-        // Create new session
-        const { data: newSession, error: sessionError } = await supabase
-          .from('workout_sessions')
-          .insert({
-            workout_id: id,
-            student_id: user?.id,
-            started_at: new Date().toISOString(),
-          })
-          .select('id')
-          .single();
-
-        if (sessionError) throw sessionError;
-        setSessionId(newSession.id);
-      }
-    } catch (error) {
-      console.error('💥 Error fetching workout:', error);
-      Alert.alert('Erro', 'Não foi possível carregar o treino.');
-    } finally {
-      setLoading(false);
-    }
-  }, [id, user?.id, loadCompletedExercises]);
-
-  useEffect(() => {
-    fetchWorkoutAndStartSession();
-  }, [fetchWorkoutAndStartSession]);
-
-  // Reload completed exercises when screen gains focus (returning from exercise detail)
   useFocusEffect(
     useCallback(() => {
-      if (sessionId) {
-        loadCompletedExercises(sessionId);
-      }
-    }, [sessionId, loadCompletedExercises])
+      refreshCompletedFromStore();
+    }, [refreshCompletedFromStore])
   );
 
-  const handleExercisePress = (exercise: Exercise) => {
+  useEffect(() => {
+    const workoutId = typeof id === 'string' ? id : id[0];
+    if (!workoutId || !user?.id) return;
+
+    (async () => {
+      try {
+        const { data: workoutData, error: workoutError } = await supabase
+          .from('workouts')
+          .select('id, title, description')
+          .eq('id', workoutId)
+          .single();
+
+        if (workoutError) throw workoutError;
+        setWorkout(workoutData);
+
+        const exList = await loadWorkoutExercises(workoutId);
+        setExercises(exList);
+
+        const sessId = await createWorkoutSession(workoutId, user.id);
+        setSessionId(sessId);
+        workoutSessionStore.init(sessId);
+
+        for (const ex of exList) {
+          workoutSessionStore.addExercise({
+            workoutExerciseId: ex.id,
+            exerciseId: ex.exercise_id,
+            repsPrescribed: ex.reps,
+            setsCount: ex.sets ?? 3,
+            weightPrescribed: ex.weight,
+            restPrescribed: ex.rest_seconds,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading workout:', error);
+        Alert.alert('Erro', 'Não foi possível carregar o treino.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id, user?.id]);
+
+  const handleExercisePress = (exercise: WorkoutExercise) => {
     router.push(
-      `/student/exercise-detail?exerciseId=${exercise.id}&sessionId=${sessionId}&workoutId=${id}` as never
+      `/student/exercise-detail?workoutExerciseId=${exercise.id}&sessionId=${sessionId}` as never
     );
   };
 
-  const handleStartRest = (restTime: number) => {
-    startTimer(restTime || 60);
+  const handleStartRest = (restSeconds: number) => {
+    startTimer(restSeconds || 60);
   };
 
-  const handleFinishWorkout = async () => {
-    if (completedExercises.size < exercises.length) {
+  const finishWorkout = async () => {
+    try {
+      if (!sessionId) return;
+
+      await batchSaveSession(sessionId);
+
+      await supabase
+        .from('workout_sessions')
+        .update({ completed_at: new Date().toISOString() })
+        .eq('id', sessionId);
+
+      workoutSessionStore.clear();
+      await schedulePostWorkoutReminder();
+
+      Alert.alert('Parabéns! 🎉', 'Treino concluído com sucesso!', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (_error) {
+      Alert.alert('Erro', 'Não foi possível finalizar o treino.');
+    }
+  };
+
+  const handleFinishWorkout = () => {
+    if (completedIds.size < exercises.length) {
       Alert.alert(
         'Treino Incompleto',
         'Você ainda não completou todos os exercícios. Deseja finalizar mesmo assim?',
@@ -192,30 +198,9 @@ export default function StudentWorkoutExecuteScreen() {
     }
   };
 
-  const finishWorkout = async () => {
-    try {
-      if (!sessionId) return;
-
-      const { error } = await supabase
-        .from('workout_sessions')
-        .update({ completed_at: new Date().toISOString() })
-        .eq('id', sessionId);
-
-      if (error) throw error;
-
-      // Schedule post-workout meal reminder
-      await schedulePostWorkoutReminder();
-
-      Alert.alert('Parabéns! 🎉', 'Treino concluído com sucesso!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (_error) {
-      Alert.alert('Erro', 'Não foi possível finalizar o treino.');
-    }
-  };
-
-  const renderExercise = ({ item, index }: { item: Exercise; index: number }) => {
-    const isCompleted = completedExercises.has(item.id);
+  const renderExercise = ({ item, index }: { item: WorkoutExercise; index: number }) => {
+    const isCompleted = completedIds.has(item.id);
+    const exercise = item.exercise as { name: string; muscle_group: string | null } | undefined;
 
     return (
       <TouchableOpacity onPress={() => handleExercisePress(item)} activeOpacity={0.8}>
@@ -234,23 +219,24 @@ export default function StudentWorkoutExecuteScreen() {
             </View>
             <View className="flex-1">
               <Text className="text-foreground text-lg font-bold font-display">
-                {item.exercise.name}
+                {exercise?.name ?? '—'}
               </Text>
-              <View className="flex-row items-center mt-1">
-                <View className="bg-secondary/15 px-2 py-1 rounded-md">
-                  <Text className="text-secondary text-xs font-bold font-display uppercase">
-                    {item.exercise.muscle_group}
-                  </Text>
+              {exercise?.muscle_group && (
+                <View className="flex-row items-center mt-1">
+                  <View className="bg-secondary/15 px-2 py-1 rounded-md">
+                    <Text className="text-secondary text-xs font-bold font-display uppercase">
+                      {exercise.muscle_group}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              )}
             </View>
 
-            {/* Quick Rest Button */}
             {!isCompleted && (
               <TouchableOpacity
                 onPress={(e) => {
                   e.stopPropagation();
-                  handleStartRest(item.rest_time);
+                  handleStartRest(item.rest_seconds ?? 60);
                 }}
                 className="bg-primary/10 p-2 rounded-lg ml-2 border border-primary/20"
               >
@@ -262,11 +248,15 @@ export default function StudentWorkoutExecuteScreen() {
           <View className="flex-row gap-3 pl-11">
             <View className="flex-1 bg-background p-2 rounded-lg border border-border">
               <Text className="text-muted-foreground text-xs mb-1 font-sans">Séries</Text>
-              <Text className="text-foreground text-base font-bold font-display">{item.sets}</Text>
+              <Text className="text-foreground text-base font-bold font-display">
+                {item.sets ?? '—'}
+              </Text>
             </View>
             <View className="flex-1 bg-background p-2 rounded-lg border border-border">
               <Text className="text-muted-foreground text-xs mb-1 font-sans">Reps</Text>
-              <Text className="text-foreground text-base font-bold font-display">{item.reps}</Text>
+              <Text className="text-foreground text-base font-bold font-display">
+                {item.reps ?? '—'}
+              </Text>
             </View>
             {item.weight && (
               <View className="flex-1 bg-background p-2 rounded-lg border border-border">
@@ -279,7 +269,7 @@ export default function StudentWorkoutExecuteScreen() {
             <View className="flex-1 bg-background p-2 rounded-lg border border-border">
               <Text className="text-muted-foreground text-xs mb-1 font-sans">Descanso</Text>
               <Text className="text-foreground text-base font-bold font-display">
-                {item.rest_time}s
+                {item.rest_seconds ?? '—'}s
               </Text>
             </View>
           </View>
@@ -309,11 +299,10 @@ export default function StudentWorkoutExecuteScreen() {
     );
   }
 
-  const progress = exercises.length > 0 ? (completedExercises.size / exercises.length) * 100 : 0;
+  const progress = exercises.length > 0 ? (completedIds.size / exercises.length) * 100 : 0;
 
   return (
     <ScreenLayout>
-      {/* Header */}
       <View className="px-6 pt-2 pb-4">
         <View className="flex-row items-center mb-4">
           <TouchableOpacity
@@ -332,12 +321,11 @@ export default function StudentWorkoutExecuteScreen() {
           </View>
         </View>
 
-        {/* Progress */}
         <Card className="p-4 border border-border">
           <View className="flex-row justify-between mb-2">
             <Text className="text-foreground text-base font-bold font-display">Progresso</Text>
             <Text className="text-primary text-base font-bold font-display">
-              {completedExercises.size}/{exercises.length}
+              {completedIds.size}/{exercises.length}
             </Text>
           </View>
           <View className="h-2 bg-background rounded-full overflow-hidden">
@@ -346,7 +334,6 @@ export default function StudentWorkoutExecuteScreen() {
         </Card>
       </View>
 
-      {/* Exercise List */}
       <FlatList
         data={exercises}
         renderItem={renderExercise}
@@ -355,12 +342,11 @@ export default function StudentWorkoutExecuteScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Finish Button */}
       <View className="absolute bottom-0 left-0 right-0 p-6 bg-background/95 border-t border-border">
         <TouchableOpacity onPress={handleFinishWorkout} activeOpacity={0.8}>
           <LinearGradient
             colors={
-              completedExercises.size === exercises.length
+              completedIds.size === exercises.length
                 ? (['#CCFF00', '#99CC00'] as [string, string])
                 : (['#FF6B35', '#E85A2A'] as [string, string])
             }
@@ -369,7 +355,7 @@ export default function StudentWorkoutExecuteScreen() {
             className="rounded-xl py-4 items-center flex-row justify-center shadow-lg shadow-black/20"
           >
             <Ionicons
-              name={completedExercises.size === exercises.length ? 'checkmark-circle' : 'flag'}
+              name={completedIds.size === exercises.length ? 'checkmark-circle' : 'flag'}
               size={22}
               color="#000000"
               style={{ marginRight: 8 }}
@@ -379,7 +365,6 @@ export default function StudentWorkoutExecuteScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Live Workout Overlay */}
       <LiveWorkoutOverlay
         visible={isActive}
         timeLeft={timeLeft}

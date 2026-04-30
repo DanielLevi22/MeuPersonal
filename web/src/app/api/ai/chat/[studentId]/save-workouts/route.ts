@@ -1,0 +1,147 @@
+import { createClient } from "@supabase/supabase-js";
+import { type NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import {
+  getOrCreateSession,
+  getSessionState,
+  updateSessionState,
+} from "@/modules/ai/services/chatService";
+import type { BulkWorkoutExercise, BulkWorkoutItem } from "@/modules/ai/types";
+
+async function getCallerSpecialist(request: NextRequest): Promise<string | null> {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+  const client = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  );
+  const { data } = await client.auth.getUser(token);
+  return data.user?.id ?? null;
+}
+
+async function saveWorkout(
+  workout: BulkWorkoutItem,
+  phaseId: string,
+  specialistId: string,
+): Promise<{ workoutId: string; title: string }> {
+  const { data, error } = await supabaseAdmin
+    .from("workouts" as never)
+    .insert({
+      specialist_id: specialistId,
+      training_plan_id: phaseId,
+      title: workout.title,
+      muscle_group: workout.muscle_group ?? null,
+      difficulty: workout.difficulty ?? null,
+      day_of_week: workout.day_of_week ?? null,
+      description: workout.description ?? null,
+    } as never)
+    .select("id")
+    .single();
+
+  if (error) throw new Error(`Failed to save workout "${workout.title}": ${error.message}`);
+  return { workoutId: (data as { id: string }).id, title: workout.title };
+}
+
+async function saveExercises(
+  workoutId: string,
+  exercises: BulkWorkoutItem["exercises"],
+): Promise<void> {
+  if (!exercises?.length) return;
+
+  const names = exercises.map((e: BulkWorkoutExercise) => e.exercise_name);
+
+  const { data: exerciseRows } = await supabaseAdmin
+    .from("exercises" as never)
+    .select("id, name")
+    .in("name" as never, names as never);
+
+  const exerciseMap = new Map(
+    ((exerciseRows as { id: string; name: string }[] | null) ?? []).map((e) => [
+      e.name.toLowerCase(),
+      e.id,
+    ]),
+  );
+
+  // Fuzzy fallback for names not found exactly
+  const notFound = names.filter((n) => !exerciseMap.has(n.toLowerCase()));
+  for (const name of notFound as string[]) {
+    const { data: fuzzy } = await supabaseAdmin
+      .from("exercises" as never)
+      .select("id, name")
+      .ilike("name" as never, `%${name}%` as never)
+      .limit(1)
+      .maybeSingle();
+    if (fuzzy) {
+      const row = fuzzy as { id: string; name: string };
+      exerciseMap.set(name.toLowerCase(), row.id);
+    }
+  }
+
+  const rows = exercises
+    .map((e: BulkWorkoutExercise, idx: number) => {
+      const exerciseId = exerciseMap.get(e.exercise_name.toLowerCase());
+      if (!exerciseId) return null;
+      return {
+        workout_id: workoutId,
+        exercise_id: exerciseId,
+        sets: e.sets,
+        reps: e.reps,
+        rest_seconds: e.rest_seconds,
+        notes: e.notes ?? null,
+        order_index: idx,
+      };
+    })
+    .filter(Boolean);
+
+  if (rows.length > 0) {
+    await supabaseAdmin.from("workout_exercises" as never).insert(rows as never[]);
+  }
+}
+
+// POST /api/ai/chat/[studentId]/save-workouts
+// Saves the pending bulk workout proposal directly, without going through the AI.
+// Called when the specialist clicks "Aprovar e Salvar Todos" on the BulkWorkoutProposalCard.
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ studentId: string }> },
+) {
+  const { studentId } = await params;
+
+  const specialistId = await getCallerSpecialist(request);
+  if (!specialistId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const sessionId = await getOrCreateSession(studentId, specialistId, "workout");
+  const sessionState = await getSessionState(sessionId);
+
+  const proposal = sessionState.pendingWorkoutProposal;
+  if (!proposal) {
+    return NextResponse.json({ error: "Nenhuma proposta pendente encontrada." }, { status: 400 });
+  }
+
+  const workouts = proposal.workouts ?? [];
+  const saved: { id: string; title: string }[] = [];
+
+  for (const workout of workouts) {
+    try {
+      const { workoutId, title } = await saveWorkout(workout, proposal.phase_id, specialistId);
+      await saveExercises(workoutId, workout.exercises);
+      saved.push({ id: workoutId, title });
+    } catch (err) {
+      return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
+  }
+
+  // Persist saved workouts in session state and clear the pending proposal
+  await updateSessionState(sessionId, {
+    savedWorkouts: [
+      ...sessionState.savedWorkouts,
+      ...saved.map((w) => ({ id: w.id, title: w.title, phaseId: proposal.phase_id })),
+    ],
+    pendingWorkoutProposal: undefined,
+  });
+
+  return NextResponse.json({ saved });
+}
