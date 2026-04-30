@@ -3,7 +3,7 @@
 import { Html, OrbitControls, useGLTF } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MuscleVolume } from "@/shared/hooks/useWorkoutMetrics";
 import { buildColorMap, MESH_TO_MUSCLE } from "./muscleMeshMap";
@@ -169,13 +169,30 @@ function PlaceholderBody() {
   );
 }
 
+// ── Error boundary: catches useGLTF 404 and shows placeholder ────────────────
+
+class ModelErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
 // ── GLB body wrapper with error boundary fallback ─────────────────────────────
 
 function GLBBody(props: MuscleBodyProps) {
   return (
-    <Suspense fallback={<PlaceholderBody />}>
-      <MuscleBody {...props} />
-    </Suspense>
+    <ModelErrorBoundary fallback={<PlaceholderBody />}>
+      <Suspense fallback={<PlaceholderBody />}>
+        <MuscleBody {...props} />
+      </Suspense>
+    </ModelErrorBoundary>
   );
 }
 
