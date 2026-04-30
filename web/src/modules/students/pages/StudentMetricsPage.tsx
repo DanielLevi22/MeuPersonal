@@ -2,24 +2,47 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import CalendarHeatmap, { type ReactCalendarHeatmapValue } from "react-calendar-heatmap";
+import "react-calendar-heatmap/dist/styles.css";
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  type ExerciseOption,
+  type LoadPoint,
   useExerciseLoadHistory,
   useExercisesWithHistory,
   useWorkoutMetrics,
 } from "@/shared/hooks/useWorkoutMetrics";
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -43,10 +66,28 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 }
 
 function ChartSkeleton() {
+  return <div className="h-52 bg-white/5 rounded-lg animate-pulse" />;
+}
+
+function EmptyState({ message }: { message: string }) {
   return (
-    <div className="h-48 bg-white/5 rounded-lg animate-pulse" />
+    <div className="h-52 flex items-center justify-center">
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
   );
 }
+
+// ── Chart configs ─────────────────────────────────────────────────────────────
+
+const loadChartConfig = {
+  weight: { label: "Carga máx.", color: "#CCFF00" },
+} satisfies ChartConfig;
+
+const radarChartConfig = {
+  volume: { label: "Volume", color: "#60A5FA" },
+} satisfies ChartConfig;
+
+const STIMULUS_COLORS = ["#FACC15", "#60A5FA", "#34D399"];
 
 const TOOLTIP_STYLE = {
   backgroundColor: "#1a1d27",
@@ -56,26 +97,156 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
 };
 
+// ── Heatmap overrides (injected once per render) ───────────────────────────────
+
+const HEATMAP_STYLE = `
+  .react-calendar-heatmap text { fill: #64748b; font-size: 9px; }
+  .react-calendar-heatmap .color-empty { fill: rgba(255,255,255,0.05); }
+  .react-calendar-heatmap .color-scale-1 { fill: rgba(204,255,0,0.25); }
+  .react-calendar-heatmap .color-scale-2 { fill: rgba(204,255,0,0.50); }
+  .react-calendar-heatmap .color-scale-3 { fill: rgba(204,255,0,0.75); }
+  .react-calendar-heatmap .color-scale-4 { fill: #CCFF00; }
+  .react-calendar-heatmap rect { rx: 2; ry: 2; }
+`;
+
+// ── Load Evolution Chart (interactive) ────────────────────────────────────────
+
+interface ActivePoint {
+  activePayload?: { payload: LoadPoint }[];
+}
+
+function LoadEvolutionChart({ studentId }: { studentId: string }) {
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<LoadPoint | null>(null);
+
+  const { data: exercises = [] } = useExercisesWithHistory(studentId);
+  const activeExercise = selectedExercise ?? exercises[0]?.id ?? null;
+  const { data: loadHistory = [], isLoading } = useExerciseLoadHistory(studentId, activeExercise);
+
+  const latest = loadHistory[loadHistory.length - 1] ?? null;
+  const first = loadHistory[0] ?? null;
+  const display = hovered ?? latest;
+  const delta = latest && first ? latest.weight - first.weight : 0;
+
+  return (
+    <div className="bg-surface border border-white/10 rounded-xl p-6">
+      {/* Interactive header */}
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+            Evolução de Carga
+          </p>
+          {isLoading ? (
+            <div className="h-10 w-32 bg-white/5 rounded animate-pulse mt-1" />
+          ) : (
+            <>
+              <div className="flex items-baseline gap-3">
+                <span className="text-4xl font-bold text-foreground">
+                  {display ? `${display.weight} kg` : "—"}
+                </span>
+                {!hovered && delta !== 0 && (
+                  <span
+                    className={`text-sm font-semibold ${delta > 0 ? "text-green-400" : "text-red-400"}`}
+                  >
+                    {delta > 0 ? "+" : ""}
+                    {delta} kg
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {hovered ? hovered.date : latest ? `última sessão · ${latest.date}` : "sem dados"}
+              </p>
+            </>
+          )}
+        </div>
+
+        {exercises.length > 0 && (
+          <select
+            value={activeExercise ?? ""}
+            onChange={(e) => {
+              setSelectedExercise(e.target.value || null);
+              setHovered(null);
+            }}
+            className="bg-background border border-white/10 text-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            {(exercises as ExerciseOption[]).map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Chart */}
+      {isLoading ? (
+        <ChartSkeleton />
+      ) : !loadHistory.length ? (
+        <EmptyState message="Nenhum histórico de carga disponível." />
+      ) : (
+        <ChartContainer config={loadChartConfig} className="h-52 w-full">
+          <LineChart
+            data={loadHistory}
+            margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+            onMouseMove={(state: ActivePoint) => {
+              const point = state.activePayload?.[0]?.payload;
+              if (point) setHovered(point);
+            }}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: "#64748b", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: "#64748b", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              unit="kg"
+            />
+            <ChartTooltip
+              content={<ChartTooltipContent formatter={(v) => [`${v} kg`, "Carga máx."]} />}
+              cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="weight"
+              stroke="#CCFF00"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 5, fill: "#CCFF00", strokeWidth: 0 }}
+            />
+          </LineChart>
+        </ChartContainer>
+      )}
+    </div>
+  );
+}
+
 // ── Workout Metrics Tab ────────────────────────────────────────────────────────
 
 function WorkoutMetricsTab({ studentId }: { studentId: string }) {
-  const [days, setDays] = useState<30 | 60 | 90>(90);
-  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [days, setDays] = useState<90 | 180 | 365>(365);
 
   const { data: metrics, isLoading } = useWorkoutMetrics(studentId, days);
-  const { data: exercises = [] } = useExercisesWithHistory(studentId);
-  const { data: loadHistory = [], isLoading: loadLoading } = useExerciseLoadHistory(
-    studentId,
-    selectedExercise ?? exercises[0]?.id ?? null,
-  );
+  const endDate = new Date();
+  const startDate = daysAgo(days);
 
-  const activeExercise = selectedExercise ?? exercises[0]?.id ?? null;
+  const heatmapValues = (metrics?.dailyFrequency ?? []).map((d) => ({
+    date: d.date,
+    count: d.count,
+  }));
 
   return (
     <div className="space-y-6">
+      <style>{HEATMAP_STYLE}</style>
+
       {/* Period selector */}
       <div className="flex gap-2">
-        {([30, 60, 90] as const).map((d) => (
+        {([90, 180, 365] as const).map((d) => (
           <button
             key={d}
             onClick={() => setDays(d)}
@@ -85,7 +256,7 @@ function WorkoutMetricsTab({ studentId }: { studentId: string }) {
                 : "bg-surface border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5"
             }`}
           >
-            {d} dias
+            {d === 365 ? "1 ano" : `${d} dias`}
           </button>
         ))}
       </div>
@@ -95,7 +266,7 @@ function WorkoutMetricsTab({ studentId }: { studentId: string }) {
         <StatCard
           label="Treinos realizados"
           value={isLoading ? "—" : String(metrics?.totalSessions ?? 0)}
-          sub={`nos últimos ${days} dias`}
+          sub={`nos últimos ${days === 365 ? "12 meses" : `${days} dias`}`}
         />
         <StatCard
           label="Volume total"
@@ -115,123 +286,141 @@ function WorkoutMetricsTab({ studentId }: { studentId: string }) {
         />
       </div>
 
-      {/* Charts grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weekly frequency */}
-        <ChartCard title="Frequência Semanal">
-          {isLoading ? (
-            <ChartSkeleton />
-          ) : !metrics?.weeklyFrequency.length ? (
-            <EmptyState message="Nenhum treino registrado no período." />
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={metrics.weeklyFrequency} barSize={20}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="week" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                <Bar dataKey="sessions" name="Treinos" fill="#CCFF00" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
+      {/* Heatmap — full width */}
+      <ChartCard title="Consistência de Treinos">
+        {isLoading ? (
+          <ChartSkeleton />
+        ) : (
+          <div className="overflow-x-auto">
+            <CalendarHeatmap
+              startDate={startDate}
+              endDate={endDate}
+              values={heatmapValues}
+              classForValue={(value: ReactCalendarHeatmapValue<string> | undefined) => {
+                if (!value || value.count === 0) return "color-empty";
+                if (value.count === 1) return "color-scale-1";
+                if (value.count === 2) return "color-scale-2";
+                if (value.count === 3) return "color-scale-3";
+                return "color-scale-4";
+              }}
+              showWeekdayLabels
+            />
+            <div className="flex items-center justify-end gap-2 mt-3">
+              <span className="text-xs text-muted-foreground">Menos</span>
+              {[
+                "rgba(255,255,255,0.05)",
+                "rgba(204,255,0,0.25)",
+                "rgba(204,255,0,0.50)",
+                "rgba(204,255,0,0.75)",
+                "#CCFF00",
+              ].map((c) => (
+                <span
+                  key={c}
+                  className="w-3 h-3 rounded-sm inline-block"
+                  style={{ backgroundColor: c, border: "1px solid rgba(255,255,255,0.08)" }}
+                />
+              ))}
+              <span className="text-xs text-muted-foreground">Mais</span>
+            </div>
+          </div>
+        )}
+      </ChartCard>
 
-        {/* Volume by muscle */}
-        <ChartCard title="Volume por Músculo (kg × reps)">
+      {/* Radar + Donut */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Radar — muscle balance */}
+        <ChartCard title="Equilíbrio Muscular">
           {isLoading ? (
             <ChartSkeleton />
           ) : !metrics?.volumeByMuscle.length ? (
             <EmptyState message="Sem dados de volume ainda." />
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={metrics.volumeByMuscle} layout="vertical" barSize={14}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
-                <YAxis dataKey="muscle" type="category" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} width={72} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,255,255,0.03)" }} formatter={(v) => [`${v} kg·rep`, "Volume"]} />
-                <Bar dataKey="volume" name="Volume" fill="#60A5FA" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartContainer config={radarChartConfig} className="h-65 w-full">
+              <RadarChart
+                data={metrics.volumeByMuscle}
+                margin={{ top: 10, right: 20, bottom: 10, left: 20 }}
+              >
+                <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                <PolarAngleAxis dataKey="muscle" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                <Radar
+                  dataKey="volume"
+                  stroke="#60A5FA"
+                  fill="#60A5FA"
+                  fillOpacity={0.25}
+                  strokeWidth={2}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(v) => [`${Number(v).toLocaleString("pt-BR")} kg·rep`, "Volume"]}
+                    />
+                  }
+                />
+              </RadarChart>
+            </ChartContainer>
+          )}
+        </ChartCard>
+
+        {/* Donut — stimulus distribution */}
+        <ChartCard title="Distribuição de Estímulo">
+          {isLoading ? (
+            <ChartSkeleton />
+          ) : !metrics?.stimulus.length ? (
+            <EmptyState message="Nenhuma série registrada ainda." />
+          ) : (
+            <div className="flex items-center gap-6 h-65">
+              <ResponsiveContainer width="55%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={metrics.stimulus}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="55%"
+                    outerRadius="80%"
+                    paddingAngle={3}
+                    strokeWidth={0}
+                  >
+                    {metrics.stimulus.map((s, i) => (
+                      <Cell key={s.name} fill={STIMULUS_COLORS[i % STIMULUS_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`, ""]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-4 flex-1">
+                {metrics.stimulus.map((s, i) => (
+                  <div key={s.name} className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: STIMULUS_COLORS[i % STIMULUS_COLORS.length] }}
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-foreground">{s.name}</span>
+                        <span
+                          className="text-sm font-bold"
+                          style={{ color: STIMULUS_COLORS[i % STIMULUS_COLORS.length] }}
+                        >
+                          {s.value}%
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {s.name === "Força" && "≤ 6 reps"}
+                        {s.name === "Hipertrofia" && "7–12 reps"}
+                        {s.name === "Resistência" && "≥ 13 reps"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </ChartCard>
       </div>
 
-      {/* Stimulus distribution */}
-      {!isLoading && metrics?.stimulus && metrics.stimulus.length > 0 && (
-        <ChartCard title="Distribuição de Estímulo (por séries)">
-          <div className="flex items-center gap-6">
-            {metrics.stimulus.map((s) => (
-              <div key={s.name} className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">{s.name}</span>
-                  <span className="text-sm font-bold text-foreground">{s.value}%</span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${s.value}%`, backgroundColor: s.color }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {s.name === "Força" && "≤ 6 reps"}
-                  {s.name === "Hipertrofia" && "7–12 reps"}
-                  {s.name === "Resistência" && "≥ 13 reps"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </ChartCard>
-      )}
-
-      {/* Load evolution */}
-      <ChartCard title="Evolução de Carga por Exercício">
-        {exercises.length > 0 && (
-          <div className="mb-4">
-            <select
-              value={activeExercise ?? ""}
-              onChange={(e) => setSelectedExercise(e.target.value || null)}
-              className="bg-background border border-white/10 text-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {exercises.map((ex) => (
-                <option key={ex.id} value={ex.id}>
-                  {ex.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        {loadLoading ? (
-          <ChartSkeleton />
-        ) : !loadHistory.length ? (
-          <EmptyState message="Nenhum histórico de carga disponível." />
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={loadHistory}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} unit="kg" />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v} kg`, "Carga máx."]} />
-              <Line
-                type="monotone"
-                dataKey="weight"
-                name="Carga máx."
-                stroke="#CCFF00"
-                strokeWidth={2}
-                dot={{ fill: "#CCFF00", r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </ChartCard>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="h-48 flex items-center justify-center">
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <LoadEvolutionChart studentId={studentId} />
     </div>
   );
 }
@@ -260,7 +449,12 @@ export default function StudentMetricsPage() {
           className="text-sm text-muted-foreground hover:text-foreground mb-3 flex items-center gap-1 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Voltar
         </button>

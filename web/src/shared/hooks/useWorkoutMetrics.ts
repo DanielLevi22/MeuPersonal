@@ -47,6 +47,11 @@ export interface StimulusItem {
   color: string;
 }
 
+export interface DailyCount {
+  date: string;
+  count: number;
+}
+
 export interface WorkoutMetrics {
   totalSessions: number;
   totalVolume: number;
@@ -54,6 +59,7 @@ export interface WorkoutMetrics {
   weeklyFrequency: WeeklyFrequency[];
   volumeByMuscle: MuscleVolume[];
   stimulus: StimulusItem[];
+  dailyFrequency: DailyCount[];
 }
 
 export interface ExerciseOption {
@@ -82,6 +88,7 @@ const EMPTY: WorkoutMetrics = {
   weeklyFrequency: [],
   volumeByMuscle: [],
   stimulus: [],
+  dailyFrequency: [],
 };
 
 // ── Core fetch ───────────────────────────────────────────────────────────────
@@ -112,7 +119,10 @@ async function fetchWorkoutMetrics(studentId: string, since: Date): Promise<Work
 
   const [{ data: exercises }, sessionExerciseData] = await Promise.all([
     exerciseIds.size > 0
-      ? supabase.from("exercises").select("id, name, muscle_group").in("id", [...exerciseIds])
+      ? supabase
+          .from("exercises")
+          .select("id, name, muscle_group")
+          .in("id", [...exerciseIds])
       : Promise.resolve({ data: [] as ExerciseRow[] }),
     Promise.resolve((sessionExercises ?? []) as SessionExerciseRow[]),
   ]);
@@ -143,6 +153,7 @@ async function fetchWorkoutMetrics(studentId: string, since: Date): Promise<Work
 
   // Aggregate
   const weekFreqMap = new Map<string, number>();
+  const dayFreqMap = new Map<string, number>();
   const muscleVolumeMap: Record<string, number> = {};
   let totalVolume = 0;
   let strength = 0;
@@ -153,6 +164,9 @@ async function fetchWorkoutMetrics(studentId: string, since: Date): Promise<Work
   for (const session of sessions as SessionRow[]) {
     const week = weekLabel(session.completed_at);
     weekFreqMap.set(week, (weekFreqMap.get(week) ?? 0) + 1);
+
+    const day = session.completed_at.slice(0, 10);
+    dayFreqMap.set(day, (dayFreqMap.get(day) ?? 0) + 1);
 
     for (const ex of exercisesBySession.get(session.id) ?? []) {
       if (!ex.exercise_id) continue;
@@ -182,7 +196,11 @@ async function fetchWorkoutMetrics(studentId: string, since: Date): Promise<Work
     .slice(0, 7);
 
   const stimulus: StimulusItem[] = [
-    { name: "Força", value: totalSets ? Math.round((strength / totalSets) * 100) : 0, color: "#FACC15" },
+    {
+      name: "Força",
+      value: totalSets ? Math.round((strength / totalSets) * 100) : 0,
+      color: "#FACC15",
+    },
     {
       name: "Hipertrofia",
       value: totalSets ? Math.round((hypertrophy / totalSets) * 100) : 0,
@@ -195,6 +213,8 @@ async function fetchWorkoutMetrics(studentId: string, since: Date): Promise<Work
     },
   ].filter((s) => s.value > 0);
 
+  const dailyFrequency = [...dayFreqMap.entries()].map(([date, count]) => ({ date, count }));
+
   return {
     totalSessions: sessions.length,
     totalVolume: Math.round(totalVolume),
@@ -202,6 +222,7 @@ async function fetchWorkoutMetrics(studentId: string, since: Date): Promise<Work
     weeklyFrequency,
     volumeByMuscle,
     stimulus,
+    dailyFrequency,
   };
 }
 
@@ -282,7 +303,10 @@ export function useExerciseLoadHistory(studentId: string, exerciseId: string | n
         .eq("completed", true);
 
       const maxByExercise = new Map<string, number>();
-      for (const s of (sets ?? []) as { session_exercise_id: string; weight_actual: number | null }[]) {
+      for (const s of (sets ?? []) as {
+        session_exercise_id: string;
+        weight_actual: number | null;
+      }[]) {
         const cur = maxByExercise.get(s.session_exercise_id) ?? 0;
         maxByExercise.set(s.session_exercise_id, Math.max(cur, s.weight_actual ?? 0));
       }
