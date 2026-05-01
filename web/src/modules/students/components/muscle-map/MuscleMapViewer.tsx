@@ -47,14 +47,15 @@ function MuscleBody({
       const key = obj.name.toLowerCase();
       const entry = colorMap.get(key);
 
+      const opacity = entry ? entry.opacity : 1;
       const mat = new THREE.MeshStandardMaterial({
-        color: entry ? entry.color : new THREE.Color("#3f3f46"),
+        color: entry ? entry.color : new THREE.Color("#52525b"),
         emissive: entry ? entry.color : new THREE.Color("#000000"),
         emissiveIntensity: entry ? entry.emissiveIntensity : 0,
-        transparent: true,
-        opacity: entry ? entry.opacity : 0.35,
-        roughness: 0.7,
-        metalness: 0.1,
+        transparent: opacity < 1,
+        opacity,
+        roughness: 0.75,
+        metalness: 0.05,
       });
       obj.material = mat;
     });
@@ -83,9 +84,11 @@ function MuscleBody({
     });
   }
 
+  // Model is exported Z-up (Blender default) — rotate to Three.js Y-up
   return (
     <primitive
       object={clonedScene}
+      rotation={[-Math.PI / 2, 0, 0]}
       onPointerOver={handlePointerOver}
       onPointerOut={() => onHover(null)}
       onClick={(e: ThreeEvent<MouseEvent>) => {
@@ -247,14 +250,15 @@ export function MuscleMapViewer({ volumeByMuscle, onMuscleSelect }: MuscleMapVie
       {/* Canvas */}
       <div className="relative h-[600px] w-full">
         <Canvas
-          camera={{ position: [0, 1.2, 3], fov: 45 }}
+          camera={{ position: [0, -10, 110], fov: 50 }}
           gl={{ antialias: true, alpha: true }}
           style={{ background: "transparent" }}
         >
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[5, 10, 5]} intensity={1.2} castShadow />
-          <directionalLight position={[-5, 5, -5]} intensity={0.4} />
-          <hemisphereLight args={["#1a1a2e", "#09090b", 0.5]} />
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[30, 20, 80]} intensity={1.4} />
+          <directionalLight position={[-30, -5, 80]} intensity={0.5} />
+          <directionalLight position={[0, -10, -80]} intensity={0.3} />
+          <hemisphereLight args={["#1a1a2e", "#09090b", 0.4]} />
 
           <GLBBody
             colorMap={colorMap}
@@ -266,11 +270,9 @@ export function MuscleMapViewer({ volumeByMuscle, onMuscleSelect }: MuscleMapVie
 
           <OrbitControls
             enablePan={false}
-            minDistance={1.5}
-            maxDistance={5}
-            minPolarAngle={Math.PI * 0.1}
-            maxPolarAngle={Math.PI * 0.9}
-            target={[0, 1, 0]}
+            minDistance={20}
+            maxDistance={250}
+            target={[0, -10, 0]}
           />
         </Canvas>
 
