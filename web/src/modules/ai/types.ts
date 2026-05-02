@@ -1,3 +1,7 @@
+import type { PlanProposalData } from "./tools/studentCoachTools";
+
+export type { PlanProposalData };
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -71,6 +75,7 @@ export interface AiSessionState {
 export type SseEvent =
   | { type: "text"; content: string }
   | { type: "proposal"; data: PeriodizationProposal }
+  | { type: "plan_proposal"; data: PlanProposalData }
   | { type: "saved"; entity: "periodization"; id: string; name: string }
   | { type: "done" }
   | { type: "error"; message: string };
