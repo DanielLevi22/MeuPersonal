@@ -1,12 +1,12 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type { ToolDefinition } from "../providers/types";
 
-export const WORKOUT_TOOLS: Anthropic.Tool[] = [
+export const WORKOUT_TOOLS: ToolDefinition[] = [
   {
     name: "propose_periodization",
     description:
       "Apresenta uma proposta de periodização (macrociclo) para o especialista revisar. Use SOMENTE após ter discutido e concordado sobre: objetivo principal, duração total em semanas e as fases/mesociclos. NÃO inclua divisão de treino nem exercícios — isso vem depois.",
     input_schema: {
-      type: "object" as const,
+      type: "object",
       properties: {
         name: {
           type: "string",
@@ -49,7 +49,7 @@ export const WORKOUT_TOOLS: Anthropic.Tool[] = [
     description:
       "Salva a periodização no banco de dados após confirmação explícita do especialista. Use SOMENTE quando o especialista aprovar a proposta com palavras como 'ok', 'pode salvar', 'confirma', 'aprovado'.",
     input_schema: {
-      type: "object" as const,
+      type: "object",
       properties: {
         name: { type: "string" },
         goal: { type: "string" },
