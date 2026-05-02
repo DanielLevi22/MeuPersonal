@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { MUSCLE_MESH_MAP } from "@/modules/students/components/muscle-map/muscleMeshMap";
 import { useStudents } from "@/shared/hooks/useStudents";
 import { useWorkoutMetrics } from "@/shared/hooks/useWorkoutMetrics";
 
@@ -20,7 +21,7 @@ const MuscleMapViewer = dynamic(
 
 function CanvasSkeleton() {
   return (
-    <div className="bg-surface border border-white/10 rounded-xl h-[600px] flex items-center justify-center">
+    <div className="bg-surface border border-white/10 rounded-xl h-150 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3 text-muted-foreground">
         <div className="w-12 h-12 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
         <span className="text-sm">Carregando modelo 3D…</span>
@@ -37,65 +38,79 @@ const PERIODS = [
   { label: "365 dias", value: 365 },
 ] as const;
 
-// ── Top muscles panel ─────────────────────────────────────────────────────────
+// All muscle groups in display order
+const ALL_GROUPS = Object.keys(MUSCLE_MESH_MAP);
 
-interface TopMusclesPanelProps {
+// ── Full muscle group side panel ──────────────────────────────────────────────
+
+interface MuscleGroupPanelProps {
   volumeByMuscle: { muscle: string; volume: number }[];
   selectedMuscle: string | null;
   onSelect: (muscle: string | null) => void;
 }
 
-function TopMusclesPanel({ volumeByMuscle, selectedMuscle, onSelect }: TopMusclesPanelProps) {
+function MuscleGroupPanel({ volumeByMuscle, selectedMuscle, onSelect }: MuscleGroupPanelProps) {
   const total = volumeByMuscle.reduce((s, m) => s + m.volume, 0);
-  const top5 = volumeByMuscle.slice(0, 5);
+  const volumeMap = new Map(volumeByMuscle.map((m) => [m.muscle, m.volume]));
+
+  // Sort: groups with data first (descending volume), then the rest alphabetically
+  const sorted = [...ALL_GROUPS].sort((a, b) => {
+    const va = volumeMap.get(a) ?? -1;
+    const vb = volumeMap.get(b) ?? -1;
+    if (va !== vb) return vb - va;
+    return a.localeCompare(b, "pt-BR");
+  });
 
   return (
-    <div className="bg-surface border border-white/10 rounded-xl p-5 flex flex-col gap-4">
-      <h3 className="text-sm font-semibold text-foreground">Top músculos</h3>
-      {top5.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sem dados no período.</p>
-      ) : (
-        <ol className="flex flex-col gap-3">
-          {top5.map((m, i) => {
-            const pct = total > 0 ? Math.round((m.volume / total) * 100) : 0;
-            const isSelected = selectedMuscle === m.muscle;
-            return (
-              <li key={m.muscle}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(isSelected ? null : m.muscle)}
-                  className={`w-full text-left rounded-lg px-3 py-2.5 transition-colors ${
-                    isSelected
-                      ? "bg-primary/15 border border-primary/30"
-                      : "hover:bg-white/5 border border-transparent"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}.</span>
-                      <span
-                        className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}
-                      >
-                        {m.muscle}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{pct}%</span>
-                  </div>
-                  <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden ml-6">
+    <div className="bg-surface border border-white/10 rounded-xl p-5 flex flex-col gap-3">
+      <h3 className="text-sm font-semibold text-foreground">Grupos musculares</h3>
+
+      <ol className="flex flex-col gap-1">
+        {sorted.map((group) => {
+          const volume = volumeMap.get(group);
+          const pct = volume !== undefined && total > 0 ? Math.round((volume / total) * 100) : 0;
+          const hasData = volume !== undefined;
+          const isSelected = selectedMuscle === group;
+
+          return (
+            <li key={group}>
+              <button
+                type="button"
+                onClick={() => onSelect(isSelected ? null : group)}
+                className={`w-full text-left rounded-lg px-3 py-2 transition-colors ${
+                  isSelected
+                    ? "bg-primary/15 border border-primary/30"
+                    : "hover:bg-white/5 border border-transparent"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`text-sm font-medium ${
+                      isSelected
+                        ? "text-primary"
+                        : hasData
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {group}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{hasData ? `${pct}%` : "—"}</span>
+                </div>
+
+                {hasData && (
+                  <div className="w-full bg-white/5 rounded-full h-1 mt-1.5 overflow-hidden">
                     <div
                       className="bg-primary h-full rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 ml-6">
-                    {m.volume.toLocaleString("pt-BR")} kg·rep
-                  </p>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
 
       {selectedMuscle && (
         <button
@@ -191,9 +206,13 @@ export default function MuscleMapPage() {
 
       {/* Main layout: viewer + side panel */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
-        <MuscleMapViewer volumeByMuscle={volumeByMuscle} onMuscleSelect={setSelectedMuscle} />
+        <MuscleMapViewer
+          volumeByMuscle={volumeByMuscle}
+          selectedMuscle={selectedMuscle}
+          onMuscleSelect={setSelectedMuscle}
+        />
 
-        <TopMusclesPanel
+        <MuscleGroupPanel
           volumeByMuscle={volumeByMuscle}
           selectedMuscle={selectedMuscle}
           onSelect={setSelectedMuscle}
