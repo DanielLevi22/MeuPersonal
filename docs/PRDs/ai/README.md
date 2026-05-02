@@ -13,6 +13,12 @@ Todos os PRDs relacionados às funcionalidades de inteligência artificial da pl
 | [ai-pricing.md](ai-pricing.md) | draft | Planos Free / Starter / Pro, trial de 21 dias, gates de funcionalidade e ganchos de conversão |
 | [ai-specialist-engagement.md](ai-specialist-engagement.md) | draft | Alertas de risco de abandono, dashboard de carteira, vitrine de resultados, comunicação integrada |
 | [ai-marketplace.md](ai-marketplace.md) | draft | Marketplace de especialistas: discovery, perfil verificado, reviews reais, leads e monetização |
+| [ai-student-personalized-coach.md](ai-student-personalized-coach.md) | approved | **Índice**: Coach inteligente para aluno — dual-persona, análise visual, motor de explicabilidade, superfícies adaptativas |
+| [ai-student-coach-core.md](ai-student-coach-core.md) | approved | Fase 1: anamnese adaptativa (4 tracks), gate de perfil, modo expresso, `StudentCoachOrchestrator` |
+| [ai-student-coach-visual-analysis.md](ai-student-coach-visual-analysis.md) | approved | Fase 2+4: análise corporal (Sonnet+Vision), análise de refeição (Haiku+Vision) |
+| [ai-student-coach-explanation-engine.md](ai-student-coach-explanation-engine.md) | approved | Fase 3: modo analítico, motor de explicabilidade, Explanation Cards |
+| [ai-student-coach-adaptive-surfaces.md](ai-student-coach-adaptive-surfaces.md) | approved | Fase 5: botões contextuais, card ganho/perda, ProgressionCard, notificações, checkpoints |
+| [ai-orchestration-architecture.md](ai-orchestration-architecture.md) | draft | Arquitetura técnica: AIProvider, BaseOrchestrator, context loaders |
 
 ---
 
