@@ -286,6 +286,36 @@ export default function StudentDetailsPage() {
           </p>
         </Link>
 
+        {/* Muscle Map Module */}
+        <Link
+          href={`/dashboard/students/${studentId}/muscle-map`}
+          className="group bg-surface border border-white/10 rounded-2xl p-6 hover:border-rose-500/50 transition-all hover:shadow-lg hover:shadow-rose-500/5"
+        >
+          <div className="flex items-start justify-between mb-6">
+            <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </div>
+            <span
+              className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground
+group-hover:bg-rose-500/10 group-hover:text-rose-400 transition-colors"
+            >
+              Ver Mapa 3D
+            </span>
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Mapa Muscular</h3>
+          <p className="text-muted-foreground">
+            Visualize o volume de treino em um modelo 3D interativo com intensidade por grupo
+            muscular.
+          </p>
+        </Link>
+
         {/* History Module */}
         <Link
           href={`/dashboard/students/${studentId}/history`}
