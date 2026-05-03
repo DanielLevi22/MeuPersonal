@@ -11,10 +11,12 @@ import { supabase } from '../../../lib/supabase';
 
 const authService = createAuthService(supabase);
 
-type Step = 'services' | 'personal_data';
+type AccountRole = 'specialist' | 'student';
+type Step = 'role' | 'services' | 'personal_data';
 
 export function RegisterScreen() {
-  const [step, setStep] = useState<Step>('services');
+  const [step, setStep] = useState<Step>('role');
+  const [role, setRole] = useState<AccountRole>('specialist');
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,6 +29,14 @@ export function RegisterScreen() {
     setSelectedServices((prev) =>
       prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]
     );
+  };
+
+  const handleRoleNext = () => {
+    if (role === 'specialist') {
+      setStep('services');
+    } else {
+      setStep('personal_data');
+    }
   };
 
   const handleServicesNext = () => {
@@ -53,21 +63,29 @@ export function RegisterScreen() {
 
     setLoading(true);
     try {
-      const { data, error } = await authService.signUpSpecialist({
-        email: email.trim().toLowerCase(),
-        password,
-        full_name: fullName.trim(),
-        service_types: selectedServices,
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error('Erro ao criar usuário');
+      if (role === 'student') {
+        const { data, error } = await authService.signUpStudent({
+          email: email.trim().toLowerCase(),
+          password,
+          full_name: fullName.trim(),
+        });
+        if (error) throw error;
+        if (!data.user) throw new Error('Erro ao criar usuário');
+      } else {
+        const { data, error } = await authService.signUpSpecialist({
+          email: email.trim().toLowerCase(),
+          password,
+          full_name: fullName.trim(),
+          service_types: selectedServices,
+        });
+        if (error) throw error;
+        if (!data.user) throw new Error('Erro ao criar usuário');
+      }
 
       router.replace('/(tabs)' as never);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : 'Erro desconhecido. Tente novamente.';
-      // Mensagem amigável para email já cadastrado
       if (message.toLowerCase().includes('already registered')) {
         Alert.alert('E-mail já cadastrado', 'Este e-mail já possui uma conta. Faça login.');
       } else {
@@ -76,6 +94,12 @@ export function RegisterScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const stepSubtitle: Record<Step, string> = {
+    role: 'Como você vai usar o Eleva Pro?',
+    services: 'Quais serviços você oferece?',
+    personal_data: 'Complete seu cadastro',
   };
 
   return (
@@ -94,11 +118,63 @@ export function RegisterScreen() {
             Criar Conta
           </Text>
           <Text className="text-base text-muted text-center leading-6 px-4">
-            {step === 'services' ? 'Quais serviços você oferece?' : 'Complete seu cadastro'}
+            {stepSubtitle[step]}
           </Text>
         </View>
 
-        {/* Step 1: Seleção de serviços */}
+        {/* Step 0: Seleção de role */}
+        {step === 'role' && (
+          <View className="flex-1">
+            <View className="gap-y-3 mb-6">
+              {[
+                {
+                  value: 'specialist' as AccountRole,
+                  label: 'Sou Especialista',
+                  sub: 'Personal trainer ou nutricionista',
+                  icon: 'barbell-outline' as const,
+                },
+                {
+                  value: 'student' as AccountRole,
+                  label: 'Sou Aluno',
+                  sub: 'Treino com coach IA personalizado',
+                  icon: 'flash-outline' as const,
+                },
+              ].map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setRole(opt.value)}
+                  className={`flex-row items-center gap-4 p-5 rounded-2xl border-2 ${
+                    role === opt.value
+                      ? 'border-primary bg-primary/10'
+                      : 'border-white/10 bg-white/5'
+                  }`}
+                >
+                  <View
+                    className={`w-12 h-12 rounded-xl items-center justify-center ${
+                      role === opt.value ? 'bg-primary/20' : 'bg-white/5'
+                    }`}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={24}
+                      color={role === opt.value ? '#A3E635' : '#71717a'}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-foreground font-bold text-base">{opt.label}</Text>
+                    <Text className="text-muted text-sm mt-0.5">{opt.sub}</Text>
+                  </View>
+                  {role === opt.value && (
+                    <Ionicons name="checkmark-circle" size={22} color="#A3E635" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Button label="Continuar" onPress={handleRoleNext} />
+          </View>
+        )}
+
+        {/* Step 1: Seleção de serviços (specialist only) */}
         {step === 'services' && (
           <View className="flex-1">
             <Text className="text-muted text-sm mb-6">
@@ -117,7 +193,15 @@ export function RegisterScreen() {
               onToggle={() => toggleService('nutrition_consulting')}
             />
 
-            <Button label="Continuar" onPress={handleServicesNext} className="mt-6" />
+            <View className="flex-row gap-3 mt-6">
+              <Button
+                label="Voltar"
+                onPress={() => setStep('role')}
+                variant="outline"
+                className="flex-1"
+              />
+              <Button label="Continuar" onPress={handleServicesNext} className="flex-1" />
+            </View>
           </View>
         )}
 
@@ -160,7 +244,7 @@ export function RegisterScreen() {
             <View className="flex-row gap-3">
               <Button
                 label="Voltar"
-                onPress={() => setStep('services')}
+                onPress={() => setStep(role === 'specialist' ? 'services' : 'role')}
                 variant="outline"
                 className="flex-1"
               />

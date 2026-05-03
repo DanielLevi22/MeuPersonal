@@ -87,7 +87,7 @@ export function useAnalytics() {
         .select("*", { count: "exact", head: true });
 
       const { count: totalDietPlansQuery } = await supabase
-        .from("nutrition_plans")
+        .from("diet_plans")
         .select("*", { count: "exact", head: true });
 
       const totalWorkouts = totalWorkoutsQuery || 0;

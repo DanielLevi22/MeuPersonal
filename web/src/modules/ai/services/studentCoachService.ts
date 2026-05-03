@@ -1,14 +1,11 @@
+import type { Json } from "@/lib/database.types";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { NutritionProposal, WorkoutProposal } from "../tools/studentCoachTools";
 
-export type CoachModule = "student_coach_express" | "student_coach_analytical";
-
-export async function getOrCreateStudentCoachSession(
-  studentId: string,
-  module: CoachModule,
-): Promise<string> {
+export async function getOrCreateStudentCoachSession(studentId: string): Promise<string> {
+  const module = "student_coach";
   const { data: existing } = await supabaseAdmin
-    .from("ai_chat_sessions" as never)
+    .from("ai_chat_sessions")
     .select("id")
     .eq("student_id", studentId)
     .is("specialist_id", null)
@@ -17,31 +14,35 @@ export async function getOrCreateStudentCoachSession(
     .limit(1)
     .maybeSingle();
 
-  if (existing) return (existing as { id: string }).id;
+  if (existing) return existing.id;
 
   const { data: created, error } = await supabaseAdmin
-    .from("ai_chat_sessions" as never)
+    .from("ai_chat_sessions")
     .insert({ student_id: studentId, specialist_id: null, module })
     .select("id")
     .single();
 
-  if (error || !created) throw new Error("Failed to create student coach session");
-  return (created as { id: string }).id;
+  if (error || !created) {
+    throw new Error(
+      `Failed to create student coach session for student ${studentId}: ${error?.message}`,
+    );
+  }
+  return created.id;
 }
 
 export async function getStudentSessionMessages(
   sessionId: string,
 ): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
   const { data } = await supabaseAdmin
-    .from("ai_chat_messages" as never)
+    .from("ai_chat_messages")
     .select("role, content")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true });
 
-  return ((data as unknown[]) ?? []).map((row: unknown) => {
-    const r = row as { role: string; content: string };
-    return { role: r.role as "user" | "assistant", content: r.content };
-  });
+  return (data ?? []).map((row) => ({
+    role: row.role as "user" | "assistant",
+    content: row.content,
+  }));
 }
 
 export async function saveStudentMessage(
@@ -51,18 +52,15 @@ export async function saveStudentMessage(
   metadata?: Record<string, unknown>,
 ): Promise<void> {
   await supabaseAdmin
-    .from("ai_chat_messages" as never)
-    .insert({ session_id: sessionId, role, content, metadata: metadata ?? {} });
+    .from("ai_chat_messages")
+    .insert({ session_id: sessionId, role, content, metadata: (metadata ?? {}) as Json });
 }
 
 export async function saveCoachMode(
   studentId: string,
   mode: "express" | "analytical",
 ): Promise<void> {
-  await supabaseAdmin
-    .from("profiles" as never)
-    .update({ coach_mode: mode } as never)
-    .eq("id", studentId);
+  await supabaseAdmin.from("profiles").update({ coach_mode: mode }).eq("id", studentId);
 }
 
 export async function saveStudentCoachPlan(
@@ -71,47 +69,46 @@ export async function saveStudentCoachPlan(
   nutrition: NutritionProposal,
 ): Promise<string> {
   const { data: period, error: periodError } = await supabaseAdmin
-    .from("training_periodizations" as never)
+    .from("training_periodizations")
     .insert({
       student_id: studentId,
       specialist_id: null,
       name: workout.split_name,
-      goal: workout.goal,
+      objective: workout.goal,
       duration_weeks: workout.duration_weeks,
       level: workout.level,
       status: "active",
-    } as never)
+    })
     .select("id")
     .single();
 
-  if (periodError || !period)
-    throw new Error(`Failed to save student plan: ${periodError?.message}`);
-
-  const periodId = (period as { id: string }).id;
+  if (periodError || !period) {
+    throw new Error(
+      `Failed to save student plan for student ${studentId}: ${periodError?.message}`,
+    );
+  }
 
   const phaseRows = workout.days.map((day) => ({
-    periodization_id: periodId,
-    student_id: studentId,
-    specialist_id: null,
+    periodization_id: period.id,
     name: day.day_label,
     duration_weeks: 1,
     focus: day.muscle_groups.join(", "),
   }));
 
-  const { error: phaseError } = await supabaseAdmin
-    .from("training_plans" as never)
-    .insert(phaseRows as never[]);
+  const { error: phaseError } = await supabaseAdmin.from("training_plans").insert(phaseRows);
 
-  if (phaseError) throw new Error(`Failed to save plan days: ${phaseError.message}`);
+  if (phaseError) {
+    throw new Error(`Failed to save plan days for student ${studentId}: ${phaseError.message}`);
+  }
 
-  // Nutrition summary stored as session state — no separate table needed in Phase 1
+  // Nutrition summary stored in session state — no separate table in Phase 1
   await supabaseAdmin
-    .from("ai_chat_sessions" as never)
+    .from("ai_chat_sessions")
     .update({
-      state: { nutrition_plan: nutrition, saved_periodization_id: periodId },
-    } as never)
-    .eq("student_id" as never, studentId as never)
-    .is("specialist_id" as never, null as never);
+      state: { nutrition_plan: nutrition, saved_periodization_id: period.id } as unknown as Json,
+    })
+    .eq("student_id", studentId)
+    .is("specialist_id", null);
 
-  return periodId;
+  return period.id;
 }

@@ -39,9 +39,7 @@ export function useStudentCoach() {
       .then((r) => r.json())
       .then((data: SessionInfo) => {
         setSessionInfo(data);
-        if (data.messageCount > 0) {
-          setCoachStarted(true);
-        }
+        if (data.messageCount > 0) setCoachStarted(true);
       })
       .catch(() => {})
       .finally(() => setInitializing(false));
@@ -55,23 +53,21 @@ export function useStudentCoach() {
       setInput("");
       setPlanCard(null);
 
-      const userMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: msg,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-
       const assistantId = crypto.randomUUID();
       setMessages((prev) => [
         ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: msg,
+          createdAt: new Date().toISOString(),
+        },
         { id: assistantId, role: "assistant", content: "", createdAt: new Date().toISOString() },
       ]);
-      setLoading(true);
 
+      setLoading(true);
       try {
-        const response = await fetch("/api/ai/student/coach/message", {
+        const res = await fetch("/api/ai/student/coach/message", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -79,49 +75,48 @@ export function useStudentCoach() {
           },
           body: JSON.stringify({ message: msg }),
         });
-
-        if (!response.body) return;
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const event: SseEvent = JSON.parse(line.slice(6));
-
-              if (event.type === "text") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, content: m.content + event.content } : m,
-                  ),
-                );
-              } else if (event.type === "plan_proposal") {
-                setPlanCard({ data: event.data });
-              } else if (event.type === "error") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, content: `Erro: ${event.message}` } : m,
-                  ),
-                );
-              }
-            } catch {
-              // malformed SSE chunk — skip
-            }
-          }
-        }
+        if (res.body) await readSseStream(res.body);
       } finally {
         setLoading(false);
         inputRef.current?.focus();
+      }
+
+      function applySseLine(line: string) {
+        if (!line.startsWith("data: ")) return;
+        try {
+          const event: SseEvent = JSON.parse(line.slice(6));
+          if (event.type === "text") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: m.content + event.content } : m,
+              ),
+            );
+          } else if (event.type === "plan_proposal") {
+            setPlanCard({ data: event.data });
+          } else if (event.type === "error") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: `Erro: ${event.message}` } : m,
+              ),
+            );
+          }
+        } catch {
+          // malformed SSE chunk — skip
+        }
+      }
+
+      async function readSseStream(body: ReadableStream<Uint8Array>) {
+        const reader = body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) applySseLine(line);
+        }
       }
     },
     [input, loading, session?.access_token],

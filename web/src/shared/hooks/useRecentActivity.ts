@@ -54,13 +54,13 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
   // Fetch new students (last 7 days)
   const { data: newStudents } = await supabase
-    .from("coachings")
+    .from("student_specialists")
     .select(`
       id,
       created_at,
-      profiles!client_id(full_name)
+      profiles!student_id(full_name)
     `)
-    .eq("professional_id", user.id)
+    .eq("specialist_id", user.id)
     .gte("created_at", oneWeekAgo.toISOString())
     .order("created_at", { ascending: false })
     .limit(3);
@@ -85,13 +85,13 @@ async function fetchRecentActivity(): Promise<Activity[]> {
 
   // Fetch new diet plans (last 7 days)
   const { data: dietPlans } = await supabase
-    .from("nutrition_plans")
+    .from("diet_plans")
     .select(`
       id,
       created_at,
       profiles!student_id(full_name)
     `)
-    .eq("professional_id", user.id)
+    .eq("specialist_id", user.id)
     .gte("created_at", oneWeekAgo.toISOString())
     .order("created_at", { ascending: false })
     .limit(3);

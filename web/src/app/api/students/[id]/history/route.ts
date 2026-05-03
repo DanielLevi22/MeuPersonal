@@ -64,7 +64,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       supabaseAdmin
         .from("physical_assessments")
-        .select("id, created_at, weight, height")
+        .select("id, created_at, weight_kg, height_cm")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false })
         .limit(50),
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     for (const a of assessmentsResult.data ?? []) {
-      const detail = a.weight ? `${a.weight} kg` : "Medidas registradas";
+      const detail = a.weight_kg ? `${a.weight_kg} kg` : "Medidas registradas";
       events.push({
         id: a.id,
         type: "physical_assessment",

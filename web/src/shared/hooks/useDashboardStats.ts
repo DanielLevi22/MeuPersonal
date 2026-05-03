@@ -19,9 +19,9 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
 
   // Get total students (active relationships)
   const { count: totalStudents } = await supabase
-    .from("coachings")
+    .from("student_specialists")
     .select("*", { count: "exact", head: true })
-    .eq("professional_id", user.id)
+    .eq("specialist_id", user.id)
     .eq("status", "active");
 
   // Get total workouts created by this personal
@@ -32,9 +32,9 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
 
   // Get active diet plans
   const { count: activeDiets } = await supabase
-    .from("nutrition_plans")
+    .from("diet_plans")
     .select("*", { count: "exact", head: true })
-    .eq("professional_id", user.id)
+    .eq("specialist_id", user.id)
     .eq("status", "active");
 
   // Get completed workouts this week

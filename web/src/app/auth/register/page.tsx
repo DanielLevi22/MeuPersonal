@@ -3,9 +3,11 @@
 import type { ServiceType } from "@elevapro/shared";
 import { supabase } from "@elevapro/supabase";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { useAuthStore } from "@/modules/auth";
+
+type AccountRole = "specialist" | "student";
 
 const SERVICE_OPTIONS: { value: ServiceType; label: string; description: string }[] = [
   {
@@ -20,10 +22,27 @@ const SERVICE_OPTIONS: { value: ServiceType; label: string; description: string 
   },
 ];
 
+function deriveInitialState(roleParam: string | null): {
+  role: AccountRole;
+  services: ServiceType[];
+} {
+  if (!roleParam) return { role: "specialist", services: [] };
+  if (roleParam === "student") return { role: "student", services: [] };
+  const services: ServiceType[] = [];
+  if (roleParam.includes("personal_trainer")) services.push("personal_training");
+  if (roleParam.includes("nutritionist")) services.push("nutrition_consulting");
+  return { role: "specialist", services };
+}
+
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get("role");
+  const fromRoleSelection = roleParam !== null;
 
-  const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
+  const initial = deriveInitialState(roleParam);
+  const [role, setRole] = useState<AccountRole>(initial.role);
+  const [selectedServices, setSelectedServices] = useState<ServiceType[]>(initial.services);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,10 +56,19 @@ export default function RegisterPage() {
     );
   };
 
+  const roleSummary = useMemo(() => {
+    if (role === "student") return { icon: "⚡", label: "Aluno", color: "accent" };
+    const parts: string[] = [];
+    if (selectedServices.includes("personal_training")) parts.push("💪 Personal Trainer");
+    if (selectedServices.includes("nutrition_consulting")) parts.push("🍎 Nutricionista");
+    return { icon: null, label: parts.join(" + ") || "Especialista", color: "primary" };
+  }, [role, selectedServices]);
+
   const validate = (): string | null => {
     if (!fullName.trim() || fullName.trim().length < 2) return "Digite seu nome completo";
     if (!email.trim()) return "Digite seu e-mail";
-    if (selectedServices.length === 0) return "Selecione pelo menos um serviço";
+    if (role === "specialist" && selectedServices.length === 0)
+      return "Selecione pelo menos um serviço";
     if (password.length < 8) return "A senha deve ter no mínimo 8 caracteres";
     if (password !== confirmPassword) return "As senhas não coincidem";
     return null;
@@ -58,28 +86,33 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const endpoint = role === "student" ? "/api/auth/register/student" : "/api/auth/register";
+
+      const body =
+        role === "student"
+          ? { email: email.trim().toLowerCase(), password, full_name: fullName.trim() }
+          : {
+              email: email.trim().toLowerCase(),
+              password,
+              full_name: fullName.trim(),
+              service_types: selectedServices,
+            };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          full_name: fullName.trim(),
-          service_types: selectedServices,
-        }),
+        body: JSON.stringify(body),
       });
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Erro ao criar conta");
 
-      // Sign in to get session (user was created server-side)
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
       if (signInError) throw signInError;
 
-      // Wait for auth store to finish loading profile
       await new Promise<void>((resolve) => {
         const timeout = setTimeout(resolve, 5000);
         const unsub = useAuthStore.subscribe((state) => {
@@ -91,10 +124,9 @@ export default function RegisterPage() {
         });
       });
 
-      router.push("/dashboard");
+      router.push(role === "student" ? "/dashboard/coach" : "/dashboard");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao criar conta";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Erro ao criar conta");
     } finally {
       setLoading(false);
     }
@@ -112,10 +144,106 @@ export default function RegisterPage() {
             <h1 className="text-3xl font-bold bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               Criar Conta
             </h1>
-            <p className="text-muted-foreground text-sm">Cadastro de profissional</p>
+            <p className="text-muted-foreground text-sm">Eleva Pro</p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleRegister}>
+          {/* Selected role badge — shown when coming from role-selection */}
+          {fromRoleSelection && (
+            <div
+              className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                roleSummary.color === "accent"
+                  ? "bg-accent/10 border-accent/30"
+                  : "bg-primary/10 border-primary/30"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">{roleSummary.label}</span>
+              </div>
+              <Link
+                href="/auth/role-selection"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+              >
+                Alterar
+              </Link>
+            </div>
+          )}
+
+          {/* Role selector — only shown when arriving directly, not from role-selection */}
+          {!fromRoleSelection && (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setRole("specialist")}
+                className={`flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-all ${
+                  role === "specialist"
+                    ? "border-primary bg-primary/10"
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+              >
+                <span className="text-sm font-semibold text-foreground">Sou Especialista</span>
+                <span className="text-xs text-muted-foreground">Personal / Nutricionista</span>
+                {role === "specialist" && (
+                  <div className="mt-1 pt-3 border-t border-white/10 flex flex-col gap-2 w-full">
+                    {SERVICE_OPTIONS.map((option) => {
+                      const selected = selectedServices.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleService(option.value);
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all ${
+                            selected
+                              ? "border-primary/60 bg-primary/15 text-foreground"
+                              : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20"
+                          }`}
+                        >
+                          <div
+                            className={`w-3.5 h-3.5 rounded border-2 shrink-0 flex items-center justify-center transition-colors ${
+                              selected ? "border-primary bg-primary" : "border-white/30"
+                            }`}
+                          >
+                            {selected && (
+                              <svg
+                                className="w-2 h-2 text-primary-foreground"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={3}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-xs font-medium">{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("student")}
+                className={`flex flex-col items-center gap-1 p-4 rounded-xl border-2 text-center transition-all ${
+                  role === "student"
+                    ? "border-primary bg-primary/10"
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+              >
+                <span className="text-sm font-semibold text-foreground">Sou Aluno</span>
+                <span className="text-xs text-muted-foreground">Acompanhe seu progresso</span>
+              </button>
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleRegister}>
             {error && (
               <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -123,121 +251,56 @@ export default function RegisterPage() {
             )}
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">
-                  Serviços oferecidos <span className="text-destructive">*</span>
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {SERVICE_OPTIONS.map((option) => {
-                    const selected = selectedServices.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => toggleService(option.value)}
-                        className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                          selected
-                            ? "border-primary bg-primary/10"
-                            : "border-white/10 bg-white/5 hover:border-white/20"
-                        }`}
-                      >
-                        <div
-                          className={`mt-0.5 w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors ${
-                            selected ? "border-primary bg-primary" : "border-white/30"
-                          }`}
-                        >
-                          {selected && (
-                            <svg
-                              className="w-2.5 h-2.5 text-primary-foreground"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={3}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{option.label}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {option.description}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
+              {[
+                {
+                  id: "fullName",
+                  label: "Nome Completo",
+                  type: "text",
+                  value: fullName,
+                  onChange: setFullName,
+                  placeholder: "Seu nome",
+                },
+                {
+                  id: "email",
+                  label: "E-mail",
+                  type: "email",
+                  value: email,
+                  onChange: setEmail,
+                  placeholder: "seu@email.com",
+                },
+                {
+                  id: "password",
+                  label: "Senha",
+                  type: "password",
+                  value: password,
+                  onChange: setPassword,
+                  placeholder: "Mínimo 8 caracteres",
+                },
+                {
+                  id: "confirmPassword",
+                  label: "Confirmar Senha",
+                  type: "password",
+                  value: confirmPassword,
+                  onChange: setConfirmPassword,
+                  placeholder: "Digite a senha novamente",
+                },
+              ].map((field) => (
+                <div key={field.id} className="space-y-2">
+                  <label htmlFor={field.id} className="block text-sm font-medium text-foreground">
+                    {field.label} <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    id={field.id}
+                    type={field.type}
+                    required
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    placeholder={field.placeholder}
+                    minLength={field.type === "password" ? 8 : undefined}
+                  />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
-                  Nome Completo <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  placeholder="Seu nome"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                  E-mail <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  placeholder="seu@email.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                  Senha <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  placeholder="Mínimo 8 caracteres"
-                  minLength={8}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-foreground"
-                >
-                  Confirmar Senha <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  placeholder="Digite a senha novamente"
-                  minLength={8}
-                />
-              </div>
+              ))}
             </div>
 
             <button

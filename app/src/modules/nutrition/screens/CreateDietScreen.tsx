@@ -115,14 +115,14 @@ export default function CreateDietScreen() {
     try {
       // 1. Fetch active students
       const { data: activeData, error: activeError } = await supabase
-        .from('coachings')
+        .from('student_specialists')
         .select(`
-          student:profiles!client_id (
+          student:profiles!student_id (
             id,
             full_name
           )
         `)
-        .eq('professional_id', user.id)
+        .eq('specialist_id', user.id)
         .eq('status', 'active');
 
       // 2. Fetch pending students
