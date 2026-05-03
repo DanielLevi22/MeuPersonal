@@ -54,6 +54,8 @@ export default function LoginPage() {
 
       if (accountType === "admin") {
         router.push("/admin");
+      } else if (accountType === "student") {
+        router.push("/dashboard/coach");
       } else {
         router.push("/dashboard");
       }

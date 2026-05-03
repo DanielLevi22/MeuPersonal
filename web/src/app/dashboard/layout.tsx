@@ -10,12 +10,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { user, abilities, services, isLoading } = useAuth();
+  const accountType = useAuthStore((s) => s.accountType);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/auth/login");
+      return;
     }
-  }, [user, isLoading, router]);
+    // Students only access /dashboard/coach — redirect everything else
+    if (
+      !isLoading &&
+      user &&
+      accountType === "student" &&
+      !pathname.startsWith("/dashboard/coach")
+    ) {
+      router.replace("/dashboard/coach");
+    }
+  }, [user, isLoading, router, accountType, pathname]);
 
   const handleLogout = async () => {
     const { signOut } = useAuthStore.getState();
@@ -36,89 +47,109 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const canManageWorkouts = abilities?.can("manage", "Workout");
-  const canManageDiet = abilities?.can("manage", "Diet");
+  const isStudent = accountType === "student";
+  const canManageWorkouts = !isStudent && abilities?.can("manage", "Workout");
+  const canManageDiet = !isStudent && abilities?.can("manage", "Diet");
 
-  const navItems = [
+  const studentNavItems = [
     {
-      href: "/dashboard",
-      label: "Dashboard",
+      href: "/dashboard/coach",
+      label: "Coach IA",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+            d="M13 10V3L4 14h7v7l9-11h-7z"
           />
         </svg>
       ),
     },
-    ...(canManageWorkouts
-      ? [
-          {
-            href: "/dashboard/students",
-            label: "Alunos",
-            icon: (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-            ),
-          },
-          {
-            href: "/dashboard/workouts",
-            label: "Treinos",
-            icon: (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            ),
-          },
-        ]
-      : []),
-    ...(canManageDiet
-      ? [
-          {
-            href: "/dashboard/nutrition",
-            label: "Nutrição",
-            icon: (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            ),
-          },
-          {
-            href: "/dashboard/diets",
-            label: "Dietas",
-            icon: (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-                />
-              </svg>
-            ),
-          },
-        ]
-      : []),
   ];
+
+  const navItems = isStudent
+    ? studentNavItems
+    : [
+        {
+          href: "/dashboard",
+          label: "Dashboard",
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+              />
+            </svg>
+          ),
+        },
+        ...(canManageWorkouts
+          ? [
+              {
+                href: "/dashboard/students",
+                label: "Alunos",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                ),
+              },
+              {
+                href: "/dashboard/workouts",
+                label: "Treinos",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                ),
+              },
+            ]
+          : []),
+        ...(canManageDiet
+          ? [
+              {
+                href: "/dashboard/nutrition",
+                label: "Nutrição",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                ),
+              },
+              {
+                href: "/dashboard/diets",
+                label: "Dietas",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+                    />
+                  </svg>
+                ),
+              },
+            ]
+          : []),
+      ];
 
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-400 font-sans selection:bg-primary/30 selection:text-white">
@@ -142,20 +173,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </p>
             </div>
 
-            {/* Services Context */}
+            {/* Services Context — specialist only */}
             <div className="mt-8 flex flex-wrap gap-1.5">
-              {services.map((service) => (
-                <span
-                  key={service}
-                  className="px-2.5 py-1 bg-white/5 border border-white/5 rounded-lg text-[9px] font-black text-zinc-400 uppercase tracking-widest"
-                >
-                  {service === "nutrition"
-                    ? "🍎 Nutri"
-                    : service === "personal_training"
-                      ? "⚡ PT"
-                      : service}
+              {isStudent && (
+                <span className="px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-lg text-[9px] font-black text-primary uppercase tracking-widest">
+                  ⚡ Aluno
                 </span>
-              ))}
+              )}
+              {!isStudent &&
+                services.map((service) => (
+                  <span
+                    key={service}
+                    className="px-2.5 py-1 bg-white/5 border border-white/5 rounded-lg text-[9px] font-black text-zinc-400 uppercase tracking-widest"
+                  >
+                    {service === "nutrition"
+                      ? "🍎 Nutri"
+                      : service === "personal_training"
+                        ? "⚡ PT"
+                        : service}
+                  </span>
+                ))}
             </div>
           </div>
 
