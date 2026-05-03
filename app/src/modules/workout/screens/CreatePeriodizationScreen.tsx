@@ -62,14 +62,14 @@ export default function CreatePeriodizationScreen() {
     try {
       // Fetch all students linked to this professional
       const { data: studentsData, error: studentsError } = await supabase
-        .from('coachings')
+        .from('student_specialists')
         .select(`
-          student:profiles!client_id (
+          student:profiles!student_id (
             id,
             full_name
           )
         `)
-        .eq('professional_id', user.id)
+        .eq('specialist_id', user.id)
         .eq('status', 'active');
 
       console.log('Students data:', studentsData);

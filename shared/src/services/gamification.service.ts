@@ -67,7 +67,10 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
   calculateDailyGoals: async (studentId: string, date: string): Promise<void> => {
     const { error } = await supabase
       .from("daily_goals")
-      .upsert({ student_id: studentId, date }, { onConflict: "student_id,date", ignoreDuplicates: true });
+      .upsert(
+        { student_id: studentId, date },
+        { onConflict: "student_id,date", ignoreDuplicates: true },
+      );
     if (error) throw error;
   },
 
@@ -95,9 +98,9 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
   ): Promise<LeaderboardEntry[]> => {
     if (scope === "my_students" && specialistId) {
       const { data: linkedData, error: linkError } = await supabase
-        .from("coachings")
-        .select(`client_id, student:profiles!client_id (id, full_name, avatar_url, phone)`)
-        .eq("professional_id", specialistId)
+        .from("student_specialists")
+        .select(`student_id, student:profiles!student_id (id, full_name, avatar_url, phone)`)
+        .eq("specialist_id", specialistId)
         .eq("status", "active");
       if (linkError) throw linkError;
       if (!linkedData || linkedData.length === 0) return [];
