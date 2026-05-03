@@ -188,7 +188,7 @@ describe("saveStudentCoachPlan", () => {
         student_id: "student-1",
         specialist_id: null,
         name: "Push Pull Legs",
-        goal: "Hipertrofia",
+        objective: "Hipertrofia",
         duration_weeks: 8,
         status: "active",
       }),

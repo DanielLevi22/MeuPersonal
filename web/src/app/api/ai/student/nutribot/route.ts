@@ -23,7 +23,7 @@ async function getStudentId(request: NextRequest): Promise<string | null> {
 async function loadDietContext(studentId: string): Promise<string> {
   const { data: plans } = await supabaseAdmin
     .from("diet_plans")
-    .select("id, name, daily_calories, protein_target, carbs_target, fat_target")
+    .select("id, name, target_calories, target_protein, target_carbs, target_fat")
     .eq("student_id", studentId)
     .eq("status", "active")
     .limit(1)
@@ -42,11 +42,11 @@ async function loadDietContext(studentId: string): Promise<string> {
   const mealIds = meals.map((m) => m.id);
   const { data: items } = await supabaseAdmin
     .from("diet_meal_items")
-    .select("meal_id, quantity, unit, food:foods(name, calories, protein, carbs, fat)")
-    .in("meal_id", mealIds);
+    .select("diet_meal_id, quantity, unit, food:foods(name, calories, protein, carbs, fat)")
+    .in("diet_meal_id", mealIds);
 
   const mealSummaries = meals.map((meal) => {
-    const mealItems = items?.filter((i) => i.meal_id === meal.id) ?? [];
+    const mealItems = items?.filter((i) => i.diet_meal_id === meal.id) ?? [];
     const itemLines = mealItems
       .map((i) => {
         const food = i.food as unknown as { name: string } | null;
@@ -56,7 +56,7 @@ async function loadDietContext(studentId: string): Promise<string> {
     return `${meal.name} (${meal.meal_time}):\n${itemLines || "  - sem alimentos"}`;
   });
 
-  return `Plano: "${plans.name}" | ${plans.daily_calories}kcal | P:${plans.protein_target}g C:${plans.carbs_target}g G:${plans.fat_target}g\n\n${mealSummaries.join("\n\n")}`;
+  return `Plano: "${plans.name}" | ${plans.target_calories}kcal | P:${plans.target_protein}g C:${plans.target_carbs}g G:${plans.target_fat}g\n\n${mealSummaries.join("\n\n")}`;
 }
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
