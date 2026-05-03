@@ -1,6 +1,6 @@
 # Status dos Módulos — MeuPersonal
 
-> **Atualizado em:** 2026-04-18 (shared-gamification-service)
+> **Atualizado em:** 2026-05-03 (feature/auth-student-registration)
 > **Regra:** atualizar ao fechar cada PR. Nenhuma feature é `done` sem este arquivo atualizado.
 
 ---
@@ -27,9 +27,10 @@
 | **Students** | ✅ | ⚠️ parcial | 🔄 pendente | ⚠️ parcial | ⚠️ parcial |
 | **Assessment** | N/A | ✅ | 🔄 pendente | N/A | ⚠️ parcial |
 | **Gamification** | ⚠️ parcial | ✅ | ✅ | ❌ | ❌ |
-| **AI / Agentes** | ❌ | ❌ | ⚠️ draft (blueprint) | ❌ | ❌ |
+| **AI / Agentes** | ⚠️ student coach (web) | ❌ | ⚠️ draft (blueprint) | ⚠️ parcial (service + readiness) | ❌ |
 | **Packages / Shared** | ✅ centralizado (students + auth + workouts + nutrition + gamification) | ✅ centralizado (students + auth + workouts + nutrition + gamification) | ✅ | N/A | N/A |
 | **Database Schema** | ✅ | ✅ | ✅ | N/A | N/A |
+| **Database Types** | ✅ gerado (`database.types.ts`) | ✅ | ✅ | N/A | N/A |
 
 ---
 
@@ -46,8 +47,8 @@
 | [shared-nutrition-service](PRDs/shared-nutrition-service.md) | Serviço centralizado nutrition em shared/ | ✅ done | `feature/shared-nutrition-service` |
 | [shared-gamification-service](PRDs/shared-gamification-service.md) | Serviço centralizado gamification em shared/ | ✅ done | `feature/shared-gamification-service` |
 | [3d-muscle-map](PRDs/3d-muscle-map.md) | Mapa muscular 3D interativo com volume de treino | ⚠️ in-progress | `feature/3d-muscle-map` |
-| [ai-student-personalized-coach](PRDs/ai/ai-student-personalized-coach.md) | Coach IA para aluno: dual-persona, análise visual, motor de explicabilidade | approved | — |
-| [local-dev-environment](PRDs/local-dev-environment.md) | 3 ambientes: Local→Preview→Production | draft | — |
+| [ai-student-personalized-coach](PRDs/ai/ai-student-personalized-coach.md) | Coach IA para aluno: dual-persona, análise visual, motor de explicabilidade | ⚠️ in-progress | `feature/auth-student-registration` |
+| [local-dev-environment](PRDs/local-dev-environment.md) | 3 ambientes: Local→Preview→Production | ✅ done | — |
 | [social-and-engagement](PRDs/social-and-engagement.md) | Comunidade, ranking, chat, notificações | draft | — |
 
 > Adicionar linha aqui ao criar um novo PRD via `node scripts/new-feature.js`.
@@ -60,9 +61,10 @@
 |---|-----------|------------|-----------------|
 | 1 | `packages/core` e `packages/supabase` duplicados em web e app — já divergiram (students, auth, workouts, nutrition e gamification centralizados) | 🟡 Média | [ADR-002](decisions/002-flat-monorepo.md) |
 | 2 | Specs técnicas dos módulos implementados pendentes (auth, workouts, students) | 🟡 Média | — |
-| 3 | Separação de ambientes Supabase (dev/preview/prod) pendente — dev e prod no mesmo projeto | 🔴 Alta | — |
-| 4 | Testes de cobertura insuficientes em todos os módulos | 🟡 Média | — |
-| 5 | Código mobile/web ainda referencia tabelas antigas (meals, nutrition_plans, coachings) — precisa ser atualizado para o novo schema | 🔴 Alta | — |
+| 3 | ~~Separação de ambientes Supabase (dev/preview/prod)~~ — **resolvido** (ambientes separados) | ✅ | — |
+| 4 | Testes de cobertura insuficientes em todos os módulos (AI module iniciado) | 🟡 Média | — |
+| 5 | ~~Código mobile/web referenciando tabelas antigas~~ — **resolvido** (`student_specialists`, `diet_plans`, `diet_meals`) | ✅ | — |
+| 6 | `assessment` module usa `as unknown as AssessmentInsert` — field mapping com nomes legados | 🟡 Média | — |
 
 ---
 
@@ -70,9 +72,10 @@
 
 > Mover para `docs/PRDs/` ao iniciar. Não começar sem PRD aprovado.
 
-1. **Criar projetos Supabase Preview + Production** e aplicar as 3 migrations (`local-dev-environment`)
-2. **Atualizar código** para usar novo schema (diet_plans, diet_meals, student_professionals...)
-3. Migração de packages para `/packages/` na raiz (ADR-002)
-4. Spec técnica de Nutrição (`docs/features/nutrition.md`)
-5. Spec técnica de Workouts (`docs/features/workouts.md`)
-6. AI: primeiro agente — nutrição via Next.js BFF (ADR-001)
+1. ~~Criar projetos Supabase Preview + Production~~ — **feito**
+2. ~~Atualizar código para usar novo schema~~ — **feito** (diet_plans, diet_meals, student_specialists)
+3. Fechar PR `feature/auth-student-registration` (auth fix + AI student coach + type safety)
+4. Migração de packages para `/packages/` na raiz (ADR-002)
+5. Spec técnica de Auth (`docs/features/auth.md`)
+6. Spec técnica de Workouts (`docs/features/workouts.md`)
+7. AI student coach: fase 2 (mobile + spec técnica)
