@@ -110,11 +110,9 @@ export function useCreateDietPlan() {
         if (ability.cannot("create", "Diet"))
           throw new Error("Você não tem permissão para criar dietas");
       }
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-      return nutritionService.createDietPlan({ ...plan, specialist_id: user.id });
+      // specialist sets their own id; member leaves specialist_id null (self-owned plan)
+      const specialistId = currentUser?.accountType === "specialist" ? currentUser.id : null;
+      return nutritionService.createDietPlan({ ...plan, specialist_id: specialistId });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["diet_plans"] }),
   });

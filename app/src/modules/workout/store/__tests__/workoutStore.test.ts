@@ -109,6 +109,7 @@ describe('workoutStore', () => {
           training_plan_id: 'tp1',
           title: 'W1',
           specialist_id: 'spec1',
+          student_id: null,
           created_at: '',
           updated_at: '',
           description: null,

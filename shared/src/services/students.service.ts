@@ -98,7 +98,11 @@ export const createStudentsService = (supabase: SupabaseClient) => ({
   },
 
   generateLinkCode: async (studentId: string): Promise<string> => {
-    await supabase.from("student_link_codes").delete().eq("student_id", studentId);
+    const { error: deleteError } = await supabase
+      .from("student_link_codes")
+      .delete()
+      .eq("student_id", studentId);
+    if (deleteError) throw deleteError;
 
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -174,6 +178,30 @@ export const createStudentsService = (supabase: SupabaseClient) => ({
       .eq("specialist_id", specialistId)
       .eq("student_id", studentId)
       .eq("service_type", serviceType)
+      .eq("status", "active");
+
+    if (error) throw error;
+  },
+
+  fetchStudentLinks: async (studentId: string) => {
+    const { data, error } = await supabase
+      .from("student_specialists")
+      .select(
+        "id, specialist_id, service_type, status, created_at, profiles!specialist_id(full_name)",
+      )
+      .eq("student_id", studentId)
+      .eq("status", "active");
+
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  endStudentLink: async (linkId: string, studentId: string): Promise<void> => {
+    const { error } = await supabase
+      .from("student_specialists")
+      .update({ status: "inactive", ended_by: studentId, ended_at: new Date().toISOString() })
+      .eq("id", linkId)
+      .eq("student_id", studentId)
       .eq("status", "active");
 
     if (error) throw error;

@@ -91,7 +91,8 @@ export const createWorkoutsService = (supabase: SupabaseClient) => ({
     const { data, error } = await supabase
       .from("workouts")
       .insert({
-        specialist_id: input.specialist_id,
+        specialist_id: input.specialist_id ?? null,
+        student_id: input.student_id ?? null,
         training_plan_id: input.training_plan_id ?? null,
         title: input.title,
         description: input.description ?? null,

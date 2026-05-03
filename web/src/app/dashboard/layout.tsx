@@ -17,14 +17,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/auth/login");
       return;
     }
-    // Students only access /dashboard/coach — redirect everything else
+    // Students and members only access /dashboard/student — redirect everything else
     if (
       !isLoading &&
       user &&
-      accountType === "student" &&
-      !pathname.startsWith("/dashboard/coach")
+      (accountType === "student" || accountType === "member") &&
+      !pathname.startsWith("/dashboard/student")
     ) {
-      router.replace("/dashboard/coach");
+      router.replace("/dashboard/student");
     }
   }, [user, isLoading, router, accountType, pathname]);
 
@@ -47,14 +47,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const isStudent = accountType === "student";
-  const canManageWorkouts = !isStudent && abilities?.can("manage", "Workout");
-  const canManageDiet = !isStudent && abilities?.can("manage", "Diet");
+  const isStudentOrMember = accountType === "student" || accountType === "member";
+  const canManageWorkouts = !isStudentOrMember && abilities?.can("manage", "Workout");
+  const canManageDiet = !isStudentOrMember && abilities?.can("manage", "Diet");
 
   const studentNavItems = [
     {
-      href: "/dashboard/coach",
-      label: "Coach IA",
+      href: "/dashboard/student",
+      label: "Início",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
+        </svg>
+      ),
+    },
+    {
+      href: "/dashboard/student/workouts",
+      label: "Treinos",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -66,9 +80,65 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </svg>
       ),
     },
+    {
+      href: "/dashboard/student/nutrition",
+      label: "Nutrição",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      href: "/dashboard/student/progress",
+      label: "Progresso",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      href: "/dashboard/student/coach",
+      label: "Coach IA",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+          />
+        </svg>
+      ),
+    },
+    {
+      href: "/dashboard/student/profile",
+      label: "Perfil",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
+      ),
+    },
   ];
 
-  const navItems = isStudent
+  const navItems = isStudentOrMember
     ? studentNavItems
     : [
         {
@@ -175,12 +245,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Services Context — specialist only */}
             <div className="mt-8 flex flex-wrap gap-1.5">
-              {isStudent && (
+              {accountType === "student" && (
                 <span className="px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-lg text-[9px] font-black text-primary uppercase tracking-widest">
-                  ⚡ Aluno
+                  Aluno
                 </span>
               )}
-              {!isStudent &&
+              {accountType === "member" && (
+                <span className="px-2.5 py-1 bg-secondary/10 border border-secondary/20 rounded-lg text-[9px] font-black text-secondary uppercase tracking-widest">
+                  Membro
+                </span>
+              )}
+              {!isStudentOrMember &&
                 services.map((service) => (
                   <span
                     key={service}

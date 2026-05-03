@@ -54,6 +54,7 @@ describe("useCreateWorkout", () => {
     const { result } = renderHook(() => useCreateWorkout(), { wrapper });
 
     result.current.mutate({
+      specialist_id: authedUser.id,
       title: "Treino A",
       training_plan_id: "plan-1",
       difficulty: "intermediate",
@@ -64,8 +65,8 @@ describe("useCreateWorkout", () => {
     expect(mockFrom).toHaveBeenCalledWith("workouts");
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Treino A",
         specialist_id: authedUser.id,
+        title: "Treino A",
         training_plan_id: "plan-1",
         difficulty: "intermediate",
       }),
