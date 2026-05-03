@@ -48,10 +48,8 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       try {
         const ctx = await loadStudentCoachContext(studentId);
-        const module =
-          ctx.coachMode === "analytical" ? "student_coach_analytical" : "student_coach_express";
 
-        const sessionId = await getOrCreateStudentCoachSession(studentId, module);
+        const sessionId = await getOrCreateStudentCoachSession(studentId);
         const storedMessages = await getStudentSessionMessages(sessionId);
 
         const history = storedMessages.map((m) => ({

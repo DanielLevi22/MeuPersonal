@@ -29,10 +29,8 @@ export async function GET(request: NextRequest) {
   }
 
   const ctx = await loadStudentCoachContext(studentId);
-  const module =
-    ctx.coachMode === "analytical" ? "student_coach_analytical" : "student_coach_express";
 
-  const [sessionId] = await Promise.all([getOrCreateStudentCoachSession(studentId, module)]);
+  const [sessionId] = await Promise.all([getOrCreateStudentCoachSession(studentId)]);
   const [profileSummary, messages] = await Promise.all([
     Promise.resolve(buildProfileSummary(ctx)),
     getStudentSessionMessages(sessionId),

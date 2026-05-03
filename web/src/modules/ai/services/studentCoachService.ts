@@ -1,12 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { NutritionProposal, WorkoutProposal } from "../tools/studentCoachTools";
 
-export type CoachModule = "student_coach_express" | "student_coach_analytical";
-
-export async function getOrCreateStudentCoachSession(
-  studentId: string,
-  module: CoachModule,
-): Promise<string> {
+export async function getOrCreateStudentCoachSession(studentId: string): Promise<string> {
+  const module = "student_coach";
   const { data: existing } = await supabaseAdmin
     .from("ai_chat_sessions" as never)
     .select("id")
