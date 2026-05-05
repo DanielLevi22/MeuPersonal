@@ -206,7 +206,7 @@ export default function CreateDietScreen() {
         target_carbs: parseFloat(carbs) || 0,
         target_fat: parseFloat(fat) || 0,
         target_calories: parseFloat(calories) || 0,
-        plan_type: selectedStrategy,
+        plan_type: selectedStrategy === 'carb_cycling' ? 'cyclic' : 'unique',
       };
 
       await createDietPlanWithStrategy(planData as never, strategyResult);
