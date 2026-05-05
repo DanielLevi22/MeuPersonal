@@ -60,9 +60,12 @@ function ActiveDietPlanView({ planId, planName }: { planId: string; planName: st
         A execução do plano alimentar — registrar refeições e acompanhar macros — é feita pelo app
         mobile.
       </p>
-      <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-        ID do plano: {planId}
-      </div>
+      <Link
+        href={`/dashboard/diets/${planId}`}
+        className="self-start px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors"
+      >
+        Editar refeições e alimentos →
+      </Link>
     </div>
   );
 }

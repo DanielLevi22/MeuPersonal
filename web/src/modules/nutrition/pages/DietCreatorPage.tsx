@@ -88,11 +88,7 @@ export function DietCreatorPage() {
         strategyData: strategyDetails,
       });
       toast.success("Plano nutricional criado com sucesso!");
-      if (isMember) {
-        router.push("/dashboard/student/nutrition");
-      } else {
-        router.push(`/dashboard/diets/${newPlan.id}`);
-      }
+      router.push(`/dashboard/diets/${newPlan.id}`);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Erro ao criar plano nutricional";
       console.error("Error creating diet plan:", error);

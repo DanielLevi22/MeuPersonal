@@ -17,9 +17,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/auth/login");
       return;
     }
-    // Students/members: only /dashboard/student/* and /dashboard/workouts/* allowed
+    // Students/members: only /dashboard/student/*, /dashboard/workouts/*, /dashboard/diets/* allowed
     const memberAllowed =
-      pathname.startsWith("/dashboard/student") || pathname.startsWith("/dashboard/workouts");
+      pathname.startsWith("/dashboard/student") ||
+      pathname.startsWith("/dashboard/workouts") ||
+      pathname.startsWith("/dashboard/diets");
     if (
       !isLoading &&
       user &&
