@@ -1,7 +1,11 @@
 "use client";
 
+import type { DietPlan } from "@elevapro/shared";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { useAuthStore } from "@/modules/auth";
+import { NutritionFlowBanner } from "@/modules/nutrition/components/NutritionFlowBanner";
 import { EmptyPlanState } from "../components/EmptyPlanState";
 import { useCurrentStudentId, useStudentActiveDietPlan } from "../hooks/useStudentDashboardData";
 
@@ -13,11 +17,16 @@ export function StudentNutritionPage() {
   const isMember = accountType === "member";
 
   if (isLoading) {
-    return <div className="h-64 bg-zinc-900/40 border border-white/5 rounded-2xl animate-pulse" />;
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="h-10 w-48 bg-zinc-900/40 rounded-xl animate-pulse" />
+        <div className="h-64 bg-zinc-900/40 border border-white/5 rounded-2xl animate-pulse" />
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-black text-white uppercase tracking-tight">Nutrição</h1>
@@ -36,36 +45,93 @@ export function StudentNutritionPage() {
       </div>
 
       {!activePlan ? (
-        <EmptyPlanState type="nutrition" isMember={isMember} />
+        <>
+          {isMember && <NutritionFlowBanner currentStep={1} />}
+          <EmptyPlanState type="nutrition" isMember={isMember} />
+        </>
       ) : (
-        <ActiveDietPlanView
-          planId={activePlan.id}
-          planName={activePlan.name ?? "Plano alimentar"}
-        />
+        <ActiveDietPlanView plan={activePlan} isMember={isMember} />
       )}
     </div>
   );
 }
 
-function ActiveDietPlanView({ planId, planName }: { planId: string; planName: string }) {
+function ActiveDietPlanView({ plan, isMember }: { plan: DietPlan; isMember: boolean }) {
+  const macros = [
+    { label: "Calorias", value: plan.target_calories, unit: "kcal", color: "text-white" },
+    { label: "Proteína", value: plan.target_protein, unit: "g", color: "text-emerald-400" },
+    { label: "Carboidrato", value: plan.target_carbs, unit: "g", color: "text-blue-400" },
+    { label: "Gordura", value: plan.target_fat, unit: "g", color: "text-yellow-400" },
+  ];
+
+  const formatDate = (d: string | null) =>
+    d ? format(new Date(d), "dd 'de' MMM", { locale: ptBR }) : "—";
+
   return (
-    <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-black text-white uppercase tracking-tight">{planName}</h2>
-        <span className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-lg text-[10px] font-black text-primary uppercase tracking-widest">
-          Ativo
-        </span>
+    <div className="flex flex-col gap-4">
+      {/* Plan card */}
+      <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 flex flex-col gap-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-black text-white uppercase tracking-tight text-lg leading-none">
+              {plan.name}
+            </h2>
+            <p className="text-xs text-zinc-500">
+              {formatDate(plan.start_date)} → {formatDate(plan.end_date)}
+            </p>
+          </div>
+          <span className="shrink-0 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+            Ativo
+          </span>
+        </div>
+
+        {/* Macros */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {macros.map((m) => (
+            <div
+              key={m.label}
+              className="bg-zinc-950/50 border border-white/5 rounded-xl p-3 flex flex-col gap-1"
+            >
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                {m.label}
+              </span>
+              <span className={`text-xl font-black leading-none ${m.color}`}>{m.value ?? "—"}</span>
+              <span className="text-[10px] text-zinc-600 font-bold">{m.unit}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-1 border-t border-white/5">
+          <Link
+            href={`/dashboard/diets/${plan.id}`}
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-primary text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Gerenciar refeições e alimentos
+          </Link>
+          {isMember && (
+            <Link
+              href="/dashboard/student/nutrition/new"
+              className="px-5 py-3 bg-white/5 border border-white/10 text-zinc-400 font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-white/10 transition-colors text-center"
+            >
+              Criar novo plano
+            </Link>
+          )}
+        </div>
+
+        <p className="text-[11px] text-zinc-600 text-center">
+          Registro de refeições e acompanhamento de macros pelo app mobile
+        </p>
       </div>
-      <p className="text-sm text-zinc-500">
-        A execução do plano alimentar — registrar refeições e acompanhar macros — é feita pelo app
-        mobile.
-      </p>
-      <Link
-        href={`/dashboard/diets/${planId}`}
-        className="self-start px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors"
-      >
-        Editar refeições e alimentos →
-      </Link>
     </div>
   );
 }
