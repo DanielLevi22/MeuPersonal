@@ -198,7 +198,7 @@ export default function CreateDietScreen() {
         name,
         description: description || strategyResult.description, // Use strategy desc if empty
         student_id: isMember ? user.id : studentId,
-        personal_id: user.id,
+        specialist_id: isMember ? null : user.id,
         start_date: startDate.toISOString().split('T')[0],
         status: 'active',
         // These global targets are averages now, helpful for quick ref

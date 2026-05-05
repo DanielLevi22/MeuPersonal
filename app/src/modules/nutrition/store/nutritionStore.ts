@@ -369,7 +369,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     try {
       const newPlan = await nutritionService.createDietPlan({
         student_id: planData.student_id,
-        specialist_id: planData.specialist_id ?? '',
+        specialist_id: planData.specialist_id ?? null,
         name: planData.name,
         plan_type: planData.plan_type,
         start_date: planData.start_date,
