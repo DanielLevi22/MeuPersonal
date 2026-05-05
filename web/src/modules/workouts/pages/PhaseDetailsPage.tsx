@@ -1,23 +1,21 @@
 "use client";
 
-import { supabase } from "@elevapro/supabase";
-import { useQueryClient } from "@tanstack/react-query";
+import type { TrainingPlan, Workout } from "@elevapro/shared";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { updatePhaseStatusAction } from "@/app/dashboard/workouts/actions";
 import {
-  useDeleteTrainingPlan,
-  useUpdateTrainingPlan,
-} from "@/shared/hooks/useTrainingPlanMutations";
-import { useTrainingPlan } from "@/shared/hooks/useTrainingPlans";
-import { useDeleteWorkout } from "@/shared/hooks/useWorkoutMutations";
-import type { Workout } from "@/shared/hooks/useWorkouts";
-import { useWorkoutsByPlan } from "@/shared/hooks/useWorkouts";
+  changeSplitAction,
+  deletePhaseAction,
+  deleteWorkoutAction,
+  updatePhaseDatesAction,
+  updatePhaseStatusAction,
+} from "@/app/dashboard/workouts/actions";
 import { CreateWorkoutModal } from "../components/CreateWorkoutModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { ImportWorkoutModal } from "../components/ImportWorkoutModal";
+import { WelcomeBanner } from "../components/WelcomeBanner";
 
 const SPLITS = ["A", "AB", "ABC", "ABCD", "ABCDE", "ABCDEF"];
 
@@ -83,12 +81,16 @@ function WorkoutCard({ workout, onDelete }: { workout: Workout; onDelete: (w: Wo
   );
 }
 
-export default function PhaseDetailsPage() {
-  const params = useParams();
+interface Props {
+  plan: TrainingPlan;
+  workouts: Workout[];
+  periodizationId: string;
+  phaseId: string;
+}
+
+export default function PhaseDetailsPage({ plan, workouts, periodizationId, phaseId }: Props) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const periodizationId = params.id as string;
-  const phaseId = params.phaseId as string;
+  const [isPending, startTransition] = useTransition();
 
   const [showSplitPicker, setShowSplitPicker] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -100,28 +102,6 @@ export default function PhaseDetailsPage() {
   const [customSplitInput, setCustomSplitInput] = useState("");
   const [deletingWorkout, setDeletingWorkout] = useState<Workout | null>(null);
 
-  const { data: plan, isLoading: loadingPlan } = useTrainingPlan(phaseId);
-  const { data: workouts = [], isLoading: loadingWorkouts } = useWorkoutsByPlan(phaseId);
-  const updateMutation = useUpdateTrainingPlan();
-  const deletePhaseMutation = useDeleteTrainingPlan();
-  const deleteWorkoutMutation = useDeleteWorkout();
-
-  const handleConfirmDeleteWorkout = useCallback(() => {
-    if (!deletingWorkout) return;
-    deleteWorkoutMutation.mutate(deletingWorkout.id, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["workouts-by-plan", phaseId] });
-        toast.success("Treino removido");
-        setDeletingWorkout(null);
-      },
-      onError: () => {
-        toast.error("Erro ao remover treino");
-        setDeletingWorkout(null);
-      },
-    });
-  }, [deletingWorkout, deleteWorkoutMutation, phaseId, queryClient]);
-
-  // Unique muscle groups from workouts for filter tabs
   const muscleGroups = Array.from(
     new Set(workouts.map((w) => w.muscle_group).filter(Boolean) as string[]),
   );
@@ -130,47 +110,51 @@ export default function PhaseDetailsPage() {
     ? workouts.filter((w) => w.muscle_group === selectedMuscle)
     : workouts;
 
+  const handleConfirmDeleteWorkout = useCallback(() => {
+    if (!deletingWorkout) return;
+    startTransition(async () => {
+      try {
+        await deleteWorkoutAction(deletingWorkout.id, phaseId, periodizationId);
+        router.refresh();
+        toast.success("Treino removido");
+      } catch {
+        toast.error("Erro ao remover treino");
+      } finally {
+        setDeletingWorkout(null);
+      }
+    });
+  }, [deletingWorkout, phaseId, periodizationId, router]);
+
   const handleConfirmSplit = useCallback(async () => {
-    if (!plan || !pendingSplit) return;
+    if (!pendingSplit) return;
+    const split = pendingSplit;
     setChangingSplit(true);
     setPendingSplit(null);
     try {
-      await supabase.from("workouts").delete().eq("training_plan_id", phaseId);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Não autenticado");
-
-      for (const letter of pendingSplit.split("")) {
-        await supabase.from("workouts").insert({
-          training_plan_id: phaseId,
-          title: `Treino ${letter}`,
-          specialist_id: user.id,
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["workouts-by-plan", phaseId] });
-      queryClient.invalidateQueries({ queryKey: ["training-plan", phaseId] });
-      toast.success(`Divisão criada: ${pendingSplit}`);
+      await changeSplitAction(phaseId, periodizationId, split);
+      router.refresh();
+      toast.success(`Divisão criada: ${split}`);
     } catch {
       toast.error("Erro ao alterar divisão de treino");
     } finally {
       setChangingSplit(false);
     }
-  }, [plan, pendingSplit, phaseId, queryClient]);
+  }, [pendingSplit, phaseId, periodizationId, router]);
 
   const handleDeletePhase = useCallback(async () => {
-    if (!confirm(`Excluir a fase "${plan?.name}"? Todos os treinos serão perdidos.`)) return;
-    await deletePhaseMutation.mutateAsync(phaseId);
-    router.push(`/dashboard/workouts/periodizations/${periodizationId}`);
-  }, [plan, phaseId, periodizationId, deletePhaseMutation, router]);
+    if (!confirm(`Excluir a fase "${plan.name}"? Todos os treinos serão perdidos.`)) return;
+    startTransition(async () => {
+      await deletePhaseAction(phaseId, periodizationId);
+      router.push(`/dashboard/workouts/periodizations/${periodizationId}`);
+    });
+  }, [plan.name, phaseId, periodizationId, router]);
 
   const handleUpdateDate = useCallback(
     async (field: "start_date" | "end_date", value: string) => {
-      await updateMutation.mutateAsync({ id: phaseId, data: { [field]: value } });
+      await updatePhaseDatesAction(phaseId, periodizationId, { [field]: value });
+      router.refresh();
     },
-    [phaseId, updateMutation],
+    [phaseId, periodizationId, router],
   );
 
   const handleUpdateStatus = useCallback(
@@ -181,42 +165,14 @@ export default function PhaseDetailsPage() {
     [phaseId, periodizationId, router],
   );
 
-  const isLoading = loadingPlan || loadingWorkouts;
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-surface rounded-lg animate-pulse w-48" />
-        <div className="h-36 bg-surface rounded-2xl animate-pulse" />
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-surface rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!plan) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Fase não encontrada.</p>
-        <button
-          onClick={() => router.push(`/dashboard/workouts/periodizations/${periodizationId}`)}
-          className="mt-4 text-primary hover:underline text-sm"
-        >
-          Voltar
-        </button>
-      </div>
-    );
-  }
-
   const statusCfg =
     PLAN_STATUS_CONFIG[plan.status as keyof typeof PLAN_STATUS_CONFIG] ??
     PLAN_STATUS_CONFIG.planned;
 
   return (
     <div className="space-y-6">
+      <WelcomeBanner currentStep={3} />
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <button
@@ -230,7 +186,7 @@ export default function PhaseDetailsPage() {
           onClick={() => router.push(`/dashboard/workouts/periodizations/${periodizationId}`)}
           className="hover:text-foreground transition-colors"
         >
-          Fases
+          Periodização
         </button>
         <span>/</span>
         <span className="text-foreground">{plan.name}</span>
@@ -257,7 +213,7 @@ export default function PhaseDetailsPage() {
               </svg>
             </button>
             {showStatusMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-surface border border-white/10 rounded-xl shadow-xl z-20 p-1.5 flex flex-col gap-0.5 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 bg-surface border border-white/10 rounded-xl shadow-xl z-20 p-1.5 flex flex-col gap-0.5 min-w-35">
                 {(["planned", "active", "completed"] as const).map((s) => {
                   const cfg = PLAN_STATUS_CONFIG[s];
                   return (
@@ -282,8 +238,8 @@ export default function PhaseDetailsPage() {
           {/* Delete */}
           <button
             onClick={handleDeletePhase}
-            disabled={deletePhaseMutation.isPending}
-            className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
+            disabled={isPending}
+            className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-50"
             title="Excluir fase"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -494,27 +450,46 @@ export default function PhaseDetailsPage() {
 
         {/* Empty state */}
         {!changingSplit && filteredWorkouts.length === 0 && (
-          <div className="text-center py-12 bg-surface border border-white/10 rounded-2xl">
-            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg
-                className="w-6 h-6 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {selectedMuscle
-                ? `Nenhum treino com foco em ${selectedMuscle}.`
-                : "Selecione uma divisão de treino acima para criar as fichas automaticamente."}
-            </p>
+          <div className="bg-surface border border-white/10 rounded-2xl p-8 text-center">
+            {selectedMuscle ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum treino com foco em <span className="text-foreground">{selectedMuscle}</span>.
+              </p>
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-6 h-6 text-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">
+                  Crie os treinos desta fase
+                </h3>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Escolha uma divisão (ABC, ABCD...) para gerar as fichas automaticamente.
+                </p>
+                <p className="text-xs text-muted-foreground mb-6">
+                  Ou use <span className="text-foreground">Novo Treino</span> para adicionar
+                  manualmente.
+                </p>
+                <button
+                  onClick={() => setShowSplitPicker(true)}
+                  className="px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                >
+                  Escolher divisão
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -534,7 +509,7 @@ export default function PhaseDetailsPage() {
         onConfirm={handleConfirmDeleteWorkout}
         title="Remover treino"
         itemName={deletingWorkout?.title ?? "este treino"}
-        isLoading={deleteWorkoutMutation.isPending}
+        isLoading={isPending}
       />
 
       <CreateWorkoutModal
@@ -542,6 +517,10 @@ export default function PhaseDetailsPage() {
         onClose={() => setShowAddWorkout(false)}
         trainingPlanId={phaseId}
         hideExercises
+        onSuccess={() => {
+          setShowAddWorkout(false);
+          router.refresh();
+        }}
       />
 
       <ImportWorkoutModal

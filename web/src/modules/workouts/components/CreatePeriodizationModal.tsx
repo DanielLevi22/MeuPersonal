@@ -29,13 +29,24 @@ interface InitialData {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   /** Quando fornecido, modal opera em modo de edição */
   periodizationId?: string;
   initialData?: InitialData;
+  /** Quando fornecido, o membro cria para si mesmo — oculta seletor de aluno */
+  memberStudentId?: string;
 }
 
-export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, initialData }: Props) {
+export function CreatePeriodizationModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  periodizationId,
+  initialData,
+  memberStudentId,
+}: Props) {
   const isEditing = !!periodizationId;
+  const isMemberMode = !!memberStudentId;
 
   const [name, setName] = useState("");
   const [objective, setObjective] = useState<PeriodizationObjective>("hypertrophy");
@@ -48,11 +59,11 @@ export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, ini
     if (isOpen) {
       setName(initialData?.name ?? "");
       setObjective(initialData?.objective ?? "hypertrophy");
-      setStudentId(initialData?.student_id ?? "");
+      setStudentId(memberStudentId ?? initialData?.student_id ?? "");
       setStartDate(initialData?.start_date?.split("T")[0] ?? "");
       setEndDate(initialData?.end_date?.split("T")[0] ?? "");
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, memberStudentId]);
 
   const { data: students = [] } = useStudents();
   const createMutation = useCreatePeriodization();
@@ -91,6 +102,7 @@ export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, ini
     }
 
     handleClose();
+    onSuccess?.();
   };
 
   const handleClose = () => {
@@ -143,25 +155,27 @@ export function CreatePeriodizationModal({ isOpen, onClose, periodizationId, ini
             />
           </div>
 
-          {/* Aluno */}
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">
-              Aluno <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-background border border-white/10 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              <option value="">Selecionar aluno...</option>
-              {activeStudents.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Aluno — oculto para membros (sempre são eles mesmos) */}
+          {!isMemberMode && (
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
+                Aluno <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                required
+                className="w-full px-3 py-2 bg-background border border-white/10 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="">Selecionar aluno...</option>
+                {activeStudents.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Objetivo */}
           <div>

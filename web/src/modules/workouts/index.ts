@@ -16,4 +16,3 @@ export { default as PeriodizationDetailsPage } from "./pages/PeriodizationDetail
 export { default as PeriodizationsPage } from "./pages/PeriodizationsPage";
 export { default as PhaseDetailsPage } from "./pages/PhaseDetailsPage";
 export { default as WorkoutDetailsPage } from "./pages/WorkoutDetailsPage";
-export { default as WorkoutsPage } from "./pages/WorkoutsPage";

@@ -91,7 +91,7 @@ export interface CreateFoodInput {
 
 export interface CreateDietPlanInput {
   student_id: string;
-  specialist_id: string;
+  specialist_id?: string | null;
   name?: string | null;
   plan_type?: DietPlanType;
   start_date?: string | null;

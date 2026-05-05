@@ -65,10 +65,11 @@ export function defineAbilitiesFor(context: UserContext): AppAbility {
     can("update", "Profile");
   }
 
-  // member: roadmap futuro — acesso mínimo por enquanto
+  // member: usuário independente — cria e gerencia os próprios planos (sem specialist)
   if (context.accountType === "member") {
     can("read", "Profile");
     can("update", "Profile");
+    can("manage", ["Workout", "Diet", "Exercise", "Food"]);
   }
 
   return build();

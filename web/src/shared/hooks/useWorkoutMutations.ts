@@ -1,30 +1,13 @@
 "use client";
 
-import type { UpdateWorkoutInput } from "@elevapro/shared";
+import type { CreateWorkoutInput, UpdateWorkoutInput } from "@elevapro/shared";
 import { createWorkoutsService } from "@elevapro/shared";
 import { supabase } from "@elevapro/supabase";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export type { UpdateWorkoutInput };
+export type { CreateWorkoutInput, UpdateWorkoutInput };
 
 const workoutsService = createWorkoutsService(supabase);
-
-export interface CreateWorkoutInput {
-  title: string;
-  description?: string | null;
-  training_plan_id?: string | null;
-  muscle_group?: string | null;
-  difficulty?: "beginner" | "intermediate" | "advanced" | null;
-  day_of_week?:
-    | "monday"
-    | "tuesday"
-    | "wednesday"
-    | "thursday"
-    | "friday"
-    | "saturday"
-    | "sunday"
-    | null;
-}
 
 export function useCreateWorkout() {
   const queryClient = useQueryClient();
@@ -35,7 +18,8 @@ export function useCreateWorkout() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Usuário não autenticado");
-      return workoutsService.createWorkout({ specialist_id: user.id, ...workout });
+      // specialist_id or student_id must be provided by the caller — do not default here
+      return workoutsService.createWorkout(workout);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workouts"] });

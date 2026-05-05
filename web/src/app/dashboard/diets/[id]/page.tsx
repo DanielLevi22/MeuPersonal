@@ -3,9 +3,11 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/modules/auth";
 import { DaySelector } from "@/modules/nutrition/components/DaySelector";
 import { DietDetailsHeader } from "@/modules/nutrition/components/DietDetailsHeader";
 import { DietDetailsSkeleton } from "@/modules/nutrition/components/DietDetailsSkeleton";
+import { NutritionFlowBanner } from "@/modules/nutrition/components/NutritionFlowBanner";
 import { DayOptionsModal, MealEditor } from "@/nutrition";
 import { useAuthUser } from "@/shared/hooks/useAuthUser";
 import {
@@ -32,6 +34,8 @@ export default function DietDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const accountType = useAuthStore((s) => s.accountType);
+  const isMember = accountType === "member";
 
   const { data: dietPlan, isLoading } = useDietPlan(id);
   const { data: meals = [] } = useDietMeals(id);
@@ -95,8 +99,9 @@ export default function DietDetailsPage() {
   const handleExportPDF = async () => {
     if (!dietPlan) return;
     try {
-      const student = students.find((s) => s.id === dietPlan.student_id);
-      const studentName = student?.full_name || "Aluno";
+      const studentName = isMember
+        ? (currentUser?.fullName ?? "Membro")
+        : (students.find((s) => s.id === dietPlan.student_id)?.full_name ?? "Aluno");
       const professionalName = currentUser?.fullName || "Profissional";
       await exportDietToPDF(dietPlan, meals, studentName, professionalName);
     } catch (error) {
@@ -125,16 +130,22 @@ export default function DietDetailsPage() {
 
   const isCyclic = dietPlan.plan_type === "cyclic";
   const currentDayName = DAYS_OF_WEEK.find((d) => d.id === selectedDay)?.label || "";
+  const dayMeals = meals.filter((m) => m.day_of_week === selectedDay);
+  const nutritionStep = dayMeals.length === 0 ? 2 : 3;
 
   return (
     <div className="space-y-8">
       <DietDetailsHeader
         dietPlan={dietPlan}
-        onBack={() => router.back()}
+        onBack={() =>
+          isMember ? router.push("/dashboard/student/nutrition") : router.push("/dashboard/diets")
+        }
         onExportPDF={handleExportPDF}
         onDayOptions={() => setIsDayOptionsOpen(true)}
         isCyclic={isCyclic}
       />
+
+      <NutritionFlowBanner currentStep={nutritionStep} />
 
       <DaySelector
         days={DAYS_OF_WEEK}

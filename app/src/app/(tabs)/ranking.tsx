@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   Modal,
   RefreshControl,
   Text,
@@ -105,13 +104,6 @@ export default function LeaderboardScreen() {
 
   const handleStudentPress = (student: LeaderboardEntry) => {
     setSelectedStudent(student);
-  };
-
-  const handleContactStudent = () => {
-    if (selectedStudent?.phone) {
-      const number = selectedStudent.phone.replace(/\D/g, '');
-      Linking.openURL(`https://wa.me/${number}`);
-    }
   };
 
   const topThree = entries.slice(0, 3);
@@ -439,18 +431,6 @@ export default function LeaderboardScreen() {
                   </Text>
                 </View>
               </View>
-
-              {selectedStudent?.phone && (
-                <TouchableOpacity
-                  onPress={handleContactStudent}
-                  className="bg-green-600 w-full py-4 rounded-xl flex-row items-center justify-center gap-2 mb-3"
-                >
-                  <Ionicons name="logo-whatsapp" size={20} color="white" />
-                  <Text className="text-white font-bold uppercase tracking-widest">
-                    Enviar Mensagem
-                  </Text>
-                </TouchableOpacity>
-              )}
 
               <TouchableOpacity
                 onPress={() => setSelectedStudent(null)}

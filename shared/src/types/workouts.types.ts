@@ -43,7 +43,8 @@ export interface WorkoutExercise {
 
 export interface Workout {
   id: string;
-  specialist_id: string;
+  specialist_id: string | null;
+  student_id: string | null;
   training_plan_id: string | null;
   title: string;
   description: string | null;
@@ -112,7 +113,8 @@ export interface CreateExerciseInput {
 }
 
 export interface CreateWorkoutInput {
-  specialist_id: string;
+  specialist_id?: string | null;
+  student_id?: string | null;
   training_plan_id?: string | null;
   title: string;
   description?: string | null;
@@ -141,7 +143,7 @@ export interface AddWorkoutExerciseInput {
 }
 
 export interface CreatePeriodizationInput {
-  specialist_id: string;
+  specialist_id?: string;
   student_id: string;
   name: string;
   objective?: string;

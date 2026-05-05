@@ -29,7 +29,9 @@ export function useCreatePeriodization() {
   return useMutation({
     mutationFn: async (input: CreatePeriodizationInput) => {
       if (!authUser?.id) throw new Error("Usuário não autenticado");
-      return workoutsService.createPeriodization({ specialist_id: authUser.id, ...input });
+      // Member creates periodization for themselves — no specialist link
+      const specialistId = authUser.accountType === "specialist" ? authUser.id : undefined;
+      return workoutsService.createPeriodization({ specialist_id: specialistId, ...input });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["periodizations"] });

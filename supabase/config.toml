@@ -4,14 +4,14 @@
 
 [api]
 enabled = true
-port = 54321
+port = 57321
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-port = 54322
-shadow_port = 54320
+port = 57322
+shadow_port = 57320
 major_version = 15
 
 [realtime]
@@ -19,12 +19,12 @@ enabled = true
 
 [studio]
 enabled = true
-port = 54323
+port = 57323
 api_url = "http://127.0.0.1"
 
 [inbucket]
 enabled = true
-port = 54324
+port = 57324
 
 [storage]
 enabled = true

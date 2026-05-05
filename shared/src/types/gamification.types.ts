@@ -37,7 +37,6 @@ export interface LeaderboardEntry {
   points: number;
   avatar_url: string | undefined;
   rank: number;
-  phone: string | undefined;
 }
 
 export type LeaderboardPeriod = "weekly" | "monthly" | "custom";

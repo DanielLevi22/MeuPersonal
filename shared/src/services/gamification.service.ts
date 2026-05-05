@@ -99,7 +99,7 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
     if (scope === "my_students" && specialistId) {
       const { data: linkedData, error: linkError } = await supabase
         .from("student_specialists")
-        .select(`student_id, student:profiles!student_id (id, full_name, avatar_url, phone)`)
+        .select(`student_id, student:profiles!student_id (id, full_name, avatar_url)`)
         .eq("specialist_id", specialistId)
         .eq("status", "active");
       if (linkError) throw linkError;
@@ -109,7 +109,6 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
         id: string;
         full_name: string;
         avatar_url: string | null;
-        phone: string | null;
       };
       const students = linkedData
         .map((d) => d.student as unknown as StudentProfile)
@@ -135,7 +134,6 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
           points: scoreMap.get(s.id) ?? 0,
           avatar_url: s.avatar_url ?? undefined,
           rank: 0,
-          phone: s.phone ?? undefined,
         }))
         .sort((a, b) => b.points - a.points)
         .map((entry, i) => ({ ...entry, rank: i + 1 }));
@@ -161,7 +159,7 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, phone")
+      .select("id, full_name, avatar_url")
       .in(
         "id",
         sortedScores.map((s) => s.student_id),
@@ -177,7 +175,6 @@ export const createGamificationService = (supabase: SupabaseClient) => ({
         points: score.points,
         avatar_url: profile?.avatar_url ?? undefined,
         rank: i + 1,
-        phone: profile?.phone ?? undefined,
       };
     });
   },

@@ -41,8 +41,29 @@
       "Bash(cmd /c \"cd c:\\\\pessoal\\\\Eleva Pro\\\\web && node_modules\\\\.bin\\\\vitest.cmd run src/shared/hooks/__tests__/useWorkoutMutations.test.ts src/modules/workouts/__tests__/DeleteConfirmModal.test.tsx 2>&1\")",
       "WebSearch",
       "Bash(node /c/pessoal/Eleva Pro/scripts/new-feature.js shared-gamification-service)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Read(//temp/readonly/**)",
+      "Bash(npx shadcn@latest add chart --yes)",
+      "Bash(node scripts/new-feature.js auth-student-registration)",
+      "Bash(Get-ChildItem -Path \"c:\\\\pessoal\\\\ElevaPro\\\\web\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(git fetch *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\pessoal\\\\ElevaPro\\\\web\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(npx @biomejs/biome check --reporter=github src/modules/student-dashboard src/app/dashboard/student)",
+      "Bash(npx @biomejs/biome check --write src/modules/student-dashboard src/app/dashboard/student)",
+      "Bash(npx @biomejs/biome check src/modules/student-dashboard src/app/dashboard/student)",
+      "Bash(npx @biomejs/biome check src/modules/student-dashboard src/shared/hooks/useWorkoutMutations.ts src/shared/hooks/useNutrition.ts)",
+      "Bash(npx @biomejs/biome check --write src/modules/student-dashboard/pages/MemberWorkoutBuilderPage.tsx src/modules/student-dashboard/pages/MemberDietBuilderPage.tsx src/shared/hooks/useWorkoutMutations.ts src/shared/hooks/useNutrition.ts)",
+      "Bash(npx @biomejs/biome check --write src/modules/student-dashboard/hooks/useStudentLinks.ts src/modules/student-dashboard/components/SpecialistLinkSection.tsx src/modules/student-dashboard/pages/StudentProfilePage.tsx)",
+      "Bash(npx @biomejs/biome check --write src/modules/student-dashboard src/shared/hooks/useWorkoutMutations.ts src/packages/supabase/abilities.ts)",
+      "Bash(npx @biomejs/biome check --write shared/src/services/students.service.ts)",
+      "Bash(npx @biomejs/biome check --write src/modules/student-dashboard/__tests__/useStudentLinks.test.ts src/modules/student-dashboard/__tests__/useStudentDashboardData.test.ts src/app/dashboard/layout.tsx)",
+      "Bash(npx @biomejs/biome check --write --unsafe src/modules/student-dashboard/__tests__/useStudentLinks.test.ts)"
     ],
-    "additionalDirectories": ["C:\\pessoal\\Eleva Pro\\app\\src\\app\\(tabs)\\students\\[id]"]
+    "additionalDirectories": [
+      "C:\\pessoal\\Eleva Pro\\app\\src\\app\\(tabs)\\students\\[id]",
+      "c:\\pessoal\\ElevaPro\\web\\src\\app\\dashboard\\students\\[id]"
+    ]
   }
 }

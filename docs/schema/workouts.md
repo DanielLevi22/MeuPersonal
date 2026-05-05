@@ -122,7 +122,8 @@ training_plans
 ```
 workouts
 ├── id                uuid    PK
-├── specialist_id     uuid    NOT NULL FK → profiles.id CASCADE DELETE
+├── specialist_id     uuid    NULL FK → profiles.id CASCADE DELETE
+├── student_id        uuid    NULL FK → profiles.id CASCADE DELETE
 ├── training_plan_id  uuid    NULL FK → training_plans.id CASCADE DELETE
 ├── title             text    NOT NULL
 ├── description       text             NULL
@@ -131,11 +132,15 @@ workouts
 ├── day_of_week       day_of_week      NULL — enum: monday...sunday | NULL = qualquer dia
 ├── created_at        timestamptz NOT NULL DEFAULT now()
 └── updated_at        timestamptz NOT NULL DEFAULT now()
+
+CHECK: specialist_id IS NOT NULL OR student_id IS NOT NULL
 ```
 
 **`training_plan_id NULL` = biblioteca**: quando `NULL`, o treino pertence à biblioteca pessoal do specialist — não está associado a nenhuma fase. Quando preenchido, o treino faz parte de uma fase específica.
 
-**`specialist_id`**: todo treino tem um dono, seja na biblioteca ou em uma fase. Necessário para RLS (specialist vê apenas seus próprios treinos) e para o catálogo de biblioteca funcionar.
+**`specialist_id` nullable (migration 0012)**: obrigatório para treinos de specialist. `NULL` quando o treino pertence a um `member` auto-gerenciado.
+
+**`student_id` nullable**: preenchido apenas para treinos criados por `member` (`specialist_id = NULL`). Constraint garante que pelo menos um dos dois campos é não-nulo.
 
 **Importar da biblioteca**: ao importar um treino da biblioteca para uma fase, o sistema:
 1. Cria um novo registro em `workouts` com `training_plan_id` preenchido
