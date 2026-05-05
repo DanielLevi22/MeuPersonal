@@ -120,6 +120,7 @@ export function useCreateDietPlan() {
 
 export function useCreateDietPlanWithStrategy() {
   const queryClient = useQueryClient();
+  const { data: currentUser } = useAuthUser();
   return useMutation({
     mutationFn: async ({
       plan,
@@ -128,12 +129,12 @@ export function useCreateDietPlanWithStrategy() {
       plan: Omit<CreateDietPlanInput, "specialist_id">;
       strategyData: StrategyResult;
     }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const newPlan = await nutritionService.createDietPlan({ ...plan, specialist_id: user.id });
+      if (!currentUser) throw new Error("Usuário não autenticado");
+      const specialistId = currentUser.accountType === "specialist" ? currentUser.id : null;
+      const newPlan = await nutritionService.createDietPlan({
+        ...plan,
+        specialist_id: specialistId,
+      });
 
       const { weeklySchedule } = strategyData;
       const daysToSave = plan.plan_type === "unique" ? [weeklySchedule[0]] : weeklySchedule;

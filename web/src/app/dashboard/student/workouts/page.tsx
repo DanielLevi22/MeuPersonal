@@ -1,5 +1,5 @@
-import { StudentWorkoutsPage } from "@/modules/student-dashboard";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <StudentWorkoutsPage />;
+  redirect("/dashboard/workouts");
 }

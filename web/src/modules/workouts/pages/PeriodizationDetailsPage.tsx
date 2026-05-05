@@ -1,17 +1,16 @@
 "use client";
 
+import type { Periodization, TrainingPlan } from "@elevapro/shared";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { addPhaseAction } from "@/app/dashboard/workouts/actions";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import {
-  useActivatePeriodization,
-  useCompletePeriodization,
-} from "@/shared/hooks/usePeriodizationMutations";
-import { usePeriodization } from "@/shared/hooks/usePeriodizations";
-import type { TrainingPlan } from "@/shared/hooks/useTrainingPlans";
-import { useTrainingPlans } from "@/shared/hooks/useTrainingPlans";
+  activatePeriodizationAction,
+  addPhaseAction,
+  completePeriodizationAction,
+} from "@/app/dashboard/workouts/actions";
 import { CreatePeriodizationModal } from "../components/CreatePeriodizationModal";
+import { WelcomeBanner } from "../components/WelcomeBanner";
 
 const OBJECTIVE_LABELS: Record<string, string> = {
   hypertrophy: "Hipertrofia",
@@ -96,63 +95,45 @@ function PlanCard({ plan, periodizationId }: { plan: TrainingPlan; periodization
   );
 }
 
-export default function PeriodizationDetailsPage() {
-  const params = useParams();
+interface Props {
+  periodization: Periodization;
+  plans: TrainingPlan[];
+}
+
+export default function PeriodizationDetailsPage({ periodization, plans }: Props) {
   const router = useRouter();
-  const periodizationId = params.id as string;
-  const [addingPhase, setAddingPhase] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [editingPeriodization, setEditingPeriodization] = useState(false);
 
-  const { data: periodization, isLoading: loadingP } = usePeriodization(periodizationId);
-  const { data: plans = [], isLoading: loadingPlans } = useTrainingPlans(periodizationId);
-  const activateMutation = useActivatePeriodization();
-  const completeMutation = useCompletePeriodization();
-
-  const handleAddPhase = async () => {
-    setAddingPhase(true);
-    try {
-      await addPhaseAction(periodizationId);
-      router.refresh();
-    } finally {
-      setAddingPhase(false);
-    }
-  };
-
-  const isLoading = loadingP || loadingPlans;
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-surface rounded-lg animate-pulse w-48" />
-        <div className="h-32 bg-surface rounded-2xl animate-pulse" />
-        <div className="space-y-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-20 bg-surface rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!periodization) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Periodização não encontrada.</p>
-        <button
-          onClick={() => router.push("/dashboard/workouts")}
-          className="mt-4 text-primary hover:underline text-sm"
-        >
-          Voltar
-        </button>
-      </div>
-    );
-  }
-
+  const periodizationId = periodization.id;
   const status = STATUS_CONFIG[periodization.status] ?? STATUS_CONFIG.planned;
   const objective = OBJECTIVE_LABELS[periodization.objective ?? ""] ?? periodization.objective;
 
+  const handleAddPhase = () => {
+    startTransition(async () => {
+      await addPhaseAction(periodizationId);
+      router.refresh();
+    });
+  };
+
+  const handleActivate = () => {
+    startTransition(async () => {
+      await activatePeriodizationAction(periodizationId);
+      router.refresh();
+    });
+  };
+
+  const handleComplete = () => {
+    startTransition(async () => {
+      await completePeriodizationAction(periodizationId);
+      router.refresh();
+    });
+  };
+
   return (
     <div className="space-y-6">
+      <WelcomeBanner currentStep={2} />
+
       {/* Back */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <button
@@ -200,8 +181,8 @@ export default function PeriodizationDetailsPage() {
             </button>
             {periodization.status === "planned" && (
               <button
-                onClick={() => activateMutation.mutateAsync(periodizationId)}
-                disabled={activateMutation.isPending}
+                onClick={handleActivate}
+                disabled={isPending}
                 className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
               >
                 Ativar
@@ -209,8 +190,8 @@ export default function PeriodizationDetailsPage() {
             )}
             {periodization.status === "active" && (
               <button
-                onClick={() => completeMutation.mutateAsync(periodizationId)}
-                disabled={completeMutation.isPending}
+                onClick={handleComplete}
+                disabled={isPending}
                 className="px-4 py-2 bg-white/5 text-muted-foreground border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 Concluir
@@ -220,16 +201,16 @@ export default function PeriodizationDetailsPage() {
         </div>
       </div>
 
-      {/* Fichas */}
+      {/* Fases */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Fases</h2>
           <button
             onClick={handleAddPhase}
-            disabled={addingPhase}
+            disabled={isPending}
             className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {addingPhase ? (
+            {isPending ? (
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             ) : (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,10 +227,10 @@ export default function PeriodizationDetailsPage() {
         </div>
 
         {plans.length === 0 ? (
-          <div className="text-center py-12 bg-surface border border-white/10 rounded-2xl">
-            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="bg-surface border border-white/10 rounded-2xl p-8 text-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-6 h-6 text-muted-foreground"
+                className="w-6 h-6 text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -262,9 +243,23 @@ export default function PeriodizationDetailsPage() {
                 />
               </svg>
             </div>
-            <p className="text-muted-foreground text-sm">
-              Nenhuma fase criada. Adicione a primeira fase desta periodização.
+            <h3 className="text-base font-semibold text-foreground mb-1">
+              Adicione a primeira fase
+            </h3>
+            <p className="text-sm text-muted-foreground mb-1">
+              Uma fase é um bloco de treinos com foco específico.
             </p>
+            <p className="text-xs text-muted-foreground mb-6">
+              Ex: <span className="text-foreground">"Semanas 1–4 · Adaptação"</span>,{" "}
+              <span className="text-foreground">"Semanas 5–8 · Força"</span>
+            </p>
+            <button
+              onClick={handleAddPhase}
+              disabled={isPending}
+              className="px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors text-sm disabled:opacity-50"
+            >
+              Nova Fase
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -278,6 +273,7 @@ export default function PeriodizationDetailsPage() {
       <CreatePeriodizationModal
         isOpen={editingPeriodization}
         onClose={() => setEditingPeriodization(false)}
+        onSuccess={() => router.refresh()}
         periodizationId={periodizationId}
         initialData={{
           name: periodization.name,

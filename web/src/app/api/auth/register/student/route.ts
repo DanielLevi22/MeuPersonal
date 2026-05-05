@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name, account_type: "student" },
+    user_metadata: { full_name, account_type: "member" },
   });
 
   if (authError) {
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     id: data.user.id,
     email,
     full_name,
-    account_type: "student",
+    account_type: "member",
     account_status: "active",
   } as never);
 

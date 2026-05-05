@@ -143,7 +143,7 @@ export interface AddWorkoutExerciseInput {
 }
 
 export interface CreatePeriodizationInput {
-  specialist_id: string;
+  specialist_id?: string;
   student_id: string;
   name: string;
   objective?: string;

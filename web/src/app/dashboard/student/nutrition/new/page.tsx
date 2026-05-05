@@ -1,7 +1,7 @@
 import { getUserContextJWT } from "@elevapro/supabase";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { MemberDietBuilderPage } from "@/modules/student-dashboard";
+import { DietCreatorPage } from "@/modules/nutrition/pages/DietCreatorPage";
 
 export default async function Page() {
   const supabase = await createServerSupabaseClient();
@@ -14,5 +14,5 @@ export default async function Page() {
   const context = await getUserContextJWT(session.user.id, session);
   if (context.accountType !== "member") redirect("/dashboard/student/nutrition");
 
-  return <MemberDietBuilderPage />;
+  return <DietCreatorPage />;
 }

@@ -1,6 +1,6 @@
 # Status dos Módulos — MeuPersonal
 
-> **Atualizado em:** 2026-05-03 (feature/auth-student-registration)
+> **Atualizado em:** 2026-05-04 (feature/student-web-dashboard)
 > **Regra:** atualizar ao fechar cada PR. Nenhuma feature é `done` sem este arquivo atualizado.
 
 ---
@@ -38,7 +38,7 @@
 
 | PRD | Feature | Status | Branch |
 |-----|---------|--------|--------|
-| [student-web-dashboard](PRDs/student-web-dashboard.md) | Dashboard web do aluno (student + member) | ⚠️ in-progress | `feature/student-web-dashboard` |
+| [student-web-dashboard](PRDs/student-web-dashboard.md) | Dashboard web do aluno (student + member) | ✅ done | `feature/student-web-dashboard` |
 | [ci-and-vercel-optimization](PRDs/ci-and-vercel-optimization.md) | CI path filters + Vercel ignoreCommand | ✅ done | `feature/ci-and-vercel-optimization` |
 | [vercel-pipeline-deploy](PRDs/vercel-pipeline-deploy.md) | Deploy via GitHub Actions + Vercel CLI | ✅ done | `feature/ci-and-vercel-optimization` |
 | [database-audit-and-refactor](PRDs/database-audit-and-refactor.md) | Schema limpo: 21 tabelas, RLS, RPC, seeds | ✅ done | `feature/database-audit-and-refactor` |

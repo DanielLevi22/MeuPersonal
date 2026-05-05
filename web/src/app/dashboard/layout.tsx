@@ -17,12 +17,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/auth/login");
       return;
     }
-    // Students and members only access /dashboard/student — redirect everything else
+    // Students/members: only /dashboard/student/* and /dashboard/workouts/* allowed
+    const memberAllowed =
+      pathname.startsWith("/dashboard/student") || pathname.startsWith("/dashboard/workouts");
     if (
       !isLoading &&
       user &&
       (accountType === "student" || accountType === "member") &&
-      !pathname.startsWith("/dashboard/student")
+      !memberAllowed
     ) {
       router.replace("/dashboard/student");
     }
@@ -67,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ),
     },
     {
-      href: "/dashboard/student/workouts",
+      href: "/dashboard/workouts",
       label: "Treinos",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -4,7 +4,21 @@
       "Bash(sed -n '135,165p' web/src/shared/utils/exportDietPDF.ts)",
       "Bash(sed -n '195,215p' web/src/shared/utils/exportDietPDF.ts)",
       "Bash(sed -n '265,280p' web/src/shared/utils/exportDietPDF.ts)",
-      "Bash(sed -n '315,325p' web/src/shared/utils/exportDietPDF.ts)"
+      "Bash(sed -n '315,325p' web/src/shared/utils/exportDietPDF.ts)",
+      "Bash(Get-ChildItem -Path \"c:\\\\pessoal\\\\ElevaPro\\\\web\\\\src\\\\app\\\\auth\" -File)",
+      "Bash(Get-ChildItem -Path \"c:\\\\pessoal\\\\ElevaPro\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(git -C \"C:/pessoal/ElevaPro\" add web/src/modules/ai/services/__tests__/aiReadiness.test.ts web/src/modules/ai/services/__tests__/studentCoachService.test.ts)",
+      "Bash(git -C \"C:/pessoal/ElevaPro\" status)",
+      "Bash(git -C \"C:/pessoal/ElevaPro\" reset HEAD shared/src/services/gamification.service.ts)",
+      "Bash(git -C C:/pessoal/ElevaPro commit -m ' *)",
+      "Bash(git -C \"C:/pessoal/ElevaPro\" add web/src/modules/ai/services/__tests__/)",
+      "Bash(git -C C:/pessoal/ElevaPro add web/src/lib/database.types.ts web/src/lib/supabase-admin.ts web/src/modules/ai/services/studentCoachService.ts web/src/modules/ai/services/chatService.ts web/src/modules/ai/services/__tests__/studentCoachService.test.ts web/src/app/api/ai/student/nutribot/route.ts 'web/src/app/api/students/[id]/history/route.ts' 'web/src/app/api/students/[id]/assessments/route.ts' 'web/src/app/api/students/[id]/route.ts' supabase/migrations/0011_nullable_specialist_in_periodizations.sql)",
+      "Bash(git -C \"C:/pessoal/ElevaPro\" status --short)",
+      "Bash(Select-String \"project_id|project_ref\")",
+      "PowerShell(docker exec supabase_db_ElevaPro psql -U postgres -c \"SELECT version FROM supabase_migrations.schema_migrations ORDER BY version;\" 2>&1)",
+      "PowerShell($conn = New-Object System.Net.Sockets.TcpClient; try { $conn.Connect\\(\"127.0.0.1\", 54321\\); \"Port 54321: OPEN\" } catch { \"Port 54321: CLOSED\" } finally { $conn.Close\\(\\) })",
+      "PowerShell($conn = New-Object System.Net.Sockets.TcpClient; try { $conn.Connect\\(\"127.0.0.1\", 54321\\); \"OPEN\" } catch { \"CLOSED\" } finally { $conn.Close\\(\\) })"
     ]
   }
 }

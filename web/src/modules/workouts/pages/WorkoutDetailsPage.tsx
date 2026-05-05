@@ -14,6 +14,7 @@ import { CreateWorkoutModal } from "../components/CreateWorkoutModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { ExerciseConfigModal, type SelectedExercise } from "../components/ExerciseConfigModal";
 import { SelectExercisesModal } from "../components/SelectExercisesModal";
+import { WelcomeBanner } from "../components/WelcomeBanner";
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   beginner: "Iniciante",
@@ -143,11 +144,22 @@ export default function WorkoutDetailsPage() {
 
   return (
     <div className="space-y-6">
+      <WelcomeBanner currentStep={4} />
+
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-        <button onClick={() => router.back()} className="hover:text-foreground transition-colors">
-          ← Voltar
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+        <button
+          onClick={() => router.push("/dashboard/workouts")}
+          className="hover:text-foreground transition-colors"
+        >
+          Periodizações
         </button>
+        <span>/</span>
+        <button onClick={() => router.back()} className="hover:text-foreground transition-colors">
+          Fase
+        </button>
+        <span>/</span>
+        <span className="text-foreground">{workout.title}</span>
       </nav>
 
       {/* Header card */}
@@ -201,10 +213,10 @@ export default function WorkoutDetailsPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="text-center py-12 bg-surface border border-white/10 rounded-2xl">
-            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="bg-surface border border-white/10 rounded-2xl p-8 text-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-6 h-6 text-muted-foreground"
+                className="w-6 h-6 text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -217,9 +229,16 @@ export default function WorkoutDetailsPage() {
                 />
               </svg>
             </div>
-            <p className="text-muted-foreground text-sm">
-              Nenhum exercício adicionado. Comece adicionando exercícios ao treino.
+            <h3 className="text-base font-semibold text-foreground mb-1">Nenhum exercício ainda</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Busque na biblioteca e configure séries, repetições e carga para cada exercício.
             </p>
+            <button
+              onClick={() => setSelectExercisesOpen(true)}
+              className="px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            >
+              Adicionar Exercício
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
