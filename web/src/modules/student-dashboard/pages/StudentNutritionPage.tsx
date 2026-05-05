@@ -44,11 +44,10 @@ export function StudentNutritionPage() {
         )}
       </div>
 
+      {isMember && <NutritionFlowBanner currentStep={activePlan ? 2 : 1} />}
+
       {!activePlan ? (
-        <>
-          {isMember && <NutritionFlowBanner currentStep={1} />}
-          <EmptyPlanState type="nutrition" isMember={isMember} />
-        </>
+        <EmptyPlanState type="nutrition" isMember={isMember} />
       ) : (
         <ActiveDietPlanView plan={activePlan} isMember={isMember} />
       )}
