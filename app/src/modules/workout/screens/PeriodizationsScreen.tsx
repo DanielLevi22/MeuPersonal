@@ -134,7 +134,7 @@ export default function PeriodizationsScreen() {
               <Ionicons name="search" size={24} color="#E4E4E7" />
             </TouchableOpacity>
 
-            {accountType === 'specialist' && (
+            {(accountType === 'specialist' || accountType === 'member') && (
               <Link href="/(tabs)/workouts/create-periodization" asChild>
                 <TouchableOpacity activeOpacity={0.8}>
                   <LinearGradient
@@ -181,10 +181,12 @@ export default function PeriodizationsScreen() {
               <Text className="text-zinc-400 text-center px-8 text-sm mb-8 font-sans">
                 {accountType === 'specialist'
                   ? 'Crie um planejamento para seus alunos'
-                  : 'Seu personal ainda não criou uma periodização'}
+                  : accountType === 'member'
+                    ? 'Crie sua primeira periodização de treino'
+                    : 'Seu personal ainda não criou uma periodização'}
               </Text>
 
-              {accountType === 'specialist' && (
+              {(accountType === 'specialist' || accountType === 'member') && (
                 <Link href="/(tabs)/workouts/create-periodization" asChild>
                   <TouchableOpacity activeOpacity={0.8}>
                     <LinearGradient

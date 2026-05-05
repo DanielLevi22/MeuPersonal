@@ -41,7 +41,8 @@ const getDateOfSelectedDay = (dayIndex: number) => {
 };
 
 export function StudentNutritionScreen() {
-  const { user, isMasquerading } = useAuthStore();
+  const { user, isMasquerading, accountType } = useAuthStore();
+  const isMember = accountType === 'member';
   const {
     currentDietPlan,
     fetchDietPlan,
@@ -344,8 +345,21 @@ export function StudentNutritionScreen() {
             Nenhum plano ativo
           </Text>
           <Text className="text-zinc-400 text-center text-sm mb-8 font-sans leading-relaxed">
-            Você ainda não possui um plano alimentar ativo. Entre em contato com seu nutricionista.
+            {isMember
+              ? 'Crie seu primeiro plano alimentar personalizado.'
+              : 'Você ainda não possui um plano alimentar ativo. Entre em contato com seu nutricionista.'}
           </Text>
+          {isMember && (
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/nutrition/create' as never)}
+              className="rounded-2xl py-3 px-8 overflow-hidden"
+              style={{ backgroundColor: brandColors.primary.start }}
+            >
+              <Text className="text-black font-bold text-base font-display">
+                Criar Plano Alimentar
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </ScreenLayout>
     );
