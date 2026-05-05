@@ -7,6 +7,7 @@ import { useAuthStore } from "@/modules/auth";
 import { DaySelector } from "@/modules/nutrition/components/DaySelector";
 import { DietDetailsHeader } from "@/modules/nutrition/components/DietDetailsHeader";
 import { DietDetailsSkeleton } from "@/modules/nutrition/components/DietDetailsSkeleton";
+import { NutritionFlowBanner } from "@/modules/nutrition/components/NutritionFlowBanner";
 import { DayOptionsModal, MealEditor } from "@/nutrition";
 import { useAuthUser } from "@/shared/hooks/useAuthUser";
 import {
@@ -129,6 +130,8 @@ export default function DietDetailsPage() {
 
   const isCyclic = dietPlan.plan_type === "cyclic";
   const currentDayName = DAYS_OF_WEEK.find((d) => d.id === selectedDay)?.label || "";
+  const dayMeals = meals.filter((m) => m.day_of_week === selectedDay);
+  const nutritionStep = dayMeals.length === 0 ? 2 : 3;
 
   return (
     <div className="space-y-8">
@@ -141,6 +144,8 @@ export default function DietDetailsPage() {
         onDayOptions={() => setIsDayOptionsOpen(true)}
         isCyclic={isCyclic}
       />
+
+      <NutritionFlowBanner currentStep={nutritionStep} />
 
       <DaySelector
         days={DAYS_OF_WEEK}

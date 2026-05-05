@@ -2,6 +2,8 @@ import type { Food } from "@elevapro/shared";
 import { useEffect, useMemo, useState } from "react";
 import { useFoods } from "@/shared/hooks/useNutrition";
 
+const CALC_ONBOARDING_KEY = "nutrition_calc_onboarding_seen";
+
 interface FoodSelectorProps {
   onSelect: (food: Food, quantity?: number) => void;
 }
@@ -22,6 +24,14 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
   // Reverse Calculator State
   const [targets, setTargets] = useState<MacroTargets>({});
   const [activeMacros, setActiveMacros] = useState<MacroType[]>([]);
+  const [showCalcOnboarding, setShowCalcOnboarding] = useState(
+    () => typeof window !== "undefined" && !localStorage.getItem(CALC_ONBOARDING_KEY),
+  );
+
+  const dismissCalcOnboarding = () => {
+    localStorage.setItem(CALC_ONBOARDING_KEY, "1");
+    setShowCalcOnboarding(false);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -130,10 +140,82 @@ export function FoodSelector({ onSelect }: FoodSelectorProps) {
       </div>
 
       {/* Reverse Calculator */}
-      <div className="bg-background/50 border border-white/10 rounded-lg p-4">
-        <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-          Calculadora Reversa (Multimeta)
-        </p>
+      <div className="bg-background/50 border border-white/10 rounded-lg p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Calculadora Reversa (Multimeta)
+          </p>
+          {!showCalcOnboarding && (
+            <button
+              onClick={() => setShowCalcOnboarding(true)}
+              className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
+            >
+              Como funciona?
+            </button>
+          )}
+        </div>
+
+        {showCalcOnboarding && (
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-bold text-primary uppercase tracking-wide">
+                Como funciona a Calculadora Reversa
+              </p>
+              <button
+                onClick={dismissCalcOnboarding}
+                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-2">
+              {[
+                {
+                  icon: "1️⃣",
+                  text: "Ative os macros que quer atingir nessa refeição (ex: Prot + Carb)",
+                },
+                { icon: "2️⃣", text: "Digite a meta em gramas ou kcal para cada macro ativado" },
+                {
+                  icon: "3️⃣",
+                  text: "A calculadora encontra a quantidade ideal de cada alimento e exibe o score:",
+                },
+              ].map((item) => (
+                <p key={item.icon} className="text-[11px] text-muted-foreground flex gap-2">
+                  <span>{item.icon}</span>
+                  <span>{item.text}</span>
+                </p>
+              ))}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { label: "Combinação Perfeita", color: "bg-emerald-500/20 text-emerald-400" },
+                { label: "Boa Combinação", color: "bg-yellow-500/20 text-yellow-400" },
+                { label: "Baixa Combinação", color: "bg-orange-500/20 text-orange-400" },
+              ].map((s) => (
+                <span
+                  key={s.label}
+                  className={`text-[10px] font-bold px-2 py-1 rounded-md ${s.color}`}
+                >
+                  {s.label}
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={dismissCalcOnboarding}
+              className="text-[11px] font-bold text-primary hover:underline"
+            >
+              Entendi, não mostrar novamente
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           {(["protein", "carbs", "fat", "calories"] as const).map((macro) => (
             <div
