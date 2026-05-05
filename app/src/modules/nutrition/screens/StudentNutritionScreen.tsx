@@ -375,6 +375,24 @@ export function StudentNutritionScreen() {
           <Text className="text-zinc-400 font-sans font-medium mt-1">{currentDietPlan.name}</Text>
         </View>
         <View className="flex-row gap-3">
+          {isMember && (
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/nutrition/[id]' as never,
+                  params: { id: user?.id, planId: currentDietPlan.id },
+                } as never)
+              }
+              className="p-3 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: brandColors.background.secondary,
+                borderColor: brandColors.border.dark,
+              }}
+            >
+              <Ionicons name="restaurant-outline" size={24} color={brandColors.primary.start} />
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/nutrition/shopping-list' as never)}
             className="p-3 rounded-full border shadow-sm"

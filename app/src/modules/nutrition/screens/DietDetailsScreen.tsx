@@ -38,10 +38,13 @@ export default function DietDetailsScreen() {
   // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
   const { id: studentId, planId } = useLocalSearchParams();
   const router = useRouter();
-  const { user, isMasquerading } = useAuthStore();
+  const { user, isMasquerading, accountType } = useAuthStore();
+  const canManage = accountType === 'specialist' || accountType === 'member';
   const {
     dietPlans,
+    currentDietPlan,
     fetchDietPlans,
+    fetchDietPlan,
     isLoading,
     meals,
     fetchMeals,
@@ -181,20 +184,24 @@ export default function DietDetailsScreen() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
   useEffect(() => {
-    if (user?.id && !dietPlans.length) {
+    if (!user?.id) return;
+    if (accountType === 'member') {
+      fetchDietPlan(user.id);
+    } else if (!dietPlans.length) {
       fetchDietPlans(user.id);
     }
   }, [user]);
 
   useEffect(() => {
-    if (dietPlans.length > 0 && planId) {
-      const found = dietPlans.find((p) => p.id === planId);
-      setPlan((found as never) || null);
-      if (found) {
-        fetchMeals(found.id);
-      }
+    if (!planId) return;
+    const found =
+      dietPlans.find((p) => p.id === planId) ??
+      (currentDietPlan?.id === planId ? currentDietPlan : null);
+    if (found) {
+      setPlan(found as never);
+      fetchMeals(found.id);
     }
-  }, [dietPlans, planId, fetchMeals]);
+  }, [dietPlans, planId, currentDietPlan, fetchMeals]);
 
   // Fetch items for meals when meals change
   // Optimization: fetchMeals now does deep matching, so we don't need to fetch items individually anymore.
@@ -817,7 +824,7 @@ export default function DietDetailsScreen() {
                         <Text className="text-zinc-600 text-xs italic ml-6">Sem alimentos</Text>
                       )}
 
-                      {!isMasquerading && (
+                      {!isMasquerading && canManage && (
                         <View className="flex-row gap-2 mt-5">
                           <TouchableOpacity
                             onPress={() => handleAddFoodPress(existingMeal.id)}
@@ -843,7 +850,7 @@ export default function DietDetailsScreen() {
                   );
                 } else {
                   // Render "Add [Meal Name]" button
-                  if (isMasquerading) return null;
+                  if (isMasquerading || !canManage) return null;
 
                   return (
                     <TouchableOpacity
@@ -884,7 +891,7 @@ export default function DietDetailsScreen() {
             })()}
           </View>
 
-          {!isMasquerading && (
+          {!isMasquerading && canManage && (
             <TouchableOpacity
               className="mt-6 border-2 border-dashed rounded-3xl p-6 items-center justify-center"
               style={{ borderColor: brandColors.border.dark }}
