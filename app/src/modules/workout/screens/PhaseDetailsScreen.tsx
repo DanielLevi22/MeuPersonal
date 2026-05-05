@@ -43,10 +43,11 @@ export default function PhaseDetailsScreen() {
   const router = useRouter();
   const { user, accountType } = useAuthStore();
   const pathname = usePathname();
-  const isStudentView =
-    pathname.includes('/students/') || accountType === 'student' || accountType === 'member';
+  const isStudentView = pathname.includes('/students/') || accountType === 'student';
   const isProfessional =
-    (accountType as string) === 'personal' || (accountType as string) === 'specialist';
+    (accountType as string) === 'personal' ||
+    (accountType as string) === 'specialist' ||
+    (accountType as string) === 'member';
 
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 

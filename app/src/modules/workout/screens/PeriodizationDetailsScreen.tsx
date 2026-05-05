@@ -33,8 +33,7 @@ export default function PeriodizationDetailsScreen() {
 
   const { user, accountType } = useAuthStore();
   const pathname = usePathname();
-  const isStudentView =
-    pathname.includes('/students/') || accountType === 'student' || accountType === 'member';
+  const isStudentView = pathname.includes('/students/') || accountType === 'student';
   const {
     periodizations,
     fetchPeriodizations,
