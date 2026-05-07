@@ -4,6 +4,7 @@ export { Field } from "./components/Field";
 export { GamificationBar } from "./components/GamificationBar";
 export { SpecialistLinkSection } from "./components/SpecialistLinkSection";
 export { WorkoutCard } from "./components/WorkoutCard";
+export { StudentAnamnesisFormPage } from "./pages/StudentAnamnesisFormPage";
 export { StudentHomePage } from "./pages/StudentHomePage";
 export { StudentNutritionPage } from "./pages/StudentNutritionPage";
 export { StudentProfilePage } from "./pages/StudentProfilePage";
