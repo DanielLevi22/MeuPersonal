@@ -33,7 +33,12 @@ export default function PeriodizationDetailsScreen() {
 
   const { user, accountType } = useAuthStore();
   const pathname = usePathname();
-  const isStudentView = pathname.includes('/students/') || accountType === 'student';
+  const rawMode = params.mode;
+  const mode = Array.isArray(rawMode) ? rawMode[0] : rawMode;
+  const isStudentView =
+    pathname.includes('/students/') ||
+    accountType === 'student' ||
+    (accountType === 'member' && mode === 'execute');
   const {
     periodizations,
     fetchPeriodizations,
@@ -410,9 +415,11 @@ export default function PeriodizationDetailsScreen() {
                               `/(tabs)/students/${targetStudentId}/workouts/${periodizationId}/phases/${phase.id}` as never
                             );
                           } else {
-                            router.push(
-                              `/(tabs)/workouts/periodizations/${periodizationId}/phases/${phase.id}` as never
-                            );
+                            router.push({
+                              pathname:
+                                `/(tabs)/workouts/periodizations/${periodizationId}/phases/${phase.id}` as never,
+                              params: mode === 'execute' ? { mode: 'execute' } : {},
+                            });
                           }
                         }}
                       >

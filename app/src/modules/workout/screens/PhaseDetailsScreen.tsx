@@ -39,15 +39,15 @@ const MUSCLE_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 export default function PhaseDetailsScreen() {
-  const { phaseId } = useLocalSearchParams();
+  const { phaseId, mode: modeParam } = useLocalSearchParams();
+  const mode = Array.isArray(modeParam) ? modeParam[0] : modeParam;
   const router = useRouter();
   const { user, accountType } = useAuthStore();
   const pathname = usePathname();
-  const isStudentView = pathname.includes('/students/') || accountType === 'student';
-  const isProfessional =
-    (accountType as string) === 'personal' ||
-    (accountType as string) === 'specialist' ||
-    (accountType as string) === 'member';
+  const isStudentView =
+    pathname.includes('/students/') ||
+    accountType === 'student' ||
+    (accountType === 'member' && mode === 'execute');
 
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
@@ -345,7 +345,7 @@ export default function PhaseDetailsScreen() {
     );
   }, [phase, showConfirm, deleteTrainingPlan, showAlert, router]);
 
-  const _handleCreateWorkout = useCallback(async () => {
+  const handleCreateWorkout = useCallback(async () => {
     if (!phase || !user?.id) return;
     try {
       await createWorkout({
@@ -539,24 +539,24 @@ export default function PhaseDetailsScreen() {
                     activeOpacity={isWorkoutDoneToday ? 1 : 0.9}
                     onPress={() => {
                       const proceedToWorkout = () => {
-                        const isProfessional =
+                        const isSpecialistOrPersonal =
                           (accountType as string) === 'personal' ||
                           (accountType as string) === 'specialist';
-                        const path = isProfessional
-                          ? '/(tabs)/workouts/details/[id]'
-                          : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
-
-                        const params = isProfessional
-                          ? {
+                        if (isSpecialistOrPersonal) {
+                          router.push({
+                            pathname: '/(tabs)/workouts/details/[id]' as never,
+                            params: {
                               id: suggestedWorkout.id,
                               workoutId: suggestedWorkout.id,
                               studentId: user?.id,
-                            }
-                          : {};
-
-                        router.push(
-                          isProfessional ? ({ pathname: path, params } as never) : (path as never)
-                        );
+                            },
+                          });
+                        } else {
+                          router.push({
+                            pathname: `/(tabs)/workouts/details/${suggestedWorkout.id}` as never,
+                            params: mode === 'execute' ? { mode: 'execute' } : {},
+                          });
+                        }
                       };
 
                       if (isWorkoutDoneToday) {
@@ -586,24 +586,24 @@ export default function PhaseDetailsScreen() {
                       }
                       onPress={() => {
                         const proceedToWorkout = () => {
-                          const isProfessional =
+                          const isSpecialistOrPersonal =
                             (accountType as string) === 'personal' ||
                             (accountType as string) === 'specialist';
-                          const path = isProfessional
-                            ? '/(tabs)/workouts/details/[id]'
-                            : `/(tabs)/workouts/details/${suggestedWorkout.id}`;
-
-                          const params = isProfessional
-                            ? {
+                          if (isSpecialistOrPersonal) {
+                            router.push({
+                              pathname: '/(tabs)/workouts/details/[id]' as never,
+                              params: {
                                 id: suggestedWorkout.id,
                                 workoutId: suggestedWorkout.id,
                                 studentId: user?.id,
-                              }
-                            : {};
-
-                          router.push(
-                            isProfessional ? ({ pathname: path, params } as never) : (path as never)
-                          );
+                              },
+                            });
+                          } else {
+                            router.push({
+                              pathname: `/(tabs)/workouts/details/${suggestedWorkout.id}` as never,
+                              params: mode === 'execute' ? { mode: 'execute' } : {},
+                            });
+                          }
                         };
 
                         if (isWorkoutDoneToday) {
@@ -663,7 +663,7 @@ export default function PhaseDetailsScreen() {
             </View>
           </View>
 
-          {isProfessional && (
+          {!isStudentView && (
             <View className="flex-row gap-2">
               <TouchableOpacity
                 onPress={() => setShowAIModal(true)}
@@ -680,6 +680,13 @@ export default function PhaseDetailsScreen() {
               >
                 <Ionicons name="library" size={14} color="#71717A" style={{ marginRight: 6 }} />
                 <Text className="text-zinc-500 font-bold text-xs">IMPORTAR</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleCreateWorkout}
+                className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center border border-zinc-700"
+              >
+                <Ionicons name="add" size={18} color="#E4E4E7" />
               </TouchableOpacity>
             </View>
           )}
@@ -714,22 +721,24 @@ export default function PhaseDetailsScreen() {
             className={`bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-3 flex-row justify-between items-center ${isStudentView && workout.id === suggestedWorkout?.id ? 'opacity-50' : ''} ${isStudentView && isWorkoutDoneToday ? 'opacity-30' : ''}`}
             onPress={() => {
               const proceedToWorkout = () => {
-                const isProfessional =
+                const isSpecialistOrPersonal =
                   (accountType as string) === 'personal' ||
                   (accountType as string) === 'specialist';
-                const path = isProfessional
-                  ? '/(tabs)/workouts/details/[id]'
-                  : isStudentView
-                    ? `/(tabs)/students/${user?.id}/workouts/details/${workout.id}`
-                    : `/(tabs)/workouts/details/${workout.id}`;
-
-                const params = isProfessional
-                  ? { id: workout.id, workoutId: workout.id, studentId: user?.id }
-                  : {};
-
-                router.push(
-                  isProfessional ? ({ pathname: path, params } as never) : (path as never)
-                );
+                if (isSpecialistOrPersonal) {
+                  router.push({
+                    pathname: '/(tabs)/workouts/details/[id]' as never,
+                    params: { id: workout.id, workoutId: workout.id, studentId: user?.id },
+                  });
+                } else if (isStudentView && accountType !== 'member') {
+                  router.push(
+                    `/(tabs)/students/${user?.id}/workouts/details/${workout.id}` as never
+                  );
+                } else {
+                  router.push({
+                    pathname: `/(tabs)/workouts/details/${workout.id}` as never,
+                    params: mode === 'execute' ? { mode: 'execute' } : {},
+                  });
+                }
               };
 
               if (isStudentView && isWorkoutDoneToday) {

@@ -29,6 +29,7 @@ const PERIODIZATION_IMAGES: Record<string, ImageSourcePropType> = {
 export default function PeriodizationsScreen() {
   const router = useRouter();
   const { user, accountType } = useAuthStore();
+  const isSpecialist = accountType === 'specialist';
   const { periodizations, isLoading, fetchPeriodizations } = useWorkoutStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
@@ -79,14 +80,18 @@ export default function PeriodizationsScreen() {
       return (
         <PremiumCard
           title={item.name || 'Sem nome'}
-          subtitle={`${item.student?.full_name || 'Aluno'} • ${phaseCount} ${phaseCount === 1 ? 'Fase' : 'Fases'}`}
+          subtitle={
+            isSpecialist
+              ? `${item.student?.full_name || 'Aluno'} • ${phaseCount} ${phaseCount === 1 ? 'Fase' : 'Fases'}`
+              : `${item.objective || 'Geral'} • ${phaseCount} ${phaseCount === 1 ? 'Fase' : 'Fases'}`
+          }
           image={PERIODIZATION_IMAGES[item.objective as string] || PERIODIZATION_IMAGES.default}
           onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as never)}
           badge={<StatusBadge status={item.status} />}
           containerStyle={{ marginBottom: 24 }}
         >
-          <View className="flex-row items-center justify-between mt-4">
-            <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5">
+          <View className="mt-4">
+            <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5 self-start mb-3">
               <Ionicons
                 name="calendar-outline"
                 size={14}
@@ -98,20 +103,49 @@ export default function PeriodizationsScreen() {
                 {item.end_date ? new Date(item.end_date).toLocaleDateString() : '—'}
               </Text>
             </View>
-            <View className="flex-row items-center">
-              <Text
-                className="text-orange-500 font-bold text-xs mr-1 uppercase"
-                style={{ color: colors.primary.start }}
-              >
-                Gerenciar
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
-            </View>
+
+            {accountType === 'member' ? (
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={() => router.push(`/(tabs)/workouts/periodizations/${item.id}` as never)}
+                  className="flex-1 py-2.5 rounded-xl border border-zinc-600 items-center"
+                >
+                  <Text className="text-zinc-300 text-[10px] font-black uppercase tracking-widest">
+                    Gerenciar
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: `/(tabs)/workouts/periodizations/${item.id}` as never,
+                      params: { mode: 'execute' },
+                    })
+                  }
+                  className="flex-1 py-2.5 rounded-xl items-center flex-row justify-center gap-1"
+                  style={{ backgroundColor: colors.primary.start }}
+                >
+                  <Ionicons name="play" size={12} color="white" />
+                  <Text className="text-white text-[10px] font-black uppercase tracking-widest">
+                    Iniciar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="flex-row items-center justify-end">
+                <Text
+                  className="font-bold text-xs mr-1 uppercase"
+                  style={{ color: colors.primary.start }}
+                >
+                  {isSpecialist ? 'Gerenciar' : 'Abrir'}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.primary.start} />
+              </View>
+            )}
           </View>
         </PremiumCard>
       );
     },
-    [router]
+    [router, isSpecialist, accountType]
   );
 
   return (
@@ -121,9 +155,15 @@ export default function PeriodizationsScreen() {
         <View className="flex-row justify-between items-center mb-6">
           <View>
             <Text className="text-4xl font-extrabold text-white mb-0.5 font-display tracking-tight">
-              Alunos
+              {isSpecialist ? 'Alunos' : 'Meus Treinos'}
             </Text>
-            <Text className="text-sm text-zinc-400 font-sans">Gestão de Planejamento</Text>
+            <Text className="text-sm text-zinc-400 font-sans">
+              {isSpecialist
+                ? 'Gestão de Planejamento'
+                : accountType === 'member'
+                  ? 'Planejamento & Execução'
+                  : 'Seus treinos'}
+            </Text>
           </View>
 
           <View className="flex-row items-center gap-3">

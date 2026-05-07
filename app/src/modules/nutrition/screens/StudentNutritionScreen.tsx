@@ -373,6 +373,11 @@ export function StudentNutritionScreen() {
             Minha Dieta
           </Text>
           <Text className="text-zinc-400 font-sans font-medium mt-1">{currentDietPlan.name}</Text>
+          {isMember && (
+            <Text className="text-zinc-500 text-xs font-sans mt-0.5 uppercase tracking-widest">
+              Planejamento & Execução
+            </Text>
+          )}
         </View>
         <View className="flex-row gap-3">
           {isMember && (
@@ -380,8 +385,8 @@ export function StudentNutritionScreen() {
               onPress={() =>
                 router.push({
                   pathname: '/(tabs)/nutrition/[id]' as never,
-                  params: { id: user?.id, planId: currentDietPlan.id },
-                } as never)
+                  params: { id: currentDietPlan.id, planId: currentDietPlan.id },
+                })
               }
               className="p-3 rounded-full border shadow-sm"
               style={{

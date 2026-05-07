@@ -15,6 +15,7 @@ export {
 // Screens
 export { default as CreateDietScreen } from '../screens/CreateDietScreen';
 export { default as DietDetailsScreen } from '../screens/DietDetailsScreen';
+export { MemberNutritionScreen } from '../screens/MemberNutritionScreen';
 export { default as NutritionScreen } from '../screens/NutritionScreen';
 export { StudentNutritionScreen } from '../screens/StudentNutritionScreen';
 // Store
