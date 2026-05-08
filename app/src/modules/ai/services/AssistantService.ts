@@ -116,7 +116,7 @@ export const AssistantService = {
    * Generates a weekly nutrition adherence summary
    */
   analyzeNutritionAdherence: async (
-    studentName: string,
+    _studentName: string,
     adherenceData: {
       totalMeals: number;
       completedMeals: number;
@@ -126,7 +126,6 @@ export const AssistantService = {
   ): Promise<string> => {
     try {
       const result = await postBff<{ summary: string }>('/api/ai/nutrition/adherence', {
-        studentName,
         planName,
         adherenceData,
       });

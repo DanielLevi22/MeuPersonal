@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json()) as {
-    studentName: string;
     planName: string;
     adherenceData: {
       totalMeals: number;
@@ -32,20 +31,16 @@ export async function POST(request: NextRequest) {
     };
   };
 
-  const { studentName, planName, adherenceData } = body;
+  const { planName, adherenceData } = body;
 
-  if (!studentName || !planName || !adherenceData) {
-    return NextResponse.json(
-      { error: "studentName, planName, adherenceData are required" },
-      { status: 400 },
-    );
+  if (!planName || !adherenceData) {
+    return NextResponse.json({ error: "planName, adherenceData are required" }, { status: 400 });
   }
 
   const prompt = `Você é um assistente nutricionista esportivo sênior.
-Analise a aderência semanal deste aluno com base nos logs fornecidos.
+Analise a aderência semanal com base nos logs fornecidos.
 
 CONTEXTO:
-Aluno: ${studentName}
 Plano: ${planName}
 Logs dos últimos 7 dias: ${adherenceData.logs.length} entradas.
 Refeições Completas: ${adherenceData.completedMeals} de ${adherenceData.totalMeals}.
