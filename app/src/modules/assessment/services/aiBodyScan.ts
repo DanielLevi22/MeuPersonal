@@ -94,33 +94,7 @@ export const AIBodyScanService = {
       };
     } catch (error) {
       console.error('AI Analysis Error:', error);
-      // Fallback to simulation/mock if AI fails drastically to avoid app crash users,
-      // but since user ASKED for connection, we should maybe throw?
-      // For reliability, we return mock but log error.
-      console.log('Falling back to mock data due to error.');
-      const mock = await AIBodyScanService.simulateScan();
-
-      // Add detailed mock if falling back
-      // ... (simplified for brevity, main goal is real AI)
-      return {
-        ...mock,
-        postureAnalysis: {
-          scores: { symmetry: 80, muscle: 75, posture: 85 },
-          feedback: {
-            front: [
-              {
-                title: 'Fallback',
-                risk: 'NORMAL',
-                text: 'AI Analysis unavailable. Using estimation.',
-              },
-            ],
-            back: [],
-            side_right: [],
-            side_left: [],
-          },
-          recommendations: 'Please try again later.',
-        },
-      };
+      throw error;
     }
   },
 };

@@ -1,8 +1,11 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef } from 'react';
-import { Alert, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { Alert, Dimensions, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { CameraOverlayGuides } from '../components/CameraOverlayGuides';
 import { useAssessmentStore } from '../store/assessmentStore';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function BodyScanCamera() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -77,6 +80,11 @@ export default function BodyScanCamera() {
   return (
     <View className="flex-1 bg-black">
       <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" mode="picture" />
+
+      {/* Body positioning guide */}
+      <View style={{ position: 'absolute', top: 0, left: 0 }} pointerEvents="none">
+        <CameraOverlayGuides step={target || 'front'} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} />
+      </View>
 
       {/* Absolute Overlay Controls */}
       <View className="absolute top-12 left-0 right-0 items-center">

@@ -1,9 +1,12 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '@/constants/colors';
+import { SupabaseStorageService } from '@/services/SupabaseStorageService';
+import { PhysicalAssessmentService } from '../services/physicalAssessmentService';
+import { useAssessmentStore } from '../store/assessmentStore';
 
 const MetricCard = ({
   label,
@@ -50,9 +53,35 @@ const MetricCard = ({
   </View>
 );
 
+type PhotoUrls = {
+  front: string | null;
+  back: string | null;
+  side_right: string | null;
+  side_left: string | null;
+};
+
 export default function PhysicalAssessment() {
   const router = useRouter();
-  const _insets = useSafeAreaInsets();
+  const { studentId } = useAssessmentStore();
+  const [photoUrls, setPhotoUrls] = useState<PhotoUrls>({
+    front: null,
+    back: null,
+    side_right: null,
+    side_left: null,
+  });
+
+  useEffect(() => {
+    if (!studentId) return;
+    PhysicalAssessmentService.getLatestAssessmentPhotos(studentId).then(async (paths) => {
+      if (!paths) return;
+      const urls: PhotoUrls = { front: null, back: null, side_right: null, side_left: null };
+      for (const key of ['front', 'back', 'side_right', 'side_left'] as const) {
+        const path = paths[key];
+        if (path) urls[key] = await SupabaseStorageService.getSignedUrl(path);
+      }
+      setPhotoUrls(urls);
+    });
+  }, [studentId]);
 
   return (
     <ScrollView
@@ -217,15 +246,33 @@ export default function PhysicalAssessment() {
           <Text className="text-white text-lg font-bold">Fotos Comparativas</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-          {['Frontal', 'Costas', 'Lateral Dir.', 'Lateral Esq.'].map((label) => {
+          {(
+            [
+              { label: 'Frontal', key: 'front' },
+              { label: 'Costas', key: 'back' },
+              { label: 'Lateral Dir.', key: 'side_right' },
+              { label: 'Lateral Esq.', key: 'side_left' },
+            ] as const
+          ).map(({ label, key }) => {
+            const url = photoUrls[key];
             return (
-              <View key={label} className="mr-3">
-                <View className="w-24 h-32 bg-zinc-900/50 rounded-xl border border-white/10 items-center justify-center mb-2 overflow-hidden">
-                  <MaterialCommunityIcons
-                    name="camera-outline"
-                    size={32}
-                    color={colors.text.muted}
-                  />
+              <View key={key} className="mr-3">
+                <View className="w-24 h-32 bg-zinc-900/50 rounded-xl border border-white/10 overflow-hidden mb-2">
+                  {url ? (
+                    <Image
+                      source={{ uri: url }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="flex-1 items-center justify-center">
+                      <MaterialCommunityIcons
+                        name="camera-outline"
+                        size={32}
+                        color={colors.text.muted}
+                      />
+                    </View>
+                  )}
                 </View>
                 <Text className="text-center text-zinc-500 text-xs font-medium">{label}</Text>
               </View>

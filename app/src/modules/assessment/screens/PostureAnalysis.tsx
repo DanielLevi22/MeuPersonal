@@ -513,6 +513,8 @@ export default function PostureAnalysis() {
     );
   }
 
+  const isDemo = !lastResult;
+
   // Dynamic Data with fallback
   const scores = lastResult?.postureAnalysis?.scores || {
     symmetry: 85,
@@ -551,6 +553,16 @@ export default function PostureAnalysis() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Demo mode banner — shown when AI analysis failed */}
+        {isDemo && (
+          <View className="mx-6 mt-4 flex-row items-center gap-3 bg-amber-500/10 border border-amber-500/30 px-4 py-3 rounded-xl">
+            <Ionicons name="warning-outline" size={16} color="#f59e0b" />
+            <Text className="text-amber-400 text-xs flex-1 leading-5">
+              Análise de demonstração — a IA não conseguiu processar as fotos. Tente novamente.
+            </Text>
+          </View>
+        )}
+
         {/* Photo Container with Navigation */}
         <View className="items-center mt-6 relative">
           {/* View Switcher Controls (Overlay left/right) */}
