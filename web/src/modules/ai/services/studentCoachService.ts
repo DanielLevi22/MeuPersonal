@@ -32,16 +32,18 @@ export async function getOrCreateStudentCoachSession(studentId: string): Promise
 
 export async function getStudentSessionMessages(
   sessionId: string,
-): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
+): Promise<Array<{ id: string; role: "user" | "assistant"; content: string; createdAt: string }>> {
   const { data } = await supabaseAdmin
     .from("ai_chat_messages")
-    .select("role, content")
+    .select("id, role, content, created_at")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true });
 
   return (data ?? []).map((row) => ({
+    id: row.id,
     role: row.role as "user" | "assistant",
     content: row.content,
+    createdAt: row.created_at ?? new Date().toISOString(),
   }));
 }
 

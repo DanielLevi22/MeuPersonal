@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
     profileSummary,
     readiness,
     messageCount: messages.length,
+    messages,
     activePlan: ctx.activePlan,
   });
 }

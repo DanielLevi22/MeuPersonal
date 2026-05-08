@@ -12,6 +12,7 @@ export interface SessionInfo {
   profileSummary: Record<string, string | null>;
   readiness: AiReadinessScore;
   messageCount: number;
+  messages: ChatMessage[];
   activePlan: { name: string; goal: string; status: string } | null;
 }
 
@@ -39,7 +40,10 @@ export function useStudentCoach() {
       .then((r) => r.json())
       .then((data: SessionInfo) => {
         setSessionInfo(data);
-        if (data.messageCount > 0) setCoachStarted(true);
+        if (data.messageCount > 0) {
+          setCoachStarted(true);
+          setMessages(data.messages);
+        }
       })
       .catch(() => {})
       .finally(() => setInitializing(false));
