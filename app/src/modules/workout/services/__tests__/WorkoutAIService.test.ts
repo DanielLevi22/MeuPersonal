@@ -1,42 +1,40 @@
 import { WorkoutAIService } from '../WorkoutAIService';
 
-// Mock data
+jest.mock('@/modules/auth/store/authStore', () => ({
+  useAuthStore: {
+    getState: () => ({ session: { access_token: 'mock-token' } }),
+  },
+}));
+
 const mockExercises = [
   { id: '1', name: 'Supino Reto', muscle_group: 'Peito' },
   { id: '2', name: 'Tríceps Corda', muscle_group: 'Tríceps' },
 ] as never;
 
+beforeEach(() => {
+  jest.clearAllMocks();
+  process.env.EXPO_PUBLIC_API_URL = 'http://localhost:3000';
+  global.fetch = jest.fn();
+});
+
 describe('WorkoutAIService', () => {
-  const originalApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-
-  beforeEach(() => {
-    jest.resetAllMocks();
-    process.env.EXPO_PUBLIC_GEMINI_API_KEY = 'mock-key';
-    global.fetch = jest.fn();
-  });
-
-  afterEach(() => {
-    process.env.EXPO_PUBLIC_GEMINI_API_KEY = originalApiKey;
-  });
-
   it('should return AI generated structure on success', async () => {
-    const mockExplanation = 'Training Plan Logic...';
-    const mockPlan = [
-      {
-        letter: 'A',
-        focus: 'Peitoral e Tríceps',
-        exercises: [
-          { exerciseName: 'Supino Reto', sets: 3, reps: '10-12', rest: 60, technique: 'Normal' },
-        ],
-      },
-    ];
-    const mockResponse = { explanation: mockExplanation, plan: mockPlan };
+    const mockResponse = {
+      explanation: 'Training Plan Logic...',
+      plan: [
+        {
+          letter: 'A',
+          focus: 'Peitoral e Tríceps',
+          exercises: [
+            { exerciseName: 'Supino Reto', sets: 3, reps: '10-12', rest: 60, technique: 'Normal' },
+          ],
+        },
+      ],
+    };
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
-      json: async () => ({
-        candidates: [{ content: { parts: [{ text: JSON.stringify(mockResponse) }] } }],
-      }),
       ok: true,
+      json: async () => mockResponse,
     });
 
     const result = await WorkoutAIService.generateWorkoutStructure(
@@ -48,6 +46,10 @@ describe('WorkoutAIService', () => {
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/ai/workout/negotiate',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 
   it('should return fallback structure on API failure', async () => {
@@ -60,7 +62,6 @@ describe('WorkoutAIService', () => {
       mockExercises
     );
 
-    // Fallback checks
     expect(result.explanation).toContain('Não foi possível conectar');
     expect(result.plan).toHaveLength(2);
     expect(result.plan[0].letter).toBe('A');
@@ -68,18 +69,16 @@ describe('WorkoutAIService', () => {
     expect(result.plan[0].exercises).toEqual([]);
   });
 
-  it('should return fallback if no API key is present', async () => {
-    process.env.EXPO_PUBLIC_GEMINI_API_KEY = '';
+  it('should return fallback when BFF returns 4xx', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 401 });
 
     const result = await WorkoutAIService.generateWorkoutStructure(
       'A',
       'Hipertrofia',
-      'Intermediário',
+      'Iniciante',
       mockExercises
     );
 
-    expect(result.plan).toHaveLength(1);
-    expect(result.plan[0].letter).toBe('A');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(result.explanation).toContain('Não foi possível conectar');
   });
 });

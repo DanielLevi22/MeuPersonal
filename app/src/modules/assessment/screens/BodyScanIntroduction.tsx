@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
+import { useAuthStore } from '@/modules/auth/store/authStore';
 import { useAssessmentStore } from '../store/assessmentStore';
 
 // Import local image using require to ensure resolution
@@ -125,25 +126,18 @@ export default function BodyScanIntroduction({ hideHeader = false }: { hideHeade
   const router = useRouter();
   const { studentId, id } = useLocalSearchParams<{ studentId?: string; id?: string }>();
   const { startScan, setStudentId } = useAssessmentStore();
+  const authUserId = useAuthStore((s) => s.session?.user?.id ?? null);
 
   const handleStart = async () => {
-    const targetId = studentId || id;
-
-    console.log('🔍 BodyScanIntro | Params:', { studentId, id });
-    console.log('🔍 BodyScanIntro | Target ID:', targetId);
+    // params > auth user (member doing their own scan)
+    const targetId = studentId || id || authUserId || undefined;
 
     if (targetId) {
       setStudentId(targetId as string);
-      const stored = useAssessmentStore.getState().studentId;
-      console.log('✅ BodyScanIntro | Store Updated:', stored);
-    } else {
-      console.warn('⚠️ BodyScanIntro | No ID found to set in store!');
     }
 
-    // Navigate to grid for photo capture
-    await startScan(); // Initialize session
+    await startScan();
 
-    // Explicitly pass ID via params for robustness
     router.push({
       pathname: '/(professional)/assessment/grid',
       params: { studentId: targetId },

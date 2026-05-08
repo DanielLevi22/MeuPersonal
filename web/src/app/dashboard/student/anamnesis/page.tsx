@@ -1,5 +1,5 @@
-import { StudentAnamnesisFormPage } from "@/modules/student-dashboard";
+import { StudentAnamnesisJourneyPage } from "@/modules/student-dashboard";
 
 export default function Page() {
-  return <StudentAnamnesisFormPage />;
+  return <StudentAnamnesisJourneyPage />;
 }

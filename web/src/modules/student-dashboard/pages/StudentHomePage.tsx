@@ -1,15 +1,76 @@
 "use client";
 
+import Link from "next/link";
 import { useAuthStore } from "@/modules/auth";
+import { getPrecisionScore, getTrackQuestions } from "@/modules/students/data/anamnesisAdaptive";
+import { useStudentAnamnesis } from "@/modules/students/hooks/useStudentAnamnesis";
 import { DayOverviewCard } from "../components/DayOverviewCard";
 import { GamificationBar } from "../components/GamificationBar";
 import {
   useCurrentStudentId,
   useStudentAchievements,
   useStudentActiveDietPlan,
+  useStudentPersonaTrack,
   useStudentStreak,
   useStudentWorkoutPlans,
 } from "../hooks/useStudentDashboardData";
+
+function AnamnesisProgressBanner({ studentId }: { studentId: string | null }) {
+  const { data: existing } = useStudentAnamnesis(studentId);
+  const { data: savedTrack } = useStudentPersonaTrack(studentId);
+
+  if (!studentId) return null;
+
+  const track = savedTrack ?? "beginner";
+  const questions = getTrackQuestions(track as Parameters<typeof getTrackQuestions>[0]);
+  const responses = (existing?.responses ?? {}) as Record<string, unknown>;
+  const score = getPrecisionScore(questions, responses);
+  const isComplete = !!existing?.completed_at;
+  const hasStarted = Object.keys(responses).length > 0;
+
+  if (isComplete && score >= 80) return null;
+
+  const barColor = score >= 60 ? "#f59e0b" : "#818cf8";
+
+  return (
+    <Link
+      href="/dashboard/student/anamnesis"
+      className="flex items-center gap-4 p-4 rounded-2xl border border-white/8 bg-zinc-900/50 hover:bg-zinc-800/60 transition-all group"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-white">
+            {isComplete
+              ? "Perfil incompleto"
+              : hasStarted
+                ? "Continuar perfil"
+                : "Criar perfil de treino"}
+          </p>
+          <span className="text-xs font-black text-zinc-400 tabular-nums">{score}%</span>
+        </div>
+        <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${score}%`, backgroundColor: barColor }}
+          />
+        </div>
+        <p className="text-[10px] text-zinc-600 mt-1.5">
+          {score >= 60
+            ? "Complete para melhorar a precisão do seu plano"
+            : "Responda as perguntas para personalizar seu plano"}
+        </p>
+      </div>
+      <svg
+        className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </Link>
+  );
+}
 
 export function StudentHomePage() {
   const accountType = useAuthStore((s) => s.accountType);
@@ -36,6 +97,8 @@ export function StudentHomePage() {
       </div>
 
       <GamificationBar streak={streak} achievements={achievements} />
+
+      {isMember && <AnamnesisProgressBanner studentId={studentId} />}
 
       <DayOverviewCard
         todayWorkout={todayWorkout}

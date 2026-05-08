@@ -6,8 +6,3 @@ export {
   type AIWorkoutResponse,
   AssistantService,
 } from './services/AssistantService';
-export {
-  type GeminiGenerationConfig,
-  GeminiService,
-  type GeminiTool,
-} from './services/GeminiService';

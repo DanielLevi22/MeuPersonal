@@ -81,8 +81,8 @@ describe("getStudentSessionMessages", () => {
 
   it("returns mapped messages in order", async () => {
     const rows = [
-      { role: "user", content: "Oi" },
-      { role: "assistant", content: "Olá!" },
+      { id: "msg-1", role: "user", content: "Oi", created_at: "2026-01-01T10:00:00Z" },
+      { id: "msg-2", role: "assistant", content: "Olá!", created_at: "2026-01-01T10:00:01Z" },
     ];
     const chain = makeChain();
     (chain.order as ReturnType<typeof vi.fn>).mockResolvedValue({ data: rows, error: null });
@@ -91,8 +91,8 @@ describe("getStudentSessionMessages", () => {
     const messages = await getStudentSessionMessages("session-1");
 
     expect(messages).toEqual([
-      { role: "user", content: "Oi" },
-      { role: "assistant", content: "Olá!" },
+      { id: "msg-1", role: "user", content: "Oi", createdAt: "2026-01-01T10:00:00Z" },
+      { id: "msg-2", role: "assistant", content: "Olá!", createdAt: "2026-01-01T10:00:01Z" },
     ]);
   });
 

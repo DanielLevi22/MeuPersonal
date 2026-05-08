@@ -447,6 +447,42 @@ Itens obrigatórios antes de abrir para o público:
 
 ---
 
+### Módulo AI BFF ⚠️ Revisado — pendências antes do lançamento
+
+Rotas criadas em `web/src/app/api/ai/` que processam dados de saúde via terceiros (Anthropic Claude e Google Gemini).
+
+| Rota | Dado transmitido | Destinatário | Sensível? | Base legal |
+|------|-----------------|--------------|-----------|------------|
+| `/api/ai/body-scan` | Fotos corporais (base64) + métricas inferidas | Anthropic | ✅ Sim (Art. 5°, II) | Consentimento explícito (Art. 11, I) |
+| `/api/ai/nutrition/adherence` | `diet_logs` anonimizados + nome do plano | Anthropic | ✅ Sim | Consentimento explícito |
+| `/api/ai/voice-command` | Removido — rota e serviço eliminados | — | — | — |
+| `/api/ai/workout/negotiate` | Nível do aluno, objetivo, lista de exercícios | Anthropic | ❌ Não sensível | Execução de contrato |
+| `/api/ai/workout/batch` | Idem | Anthropic | ❌ Não sensível | Execução de contrato |
+| `/api/ai/nutrition/recipe` | Nome da refeição + ingredientes | Anthropic | ❌ Não sensível | Execução de contrato |
+| `/api/ai/nutrition/assistant` | Lista de compras categorizada | Anthropic | ❌ Não sensível | Execução de contrato |
+
+**Decisões tomadas nesta revisão:**
+
+| Decisão | Princípio atendido |
+|---------|-------------------|
+| `studentName` removido do prompt da rota `/nutrition/adherence` — IA não precisa do nome para analisar aderência | Necessidade (Art. 6°, III) |
+| Nenhum dado é persistido nas rotas BFF — processamento em memória e descartado | Necessidade + Segurança |
+| Autenticação obrigatória (Bearer token validado via Supabase) antes de qualquer processamento | Segurança (Art. 6°, VII) |
+| Transmissão via HTTPS (Vercel → Anthropic/Google) | Segurança |
+| Dados de `diet_logs` enviados ao Claude não contêm identificadores do aluno (`student_id` nunca incluído no payload) | Necessidade |
+
+**Pendências obrigatórias antes do lançamento:**
+
+| Item | Ação necessária | Responsável |
+|------|----------------|-------------|
+| Consentimento da tela de Body Scan deve mencionar explicitamente envio de fotos a serviço de IA externo | Atualizar texto da tela `BodyScanIntroduction.tsx` | Dev + Legal |
+| Anthropic e Google devem ser listados como sub-processadores na Política de Privacidade | Atualizar política de privacidade | Legal |
+| Rota `/api/ai/body-scan` deve verificar `student_consents` (tipo `health_data_collection`) antes de processar | Adicionar middleware de consentimento na rota, igual ao padrão de `nutribot` e `scan-food` | Dev |
+| Rota `/api/ai/nutrition/adherence` deve verificar `student_consents` antes de processar | Idem | Dev |
+| ~~Verificar DPA Google (Gemini) para dado biométrico de voz~~ | Eliminado — voice command removido do escopo | — |
+
+---
+
 ### Módulos pendentes de revisão LGPD
 
 | Módulo | Status LGPD |

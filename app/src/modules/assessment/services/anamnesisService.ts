@@ -36,6 +36,41 @@ export const AnamnesisService = {
     }
   },
 
+  async saveAdaptiveAnamnesis(
+    studentId: string,
+    responses: Record<string, string | number | string[] | boolean>,
+    isComplete: boolean = false
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.from('student_anamnesis').upsert(
+        {
+          student_id: studentId,
+          responses,
+          completed_at: isComplete ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'student_id' }
+      );
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  },
+
+  async savePersonaTrack(studentId: string, track: string): Promise<void> {
+    await supabase.from('profiles').update({ persona_track: track }).eq('id', studentId);
+  },
+
+  async getPersonaTrack(studentId: string): Promise<string | null> {
+    const { data } = await supabase
+      .from('profiles')
+      .select('persona_track')
+      .eq('id', studentId)
+      .maybeSingle();
+    return data?.persona_track ?? null;
+  },
+
   /**
    * Fetches the existing anamnesis for a student.
    * @param studentId The ID of the student.
