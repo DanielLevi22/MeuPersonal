@@ -328,9 +328,18 @@ export function StudentAnamnesisJourneyPage() {
 
   const isCompleted = (!forceRetake && !!existing?.completed_at) || sessionDone;
 
-  // Pre-fill responses from DB
+  // Restore state from DB: normalize responses, auto-set track, resume at first unanswered step
   useEffect(() => {
-    if (!existing?.responses) return;
+    if (track || !savedTrack || forceRetake) return;
+    if (existing === undefined) return; // still loading
+
+    const t = savedTrack as PersonaTrack;
+
+    if (!existing?.responses) {
+      setTrack(t);
+      return;
+    }
+
     const raw = existing.responses as Record<string, unknown>;
     const normalized: Record<string, AnamnesisResponseValue> = Object.fromEntries(
       Object.entries(raw).map(([k, v]) => {
@@ -341,13 +350,15 @@ export function StudentAnamnesisJourneyPage() {
       }),
     );
     setResponses(normalized);
-  }, [existing]);
+    setTrack(t);
 
-  // Auto-restore track to skip persona screen on return visits
-  useEffect(() => {
-    if (track || !savedTrack || forceRetake) return;
-    setTrack(savedTrack as PersonaTrack);
-  }, [savedTrack, track, forceRetake]);
+    const qs = getTrackQuestions(t);
+    const firstUnanswered = qs.findIndex((q) => {
+      const v = normalized[q.id];
+      return v === undefined || v === "" || v === null || (Array.isArray(v) && v.length === 0);
+    });
+    if (firstUnanswered > 0) setStep(firstUnanswered);
+  }, [existing, savedTrack, track, forceRetake]);
 
   if (anamnesisLoading || trackLoading) return null;
 
