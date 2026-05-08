@@ -15,6 +15,7 @@ vi.mock("next/link", () => ({
 
 const mockUseStudents = vi.fn();
 const mockUseStudentAnamnesis = vi.fn();
+const mockUseStudentProfile = vi.fn();
 
 vi.mock("@/shared/hooks/useStudents", () => ({
   useStudents: () => mockUseStudents(),
@@ -22,6 +23,10 @@ vi.mock("@/shared/hooks/useStudents", () => ({
 
 vi.mock("../hooks/useStudentAnamnesis", () => ({
   useStudentAnamnesis: (id: string) => mockUseStudentAnamnesis(id),
+}));
+
+vi.mock("../hooks/useStudentProfile", () => ({
+  useStudentProfile: () => mockUseStudentProfile(),
 }));
 
 const { default: StudentAnamnesisPage } = await import("../pages/StudentAnamnesisPage");
@@ -52,6 +57,7 @@ const mockAnamnesis = {
 describe("StudentAnamnesisPage", () => {
   beforeEach(() => {
     mockUseStudents.mockReturnValue({ data: [mockStudent] });
+    mockUseStudentProfile.mockReturnValue({ data: null });
   });
 
   afterEach(() => {
@@ -87,9 +93,8 @@ describe("StudentAnamnesisPage", () => {
     });
     render(<StudentAnamnesisPage />, { wrapper });
 
-    // "João Silva" appears in both header and response value — use getAllByText
+    // "João Silva" appears in header (adaptive format renders main_goal, not age)
     expect(screen.getAllByText("João Silva").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("25")).toBeInTheDocument();
     expect(screen.getByText("Hipertrofia")).toBeInTheDocument();
   });
 
@@ -110,7 +115,7 @@ describe("StudentAnamnesisPage", () => {
       isError: false,
     });
     render(<StudentAnamnesisPage />, { wrapper });
-    // "Se sim, qual?" should not be visible since trained_sport_specific is false
+    // adaptive format — conditional general questions are not rendered
     expect(screen.queryByText("Se sim, qual?")).not.toBeInTheDocument();
   });
 
@@ -141,7 +146,8 @@ describe("StudentAnamnesisPage", () => {
       isError: false,
     });
     render(<StudentAnamnesisPage />, { wrapper });
-    expect(screen.getByText("Dados Pessoais")).toBeInTheDocument();
-    expect(screen.getByText("Objetivos")).toBeInTheDocument();
+    // mock data has main_goal → adaptive format sections
+    expect(screen.getByText("Perfil & Objetivo")).toBeInTheDocument();
+    expect(screen.getByText("Perfil Avançado")).toBeInTheDocument();
   });
 });
