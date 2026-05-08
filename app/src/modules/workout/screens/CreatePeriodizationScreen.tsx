@@ -33,8 +33,9 @@ const OBJECTIVE_OPTIONS = [
 
 export default function CreatePeriodizationScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, accountType } = useAuthStore();
   const { createPeriodization } = useWorkoutStore();
+  const isMember = accountType === 'member';
 
   const [name, setName] = useState('');
   const [objective, setObjective] = useState('');
@@ -115,7 +116,7 @@ export default function CreatePeriodizationScreen() {
       return;
     }
 
-    if (!studentId) {
+    if (!isMember && !studentId) {
       console.log('❌ Validation failed: No student selected');
       Alert.alert('Erro', 'Selecione um aluno.');
       return;
@@ -145,7 +146,7 @@ export default function CreatePeriodizationScreen() {
       const data = await createPeriodization({
         name,
         objective,
-        student_id: studentId,
+        student_id: isMember ? user.id : studentId,
         specialist_id: user.id,
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
@@ -172,7 +173,17 @@ export default function CreatePeriodizationScreen() {
       setLoading(false);
       console.log('=== PERIODIZATION CREATION FLOW ENDED ===\n');
     }
-  }, [name, objective, studentId, user?.id, students, startDate, endDate, createPeriodization]);
+  }, [
+    name,
+    objective,
+    studentId,
+    isMember,
+    user?.id,
+    students,
+    startDate,
+    endDate,
+    createPeriodization,
+  ]);
 
   const selectedStudent = students.find((s) => s.id === studentId);
   const selectedObjective = OBJECTIVE_OPTIONS.find((o) => o.value === objective);
@@ -265,35 +276,37 @@ export default function CreatePeriodizationScreen() {
             </Modal>
           </View>
 
-          {/* Student Selector */}
-          <View className="mb-4">
-            <Text className="text-foreground text-sm font-semibold mb-2 font-sans">Aluno *</Text>
-            <TouchableOpacity
-              onPress={() => setShowStudentPicker(!showStudentPicker)}
-              className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
-            >
-              <Text
-                className={
-                  selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'
-                }
+          {/* Student Selector — hidden for member (uses own account) */}
+          {!isMember && (
+            <View className="mb-4">
+              <Text className="text-foreground text-sm font-semibold mb-2 font-sans">Aluno *</Text>
+              <TouchableOpacity
+                onPress={() => setShowStudentPicker(!showStudentPicker)}
+                className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
               >
-                {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
-              </Text>
-              <Ionicons
-                name={showStudentPicker ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#71717A"
-              />
-            </TouchableOpacity>
+                <Text
+                  className={
+                    selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'
+                  }
+                >
+                  {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
+                </Text>
+                <Ionicons
+                  name={showStudentPicker ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color="#71717A"
+                />
+              </TouchableOpacity>
 
-            <StudentPickerModal
-              visible={showStudentPicker}
-              onClose={() => setShowStudentPicker(false)}
-              onSelect={(student) => setStudentId(student.id)}
-              students={students}
-              selectedStudentId={studentId}
-            />
-          </View>
+              <StudentPickerModal
+                visible={showStudentPicker}
+                onClose={() => setShowStudentPicker(false)}
+                onSelect={(student) => setStudentId(student.id)}
+                students={students}
+                selectedStudentId={studentId}
+              />
+            </View>
+          )}
 
           {/* Dates */}
           <View className="flex-row gap-4 mb-4">

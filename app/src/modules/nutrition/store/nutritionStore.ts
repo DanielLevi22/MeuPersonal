@@ -71,7 +71,11 @@ interface NutritionStore {
 
   // Day Operations
   copiedDay: { meals: DietMeal[]; items: Record<string, DietMealItem[]> } | null;
-  copyDay: (dayOfWeek: number) => Promise<void>;
+  copyDay: (
+    dayOfWeek: number,
+    meals: DietMeal[],
+    mealItems: Record<string, DietMealItem[]>
+  ) => Promise<void>;
   pasteDay: (targetDay: number, dietPlanId?: string) => Promise<void>;
   clearDay: (dayOfWeek: number, dietPlanId?: string) => Promise<void>;
 
@@ -159,8 +163,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     }
   },
 
-  copyDay: async (dayOfWeek) => {
-    const { meals, mealItems } = get();
+  copyDay: async (dayOfWeek, meals, mealItems) => {
     const dayMeals = meals.filter((m) => m.day_of_week === dayOfWeek);
     const dayItems: Record<string, DietMealItem[]> = {};
     for (const meal of dayMeals) {
@@ -369,7 +372,7 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
     try {
       const newPlan = await nutritionService.createDietPlan({
         student_id: planData.student_id,
-        specialist_id: planData.specialist_id ?? '',
+        specialist_id: planData.specialist_id ?? null,
         name: planData.name,
         plan_type: planData.plan_type,
         start_date: planData.start_date,

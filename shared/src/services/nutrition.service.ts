@@ -104,6 +104,7 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
   },
 
   createDietPlan: async (input: CreateDietPlanInput): Promise<DietPlan> => {
+    const today = new Date().toISOString().split("T")[0];
     const { data: existing } = await supabase
       .from("diet_plans")
       .select("id")
@@ -111,7 +112,12 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
-    if (existing) throw new Error("Já existe um plano ativo para este aluno.");
+    if (existing) {
+      await supabase
+        .from("diet_plans")
+        .update({ status: "finished", end_date: today })
+        .eq("id", existing.id);
+    }
 
     const { data, error } = await supabase
       .from("diet_plans")
@@ -185,6 +191,7 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
       .single();
     if (planError) throw planError;
 
+    const today = new Date().toISOString().split("T")[0];
     const { data: existing } = await supabase
       .from("diet_plans")
       .select("id")
@@ -192,7 +199,12 @@ export const createNutritionService = (supabase: SupabaseClient) => ({
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
-    if (existing) throw new Error("Já existe um plano ativo para este aluno.");
+    if (existing) {
+      await supabase
+        .from("diet_plans")
+        .update({ status: "finished", end_date: today })
+        .eq("id", existing.id);
+    }
 
     const { data: newPlan, error: newPlanError } = await supabase
       .from("diet_plans")

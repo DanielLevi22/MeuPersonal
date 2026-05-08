@@ -89,6 +89,19 @@ export const createAuthService = (supabase: SupabaseClient) => ({
     });
   },
 
+  signUpMember: async (params: { email: string; password: string; full_name: string }) => {
+    return supabase.auth.signUp({
+      email: params.email,
+      password: params.password,
+      options: {
+        data: {
+          full_name: params.full_name,
+          account_type: "member",
+        },
+      },
+    });
+  },
+
   // Criação de aluno via RPC SECURITY DEFINER — specialist não pode inserir em auth.users diretamente
   createStudent: async (params: CreateStudentParams) => {
     return supabase.rpc("create_student_account", {

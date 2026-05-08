@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,24 +29,18 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { StatusModal } from '@/components/ui/StatusModal';
 import { colors as brandColors } from '@/constants/colors';
+import { useDietMeals, useDietPlan } from '@/hooks/useNutrition';
 import { DayActionsModal } from '@/modules/nutrition/components/DayActionsModal';
 import { FoodSearchModal } from '../components';
 import { type FoodItem } from '../screens/FoodSearchScreen';
 import { useNutritionStore } from '../store/nutritionStore';
 
 export default function DietDetailsScreen() {
-  // biome-ignore lint/correctness/noUnusedVariables: auto-suppressed during final sweep
-  const { id: studentId, planId } = useLocalSearchParams();
+  const { planId } = useLocalSearchParams();
   const router = useRouter();
-  const { user, isMasquerading } = useAuthStore();
+  const { isMasquerading, accountType } = useAuthStore();
+  const canManage = accountType === 'specialist' || accountType === 'member';
   const {
-    dietPlans,
-    fetchDietPlans,
-    isLoading,
-    meals,
-    fetchMeals,
-    mealItems,
-    fetchMealItems,
     addMeal,
     updateMeal,
     addFoodToMeal,
@@ -59,15 +53,18 @@ export default function DietDetailsScreen() {
     copiedDay,
   } = useNutritionStore();
 
-  const [plan, setPlan] = useState<{
-    id: string;
-    name: string;
-    target_protein: number;
-    target_carbs: number;
-    target_fat: number;
-    target_calories: number;
-    description?: string;
-  } | null>(null);
+  const planIdStr = Array.isArray(planId) ? planId[0] : planId;
+
+  const { data: plan, isLoading: isPlanLoading } = useDietPlan(planIdStr);
+  const {
+    data: mealsData,
+    isLoading: isMealsLoading,
+    refetch: refetchMeals,
+  } = useDietMeals(planIdStr);
+  const meals = mealsData?.meals ?? [];
+  const mealItems = mealsData?.mealItems ?? {};
+  const isLoading = isPlanLoading || isMealsLoading;
+
   const [selectedDay, setSelectedDay] = useState(0); // 0 = Sunday, etc.
 
   // UI States
@@ -179,35 +176,6 @@ export default function DietDetailsScreen() {
     };
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: auto-suppressed during final sweep
-  useEffect(() => {
-    if (user?.id && !dietPlans.length) {
-      fetchDietPlans(user.id);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (dietPlans.length > 0 && planId) {
-      const found = dietPlans.find((p) => p.id === planId);
-      setPlan((found as never) || null);
-      if (found) {
-        fetchMeals(found.id);
-      }
-    }
-  }, [dietPlans, planId, fetchMeals]);
-
-  // Fetch items for meals when meals change
-  // Optimization: fetchMeals now does deep matching, so we don't need to fetch items individually anymore.
-  /*
-  useEffect(() => {
-    if (meals.length > 0) {
-      meals.forEach(meal => {
-        fetchMealItems(meal.id);
-      });
-    }
-  }, [meals]);
-  */
-
   const handleSaveMeal = async () => {
     if (!mealName.trim() || !plan) return;
 
@@ -291,7 +259,7 @@ export default function DietDetailsScreen() {
           target_calories: 0,
         } as never);
       }
-      fetchMeals(plan.id);
+      refetchMeals();
     } catch (_error) {
       setStatusModal({
         visible: true,
@@ -303,7 +271,7 @@ export default function DietDetailsScreen() {
   };
 
   const handleCopyDay = async () => {
-    await copyDay(selectedDay);
+    await copyDay(selectedDay, meals, mealItems);
     setStatusModal({
       visible: true,
       title: 'Sucesso',
@@ -322,7 +290,7 @@ export default function DietDetailsScreen() {
         onPress: async () => {
           try {
             await pasteDay(selectedDay, plan.id);
-            fetchMeals(plan.id);
+            refetchMeals();
           } catch (error) {
             const err = error as { code?: string; details?: string; message?: string };
             if (
@@ -355,7 +323,7 @@ export default function DietDetailsScreen() {
         onPress: async () => {
           try {
             await clearDay(selectedDay, plan.id);
-            fetchMeals(plan.id);
+            refetchMeals();
           } catch (_error) {
             Alert.alert('Erro', 'Falha ao limpar dia.');
           }
@@ -387,7 +355,7 @@ export default function DietDetailsScreen() {
       // Direct add from reverse calculator
       if (selectedMealId) {
         addFoodToMeal(selectedMealId, food.id, quantity, food.serving_unit)
-          .then(() => fetchMealItems(selectedMealId))
+          .then(() => refetchMeals())
           .catch(() => Alert.alert('Erro', 'Falha ao adicionar alimento'));
       }
       setShowFoodSearch(false);
@@ -415,14 +383,13 @@ export default function DietDetailsScreen() {
       setShowQuantityModal(false);
       setSelectedFood(null);
       setSelectedItemToEdit(null);
-      // Refresh items
-      fetchMealItems(selectedMealId);
+      refetchMeals();
     } catch (_error) {
       Alert.alert('Erro', 'Não foi possível salvar o alimento.');
     }
   };
 
-  const handleRemoveItem = (itemId: string, mealId: string) => {
+  const handleRemoveItem = (itemId: string, _mealId: string) => {
     Alert.alert('Remover Alimento', 'Tem certeza que deseja remover este alimento?', [
       { text: 'Cancelar', style: 'cancel' },
       {
@@ -431,7 +398,7 @@ export default function DietDetailsScreen() {
         onPress: async () => {
           try {
             await removeFoodFromMeal(itemId);
-            fetchMealItems(mealId);
+            refetchMeals();
           } catch (_error) {
             Alert.alert('Erro', 'Não foi possível remover o alimento.');
           }
@@ -538,7 +505,7 @@ export default function DietDetailsScreen() {
               {plan.name}
             </Text>
             <Text className="text-zinc-500 font-sans mb-6 text-center text-xs uppercase tracking-widest font-bold">
-              {plan.description || 'Sem descrição'}
+              Plano Alimentar
             </Text>
 
             {/* Macros Grid (Bento Style) */}
@@ -817,7 +784,7 @@ export default function DietDetailsScreen() {
                         <Text className="text-zinc-600 text-xs italic ml-6">Sem alimentos</Text>
                       )}
 
-                      {!isMasquerading && (
+                      {!isMasquerading && canManage && (
                         <View className="flex-row gap-2 mt-5">
                           <TouchableOpacity
                             onPress={() => handleAddFoodPress(existingMeal.id)}
@@ -843,7 +810,7 @@ export default function DietDetailsScreen() {
                   );
                 } else {
                   // Render "Add [Meal Name]" button
-                  if (isMasquerading) return null;
+                  if (isMasquerading || !canManage) return null;
 
                   return (
                     <TouchableOpacity
@@ -884,7 +851,7 @@ export default function DietDetailsScreen() {
             })()}
           </View>
 
-          {!isMasquerading && (
+          {!isMasquerading && canManage && (
             <TouchableOpacity
               className="mt-6 border-2 border-dashed rounded-3xl p-6 items-center justify-center"
               style={{ borderColor: brandColors.border.dark }}
@@ -945,8 +912,7 @@ export default function DietDetailsScreen() {
 
                 // 3. Refresh if changes made
                 if (itemsToAdd.length > 0 || itemsToRemove.length > 0) {
-                  await fetchMealItems(selectedMealId);
-                  await fetchMeals(plan.id); // Update macro totals
+                  await refetchMeals();
                 }
               } else if (initialMealData) {
                 // Creating NEW meal
@@ -970,17 +936,10 @@ export default function DietDetailsScreen() {
 
                 await addFoodsToMeal(newMeal.id, itemsToAdd);
 
-                // Refresh
-                await fetchMeals(plan.id);
+                await refetchMeals();
               }
             } catch (error: unknown) {
               const err = error as Error & { code?: string; details?: string };
-              console.error('Error saving draft meal:', err);
-              // FORCE ALERT DEBUG
-              import('react-native').then(({ Alert }) => {
-                Alert.alert('DEBUG SAVE ERROR', `${JSON.stringify(err)}\n\n${err.message || ''}`);
-              });
-
               if (err.code === '23503' && err.details?.includes('daily_goals')) {
                 Alert.alert(
                   'Erro de Cadastro',

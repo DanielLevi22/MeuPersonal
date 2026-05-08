@@ -29,7 +29,8 @@ import {
 
 export default function CreateDietScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, accountType } = useAuthStore();
+  const isMember = accountType === 'member';
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -172,7 +173,7 @@ export default function CreateDietScreen() {
       return;
     }
 
-    if (!studentId) {
+    if (!isMember && !studentId) {
       setStatusModal({
         visible: true,
         title: 'Seleção Pendente',
@@ -196,8 +197,8 @@ export default function CreateDietScreen() {
       const planData = {
         name,
         description: description || strategyResult.description, // Use strategy desc if empty
-        student_id: studentId,
-        personal_id: user.id,
+        student_id: isMember ? user.id : studentId,
+        specialist_id: isMember ? null : user.id,
         start_date: startDate.toISOString().split('T')[0],
         status: 'active',
         // These global targets are averages now, helpful for quick ref
@@ -205,7 +206,7 @@ export default function CreateDietScreen() {
         target_carbs: parseFloat(carbs) || 0,
         target_fat: parseFloat(fat) || 0,
         target_calories: parseFloat(calories) || 0,
-        plan_type: selectedStrategy,
+        plan_type: selectedStrategy === 'carb_cycling' ? 'cyclic' : 'unique',
       };
 
       await createDietPlanWithStrategy(planData as never, strategyResult);
@@ -422,36 +423,37 @@ export default function CreateDietScreen() {
             <Input value={name} onChangeText={setName} placeholder="Ex: Cutting - Fase 1" />
           </View>
 
-          {/* Student Selector */}
-          <View className="mb-4">
-            <Text className="text-foreground text-sm font-semibold mb-2 font-sans">Aluno *</Text>
-            {/* Student Selector Trigger */}
-            <TouchableOpacity
-              onPress={() => setShowStudentPicker(!showStudentPicker)}
-              className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
-            >
-              <Text
-                className={
-                  selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'
-                }
+          {/* Student Selector — hidden for member (uses own account) */}
+          {!isMember && (
+            <View className="mb-4">
+              <Text className="text-foreground text-sm font-semibold mb-2 font-sans">Aluno *</Text>
+              <TouchableOpacity
+                onPress={() => setShowStudentPicker(!showStudentPicker)}
+                className="bg-zinc-900/80 border-2 border-zinc-700 rounded-2xl px-4 py-4 flex-row items-center justify-between"
               >
-                {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
-              </Text>
-              <Ionicons
-                name={showStudentPicker ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#71717A"
-              />
-            </TouchableOpacity>
+                <Text
+                  className={
+                    selectedStudent ? 'text-foreground text-base' : 'text-zinc-500 text-base'
+                  }
+                >
+                  {selectedStudent ? selectedStudent.full_name : 'Selecione um aluno'}
+                </Text>
+                <Ionicons
+                  name={showStudentPicker ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color="#71717A"
+                />
+              </TouchableOpacity>
 
-            <StudentPickerModal
-              visible={showStudentPicker}
-              onClose={() => setShowStudentPicker(false)}
-              onSelect={(student) => setStudentId(student.id)}
-              students={students}
-              selectedStudentId={studentId}
-            />
-          </View>
+              <StudentPickerModal
+                visible={showStudentPicker}
+                onClose={() => setShowStudentPicker(false)}
+                onSelect={(student) => setStudentId(student.id)}
+                students={students}
+                selectedStudentId={studentId}
+              />
+            </View>
+          )}
 
           {/* Start Date */}
           <View className="mb-4">

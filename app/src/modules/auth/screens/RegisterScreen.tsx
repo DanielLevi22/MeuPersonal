@@ -11,7 +11,7 @@ import { supabase } from '../../../lib/supabase';
 
 const authService = createAuthService(supabase);
 
-type AccountRole = 'specialist' | 'student';
+type AccountRole = 'specialist' | 'student' | 'member';
 type Step = 'role' | 'services' | 'personal_data';
 
 export function RegisterScreen() {
@@ -65,6 +65,14 @@ export function RegisterScreen() {
     try {
       if (role === 'student') {
         const { data, error } = await authService.signUpStudent({
+          email: email.trim().toLowerCase(),
+          password,
+          full_name: fullName.trim(),
+        });
+        if (error) throw error;
+        if (!data.user) throw new Error('Erro ao criar usuário');
+      } else if (role === 'member') {
+        const { data, error } = await authService.signUpMember({
           email: email.trim().toLowerCase(),
           password,
           full_name: fullName.trim(),
@@ -136,8 +144,14 @@ export function RegisterScreen() {
                 {
                   value: 'student' as AccountRole,
                   label: 'Sou Aluno',
-                  sub: 'Treino com coach IA personalizado',
+                  sub: 'Treino com personal trainer dedicado',
                   icon: 'flash-outline' as const,
+                },
+                {
+                  value: 'member' as AccountRole,
+                  label: 'Sou Membro',
+                  sub: 'Crie seus próprios treinos e dietas',
+                  icon: 'person-outline' as const,
                 },
               ].map((opt) => (
                 <TouchableOpacity
@@ -248,6 +262,7 @@ export function RegisterScreen() {
                 variant="outline"
                 className="flex-1"
               />
+
               <Button
                 label="Criar Conta"
                 onPress={handleRegister}
