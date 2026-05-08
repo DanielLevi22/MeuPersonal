@@ -10,6 +10,15 @@ interface SaveAnamnesisInput {
   completed: boolean;
 }
 
+export function useSavePersonaTrack() {
+  return useMutation({
+    mutationFn: async ({ studentId, track }: { studentId: string; track: string }) => {
+      // Ignore errors — column may not exist in all environments
+      await supabase.from("profiles").update({ persona_track: track }).eq("id", studentId);
+    },
+  });
+}
+
 export function useAnamnesisForm() {
   const queryClient = useQueryClient();
 
