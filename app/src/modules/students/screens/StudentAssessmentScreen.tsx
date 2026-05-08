@@ -1,19 +1,11 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useLayoutEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Dimensions,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenLayout } from '@/components/ui/ScreenLayout';
 import { colors } from '@/constants/colors';
-import { AIBodyScanService } from '@/modules/assessment/services/aiBodyScan';
 import { BodyScanResult } from '@/modules/assessment/types/assessment';
 
 // Reusing the TabButton and helper components - ideally these should be shared, but for now inlining or importing would work.
@@ -86,40 +78,13 @@ export default function StudentAssessmentScreen() {
   }, [navigation]);
 
   const [activeTab, setActiveTab] = useState<'ai' | 'physical'>('ai');
-  const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState<BodyScanResult | null>(null);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: loadAssessment is stable — avoids useCallback refactor
-  useEffect(() => {
-    loadAssessment();
-  }, []);
-
-  const loadAssessment = async () => {
-    try {
-      setLoading(true);
-      const data = await AIBodyScanService.simulateScan();
-      setResult(data);
-    } catch (error) {
-      console.error('Failed to load assessment', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [result] = useState<BodyScanResult | null>(null);
 
   const indicatorStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateX: withSpring(activeTab === 'ai' ? 0 : (width - 48) / 2 - 2) }],
     };
   });
-
-  if (loading) {
-    return (
-      <ScreenLayout className="justify-center items-center">
-        <ActivityIndicator size="large" color={colors.primary.solid} />
-        <Text className="text-zinc-400 mt-4">Carregando avaliação...</Text>
-      </ScreenLayout>
-    );
-  }
 
   return (
     <ScreenLayout className="bg-black">

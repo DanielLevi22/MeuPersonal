@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/modules/auth/store/authStore';
+
 export type VoiceAction =
   | 'next_set'
   | 'finish_workout'
@@ -6,48 +8,28 @@ export type VoiceAction =
   | 'repeat_instruction'
   | 'unknown';
 
-import { GeminiService } from '@/modules/ai/services/GeminiService';
+const bffUrl = () => `${process.env.EXPO_PUBLIC_API_URL ?? ''}/api/ai/voice-command`;
 
 export const VoiceCommandService = {
   analyzeCommand: async (base64Audio: string): Promise<VoiceAction> => {
-    // Check key only to fail fast if needed, but GeminiService handles it too.
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) return 'unknown';
-
-    const SYSTEM_PROMPT = `
-    Você está ouvindo um usuário treinando. Ele dará um comando curto.
-    Mapeie a fala dele para uma das seguintes ações JSON:
-    - "Terminei", "Próxima", "Feito", "Já", "Concluído", "Próxima série", "Next", "Check" -> "next_set"
-    - "Acabei o treino", "Finalizar", "Encerrar", "Chega" -> "finish_workout"
-    - "Pausar", "Espera", "Pause" -> "pause_timer"
-    - "Retomar", "Voltar", "Resume", "Continua" -> "resume_timer"
-    
-    Retorne APENAS um JSON válido: { "action": "..." }.
-    Se não for claro, retorne { "action": "unknown" }.
-    `;
+    const token = useAuthStore.getState().session?.access_token;
+    if (!token) return 'unknown';
 
     try {
-      const parts = [
-        { text: SYSTEM_PROMPT },
-        { inline_data: { mime_type: 'audio/mp4', data: base64Audio } },
-      ];
-
-      // Centralized call
-      const result = await GeminiService.generateContent<{ action?: string }>(parts, {
-        responseMimeType: 'application/json',
+      const response = await fetch(bffUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ base64Audio }),
       });
 
-      if (!result.data) return 'unknown';
+      if (!response.ok) return 'unknown';
 
-      // Parse logic
-      let data = result.data;
-      if (typeof data === 'string') {
-        data = JSON.parse(data);
-      }
-
-      return (data.action as VoiceAction) || 'unknown';
-    } catch (e) {
-      console.error('Voice Command Error', e);
+      const data = (await response.json()) as { action?: string };
+      return (data.action as VoiceAction) ?? 'unknown';
+    } catch {
       return 'unknown';
     }
   },

@@ -1,5 +1,5 @@
 import type { DietMeal, DietMealItem } from '@elevapro/shared';
-import { GeminiService } from '@/modules/ai/services/GeminiService';
+import { useAuthStore } from '@/modules/auth/store/authStore';
 
 export interface ShoppingListItem {
   name: string;
@@ -10,7 +10,7 @@ export interface ShoppingListItem {
 export interface ShoppingCategory {
   category: string;
   items: ShoppingListItem[];
-  icon?: string; // Optional for UI mapping if we wanted to pass it from here, but we'll map in UI
+  icon?: string;
 }
 
 export interface CookingStep {
@@ -19,7 +19,6 @@ export interface CookingStep {
   timerSeconds?: number;
 }
 
-// Simple keyword matcher for categorization
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   Hortifruti: [
     'banana',
@@ -90,50 +89,41 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   Suplementos: ['creatina', 'multivitamínico', 'omega', 'pre-treino', 'beta'],
 };
 
+const bffBase = () => process.env.EXPO_PUBLIC_API_URL ?? '';
+
+function getToken(): string {
+  const token = useAuthStore.getState().session?.access_token;
+  if (!token) throw new Error('Authentication required');
+  return token;
+}
+
 export const ShoppingListService = {
-  /**
-   * Generates a categorized shopping list based on meals and duration.
-   */
   generateShoppingList: async (
     meals: DietMeal[],
     mealItemsRecord: Record<string, DietMealItem[]>,
-    durationDays: number = 7
+    durationDays = 7
   ): Promise<ShoppingCategory[]> => {
-    // 1. Aggregate Items
     const rawMap = new Map<string, { quantity: number; unit: string }>();
 
-    meals.forEach((meal) => {
-      const items = mealItemsRecord[meal.id] || [];
-      items.forEach((item) => {
-        if (!item.food) return;
-
+    for (const meal of meals) {
+      const items = mealItemsRecord[meal.id] ?? [];
+      for (const item of items) {
+        if (!item.food) continue;
         const key = item.food.name;
-        const current = rawMap.get(key) || { quantity: 0, unit: item.unit };
-
-        // Multiplier: Daily Quantity * Duration
-        // Note: Assuming 'meals' represents ONE DAY of eating.
-        // If the plan implementation varies (e.g. weekly plan), this logic needs adjustment.
-        // For this app context, DietPlan is usually a daily template.
-
+        const current = rawMap.get(key) ?? { quantity: 0, unit: item.unit };
         rawMap.set(key, {
           quantity: current.quantity + item.quantity * durationDays,
           unit: item.unit,
         });
-      });
-    });
+      }
+    }
 
     if (rawMap.size === 0) return [];
 
-    // 2. Categorize
     const categorized: Record<string, ShoppingListItem[]> = {};
-
     rawMap.forEach((data, name) => {
       const category = ShoppingListService.categorizeItem(name);
-
-      if (!categorized[category]) {
-        categorized[category] = [];
-      }
-
+      if (!categorized[category]) categorized[category] = [];
       categorized[category].push({
         name,
         quantity: `${data.quantity.toFixed(1)} ${data.unit}`,
@@ -141,7 +131,6 @@ export const ShoppingListService = {
       });
     });
 
-    // 3. Format Output
     return Object.entries(categorized)
       .map(([category, items]) => ({
         category,
@@ -151,58 +140,24 @@ export const ShoppingListService = {
   },
 
   categorizeItem: (itemName: string): string => {
-    const lowerName = itemName.toLowerCase();
-
+    const lower = itemName.toLowerCase();
     for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-      if (keywords.some((k) => lowerName.includes(k))) {
-        return category;
-      }
+      if (keywords.some((k) => lower.includes(k))) return category;
     }
-
     return 'Outros';
   },
 
   generateCookingSteps: async (mealName: string, ingredients: string[]): Promise<CookingStep[]> => {
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-    console.log('Generating cooking steps for:', mealName, 'with API Key present:', !!apiKey);
+    const response = await fetch(`${bffBase()}/api/ai/nutrition/recipe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify({ mealName, ingredients }),
+    });
 
-    if (!apiKey) {
-      console.error('API Key missing in ShoppingListService');
-      throw new Error('API Key missing');
-    }
-
-    const prompt = `
-          Você é um instrutor culinário. Crie um guia passo-a-passo de preparo para uma refeição chamada "${mealName}" usando estes ingredientes: ${ingredients.join(', ')}.
-          Retorne APENAS um array JSON onde cada objeto tem:
-          - "step": número
-          - "instruction": string (max 150 caracteres, claro e direto, em Português do Brasil)
-          - "timerSeconds": número (opcional, apenas se um tempo específico for mencionado como "cozinhe por 5 minutos", converta para segundos).
-          Exemplo: [{"step": 1, "instruction": "Pique a cebola.", "timerSeconds": null}]
-      `;
-
-    try {
-      // Centralized call
-      // biome-ignore lint/suspicious/noExplicitAny: Generic payload from AI
-      const result = await GeminiService.generateContent<any>(prompt, {
-        responseMimeType: 'application/json',
-      });
-
-      if (!result.data) {
-        throw new Error('Models failed to generate content.');
-      }
-
-      // GeminiService handles parsing if MimeType is set, but let's be safe
-      const responseText =
-        typeof result.data === 'string' ? result.data : JSON.stringify(result.data);
-
-      // Clean markdown code blocks if present
-      const jsonStr = responseText
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-      return JSON.parse(jsonStr);
-    } catch (error) {
-      console.error('Error generating cooking steps (all attempts failed):', error);
+    if (!response.ok) {
       return [
         {
           step: 1,
@@ -216,47 +171,29 @@ export const ShoppingListService = {
         },
       ];
     }
+
+    return response.json() as Promise<CookingStep[]>;
   },
 
   askAssistant: async (
     categories: ShoppingCategory[],
     promptType: 'recipes' | 'analysis' | 'tips' | 'meal_prep' | 'cooking_guide'
   ): Promise<string> => {
-    // Check key handled by service, but good for fast fail
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) return 'Erro: Chave de API não configurada.';
-
-    const itemsList = categories
-      .map((cat) => `${cat.category}: ${cat.items.map((i) => i.name).join(', ')}`)
-      .join('\n');
-
-    let systemPrompt = '';
-    if (promptType === 'recipes') {
-      systemPrompt =
-        'Você é um chef. Sugira 3 receitas simples e saudáveis usando principalmente os ingredientes desta lista de compras. Formate de forma agradável com emojis. Responda em Português do Brasil.';
-    } else if (promptType === 'analysis') {
-      systemPrompt =
-        'Você é um nutricionista. Analise esta lista de compras. Ela é equilibrada? Faltam nutrientes essenciais (fibras, proteínas, vitaminas)? Seja conciso. Responda em Português do Brasil.';
-    } else if (promptType === 'tips') {
-      systemPrompt =
-        'Você é um comprador proativo. Dê dicas específicas sobre como escolher a qualidade dos itens frescos (frutas/legumes/carnes) presentes nesta lista. Bullet points curtos. Responda em Português do Brasil.';
-    } else if (promptType === 'meal_prep') {
-      systemPrompt =
-        "Você é um especialista em meal prep. Crie um guia passo-a-passo para cozinhar/preparar esses ingredientes de forma eficiente para a semana. Agrupe tarefas (ex: 'Picar legumes', 'Cozinhar proteínas'). Seja prático. Responda em Português do Brasil.";
-    } else if (promptType === 'cooking_guide') {
-      systemPrompt =
-        'Você é um instrutor culinário. Escolha os componentes principais da refeição (proteína + acompanhamento) desta lista e ensine passo-a-passo como cozinhá-los perfeitamente para consumo imediato. Foque na técnica (selar, temperar, tempo). Responda em Português do Brasil.';
-    }
-
-    const fullPrompt = `${systemPrompt}\n\nShopping List Context:\n${itemsList}`;
-
     try {
-      const result = await GeminiService.generateContent<string>(fullPrompt);
-      return (
-        (result.data as string) || 'Não consegui gerar uma resposta no momento. Tente novamente.'
-      );
-    } catch (e) {
-      console.error('AI Assistant Error', e);
+      const response = await fetch(`${bffBase()}/api/ai/nutrition/assistant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ categories, promptType }),
+      });
+
+      if (!response.ok) return 'Não consegui gerar uma resposta no momento. Tente novamente.';
+
+      const data = (await response.json()) as { response?: string };
+      return data.response ?? 'Não consegui gerar uma resposta no momento.';
+    } catch {
       return 'Ocorreu um erro ao consultar a IA.';
     }
   },
