@@ -1,5 +1,20 @@
 "use client";
 
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Dumbbell,
+  Flame,
+  type LucideIcon,
+  RotateCcw,
+  Shield,
+  Sprout,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type {
@@ -17,7 +32,30 @@ import {
 import type { AnamnesisResponseValue } from "@/modules/students/hooks/useStudentAnamnesis";
 import { useStudentAnamnesis } from "@/modules/students/hooks/useStudentAnamnesis";
 import { useAnamnesisForm, useSavePersonaTrack } from "../hooks/useAnamnesisForm";
-import { useCurrentStudentId } from "../hooks/useStudentDashboardData";
+import { useCurrentStudentId, useStudentPersonaTrack } from "../hooks/useStudentDashboardData";
+
+// ─── Icon maps ──────────────────────────────────────────────────────────────────
+
+const TRACK_ICONS: Record<PersonaTrack, LucideIcon> = {
+  beginner: Sprout,
+  returning: RotateCcw,
+  intermediate: Dumbbell,
+  advanced: Trophy,
+};
+
+const TRACK_COLORS: Record<PersonaTrack, string> = {
+  beginner: "text-emerald-400",
+  returning: "text-amber-400",
+  intermediate: "text-blue-400",
+  advanced: "text-violet-400",
+};
+
+const UNLOCK_ICONS: Record<string, LucideIcon> = {
+  height: Flame,
+  gym_type: Dumbbell,
+  injuries: Shield,
+  commitment: Zap,
+};
 
 // ─── Question Field ─────────────────────────────────────────────────────────────
 
@@ -36,7 +74,7 @@ function QuestionField({
   if (question.type === "text") {
     return (
       <textarea
-        className={`${base} resize-none min-h-[80px]`}
+        className={`${base} resize-none min-h-20`}
         value={(value as string) ?? ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={question.placeholder ?? "Sua resposta..."}
@@ -111,21 +149,32 @@ function QuestionField({
       onChange(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]);
     return (
       <div className="flex flex-col gap-2">
-        {question.options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => toggle(opt)}
-            className={`w-full px-5 py-3 rounded-xl text-sm font-medium border text-left transition-all ${
-              selected.includes(opt)
-                ? "bg-white text-black border-white"
-                : "bg-zinc-900 text-zinc-300 border-white/10 hover:border-white/20 hover:bg-zinc-800"
-            }`}
-          >
-            {selected.includes(opt) ? "✓ " : ""}
-            {opt}
-          </button>
-        ))}
+        {question.options.map((opt) => {
+          const isSelected = selected.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggle(opt)}
+              className={`w-full px-5 py-3 rounded-xl text-sm font-medium border text-left transition-all ${
+                isSelected
+                  ? "bg-white text-black border-white"
+                  : "bg-zinc-900 text-zinc-300 border-white/10 hover:border-white/20 hover:bg-zinc-800"
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <span
+                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                    isSelected ? "bg-black border-black" : "border-zinc-600"
+                  }`}
+                >
+                  {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                </span>
+                {opt}
+              </span>
+            </button>
+          );
+        })}
       </div>
     );
   }
@@ -138,37 +187,37 @@ function QuestionField({
 function PersonaScreen({ onSelect }: { onSelect: (t: PersonaTrack) => void }) {
   return (
     <div className="flex flex-col gap-6 max-w-lg mx-auto">
-      <div className="text-center">
-        <h1 className="text-2xl font-black text-white uppercase tracking-tight">
-          Como você se descreveria?
-        </h1>
-        <p className="text-sm text-zinc-500 mt-2">
+      <div>
+        <p className="text-[11px] text-zinc-600 font-medium uppercase tracking-widest mb-2">
+          Passo inicial
+        </p>
+        <h1 className="text-2xl font-black text-white leading-tight">Como você se descreveria?</h1>
+        <p className="text-sm text-zinc-500 mt-1.5">
           Vamos montar seu plano a partir do seu nível real.
         </p>
       </div>
-      <div className="flex flex-col gap-3">
-        {PERSONA_OPTIONS.map((opt) => (
-          <button
-            key={opt.track}
-            type="button"
-            onClick={() => onSelect(opt.track)}
-            className="w-full flex items-center gap-4 p-5 rounded-2xl border border-white/10 bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-white/20 transition-all text-left group"
-          >
-            <span className="text-3xl">{opt.emoji}</span>
-            <div className="flex-1">
-              <p className="text-white font-bold text-base">{opt.label}</p>
-              <p className="text-zinc-500 text-xs mt-0.5">{opt.detail}</p>
-            </div>
-            <svg
-              className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <div className="flex flex-col gap-2.5">
+        {PERSONA_OPTIONS.map((opt) => {
+          const Icon = TRACK_ICONS[opt.track];
+          const iconColor = TRACK_COLORS[opt.track];
+          return (
+            <button
+              key={opt.track}
+              type="button"
+              onClick={() => onSelect(opt.track)}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl border border-white/8 bg-zinc-900/50 hover:bg-zinc-800/60 hover:border-white/15 transition-all text-left group"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ))}
+              <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-zinc-700 transition-colors">
+                <Icon className={`w-5 h-5 ${iconColor}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold text-sm">{opt.label}</p>
+                <p className="text-zinc-500 text-xs mt-0.5">{opt.detail}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors shrink-0" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -177,18 +226,26 @@ function PersonaScreen({ onSelect }: { onSelect: (t: PersonaTrack) => void }) {
 // ─── Unlock Screen ───────────────────────────────────────────────────────────────
 
 function UnlockScreen({ card, onContinue }: { card: UnlockCard; onContinue: () => void }) {
+  const Icon = UNLOCK_ICONS[card.afterQuestionId] ?? Zap;
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center gap-6 max-w-sm mx-auto">
-      <div className="text-6xl animate-bounce">{card.emoji}</div>
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-5 max-w-sm mx-auto">
+      <div className="relative">
+        <div className="w-20 h-20 rounded-2xl bg-zinc-800 border border-white/10 flex items-center justify-center">
+          <Icon className="w-9 h-9 text-white" strokeWidth={1.5} />
+        </div>
+        <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+          <CheckCircle2 className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+        </div>
+      </div>
       <div>
-        <h2 className="text-xl font-black text-white uppercase tracking-tight">{card.title}</h2>
+        <h2 className="text-lg font-black text-white uppercase tracking-tight">{card.title}</h2>
         <p className="text-sm text-zinc-400 mt-2 leading-relaxed">{card.detail}</p>
       </div>
       <button
         onClick={onContinue}
-        className="w-full py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-white/90 transition-colors"
+        className="w-full py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
       >
-        Continuar →
+        Continuar <ArrowRight className="w-4 h-4" />
       </button>
     </div>
   );
@@ -196,36 +253,56 @@ function UnlockScreen({ card, onContinue }: { card: UnlockCard; onContinue: () =
 
 // ─── Completion Screen ───────────────────────────────────────────────────────────
 
-function CompletionScreen({ score, onStartCoach }: { score: number; onStartCoach: () => void }) {
-  const color = score >= 80 ? "text-emerald-400" : score >= 60 ? "text-amber-400" : "text-zinc-400";
-  const borderColor =
-    score >= 80 ? "border-emerald-500/30" : score >= 60 ? "border-amber-500/30" : "border-zinc-700";
+function CompletionScreen({
+  score,
+  onStartCoach,
+  onRetake,
+}: {
+  score: number;
+  onStartCoach: () => void;
+  onRetake: () => void;
+}) {
+  const tier =
+    score >= 80
+      ? { label: "Perfil completo", color: "text-emerald-400", ring: "border-emerald-500/40" }
+      : score >= 60
+        ? { label: "Bom começo", color: "text-amber-400", ring: "border-amber-500/40" }
+        : { label: "Dados iniciais", color: "text-zinc-400", ring: "border-zinc-600" };
 
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center gap-6 max-w-sm mx-auto">
       <div
-        className={`w-28 h-28 rounded-full border-2 ${borderColor} flex items-center justify-center`}
+        className={`w-28 h-28 rounded-full border-2 ${tier.ring} flex flex-col items-center justify-center gap-0.5`}
       >
-        <span className={`text-3xl font-black ${color}`}>{score}%</span>
+        <span className={`text-2xl font-black ${tier.color}`}>{score}%</span>
+        <span className="text-[10px] text-zinc-600 uppercase tracking-wide font-medium">
+          precisão
+        </span>
       </div>
       <div>
-        <h2 className="text-xl font-black text-white uppercase tracking-tight">
-          {score >= 60 ? "Perfil pronto!" : "Bom começo!"}
-        </h2>
-        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+        <h2 className="text-xl font-black text-white uppercase tracking-tight">{tier.label}</h2>
+        <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-60 mx-auto">
           {score >= 80
-            ? "Seu coach tem tudo que precisa para montar seu plano personalizado."
+            ? "Seu coach tem tudo que precisa para montar um plano personalizado."
             : score >= 60
               ? "Dados suficientes para começar. O coach pode pedir mais detalhes durante a conversa."
               : "Você pode continuar e responder mais no chat com o coach."}
         </p>
       </div>
-      <button
-        onClick={onStartCoach}
-        className="w-full py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-white/90 transition-colors"
-      >
-        ⚡ Gerar meu plano agora
-      </button>
+      <div className="flex flex-col gap-2.5 w-full">
+        <button
+          onClick={onStartCoach}
+          className="w-full py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+        >
+          <Zap className="w-4 h-4" /> Gerar meu plano agora
+        </button>
+        <button
+          onClick={onRetake}
+          className="w-full py-2.5 text-zinc-500 text-xs font-medium hover:text-zinc-300 transition-colors"
+        >
+          Refazer anamnese
+        </button>
+      </div>
     </div>
   );
 }
@@ -235,19 +312,23 @@ function CompletionScreen({ score, onStartCoach }: { score: number; onStartCoach
 export function StudentAnamnesisJourneyPage() {
   const router = useRouter();
   const studentId = useCurrentStudentId();
-  const { data: existing } = useStudentAnamnesis(studentId);
+  const { data: existing, isLoading: anamnesisLoading } = useStudentAnamnesis(studentId);
+  const { data: savedTrack, isLoading: trackLoading } = useStudentPersonaTrack(studentId);
   const { mutateAsync: save, isPending } = useAnamnesisForm();
   const { mutateAsync: saveTrack } = useSavePersonaTrack();
 
+  const [forceRetake, setForceRetake] = useState(false);
+  const [sessionDone, setSessionDone] = useState(false);
   const [track, setTrack] = useState<PersonaTrack | null>(null);
   const [step, setStep] = useState(0);
   const [responses, setResponses] = useState<Record<string, AnamnesisResponseValue>>({});
   const [pendingUnlock, setPendingUnlock] = useState<UnlockCard | null>(null);
   const [precisionDelta, setPrecisionDelta] = useState<number | null>(null);
   const [showWhy, setShowWhy] = useState(false);
-  const [isDone, setIsDone] = useState(false);
 
-  // Pre-fill from existing anamnesis
+  const isCompleted = (!forceRetake && !!existing?.completed_at) || sessionDone;
+
+  // Pre-fill responses from DB
   useEffect(() => {
     if (!existing?.responses) return;
     const raw = existing.responses as Record<string, unknown>;
@@ -262,6 +343,14 @@ export function StudentAnamnesisJourneyPage() {
     setResponses(normalized);
   }, [existing]);
 
+  // Auto-restore track to skip persona screen on return visits
+  useEffect(() => {
+    if (track || !savedTrack || forceRetake) return;
+    setTrack(savedTrack as PersonaTrack);
+  }, [savedTrack, track, forceRetake]);
+
+  if (anamnesisLoading || trackLoading) return null;
+
   const questions = track ? getTrackQuestions(track) : [];
   const currentQ = questions[step];
   const precision = questions.length > 0 ? getPrecisionScore(questions, responses) : 30;
@@ -269,10 +358,10 @@ export function StudentAnamnesisJourneyPage() {
   const progressPct = questions.length > 0 ? Math.round(((step + 1) / questions.length) * 100) : 0;
 
   const TRACK_LABELS: Record<PersonaTrack, string> = {
-    beginner: "🌱 Iniciante",
-    returning: "🔄 Retomada",
-    intermediate: "💪 Intermediário",
-    advanced: "🏆 Avançado",
+    beginner: "Iniciante",
+    returning: "Retomada",
+    intermediate: "Intermediário",
+    advanced: "Avançado",
   };
 
   const handleSelectTrack = async (t: PersonaTrack) => {
@@ -306,7 +395,7 @@ export function StudentAnamnesisJourneyPage() {
     }
 
     if (isLastStep) {
-      setIsDone(true);
+      setSessionDone(true);
     } else {
       setStep((s) => s + 1);
       setShowWhy(false);
@@ -328,29 +417,43 @@ export function StudentAnamnesisJourneyPage() {
     }
   };
 
-  if (!track) return <PersonaScreen onSelect={handleSelectTrack} />;
-  if (pendingUnlock) return <UnlockScreen card={pendingUnlock} onContinue={handleUnlockContinue} />;
-  if (isDone)
+  const handleRetake = () => {
+    setForceRetake(true);
+    setSessionDone(false);
+    setTrack(null);
+    setStep(0);
+    setResponses({});
+  };
+
+  if (isCompleted)
     return (
       <CompletionScreen
         score={precision}
         onStartCoach={() => router.push("/dashboard/student/coach")}
+        onRetake={handleRetake}
       />
     );
 
+  if (!track) return <PersonaScreen onSelect={handleSelectTrack} />;
+  if (pendingUnlock) return <UnlockScreen card={pendingUnlock} onContinue={handleUnlockContinue} />;
+
   const barColor = precision >= 80 ? "#10b981" : precision >= 60 ? "#f59e0b" : "#818cf8";
+  const TrackIcon = TRACK_ICONS[track];
 
   return (
     <div className="flex flex-col gap-5 max-w-lg mx-auto">
-      {/* Progress bar */}
+      {/* Header progress */}
       <div className="flex flex-col gap-2">
-        <div className="flex justify-between text-xs text-zinc-500 font-medium">
-          <span>{TRACK_LABELS[track]}</span>
-          <span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <TrackIcon className={`w-3.5 h-3.5 ${TRACK_COLORS[track]}`} />
+            <span className="text-xs text-zinc-500 font-medium">{TRACK_LABELS[track]}</span>
+          </div>
+          <span className="text-xs text-zinc-500 tabular-nums">
             {step + 1} / {questions.length}
           </span>
         </div>
-        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+        <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-white rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%` }}
@@ -360,43 +463,49 @@ export function StudentAnamnesisJourneyPage() {
 
       {/* Question card */}
       <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 flex flex-col gap-5">
-        <h2 className="text-xl font-black text-white leading-tight">{currentQ.text}</h2>
-
-        <button
-          type="button"
-          onClick={() => setShowWhy((v) => !v)}
-          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 w-fit"
-        >
-          Por que perguntamos? {showWhy ? "▲" : "▼"}
-        </button>
-        {showWhy && (
-          <p className="text-xs text-zinc-500 leading-relaxed -mt-3">{currentQ.whyWeAsk}</p>
-        )}
+        <div>
+          <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium mb-2">
+            Pergunta {step + 1}
+          </p>
+          <h2 className="text-xl font-black text-white leading-snug">{currentQ.text}</h2>
+        </div>
 
         <QuestionField
           question={currentQ}
           value={responses[currentQ.id]}
           onChange={handleAnswerChange}
         />
+
+        <button
+          type="button"
+          onClick={() => setShowWhy((v) => !v)}
+          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 w-fit"
+        >
+          Por que perguntamos?
+          {showWhy ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        </button>
+        {showWhy && (
+          <p className="text-xs text-zinc-500 leading-relaxed -mt-3 border-l border-white/10 pl-3">
+            {currentQ.whyWeAsk}
+          </p>
+        )}
       </div>
 
       {/* Precision meter */}
       <div className="bg-zinc-900/40 border border-white/5 rounded-xl p-4 relative overflow-hidden">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-xs text-zinc-500 font-medium">Precisão do seu plano</span>
+          <span className="text-xs text-zinc-500 font-medium">Precisão do plano</span>
           <span className="text-sm font-black text-white">{precision}%</span>
         </div>
-        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{ width: `${precision}%`, backgroundColor: barColor }}
           />
         </div>
-        <p className="text-[10px] text-zinc-600 mt-2">
-          Um plano genérico tem 30% de precisão. Complete para chegar a 94%.
-        </p>
+        <p className="text-[10px] text-zinc-600 mt-2">Plano genérico: 30% · Meta: 94%</p>
         {precisionDelta !== null && (
-          <span className="absolute top-3 right-12 text-xs font-black text-emerald-400 animate-bounce">
+          <span className="absolute top-3 right-4 text-xs font-black text-emerald-400">
             +{precisionDelta}%
           </span>
         )}
@@ -407,7 +516,7 @@ export function StudentAnamnesisJourneyPage() {
         <button
           type="button"
           onClick={handleBack}
-          className="px-5 py-3 bg-zinc-900 text-zinc-400 font-bold text-sm rounded-xl border border-white/10 hover:border-white/20 transition-colors"
+          className="px-5 py-3 bg-zinc-900 text-zinc-400 font-semibold text-sm rounded-xl border border-white/10 hover:border-white/20 transition-colors"
         >
           {step === 0 ? "Voltar" : "Anterior"}
         </button>
@@ -415,9 +524,19 @@ export function StudentAnamnesisJourneyPage() {
           type="button"
           onClick={handleNext}
           disabled={isPending}
-          className="flex-1 py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40"
+          className="flex-1 py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
         >
-          {isPending ? "Salvando..." : isLastStep ? "Concluir" : "Próximo →"}
+          {isPending ? (
+            "Salvando..."
+          ) : isLastStep ? (
+            <>
+              <CheckCircle2 className="w-4 h-4" /> Concluir
+            </>
+          ) : (
+            <>
+              Próximo <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
     </div>

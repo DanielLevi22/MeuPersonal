@@ -54,3 +54,20 @@ export function useCurrentStudentId(): string | null {
   const { data: authUser } = useAuthUser();
   return authUser?.id ?? null;
 }
+
+export function useStudentPersonaTrack(studentId: string | null) {
+  return useQuery({
+    queryKey: ["student-persona-track", studentId],
+    queryFn: async (): Promise<string | null> => {
+      if (!studentId) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("persona_track")
+        .eq("id", studentId)
+        .maybeSingle();
+      return data?.persona_track ?? null;
+    },
+    enabled: !!studentId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
